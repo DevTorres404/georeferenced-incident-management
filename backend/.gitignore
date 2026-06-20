@@ -20,8 +20,12 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/app/firebase_credentials.json
 /vendor
 _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/docs/plan_gestion_calidad.tex
+/docs/upse.jpg
+.AGENTS.md
