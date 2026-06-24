@@ -26,12 +26,18 @@ abstract class ApiController extends Controller
 
     protected function canViewIncident(User $user, Incident $incident): bool
     {
-        return $this->can($user, 'incidents.view')
-            && (
-                $this->canManage($user)
-                || $incident->reported_by_id === $user->id
-                || $incident->current_assigned_id === $user->id
-            );
+        // Un administrador/supervisor siempre puede ver cualquier incidencia
+        if ($this->canManage($user)) {
+            return true;
+        }
+
+        // El creador o el asignado siempre pueden ver su propia incidencia
+        if ($incident->reported_by_id === $user->id || $incident->current_assigned_id === $user->id) {
+            return true;
+        }
+
+        // Si no es el dueño ni admin, requiere permiso global
+        return $this->can($user, 'incidents.view');
     }
 }
 

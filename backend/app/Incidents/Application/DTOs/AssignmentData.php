@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Incidents\Application\DTOs;
+
+use JsonSerializable;
+
+final class AssignmentData implements JsonSerializable
+{
+    public function __construct(
+        public readonly int $id,
+        public readonly int $incidentId,
+        public readonly int $userId,
+        public readonly ?int $assignedById,
+        public readonly ?string $assignmentDate,
+        public readonly ?string $unassignmentDate,
+        public readonly ?UserSummaryData $user = null,
+        public readonly ?UserSummaryData $assignedBy = null
+    ) {
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'incident_id' => $this->incidentId,
+            'user_id' => $this->userId,
+            'assigned_by_id' => $this->assignedById,
+            'assignment_date' => $this->assignmentDate,
+            'unassignment_date' => $this->unassignmentDate,
+            'user' => $this->user,
+            'assigned_by' => $this->assignedBy,
+        ];
+    }
+}

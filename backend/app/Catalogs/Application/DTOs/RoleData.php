@@ -1,0 +1,29 @@
+<?php
+
+namespace App\Catalogs\Application\DTOs;
+
+use JsonSerializable;
+
+final class RoleData implements JsonSerializable
+{
+    public function __construct(
+        public readonly int $id,
+        public readonly string $code,
+        public readonly string $name,
+        public readonly string $description,
+        /** @var PermissionData[] */
+        public readonly array $permissions = []
+    ) {
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'description' => $this->description,
+            'permissions' => $this->permissions,
+        ];
+    }
+}
