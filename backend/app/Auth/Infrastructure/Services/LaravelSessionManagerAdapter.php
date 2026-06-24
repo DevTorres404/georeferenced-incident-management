@@ -27,4 +27,23 @@ final class LaravelSessionManagerAdapter implements SessionManagerPort
     {
         PersonalAccessToken::findOrFail($tokenId)->delete();
     }
+
+    public function createTwoFactorToken(int $userId): string
+    {
+        $token = \Illuminate\Support\Str::random(64);
+        \Illuminate\Support\Facades\Cache::put('2fa_token_'.$token, $userId, now()->addMinutes(10));
+
+        return $token;
+    }
+
+    public function getUserIdFromTwoFactorToken(string $token): ?int
+    {
+        $userId = \Illuminate\Support\Facades\Cache::get('2fa_token_'.$token);
+        return $userId ? (int) $userId : null;
+    }
+
+    public function deleteTwoFactorToken(string $token): void
+    {
+        \Illuminate\Support\Facades\Cache::forget('2fa_token_'.$token);
+    }
 }

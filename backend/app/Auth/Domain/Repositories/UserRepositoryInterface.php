@@ -33,5 +33,11 @@ interface UserRepositoryInterface
 
     public function updateUsername(int $userId, string $username): AuthUser;
 
+    public function updateProfile(int $userId, string $firstName, string $lastName, string $username): AuthUser;
+
     public function updateLastAccess(int $userId, ?string $lastAccessAt = null): void;
+
+    public function updateTwoFactorSecret(int $userId, ?string $secret, ?array $recoveryCodes = null): void;
+
+    public function confirmTwoFactor(int $userId): void;
 }

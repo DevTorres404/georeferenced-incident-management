@@ -63,9 +63,19 @@ final class EloquentUserRepository implements UserRepositoryInterface
         $user = User::findOrFail($userId);
         $role = Role::where('code', $roleCode)->first();
 
-        if ($role && ! $user->roles()->where('auth.roles.id', $role->id)->exists()) {
-            $user->roles()->attach($role->id);
+        if (! $role) {
+            return;
         }
+
+        if ($user->roles()->exists()) {
+            return;
+        }
+
+        $user->roles()->sync([
+            $role->id => [
+                'assigned_at' => now(),
+            ],
+        ]);
     }
 
     public function syncIdentity(
@@ -112,7 +122,19 @@ final class EloquentUserRepository implements UserRepositoryInterface
     {
         $user = User::findOrFail($userId);
         $user->update([
-            'username' => strtolower($username),
+            'username' => trim($username),
+        ]);
+
+        return $this->userMapper->fromModel($user->fresh());
+    }
+
+    public function updateProfile(int $userId, string $firstName, string $lastName, string $username): AuthUser
+    {
+        $user = User::findOrFail($userId);
+        $user->update([
+            'first_name' => trim($firstName),
+            'last_name' => trim($lastName),
+            'username' => trim($username),
         ]);
 
         return $this->userMapper->fromModel($user->fresh());
@@ -122,6 +144,26 @@ final class EloquentUserRepository implements UserRepositoryInterface
     {
         $user = User::findOrFail($userId);
         $user->last_login = $lastAccessAt ?? now()->toIso8601String();
+        $user->save();
+    }
+
+    public function updateTwoFactorSecret(int $userId, ?string $secret, ?array $recoveryCodes = null): void
+    {
+        $user = User::findOrFail($userId);
+        $user->two_factor_secret = $secret;
+        if ($recoveryCodes !== null) {
+            $user->two_factor_recovery_codes = json_encode($recoveryCodes);
+        } else {
+            $user->two_factor_recovery_codes = null;
+        }
+        $user->two_factor_confirmed_at = null; // resets confirmation
+        $user->save();
+    }
+
+    public function confirmTwoFactor(int $userId): void
+    {
+        $user = User::findOrFail($userId);
+        $user->two_factor_confirmed_at = now();
         $user->save();
     }
 }

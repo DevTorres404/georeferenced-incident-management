@@ -6,6 +6,7 @@ use App\Auth\Application\DTOs\CompleteProfileInputData;
 use App\Auth\Application\DTOs\GoogleAuthInputData;
 use App\Auth\Application\DTOs\LoginInputData;
 use App\Auth\Application\DTOs\RegisterUserInputData;
+use App\Auth\Application\DTOs\UpdateOwnProfileInputData;
 use App\Auth\Application\DTOs\VerifyEmailInputData;
 use App\Auth\Application\UseCases\CompleteProfileUseCase;
 use App\Auth\Application\UseCases\GetAuthenticatedUserUseCase;
@@ -14,6 +15,7 @@ use App\Auth\Application\UseCases\LoginUseCase;
 use App\Auth\Application\UseCases\LogoutUseCase;
 use App\Auth\Application\UseCases\RegisterUserUseCase;
 use App\Auth\Application\UseCases\ResendVerificationEmailUseCase;
+use App\Auth\Application\UseCases\UpdateOwnProfileUseCase;
 use App\Auth\Application\UseCases\VerifyEmailUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
@@ -36,6 +38,7 @@ class AuthController extends Controller
         private GetAuthenticatedUserUseCase $getAuthenticatedUserUseCase,
         private ResendVerificationEmailUseCase $resendVerificationEmailUseCase,
         private CompleteProfileUseCase $completeProfileUseCase,
+        private UpdateOwnProfileUseCase $updateOwnProfileUseCase,
         private VerifyEmailUseCase $verifyEmailUseCase,
         private GoogleRegistrationUseCase $googleRegistrationUseCase
     ) {
@@ -102,23 +105,23 @@ class AuthController extends Controller
                 'string',
                 'min:3',
                 'max:50',
-                'regex:/^[a-zA-Z0-9._-]+$/',
+                'regex:/^\S+$/u',
                 Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username'),
             ],
             'email' => ['required', 'email', 'max:255', Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'email')],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:20'],
-        ]);
+        ], $this->validationMessages());
 
         $firstName = trim((string) ($data['first_name'] ?? $data['nombre'] ?? ''));
         $lastName = trim((string) ($data['last_name'] ?? $data['apellido'] ?? ''));
 
         if ($firstName === '' || $lastName === '') {
             return response()->json([
-                'message' => 'The first name field is required. (and 1 more error)',
+                'message' => 'Completa tu nombre y apellido.',
                 'errors' => [
-                    'first_name' => $firstName === '' ? ['The first name field is required.'] : [],
-                    'last_name' => $lastName === '' ? ['The last name field is required.'] : [],
+                    'first_name' => $firstName === '' ? ['Ingresa tu nombre.'] : [],
+                    'last_name' => $lastName === '' ? ['Ingresa tu apellido.'] : [],
                 ],
             ], 422);
         }
@@ -276,16 +279,50 @@ class AuthController extends Controller
                 'string',
                 'min:3',
                 'max:50',
-                'regex:/^[a-zA-Z0-9._-]+$/',
+                'regex:/^\S+$/u',
                 Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
             ],
-        ]);
+        ], $this->validationMessages());
 
         try {
             return response()->json(
                 $this->completeProfileUseCase->execute(
                     new CompleteProfileInputData(
                         userId: (int) $request->user()->id,
+                        username: $data['username']
+                    )
+                ),
+                200
+            );
+        } catch (AuthException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'username' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'regex:/^\S+$/u',
+                Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
+            ],
+        ], $this->validationMessages());
+
+        try {
+            return response()->json(
+                $this->updateOwnProfileUseCase->execute(
+                    new UpdateOwnProfileInputData(
+                        userId: (int) $request->user()->id,
+                        firstName: $data['first_name'],
+                        lastName: $data['last_name'],
                         username: $data['username']
                     )
                 ),
@@ -329,5 +366,26 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Correo verificado correctamente.',
         ]);
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'first_name.required' => 'Ingresa tu nombre.',
+            'first_name.max' => 'El nombre no puede superar los 100 caracteres.',
+            'last_name.required' => 'Ingresa tu apellido.',
+            'last_name.max' => 'El apellido no puede superar los 100 caracteres.',
+            'username.required' => 'Ingresa un nombre de usuario.',
+            'username.min' => 'El nombre de usuario debe tener al menos 3 caracteres.',
+            'username.max' => 'El nombre de usuario no puede superar los 50 caracteres.',
+            'username.regex' => 'El nombre de usuario no puede contener espacios.',
+            'username.unique' => 'Ese nombre de usuario ya esta en uso.',
+            'email.required' => 'Ingresa tu correo electronico.',
+            'email.email' => 'Ingresa un correo electronico valido.',
+            'email.unique' => 'Ya existe una cuenta con ese correo electronico.',
+            'password.required' => 'Ingresa una contrasena.',
+            'password.min' => 'La contrasena debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'La confirmacion de la contrasena no coincide.',
+        ];
     }
 }

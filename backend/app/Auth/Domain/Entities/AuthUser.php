@@ -23,6 +23,8 @@ final class AuthUser implements JsonSerializable
         public readonly bool $isActive,
         public readonly ?string $emailVerifiedAt,
         public readonly ?string $lastAccessAt,
+        public readonly ?string $twoFactorSecret = null,
+        public readonly ?string $twoFactorConfirmedAt = null,
         public readonly array $roleCodes = [],
         public readonly array $permissionCodes = [],
         public readonly array $identities = []
@@ -32,6 +34,11 @@ final class AuthUser implements JsonSerializable
     public function hasVerifiedEmail(): bool
     {
         return $this->emailVerifiedAt !== null;
+    }
+
+    public function isTwoFactorEnabled(): bool
+    {
+        return $this->twoFactorSecret !== null && $this->twoFactorConfirmedAt !== null;
     }
 
     public function emailVerificationHash(): string
@@ -60,6 +67,7 @@ final class AuthUser implements JsonSerializable
             'activo' => $this->isActive,
             'email_verificado_at' => $this->emailVerifiedAt,
             'ultimo_acceso' => $this->lastAccessAt,
+            'two_factor_enabled' => $this->isTwoFactorEnabled(),
             'roles' => array_map(
                 static fn (string $roleCode) => ['codigo' => $roleCode],
                 $this->roleCodes

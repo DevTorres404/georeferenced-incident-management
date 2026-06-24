@@ -79,6 +79,17 @@ final class LoginUseCase
             $input->userAgent
         );
 
+        if ($user->isTwoFactorEnabled()) {
+            $twoFactorToken = $this->sessionManager->createTwoFactorToken($user->id);
+            return new AuthActionResultData(
+                message: 'Se requiere verificación de dos factores.',
+                user: null,
+                session: null,
+                requires2fa: true,
+                twoFactorToken: $twoFactorToken
+            );
+        }
+
         $session = $this->sessionManager->createForUser($user->id, 'api-token');
         $profile = $this->userRepository->loadProfile($user->id);
 

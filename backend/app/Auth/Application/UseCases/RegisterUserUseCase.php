@@ -26,7 +26,7 @@ final class RegisterUserUseCase
         $user = $this->userRepository->create(new CreateUserInputData(
             firstName: trim($input->firstName),
             lastName: trim($input->lastName),
-            username: strtolower(trim($input->username)),
+            username: trim($input->username),
             email: strtolower(trim($input->email)),
             password: $input->password,
             phone: $input->phone,

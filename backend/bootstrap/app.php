@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'permission' => \App\Shared\Infrastructure\Http\Middleware\EnsureUserHasPermission::class,
+            '2fa.admin' => \App\Http\Middleware\EnsureTwoFactorEnabledIfAdmin::class,
         ]);
 
         $middleware->redirectGuestsTo(null);

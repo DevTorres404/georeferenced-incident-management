@@ -122,6 +122,18 @@ final class GoogleRegistrationUseCase
         $this->userRepository->updateLastAccess($user->id);
         $this->registrarIntentoGoogle($user->email, true, null, $input, $user->id);
 
+        if ($user->isTwoFactorEnabled()) {
+            $twoFactorToken = $this->sessionManager->createTwoFactorToken($user->id);
+            return new AuthActionResultData(
+                message: 'Se requiere verificación de dos factores.',
+                user: null,
+                session: null,
+                emailVerified: true,
+                requires2fa: true,
+                twoFactorToken: $twoFactorToken
+            );
+        }
+
         $session = $this->sessionManager->createForUser($user->id, 'google-api-token');
         $profile = $this->userRepository->loadProfile($user->id);
 
