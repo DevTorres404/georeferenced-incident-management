@@ -45,40 +45,10 @@ return new class extends Migration
                 WHEN duplicate_object THEN NULL;
             END $$;
         ");
-
-        // ──────────────────────────────────────────────
-        // Tipos ENUM — Auditoría
-        // ──────────────────────────────────────────────
-        DB::statement("
-            DO $$ BEGIN
-                CREATE TYPE audit.tipo_accion AS ENUM (
-                    'INSERT',
-                    'UPDATE',
-                    'DELETE'
-                );
-            EXCEPTION
-                WHEN duplicate_object THEN NULL;
-            END $$;
-        ");
-
-        DB::statement("
-            DO $$ BEGIN
-                CREATE TYPE audit.origen_operacion AS ENUM (
-                    'WEB',
-                    'API',
-                    'SYSTEM',
-                    'CRON'
-                );
-            EXCEPTION
-                WHEN duplicate_object THEN NULL;
-            END $$;
-        ");
     }
 
     public function down(): void
     {
-        DB::statement('DROP TYPE IF EXISTS audit.origen_operacion');
-        DB::statement('DROP TYPE IF EXISTS audit.tipo_accion');
         DB::statement('DROP TYPE IF EXISTS core.notification_type');
         DB::statement('DROP EXTENSION IF EXISTS postgis CASCADE');
         DB::statement('DROP SCHEMA IF EXISTS audit CASCADE');
