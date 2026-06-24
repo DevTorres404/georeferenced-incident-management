@@ -1,0 +1,157 @@
+name: 'Comentarios y seguimiento'
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/incidents/{incident_id}/comments'
+    metadata:
+      custom: []
+      groupName: 'Comentarios y seguimiento'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Agregar comentario.'
+      description: 'Añade un comentario al hilo de la incidencia. Puede ser interno.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      incident_id:
+        custom: []
+        name: incident_id
+        description: 'The ID of the incident.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      incident:
+        custom: []
+        name: incident
+        description: 'El ID de la incidencia.'
+        required: true
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      incident_id: 1
+      incident: 5
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      comment:
+        custom: []
+        name: comment
+        description: 'El texto del comentario.'
+        required: true
+        example: 'El equipo está en camino.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      is_internal:
+        custom: []
+        name: is_internal
+        description: 'Indica si el comentario es solo visible para agentes/admins.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      comment: 'El equipo está en camino.'
+      is_internal: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/incidents/{incident_id}/attachments'
+    metadata:
+      custom: []
+      groupName: 'Comentarios y seguimiento'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Adjuntar archivo.'
+      description: 'Sube un archivo adjunto relacionado con la incidencia.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: multipart/form-data
+      Accept: application/json
+    urlParameters:
+      incident_id:
+        custom: []
+        name: incident_id
+        description: 'The ID of the incident.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      incident:
+        custom: []
+        name: incident
+        description: 'El ID de la incidencia.'
+        required: true
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      incident_id: 1
+      incident: 5
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      file:
+        custom: []
+        name: file
+        description: 'El archivo a subir.'
+        required: true
+        example: null
+        type: file
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters: []
+    fileParameters:
+      file: null
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

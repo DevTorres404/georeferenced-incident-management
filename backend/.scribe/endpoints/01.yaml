@@ -1,0 +1,191 @@
+name: 'Categorías y subcategorías'
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/catalogs
+    metadata:
+      custom: []
+      groupName: 'Categorías y subcategorías'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Resumen de catálogos.'
+      description: 'Devuelve una vista general de los catálogos principales.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"countries":[{"id":1,"name":"Ecuador","iso_code":"EC"}],"categories":[{"id":3,"name":"Alumbrado P\u00fablico","description":"Luminarias, postes y cableado el\u00e9ctrico p\u00fablico","icon":"fa-lightbulb","color":"#F59E0B","is_active":true,"subcategories":[{"id":12,"name":"Cable ca\u00eddo","description":null,"icon":null,"color":null,"is_active":true},{"id":10,"name":"Luminaria apagada","description":null,"icon":null,"color":null,"is_active":true},{"id":11,"name":"Poste da\u00f1ado","description":null,"icon":null,"color":null,"is_active":true},{"id":13,"name":"Zona sin iluminaci\u00f3n","description":null,"icon":null,"color":null,"is_active":true}]},{"id":4,"name":"Espacios P\u00fablicos","description":"Parques, plazas, \u00e1reas verdes y mobiliario urbano","icon":"fa-tree","color":"#22C55E","is_active":true,"subcategories":[{"id":16,"name":"Juegos infantiles rotos","description":null,"icon":null,"color":null,"is_active":true},{"id":15,"name":"Mobiliario da\u00f1ado","description":null,"icon":null,"color":null,"is_active":true},{"id":14,"name":"Parque descuidado","description":null,"icon":null,"color":null,"is_active":true},{"id":17,"name":"\u00c1rea verde sin mantenimiento","description":null,"icon":null,"color":null,"is_active":true}]},{"id":5,"name":"Recolecci\u00f3n de Residuos","description":"Basura, residuos y limpieza urbana","icon":"fa-trash","color":"#A855F7","is_active":true,"subcategories":[{"id":18,"name":"Basura acumulada","description":null,"icon":null,"color":null,"is_active":true},{"id":19,"name":"Contenedor lleno","description":null,"icon":null,"color":null,"is_active":true},{"id":21,"name":"Falta de recolecci\u00f3n","description":null,"icon":null,"color":null,"is_active":true},{"id":20,"name":"Residuos peligrosos","description":null,"icon":null,"color":null,"is_active":true}]},{"id":6,"name":"Seguridad","description":"Situaciones que afectan la seguridad ciudadana","icon":"fa-shield-halved","color":"#EF4444","is_active":true,"subcategories":[{"id":24,"name":"Obstrucci\u00f3n de v\u00eda","description":null,"icon":null,"color":null,"is_active":true},{"id":22,"name":"Vandalismo","description":null,"icon":null,"color":null,"is_active":true},{"id":23,"name":"Zona insegura","description":null,"icon":null,"color":null,"is_active":true}]},{"id":2,"name":"Servicios P\u00fablicos","description":"Agua potable, alcantarillado y drenaje","icon":"fa-faucet-drip","color":"#0EA5E9","is_active":true,"subcategories":[{"id":7,"name":"Alcantarilla tapada","description":null,"icon":null,"color":null,"is_active":true},{"id":9,"name":"Drenaje colapsado","description":null,"icon":null,"color":null,"is_active":true},{"id":8,"name":"Falta de agua","description":null,"icon":null,"color":null,"is_active":true},{"id":6,"name":"Fuga de agua","description":null,"icon":null,"color":null,"is_active":true}]},{"id":1,"name":"Vialidad","description":"Problemas relacionados con calles, carreteras y v\u00edas p\u00fablicas","icon":"fa-road","color":"#6366F1","is_active":true,"subcategories":[{"id":1,"name":"Bache","description":null,"icon":null,"color":null,"is_active":true},{"id":4,"name":"Hundimiento","description":null,"icon":null,"color":null,"is_active":true},{"id":5,"name":"Pavimento deteriorado","description":null,"icon":null,"color":null,"is_active":true},{"id":2,"name":"Sem\u00e1foro da\u00f1ado","description":null,"icon":null,"color":null,"is_active":true},{"id":3,"name":"Se\u00f1alizaci\u00f3n vial","description":null,"icon":null,"color":null,"is_active":true}]}],"priorities":[{"id":1,"name":"Cr\u00edtica","level":1,"color":"#DC2626","sla_hours":8,"is_active":true},{"id":2,"name":"Alta","level":2,"color":"#F97316","sla_hours":24,"is_active":true},{"id":3,"name":"Media","level":3,"color":"#EAB308","sla_hours":72,"is_active":true},{"id":4,"name":"Baja","level":4,"color":"#22C55E","sla_hours":168,"is_active":true}],"states":[{"id":1,"code":"NUEVA","name":"NUEVA","color":"#3B82F6","order":1},{"id":2,"code":"EN_REVISION","name":"EN_REVISION","color":"#F59E0B","order":2},{"id":3,"code":"EN_PROGRESO","name":"EN_PROGRESO","color":"#8B5CF6","order":3},{"id":4,"code":"RESUELTA","name":"RESUELTA","color":"#10B981","order":4},{"id":5,"code":"CERRADA","name":"CERRADA","color":"#6B7280","order":5},{"id":6,"code":"RECHAZADA","name":"RECHAZADA","color":"#EF4444","order":6},{"id":7,"code":"REABIERTA","name":"REABIERTA","color":"#F97316","order":7}],"roles":[{"id":1,"code":"ADMIN","name":"Administrador","description":"Acceso total al sistema. Gestiona usuarios, roles, configuraci\u00f3n y reportes.","permissions":[{"id":1,"code":"incidents.view","name":"Ver incidencias","description":"","module":"incidents"},{"id":2,"code":"incidents.create","name":"Crear incidencias","description":"","module":"incidents"},{"id":3,"code":"incidents.edit","name":"Editar incidencias","description":"","module":"incidents"},{"id":4,"code":"incidents.delete","name":"Eliminar incidencias","description":"","module":"incidents"},{"id":5,"code":"incidents.assign","name":"Asignar incidencias","description":"","module":"incidents"},{"id":6,"code":"incidents.close","name":"Cerrar incidencias","description":"","module":"incidents"},{"id":7,"code":"incidents.reopen","name":"Reabrir incidencias","description":"","module":"incidents"},{"id":8,"code":"comments.create","name":"Crear comentarios","description":"","module":"comments"},{"id":9,"code":"comments.internal","name":"Crear comentarios internos","description":"","module":"comments"},{"id":10,"code":"users.view","name":"Ver usuarios","description":"","module":"users"},{"id":11,"code":"users.create","name":"Crear usuarios","description":"","module":"users"},{"id":12,"code":"users.edit","name":"Editar usuarios","description":"","module":"users"},{"id":13,"code":"users.delete","name":"Eliminar usuarios","description":"","module":"users"},{"id":14,"code":"users.manage_roles","name":"Gestionar roles de usuario","description":"","module":"users"},{"id":15,"code":"catalogs.manage","name":"Gestionar cat\u00e1logos","description":"","module":"catalogs"},{"id":16,"code":"reportes.ver","name":"Ver reportes","description":"","module":"reportes"},{"id":17,"code":"reportes.exportar","name":"Exportar reportes","description":"","module":"reportes"},{"id":18,"code":"configuracion.ver","name":"Ver configuraci\u00f3n","description":"","module":"configuracion"},{"id":19,"code":"configuracion.editar","name":"Editar configuraci\u00f3n","description":"","module":"configuracion"},{"id":20,"code":"audit.view","name":"Ver logs de auditor\u00eda","description":"","module":"audit"}]},{"id":4,"code":"CIUDADANO","name":"Ciudadano","description":"Reporta incidents, consulta el estado de sus reportes y recibe notificaciones.","permissions":[{"id":1,"code":"incidents.view","name":"Ver incidencias","description":"","module":"incidents"},{"id":2,"code":"incidents.create","name":"Crear incidencias","description":"","module":"incidents"},{"id":8,"code":"comments.create","name":"Crear comentarios","description":"","module":"comments"}]},{"id":3,"code":"OPERADOR","name":"Operador","description":"Atiende incidents asignadas, actualiza states y registra avances.","permissions":[{"id":1,"code":"incidents.view","name":"Ver incidencias","description":"","module":"incidents"},{"id":3,"code":"incidents.edit","name":"Editar incidencias","description":"","module":"incidents"},{"id":8,"code":"comments.create","name":"Crear comentarios","description":"","module":"comments"},{"id":9,"code":"comments.internal","name":"Crear comentarios internos","description":"","module":"comments"}]},{"id":2,"code":"SUPERVISOR","name":"Supervisor","description":"Supervisa incidents, asigna operadores, aprueba resoluciones y genera reportes.","permissions":[{"id":1,"code":"incidents.view","name":"Ver incidencias","description":"","module":"incidents"},{"id":2,"code":"incidents.create","name":"Crear incidencias","description":"","module":"incidents"},{"id":3,"code":"incidents.edit","name":"Editar incidencias","description":"","module":"incidents"},{"id":5,"code":"incidents.assign","name":"Asignar incidencias","description":"","module":"incidents"},{"id":6,"code":"incidents.close","name":"Cerrar incidencias","description":"","module":"incidents"},{"id":7,"code":"incidents.reopen","name":"Reabrir incidencias","description":"","module":"incidents"},{"id":8,"code":"comments.create","name":"Crear comentarios","description":"","module":"comments"},{"id":9,"code":"comments.internal","name":"Crear comentarios internos","description":"","module":"comments"},{"id":10,"code":"users.view","name":"Ver usuarios","description":"","module":"users"},{"id":15,"code":"catalogs.manage","name":"Gestionar cat\u00e1logos","description":"","module":"catalogs"},{"id":16,"code":"reportes.ver","name":"Ver reportes","description":"","module":"reportes"},{"id":17,"code":"reportes.exportar","name":"Exportar reportes","description":"","module":"reportes"}]}]}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/catalogs/categories
+    metadata:
+      custom: []
+      groupName: 'Categorías y subcategorías'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar categorías.'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data":[{"id":3,"name":"Alumbrado P\u00fablico","description":"Luminarias, postes y cableado el\u00e9ctrico p\u00fablico","icon":"fa-lightbulb","color":"#F59E0B","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":12,"category_id":3,"name":"Cable ca\u00eddo","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":10,"category_id":3,"name":"Luminaria apagada","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":11,"category_id":3,"name":"Poste da\u00f1ado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":13,"category_id":3,"name":"Zona sin iluminaci\u00f3n","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]},{"id":4,"name":"Espacios P\u00fablicos","description":"Parques, plazas, \u00e1reas verdes y mobiliario urbano","icon":"fa-tree","color":"#22C55E","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":16,"category_id":4,"name":"Juegos infantiles rotos","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":15,"category_id":4,"name":"Mobiliario da\u00f1ado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":14,"category_id":4,"name":"Parque descuidado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":17,"category_id":4,"name":"\u00c1rea verde sin mantenimiento","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]},{"id":5,"name":"Recolecci\u00f3n de Residuos","description":"Basura, residuos y limpieza urbana","icon":"fa-trash","color":"#A855F7","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":18,"category_id":5,"name":"Basura acumulada","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":19,"category_id":5,"name":"Contenedor lleno","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":21,"category_id":5,"name":"Falta de recolecci\u00f3n","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":20,"category_id":5,"name":"Residuos peligrosos","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]},{"id":6,"name":"Seguridad","description":"Situaciones que afectan la seguridad ciudadana","icon":"fa-shield-halved","color":"#EF4444","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":24,"category_id":6,"name":"Obstrucci\u00f3n de v\u00eda","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":22,"category_id":6,"name":"Vandalismo","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":23,"category_id":6,"name":"Zona insegura","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]},{"id":2,"name":"Servicios P\u00fablicos","description":"Agua potable, alcantarillado y drenaje","icon":"fa-faucet-drip","color":"#0EA5E9","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":7,"category_id":2,"name":"Alcantarilla tapada","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":9,"category_id":2,"name":"Drenaje colapsado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":8,"category_id":2,"name":"Falta de agua","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":6,"category_id":2,"name":"Fuga de agua","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]},{"id":1,"name":"Vialidad","description":"Problemas relacionados con calles, carreteras y v\u00edas p\u00fablicas","icon":"fa-road","color":"#6366F1","is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z","subcategories":[{"id":1,"category_id":1,"name":"Bache","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":4,"category_id":1,"name":"Hundimiento","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":5,"category_id":1,"name":"Pavimento deteriorado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":2,"category_id":1,"name":"Sem\u00e1foro da\u00f1ado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":3,"category_id":1,"name":"Se\u00f1alizaci\u00f3n vial","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]}]}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/catalogs/categories/{categoria}/subcategories'
+    metadata:
+      custom: []
+      groupName: 'Categorías y subcategorías'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar subcategorías.'
+      description: 'Devuelve las subcategorías de una categoría específica.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      categoria:
+        custom: []
+        name: categoria
+        description: 'El ID de la categoría.'
+        required: true
+        example: 3
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      categoria: 3
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data":[{"id":12,"category_id":3,"name":"Cable ca\u00eddo","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":10,"category_id":3,"name":"Luminaria apagada","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":11,"category_id":3,"name":"Poste da\u00f1ado","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":13,"category_id":3,"name":"Zona sin iluminaci\u00f3n","description":null,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/catalogs/priorities
+    metadata:
+      custom: []
+      groupName: 'Categorías y subcategorías'
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Listar prioridades.'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data":[{"id":1,"name":"Cr\u00edtica","level":1,"color":"#DC2626","sla_hours":8,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":2,"name":"Alta","level":2,"color":"#F97316","sla_hours":24,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":3,"name":"Media","level":3,"color":"#EAB308","sla_hours":72,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"},{"id":4,"name":"Baja","level":4,"color":"#22C55E","sla_hours":168,"is_active":true,"created_at":"2026-06-22T08:03:49.000000Z","updated_at":"2026-06-22T08:03:49.000000Z"}]}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null

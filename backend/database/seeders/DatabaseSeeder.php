@@ -51,8 +51,17 @@ class DatabaseSeeder extends Seeder
         // Asignar rol de administrador
         $rolAdmin = Role::where('code', 'ADMIN')->first();
         if ($rolAdmin) {
-            $admin->roles()->syncWithoutDetaching([$rolAdmin->id]);
+            $admin->roles()->sync([
+                $rolAdmin->id => [
+                    'assigned_at' => now(),
+                ],
+            ]);
         }
+
+        // 4. Datos demo para desarrollo y pruebas manuales.
+        $this->call(DemoUserSeeder::class);
+        $this->call(DemoIncidentSeeder::class);
+        $this->call(DemoNotificationSeeder::class);
     }
 }
 
