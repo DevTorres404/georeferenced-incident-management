@@ -32,7 +32,7 @@ class WelcomeEmailNotification extends Notification
         $dashboardUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/');
 
         return (new MailMessage)
-            ->subject(Lang::get('¡Bienvenido a GIC!'))
+            ->subject(Lang::get('Bienvenido a GIC'))
             ->view('emails.welcome-email', [
                 'url' => $dashboardUrl,
                 'notifiable' => $notifiable

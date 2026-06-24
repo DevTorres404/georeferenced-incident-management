@@ -9,11 +9,13 @@ final class AuthActionResultData implements JsonSerializable
 {
     public function __construct(
         public readonly string $message,
-        public readonly AuthUser $user,
+        public readonly ?AuthUser $user = null,
         public readonly ?SessionTokenData $session = null,
         public readonly ?bool $emailVerified = null,
         public readonly ?bool $verificationSent = null,
-        public readonly ?string $verificationError = null
+        public readonly ?string $verificationError = null,
+        public readonly bool $requires2fa = false,
+        public readonly ?string $twoFactorToken = null
     ) {
     }
 
@@ -21,8 +23,16 @@ final class AuthActionResultData implements JsonSerializable
     {
         $payload = [
             'message' => $this->message,
-            'user' => $this->user,
         ];
+
+        if ($this->user) {
+            $payload['user'] = $this->user;
+        }
+
+        if ($this->requires2fa) {
+            $payload['requires_2fa'] = true;
+            $payload['two_factor_token'] = $this->twoFactorToken;
+        }
 
         if ($this->session) {
             $payload['access_token'] = $this->session->token;

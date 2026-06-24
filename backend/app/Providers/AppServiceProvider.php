@@ -17,7 +17,9 @@ use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentRepository;
 use App\Incidents\Infrastructure\Storage\LaravelFileStorageAdapter;
 use App\Shared\Application\Ports\FileStoragePort;
+use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
 use App\Users\Domain\Repositories\UserRepositoryInterface as ModuleUserRepositoryInterface;
+use App\Users\Infrastructure\Persistence\Repositories\EloquentAccessControlRepository;
 use App\Users\Infrastructure\Persistence\Repositories\EloquentUserRepository as ModuleEloquentUserRepository;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
@@ -37,10 +39,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IncidentRepositoryInterface::class, EloquentIncidentRepository::class);
         $this->app->bind(FileStoragePort::class, LaravelFileStorageAdapter::class);
         $this->app->bind(ModuleUserRepositoryInterface::class, ModuleEloquentUserRepository::class);
+        $this->app->bind(AccessControlRepositoryInterface::class, EloquentAccessControlRepository::class);
         $this->app->bind(\App\Auth\Application\Ports\PasswordHasherPort::class, \App\Auth\Infrastructure\Services\LaravelPasswordHasherAdapter::class);
         $this->app->bind(\App\Auth\Application\Ports\SessionManagerPort::class, \App\Auth\Infrastructure\Services\LaravelSessionManagerAdapter::class);
         $this->app->bind(\App\Auth\Application\Ports\UserNotificationPort::class, \App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter::class);
         $this->app->bind(\App\Shared\Application\Ports\LoggerPort::class, \App\Shared\Infrastructure\Support\LaravelLoggerAdapter::class);
+        $this->app->bind(\App\Auth\Application\Ports\TwoFactorAuthPort::class, \App\Auth\Infrastructure\Services\GoogleTwoFactorAuthAdapter::class);
     }
 
     /**

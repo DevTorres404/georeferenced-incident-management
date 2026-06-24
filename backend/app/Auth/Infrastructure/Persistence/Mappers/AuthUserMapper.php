@@ -42,6 +42,8 @@ final class AuthUserMapper
             isActive: (bool) $user->is_active,
             emailVerifiedAt: $this->toIso8601String($user->email_verified_at),
             lastAccessAt: $this->toIso8601String($user->last_login),
+            twoFactorSecret: $user->two_factor_secret,
+            twoFactorConfirmedAt: $this->toIso8601String($user->two_factor_confirmed_at),
             roleCodes: $roleCodes,
             permissionCodes: $permissionCodes,
             identities: $identities
