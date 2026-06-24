@@ -1,0 +1,74 @@
+name: Asignaciones
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/incidents/{incident_id}/assignments'
+    metadata:
+      custom: []
+      groupName: Asignaciones
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Asignar incidencia.'
+      description: 'Asigna un usuario (agente) a la incidencia para su resolución.'
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      incident_id:
+        custom: []
+        name: incident_id
+        description: 'The ID of the incident.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      incident:
+        custom: []
+        name: incident
+        description: 'El ID de la incidencia.'
+        required: true
+        example: 5
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      incident_id: 1
+      incident: 5
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      user_id:
+        custom: []
+        name: user_id
+        description: 'El ID del usuario a asignar.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      user_id: 2
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
