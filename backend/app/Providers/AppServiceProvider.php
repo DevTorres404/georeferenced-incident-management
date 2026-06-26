@@ -21,6 +21,9 @@ use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
 use App\Users\Domain\Repositories\UserRepositoryInterface as ModuleUserRepositoryInterface;
 use App\Users\Infrastructure\Persistence\Repositories\EloquentAccessControlRepository;
 use App\Users\Infrastructure\Persistence\Repositories\EloquentUserRepository as ModuleEloquentUserRepository;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 
@@ -37,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CatalogRepositoryInterface::class, EloquentCatalogRepository::class);
         $this->app->bind(AuditRepositoryInterface::class, EloquentAuditRepository::class);
         $this->app->bind(IncidentRepositoryInterface::class, EloquentIncidentRepository::class);
+        $this->app->bind(\App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface::class, \App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentMetricsRepository::class);
         $this->app->bind(FileStoragePort::class, LaravelFileStorageAdapter::class);
         $this->app->bind(ModuleUserRepositoryInterface::class, ModuleEloquentUserRepository::class);
         $this->app->bind(AccessControlRepositoryInterface::class, EloquentAccessControlRepository::class);
@@ -53,6 +57,41 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+        \Illuminate\Database\Eloquent\Model::preventLazyLoading(! app()->isProduction());
+
+        RateLimiter::for('login', function (Request $request) {
+            $email = (string) $request->input('email');
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perMinute(5)->by($email . '|' . $request->ip()),
+            ];
+        });
+
+        RateLimiter::for('register', function (Request $request) {
+            $email = (string) $request->input('email');
+            return [
+                Limit::perHour(3)->by($request->ip()),
+                Limit::perHour(3)->by($email ?: $request->ip()),
+            ];
+        });
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('catalogs.public', function (Request $request) {
+            return Limit::perMinute(120)->by($request->ip());
+        });
+
+        RateLimiter::for('incidents.store', function (Request $request) {
+            // Nota técnica: El control de duplicados por ubicación/categoría/tiempo
+            // debe manejarse como regla de aplicación (Dominio/UseCase), no como rate limit HTTP.
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('uploads', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }
 

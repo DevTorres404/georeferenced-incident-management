@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Application;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
@@ -29,6 +30,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (AuthenticationException $exception, Request $request) {
             if ($request->is('api/*')) {
                 return response()->json(['message' => 'No autenticado.'], 401);
+            }
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.',
+                    'code' => 'RATE_LIMIT_EXCEEDED'
+                ], 429);
             }
         });
     })->create();

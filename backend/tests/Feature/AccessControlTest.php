@@ -55,7 +55,7 @@ class AccessControlTest extends TestCase
         $role = Role::where('code', 'OPERADOR')->firstOrFail();
 
         $response = $this->withToken($admin['token'])
-            ->postJson("/api/users/{$user->id}/roles", [
+            ->putJson("/api/users/{$user->id}/roles", [
                 'roles' => [$role->code]
             ]);
 

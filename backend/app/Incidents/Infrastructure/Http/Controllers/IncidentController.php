@@ -317,7 +317,7 @@ class IncidentController extends ApiController
         }
 
         $data = $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov,zip'],
         ]);
 
         $uploadedFile = $data['file'];
