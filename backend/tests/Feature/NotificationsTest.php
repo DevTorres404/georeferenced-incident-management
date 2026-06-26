@@ -103,7 +103,7 @@ class NotificationsTest extends TestCase
             'is_read' => false,
         ]);
 
-        $response = $this->actingAs($user)->postJson("/api/notifications/{$notification->id}/read");
+        $response = $this->actingAs($user)->patchJson("/api/notifications/{$notification->id}/read");
 
         $response->assertOk()
             ->assertJsonPath('data.is_read', true);
@@ -124,7 +124,7 @@ class NotificationsTest extends TestCase
             'is_read' => false,
         ]);
 
-        $response = $this->actingAs($user1)->postJson("/api/notifications/{$notification->id}/read");
+        $response = $this->actingAs($user1)->patchJson("/api/notifications/{$notification->id}/read");
 
         $response->assertForbidden();
     }
@@ -149,7 +149,7 @@ class NotificationsTest extends TestCase
             'is_read' => false,
         ]);
 
-        $response = $this->actingAs($user)->postJson('/api/notifications/mark-all-read');
+        $response = $this->actingAs($user)->patchJson('/api/notifications/mark-all-read');
 
         $response->assertOk()
             ->assertJsonPath('message', 'Notificaciones marcadas como leídas.');

@@ -10,6 +10,7 @@
         "knuckleswtf/scribe": "*",
         "kreait/laravel-firebase": "^7.2",
         "laravel/framework": "^13.8",
+        "laravel/octane": "^2.17",
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
         "pragmarx/google2fa": "^9.0",

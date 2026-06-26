@@ -114,7 +114,7 @@ class IncidentsTest extends TestCase
         $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
 
         $this->actingAsUser($admin['user'])
-            ->postJson("/api/incidents/{$incidentId}/state", [
+            ->patchJson("/api/incidents/{$incidentId}/state", [
                 'state_id' => $reviewState->id,
                 'comment' => 'Validado por supervisor.',
             ])->assertOk()
@@ -135,7 +135,7 @@ class IncidentsTest extends TestCase
         $notificationId = $citizenNotifications->json('data.0.id');
 
         $this->actingAsUser($citizen['user'])
-            ->postJson("/api/notifications/{$notificationId}/read")
+            ->patchJson("/api/notifications/{$notificationId}/read")
             ->assertOk()
             ->assertJsonPath('data.is_read', true);
 
