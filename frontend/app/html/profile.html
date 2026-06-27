@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi perfil | SGI</title>
+  <meta name="description" content="Perfil de usuario del Sistema Web de Gestión de Incidencias">
+
+  <!-- Google Font -->
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+  <!-- OverlayScrollbars -->
+  <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="../css/app.css?v=23">
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+
+    <div id="alertaGlobal" role="alert"></div>
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <a href="dashboard.html" class="brand-link sgi-brand-link">
+        <img src="../img/SGI_LOGO.png" alt="Logo SGI" class="brand-image sgi-brand-logo">
+        <span class="brand-text sgi-brand-text">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
+
+    <!-- Contenido -->
+    <div class="content-wrapper">
+      <!-- Pantalla de carga nativa -->
+      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+        <div class="loader-orbit" aria-hidden="true">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
+      </div>
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0 text-main font-weight-bold">
+                <i class="fas fa-user-circle text-primary mr-2"></i>Mi Perfil
+              </h1>
+              <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Administra tu información personal, seguridad y
+                preferencias de cuenta.</p>
+            </div>
+            <div class="col-sm-6 d-none d-sm-block">
+              <!-- Breadcrumbs removidos -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="container-fluid">
+          <div class="row">
+
+            <!-- DATOS PERSONALES -->
+            <div class="col-md-4">
+              <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom">
+                  <h3 class="card-title font-weight-bold text-main">
+                    <i class="fas fa-id-card mr-2 text-primary"></i>Datos Personales
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="text-center mb-4">
+                    <div
+                      class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm"
+                      style="width: 80px; height: 80px; font-size: 32px; font-weight: bold;" id="profileAvatar">
+                      U
+                    </div>
+                    <h5 class="mt-3 font-weight-bold text-main" id="profileFullName">Cargando...</h5>
+                    <p class="text-muted mb-0" id="profileEmail">cargando@ejemplo.com</p>
+                  </div>
+
+                  <ul class="list-group list-group-unbordered mb-3">
+                    <li class="list-group-item bg-transparent">
+                      <b>Nombre(s)</b> <a class="float-right text-dark" id="profileFirstName">-</a>
+                    </li>
+                    <li class="list-group-item bg-transparent">
+                      <b>Apellidos</b> <a class="float-right text-dark" id="profileLastName">-</a>
+                    </li>
+                    <li class="list-group-item bg-transparent border-bottom-0">
+                      <b>Estado de cuenta</b> <a class="float-right text-success font-weight-bold"
+                        id="profileStatus">Activo</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEGURIDAD Y ROLES -->
+            <div class="col-md-8">
+              <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom">
+                  <h3 class="card-title font-weight-bold text-main">
+                    <i class="fas fa-shield-alt mr-2 text-primary"></i>Seguridad de la Cuenta
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <h5 class="font-weight-bold">Autenticación en 2 Pasos (2FA)</h5>
+                      <p class="text-muted text-sm">Añade una capa extra de seguridad solicitando un código temporal en
+                        tu dispositivo al iniciar sesión.</p>
+                      <div id="securityContainer">
+                        <!-- Contenido 2FA dinámico -->
+                      </div>
+                    </div>
+                    <div class="col-md-6 mb-3 border-left pl-4" style="border-color: #e2e8f0 !important;">
+                      <h5 class="font-weight-bold">Seguridad de Acceso</h5>
+                      <p class="text-muted text-sm mb-2">Para cambiar tu contraseña, por favor contacta al administrador
+                        del sistema.</p>
+                      <p class="text-sm mb-1"><i class="fas fa-info-circle text-info mr-1"></i> Contraseña actual
+                        administrada de forma segura.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white border-bottom">
+                  <h3 class="card-title font-weight-bold text-main">
+                    <i class="fas fa-key mr-2 text-primary"></i>Rol y Permisos
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <p class="text-muted text-sm">Rol asignado a tu cuenta que define las acciones que puedes realizar en
+                    el sistema.</p>
+                  <div id="rolesListContainer">
+                    <i class="fas fa-spinner fa-spin mr-2"></i>Cargando rol...
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="main-footer text-sm">
+      <div class="float-right d-none d-sm-inline">
+        Versión 1.0.0
+      </div>
+      <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
+    </footer>
+  </div>
+
+  <!-- jQuery -->
+  <script src="../../plugins/jquery/jquery.min.js"></script>
+  <!-- Bootstrap 4 -->
+  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- AdminLTE App -->
+  <script src="../../dist/js/adminlte.min.js"></script>
+
+  <!-- Scripts propios del sistema -->
+  <script src="../js/presentation/layout.js?v=17"></script>
+  <script type="module" src="../js/presentation/profile.js?v=17"></script>
+</body>
+
+</html>

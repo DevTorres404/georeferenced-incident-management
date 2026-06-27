@@ -3,6 +3,7 @@
 namespace App\Auth\Infrastructure\Http\Controllers;
 
 use App\Auth\Application\UseCases\ConfirmTwoFactorUseCase;
+use App\Auth\Application\UseCases\DisableTwoFactorUseCase;
 use App\Auth\Application\UseCases\EnableTwoFactorUseCase;
 use App\Auth\Application\UseCases\VerifyTwoFactorLoginUseCase;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +14,8 @@ final class TwoFactorAuthController
     public function __construct(
         private EnableTwoFactorUseCase $enableTwoFactor,
         private ConfirmTwoFactorUseCase $confirmTwoFactor,
-        private VerifyTwoFactorLoginUseCase $verifyLogin
+        private VerifyTwoFactorLoginUseCase $verifyLogin,
+        private DisableTwoFactorUseCase $disableTwoFactor
     ) {
     }
 
@@ -23,6 +25,16 @@ final class TwoFactorAuthController
         $result = $this->enableTwoFactor->execute($userId);
 
         return response()->json($result);
+    }
+
+    public function disable(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $this->disableTwoFactor->execute($userId);
+
+        return response()->json([
+            'message' => 'Autenticación de dos factores deshabilitada con éxito.',
+        ]);
     }
 
     public function confirm(Request $request): JsonResponse

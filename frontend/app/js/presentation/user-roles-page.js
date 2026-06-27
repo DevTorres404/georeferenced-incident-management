@@ -1,5 +1,9 @@
 import { getUsersAndRoles, assignUserRole } from '../application/access-control-service.js?v=15';
 import { hidePageLoading, showPageLoading, escapeHtml } from './incidents-ui.js?v=16';
+import { handleBackendErrors, setFormAlert } from './validation-utils.js?v=1';
+
+const CITIZEN_ROLE_CODE = 'CIUDADANO';
+const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
 
 document.addEventListener('DOMContentLoaded', initUserRolesPage);
 
@@ -10,7 +14,12 @@ async function initUserRolesPage() {
 
   const state = {
     users: [],
-    roles: []
+    roles: [],
+    filteredUsers: [],
+    page: 1,
+    perPage: 10,
+    searchTerm: '',
+    roleGroup: 'all'
   };
 
   bindActions(state);
@@ -21,9 +30,9 @@ async function initUserRolesPage() {
     const data = await getUsersAndRoles();
     state.users = data.users || [];
     state.roles = data.roles || [];
-    renderUsersTable(state.users, state.roles);
+    applyFilters(state);
   } catch (error) {
-    showAlert(error.message || 'Error al cargar usuarios y roles', 'danger');
+    handleBackendErrors(error, null, document.getElementById('access-alert'));
   } finally {
     window.clearTimeout(loadingFallback);
     hidePageLoading();
@@ -34,12 +43,48 @@ function bindActions(state) {
   const searchInput = document.getElementById('user-search');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = state.users.filter(u => 
-        (u.name && u.name.toLowerCase().includes(term)) || 
-        (u.email && u.email.toLowerCase().includes(term))
-      );
-      renderUsersTable(filtered, state.roles);
+      state.searchTerm = e.target.value.toLowerCase().trim();
+      state.page = 1;
+      applyFilters(state);
+    });
+  }
+
+  const perPageSelect = document.getElementById('users-per-page');
+  if (perPageSelect) {
+    perPageSelect.addEventListener('change', (e) => {
+      state.perPage = Number(e.target.value) || 10;
+      state.page = 1;
+      renderPaginatedUsers(state);
+    });
+  }
+
+  document.getElementById('clear-user-search')?.addEventListener('click', () => {
+    state.searchTerm = '';
+    state.roleGroup = 'all';
+    state.page = 1;
+    if (searchInput) searchInput.value = '';
+    setActiveRoleGroupButton('all');
+    applyFilters(state);
+  });
+
+  document.querySelectorAll('[data-role-group]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.roleGroup = button.dataset.roleGroup || 'all';
+      state.page = 1;
+      setActiveRoleGroupButton(state.roleGroup);
+      applyFilters(state);
+    });
+  });
+
+  const pagination = document.getElementById('users-pagination');
+  if (pagination) {
+    pagination.addEventListener('click', (e) => {
+      const button = e.target.closest('[data-page]');
+      if (!button || button.classList.contains('disabled')) return;
+      const nextPage = Number(button.dataset.page);
+      if (!Number.isFinite(nextPage) || nextPage === state.page) return;
+      state.page = nextPage;
+      renderPaginatedUsers(state);
     });
   }
 
@@ -54,7 +99,7 @@ function bindActions(state) {
         const roleCode = select.value;
 
         if (!roleCode) {
-          showAlert('Selecciona un rol válido', 'warning');
+          setFormAlert(document.getElementById('access-alert'), 'Selecciona un rol válido', 'warning');
           return;
         }
 
@@ -76,9 +121,9 @@ function bindActions(state) {
               roles: selectedRole ? [selectedRole] : updatedUser.roles || [],
             });
           }
-          renderUsersTable(state.users, state.roles);
+          applyFilters(state, { keepPage: true });
         } catch (error) {
-          showAlert(error.message || 'No se pudo asignar el rol', 'danger');
+          handleBackendErrors(error, null, document.getElementById('access-alert'));
         } finally {
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-check"></i>';
@@ -88,22 +133,67 @@ function bindActions(state) {
   }
 }
 
+function applyFilters(state, options = {}) {
+  const term = state.searchTerm;
+  state.filteredUsers = state.users.filter((user) => {
+    if (!userMatchesRoleGroup(user, state.roleGroup)) {
+      return false;
+    }
+
+    if (!term) {
+      return true;
+    }
+
+    const values = [
+      user.name,
+      user.username,
+      user.email,
+      user.role,
+      user.role_name,
+      getRoleGroupLabel(user.role),
+    ];
+    return values.some((value) => String(value || '').toLowerCase().includes(term));
+  });
+
+  if (!options.keepPage) {
+    state.page = 1;
+  }
+  renderPaginatedUsers(state);
+}
+
+function renderPaginatedUsers(state) {
+  const total = state.filteredUsers.length;
+  const totalPages = Math.max(Math.ceil(total / state.perPage), 1);
+  state.page = Math.min(Math.max(state.page, 1), totalPages);
+
+  const startIndex = (state.page - 1) * state.perPage;
+  const pageUsers = state.filteredUsers.slice(startIndex, startIndex + state.perPage);
+
+  renderUsersTable(pageUsers, state.roles);
+  renderPagination(state, total, totalPages, startIndex, pageUsers.length);
+  renderTotalBadge(state.users.length, total);
+  renderRoleCounters(state.users);
+}
+
 function renderUsersTable(users, roles) {
   const tbody = document.getElementById('user-role-table');
   if (!tbody) return;
 
   if (users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">No se encontraron usuarios.</td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="text-center text-muted py-4">
+          <i class="fas fa-search d-block mb-2"></i>No se encontraron usuarios.
+        </td>
+      </tr>`;
     return;
   }
 
   let html = '';
   users.forEach(user => {
-    let roleOptions = roles.map(r => {
-      const selected = user.role === r.code ? 'selected' : '';
-      return `<option value="${escapeHtml(r.code)}" ${selected}>${escapeHtml(r.name)}</option>`;
-    }).join('');
+    const roleOptions = buildRoleOptions(roles, user.role);
     const userName = user.name || user.username || user.email || 'Usuario';
+    const roleGroup = getRoleGroupLabel(user.role);
 
     html += `
       <tr>
@@ -117,13 +207,16 @@ function renderUsersTable(users, roles) {
             </div>
           </div>
         </td>
-        <td>${escapeHtml(user.email)}</td>
         <td>
-          <span class="badge badge-info">${escapeHtml(user.role_name || user.role || 'Sin Rol')}</span>
+          <span class="text-muted">${escapeHtml(user.email || '-')}</span>
+        </td>
+        <td>
+          <span class="badge badge-info">${escapeHtml(user.role_name || user.role || 'Sin rol')}</span>
+          <small class="d-block text-muted mt-1">${escapeHtml(roleGroup)}</small>
         </td>
         <td>
           <select class="form-control form-control-sm" id="role-select-${user.id}">
-            <option value="">-- Seleccionar --</option>
+            <option value="">Seleccionar rol</option>
             ${roleOptions}
           </select>
         </td>
@@ -139,11 +232,149 @@ function renderUsersTable(users, roles) {
   tbody.innerHTML = html;
 }
 
-function showAlert(message, type) {
-  const alertEl = document.getElementById('access-alert');
-  if (!alertEl) return;
-  alertEl.className = `alert alert-${type}`;
-  alertEl.textContent = message;
-  alertEl.classList.remove('d-none');
-  setTimeout(() => alertEl.classList.add('d-none'), 5000);
+function buildRoleOptions(roles, currentRoleCode) {
+  const groups = roles.reduce((acc, role) => {
+    const group = getRoleGroup(role.code);
+    acc[group].push(role);
+    return acc;
+  }, { executives: [], citizens: [], others: [] });
+
+  return [
+    buildOptionGroup('Roles ejecutivos', groups.executives, currentRoleCode),
+    buildOptionGroup('Ciudadanos', groups.citizens, currentRoleCode),
+    buildOptionGroup('Otros roles', groups.others, currentRoleCode),
+  ].filter(Boolean).join('');
+}
+
+function buildOptionGroup(label, roles, currentRoleCode) {
+  if (!roles.length) return '';
+
+  const options = roles.map((role) => {
+    const selected = normalizeRoleCode(currentRoleCode) === normalizeRoleCode(role.code) ? 'selected' : '';
+    return `<option value="${escapeHtml(role.code)}" ${selected}>${escapeHtml(role.name)}</option>`;
+  }).join('');
+
+  return `<optgroup label="${escapeHtml(label)}">${options}</optgroup>`;
+}
+
+function setActiveRoleGroupButton(group) {
+  document.querySelectorAll('[data-role-group]').forEach((button) => {
+    const isActive = button.dataset.roleGroup === group;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
+function userMatchesRoleGroup(user, group) {
+  if (group === 'citizens') {
+    return getRoleGroup(user.role) === 'citizens';
+  }
+
+  if (group === 'executives') {
+    return getRoleGroup(user.role) === 'executives';
+  }
+
+  return true;
+}
+
+function getRoleGroup(roleCode) {
+  const normalizedCode = normalizeRoleCode(roleCode);
+  if (normalizedCode === CITIZEN_ROLE_CODE) {
+    return 'citizens';
+  }
+  if (EXECUTIVE_ROLE_CODES.has(normalizedCode)) {
+    return 'executives';
+  }
+  return 'others';
+}
+
+function getRoleGroupLabel(roleCode) {
+  const group = getRoleGroup(roleCode);
+  if (group === 'citizens') {
+    return 'Ciudadanos';
+  }
+  if (group === 'executives') {
+    return 'Roles ejecutivos';
+  }
+  return 'Otros roles';
+}
+
+function normalizeRoleCode(roleCode) {
+  return String(roleCode || '').trim().toUpperCase();
+}
+
+function renderRoleCounters(users) {
+  const citizens = users.filter((user) => getRoleGroup(user.role) === 'citizens').length;
+  const executives = users.filter((user) => getRoleGroup(user.role) === 'executives').length;
+
+  const citizenBadge = document.getElementById('citizen-count-badge');
+  if (citizenBadge) {
+    citizenBadge.textContent = String(citizens);
+  }
+
+  const executiveBadge = document.getElementById('executive-count-badge');
+  if (executiveBadge) {
+    executiveBadge.textContent = String(executives);
+  }
+}
+
+function renderPagination(state, total, totalPages, startIndex, count) {
+  const summary = document.getElementById('users-pagination-summary');
+  if (summary) {
+    if (total === 0) {
+      summary.textContent = 'Sin usuarios para mostrar.';
+    } else {
+      summary.textContent = `Mostrando ${startIndex + 1}-${startIndex + count} de ${total} usuarios`;
+    }
+  }
+
+  const pagination = document.getElementById('users-pagination');
+  if (!pagination) return;
+
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+
+  const pages = buildPageList(state.page, totalPages);
+  pagination.innerHTML = `
+    <li class="page-item ${state.page === 1 ? 'disabled' : ''}">
+      <button type="button" class="page-link" data-page="${state.page - 1}" aria-label="Anterior">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    </li>
+    ${pages.map((page) => page === 'ellipsis'
+      ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
+      : `<li class="page-item ${page === state.page ? 'active' : ''}">
+          <button type="button" class="page-link" data-page="${page}">${page}</button>
+        </li>`).join('')}
+    <li class="page-item ${state.page === totalPages ? 'disabled' : ''}">
+      <button type="button" class="page-link" data-page="${state.page + 1}" aria-label="Siguiente">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </li>
+  `;
+}
+
+function buildPageList(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const pages = [1];
+  const start = Math.max(currentPage - 1, 2);
+  const end = Math.min(currentPage + 1, totalPages - 1);
+
+  if (start > 2) pages.push('ellipsis');
+  for (let page = start; page <= end; page += 1) pages.push(page);
+  if (end < totalPages - 1) pages.push('ellipsis');
+  pages.push(totalPages);
+
+  return pages;
+}
+
+function renderTotalBadge(totalUsers, filteredUsers) {
+  const badge = document.getElementById('user-total-badge');
+  if (!badge) return;
+  badge.textContent = String(totalUsers);
 }

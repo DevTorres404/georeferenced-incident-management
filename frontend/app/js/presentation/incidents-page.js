@@ -89,6 +89,11 @@ function renderCounters(incidents) {
 }
 
 function renderTable(state) {
+  const tableEl = document.getElementById('tablaIncidencias');
+  if (tableEl) {
+    tableEl.style.opacity = '0';
+  }
+
   destroyTable(state);
 
   const tbody = document.getElementById('tablaBody');
@@ -98,9 +103,10 @@ function renderTable(state) {
     tbody.innerHTML = `
       <tr>
         <td colspan="8" class="text-center text-muted py-4">
-          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>No hay incidencias que mostrar.
+          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>No hay incidencias disponibles.
         </td>
       </tr>`;
+    if (tableEl) tableEl.style.opacity = '1';
     return;
   }
 
@@ -132,19 +138,61 @@ function renderTable(state) {
       </tr>`;
   }).join('');
 
-  tbody.querySelectorAll('.js-delete-incident').forEach((button) => {
-    button.addEventListener('click', () => openDeleteModal(state, button.dataset.id, button.dataset.code));
-  });
+  // Use event delegation for delete buttons to work across all DataTables pages
+  tbody.onclick = (e) => {
+    const btn = e.target.closest('.js-delete-incident');
+    if (btn) {
+      openDeleteModal(state, btn.dataset.id, btn.dataset.code);
+    }
+  };
 
   if (window.jQuery?.fn?.DataTable) {
     state.dataTable = window.jQuery('#tablaIncidencias').DataTable({
       language: {
-        url: '//cdn.datatables.net/plug-ins/1.10.22/i18n/Spanish.json',
+        sProcessing: "Procesando...",
+        sLengthMenu: "Mostrar _MENU_ registros",
+        sZeroRecords: "No se encontraron resultados",
+        sEmptyTable: `
+          <div class="text-center py-5">
+            <i class="fas fa-folder-open text-muted mb-3" style="font-size: 3.5rem; opacity: 0.5;"></i>
+            <h4 class="text-main font-weight-bold">No hay incidencias disponibles</h4>
+            <p class="text-muted">Cuando se creen incidencias, aparecerán aquí con su estado, prioridad y fecha.</p>
+            <a href="incident-create.html" class="btn btn-primary mt-2">
+              <i class="fas fa-plus mr-1"></i>Crear nueva incidencia
+            </a>
+          </div>
+        `,
+        sInfo: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+        sInfoEmpty: "Mostrando 0 a 0 de 0 registros",
+        sInfoFiltered: "(filtrado de un total de _MAX_ registros)",
+        sInfoPostFix: "",
+        sSearch: "Buscar:",
+        sUrl: "",
+        sInfoThousands: ",",
+        sLoadingRecords: "Cargando...",
+        oPaginate: {
+          sFirst: "Primero",
+          sLast: "Último",
+          sNext: "Siguiente",
+          sPrevious: "Anterior"
+        },
+        oAria: {
+          sSortAscending: ": Activar para ordenar la columna de manera ascendente",
+          sSortDescending: ": Activar para ordenar la columna de manera descendente"
+        }
       },
       pageLength: 5,
-      lengthMenu: [[5, 10, 25, -1], [5, 10, 25, 'Todos']],
+      lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
       order: [[6, 'desc']],
+      initComplete: function() {
+        if (tableEl) {
+          tableEl.style.transition = 'opacity 0.25s ease';
+          tableEl.style.opacity = '1';
+        }
+      }
     });
+  } else if (tableEl) {
+    tableEl.style.opacity = '1';
   }
 }
 

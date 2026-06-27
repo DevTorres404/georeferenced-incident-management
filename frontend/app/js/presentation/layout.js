@@ -112,6 +112,9 @@ function formatUserRoles(user) {
   const roles = Array.isArray(user?.roles) ? user.roles.map(formatRoleLabel).filter(Boolean) : [];
   return roles.length ? roles.join(', ') : 'Sin rol asignado';
 }
+function getAvailableMenus() {
+  return window.SGINavigationStore.getAuthorizedMenu();
+}
 function getDefaultPageForSession() {
   if (hasRole('CIUDADANO') && hasPermission('incidents.create')) {
     return 'incident-create.html';
@@ -440,182 +443,17 @@ function showGlobalAlert(message, type = 'success') {
 }
 // Exposición global para que backend-client.js y otros módulos externos puedan usarla
 window.showGlobalAlert = showGlobalAlert;
-function renderProfileModal(sessionUser) {
-  const existing = document.getElementById('profileModal');
-  if (existing) existing.remove();
-  const firstName = sessionUser.nombre || sessionUser.first_name || '';
-  const lastName = sessionUser.apellido || sessionUser.last_name || '';
-  const username = sessionUser.username || '';
-  const email = sessionUser.email || '';
-  const roles = formatUserRoles(sessionUser);
-  const has2FA = sessionUser.two_factor_enabled;
-  const require2FA = hasRole('ADMIN') && !has2FA;
-  const modalHtml = `
-    <div class="modal fade" id="profileModal" tabindex="-1" role="dialog" ${require2FA ? 'data-backdrop="static" data-keyboard="false"' : ''}>
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title"><i class="fas fa-user-circle mr-2"></i>Mi Perfil</h5>
-            ${require2FA ? '' : '<button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>'}
-          </div>
-          <div class="modal-body p-0">
-            ${require2FA ? `
-              <div class="alert alert-warning m-3">
-                <i class="fas fa-exclamation-triangle mr-2"></i>Por tu nivel de acceso, es obligatorio configurar la Autenticación en 2 Pasos para continuar.
-              </div>
-            ` : ''}
-            <ul class="nav nav-tabs px-3 pt-3" id="profileTabs" role="tablist">
-              <li class="nav-item">
-                <a class="nav-link active" id="datos-tab" data-toggle="tab" href="#datos" role="tab">Datos Personales</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" id="seguridad-tab" data-toggle="tab" href="#seguridad" role="tab">Seguridad</a>
-              </li>
-            </ul>
-            <div class="tab-content p-3" id="profileTabsContent">
-              <div class="tab-pane fade show active" id="datos" role="tabpanel">
-                <form id="profileForm">
-                  <div class="form-group">
-                    <label>Nombre(s)</label>
-                    <input type="text" class="form-control" value="${escapeHtml(firstName)}" readonly>
-                  </div>
-                  <div class="form-group">
-                    <label>Apellidos</label>
-                    <input type="text" class="form-control" value="${escapeHtml(lastName)}" readonly>
-                  </div>
-                  <div class="form-group">
-                    <label>Correo Electrónico</label>
-                    <input type="email" class="form-control" value="${escapeHtml(email)}" readonly>
-                  </div>
-                  <div class="form-group">
-                    <label>Roles Asignados</label>
-                    <input type="text" class="form-control" value="${escapeHtml(roles)}" readonly>
-                  </div>
-                </form>
-              </div>
-              <div class="tab-pane fade" id="seguridad" role="tabpanel">
-                <div class="text-center" id="securityContainer">
-                  ${has2FA
-      ? `<div class="alert alert-success"><i class="fas fa-shield-alt mr-2"></i>Autenticación en 2 Pasos activa</div>`
-      : `
-                    <p class="text-muted">Protege tu cuenta con verificación de dos pasos usando Google Authenticator u otra app similar.</p>
-                    <div id="tfaStep1">
-                      <button type="button" class="btn btn-primary" id="btnSetup2fa">
-                        <i class="fas fa-qrcode mr-2"></i>Configurar 2FA
-                      </button>
-                    </div>
-                    <div id="tfaStep2" class="d-none mt-3">
-                      <p>Escanea este código QR con tu aplicación autenticadora:</p>
-                      <div id="qrcode-container" class="d-inline-block bg-white p-2 border rounded"></div>
-                      <div class="mt-3 text-left">
-                        <label>Ingresa el código generado:</label>
-                        <input type="text" id="tfaCodeInput" class="form-control form-control-lg text-center" maxlength="6" placeholder="000000">
-                      </div>
-                      <button type="button" class="btn btn-success mt-3" id="btnConfirm2fa">Verificar y Activar</button>
-                    </div>
-                    <div id="tfaAlert" class="mt-3 text-left"></div>
-                  `}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
-  const btnSetup2fa = document.getElementById('btnSetup2fa');
-  const btnConfirm2fa = document.getElementById('btnConfirm2fa');
-  if (btnSetup2fa) btnSetup2fa.addEventListener('click', initSetup2FA);
-  if (btnConfirm2fa) btnConfirm2fa.addEventListener('click', confirmSetup2FA);
-  if (require2FA && window.jQuery) {
-    window.jQuery('#profileModal').modal('show');
-    window.jQuery('#seguridad-tab').tab('show');
-  }
-}
-async function initSetup2FA() {
-  const btn = document.getElementById('btnSetup2fa');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generando QR...';
-  try {
-    const data = await mutateBackend('/auth/2fa/enable', { method: 'POST' });
-    await ensureQrCodeLibrary();
-    document.getElementById('tfaStep1').classList.add('d-none');
-    document.getElementById('tfaStep2').classList.remove('d-none');
-    const qrContainer = document.getElementById('qrcode-container');
-    qrContainer.innerHTML = '';
-    if (window.QRCode) {
-      new QRCode(qrContainer, {
-        text: data.qr_url,
-        width: 200,
-        height: 200
-      });
-    } else {
-      qrContainer.innerHTML = '<span class="text-danger">Error: Librería QR no encontrada.</span>';
-    }
-  } catch (error) {
-    const alert = document.getElementById('tfaAlert');
-    alert.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message || 'Error al generar QR')}</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-qrcode mr-2"></i>Configurar 2FA';
-  }
-}
-function ensureQrCodeLibrary() {
-  if (window.QRCode) return Promise.resolve();
 
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-sgig-qrcode]');
-    if (existing) {
-      existing.addEventListener('load', resolve, { once: true });
-      existing.addEventListener('error', reject, { once: true });
-      return;
-    }
 
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    script.async = true;
-    script.dataset.sgigQrcode = 'true';
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('No se pudo cargar la libreria para generar el codigo QR.'));
-    document.head.appendChild(script);
-  });
-}
-async function confirmSetup2FA() {
-  const btn = document.getElementById('btnConfirm2fa');
-  const code = document.getElementById('tfaCodeInput').value.trim();
-  if (!code || code.length !== 6) {
-    document.getElementById('tfaAlert').innerHTML = `<div class="alert alert-warning">El código debe tener 6 dígitos.</div>`;
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verificando...';
-  try {
-    await mutateBackend('/auth/2fa/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ code })
-    });
-    document.getElementById('tfaAlert').innerHTML = `<div class="alert alert-success">¡Autenticación activada con éxito!</div>`;
-    const user = readSessionUser();
-    if (user) {
-      user.two_factor_enabled = true;
-      localStorage.setItem(AUTH_KEYS.user, JSON.stringify(user));
-    }
-    setTimeout(() => {
-      if (window.jQuery) {
-        window.jQuery('#profileModal').modal('hide');
-      }
-      window.location.reload();
-    }, 1500);
-  } catch (error) {
-    document.getElementById('tfaAlert').innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message || 'Código inválido')}</div>`;
-    btn.disabled = false;
-    btn.innerHTML = 'Verificar y Activar';
-  }
-}
 async function renderLayout(activeId = '') {
   const user = ensureSessionOrRedirect();
   if (!user) return;
+
+  if (hasRole('ADMIN') && !user.two_factor_enabled) {
+    redirectToLogin();
+    return;
+  }
+
   // Block citizen from dashboard/admin routes
   if (hasRole('CIUDADANO') && (activeId === 'dashboard' || activeId === 'user-roles' || activeId === 'role-permissions')) {
     window.location.href = 'incident-create.html';
@@ -636,6 +474,12 @@ async function renderLayout(activeId = '') {
     }
   }
   // Navbar
+  const userFirstName = user.nombre || user.first_name || 'Usuario';
+  const userLastName = user.apellido || user.last_name || '';
+  const userFullName = `${userFirstName} ${userLastName}`.trim();
+  const userInitial = escapeHtml(userFirstName).charAt(0).toUpperCase();
+  const userEmail = user.email || '';
+  const userRole = formatUserRoles(user);
   const navbarHtml = `
     <ul class="navbar-nav">
       <li class="nav-item">
@@ -657,27 +501,27 @@ async function renderLayout(activeId = '') {
         </div>
       </li>
       <li class="nav-item dropdown user-menu">
-        <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">
-          <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 30px; height: 30px; vertical-align: middle;">
-            ${escapeHtml(user.nombre || user.first_name || 'U').charAt(0).toUpperCase()}
-          </div>
-          <span class="d-none d-md-inline ml-1">${escapeHtml(user.nombre || user.first_name || 'Usuario')}</span>
+        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menú de usuario">
+          <span class="sgi-user-avatar-sm">${userInitial}</span>
+          <span class="d-none d-md-inline ml-2 font-weight-semibold">${escapeHtml(userFirstName)}</span>
         </a>
-        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <li class="user-header bg-primary">
-            <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2 shadow-sm" style="width: 70px; height: 70px; font-size: 28px; font-weight: bold;">
-              ${escapeHtml(user.nombre || user.first_name || 'U').charAt(0).toUpperCase()}
+        <div class="dropdown-menu dropdown-menu-right shadow border-0 rounded-lg sgi-user-dropdown">
+          <div class="sgi-user-dropdown-header">
+            <span class="sgi-user-avatar-lg">${userInitial}</span>
+            <div class="sgi-user-dropdown-meta">
+              <h6 title="${escapeHtml(userFullName)}">${escapeHtml(userFullName)}</h6>
+              <small title="${escapeHtml(userEmail)}">${escapeHtml(userEmail)}</small>
+              <span class="badge badge-light mt-2">${escapeHtml(userRole)}</span>
             </div>
-            <p>
-              ${escapeHtml(user.nombre || user.first_name || '')} ${escapeHtml(user.apellido || user.last_name || '')}
-              <small>${escapeHtml(user.email || '')}</small>
-            </p>
-          </li>
-          <li class="user-footer">
-            <a href="#" id="btnProfile" class="btn btn-default btn-flat">Perfil</a>
-            <a href="#" id="btnLogout" class="btn btn-default btn-flat float-right text-danger"><i class="fas fa-sign-out-alt mr-1"></i>Salir</a>
-          </li>
-        </ul>
+          </div>
+          <div class="dropdown-divider my-2"></div>
+          <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
+            <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
+          </a>
+          <a href="#" id="btnLogout" class="dropdown-item rounded px-3 py-2 text-danger">
+            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
+          </a>
+        </div>
       </li>
     </ul>
   `;
@@ -686,16 +530,7 @@ async function renderLayout(activeId = '') {
   // Sidebar
   const sidebarHtml = `
     <div class="sidebar">
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="image d-flex align-items-center">
-          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-weight: bold;">
-            ${escapeHtml(user.nombre || user.first_name || 'U').charAt(0).toUpperCase()}
-          </div>
-        </div>
-        <div class="info">
-          <a href="#" id="btnSidebarProfile" class="d-block text-wrap">${escapeHtml(user.nombre || user.first_name || 'Usuario')}</a>
-        </div>
-      </div>
+      <div class="sgi-sidebar-section-label">Navegación</div>
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
           ${menuItems.map(item => `
@@ -751,12 +586,8 @@ async function renderLayout(activeId = '') {
       window.location.href = href;
     });
   }
-  // Render Modal & Bind events
-  renderProfileModal(user);
+  // Bind events
   document.getElementById('btnLogout')?.addEventListener('click', logoutManually);
-  document.getElementById('btnProfile')?.addEventListener('click', () => {
-    if (window.jQuery) window.jQuery('#profileModal').modal('show');
-  });
   
   // Interceptar clics en el logo de la aplicación
   document.querySelectorAll('.brand-link').forEach(link => {
@@ -794,9 +625,7 @@ async function renderLayout(activeId = '') {
       window.location.href = targetHref;
     });
   });
-  document.getElementById('btnSidebarProfile')?.addEventListener('click', () => {
-    if (window.jQuery) window.jQuery('#profileModal').modal('show');
-  });
+
   document.getElementById('btnMarkAllRead')?.addEventListener('click', async () => {
     try {
       await mutateBackend('/notifications/mark-all-read', { method: 'PATCH' });

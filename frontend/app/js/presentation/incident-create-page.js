@@ -3,6 +3,7 @@ import { hidePageLoading, showPageLoading } from './incidents-ui.js?v=16';
 import { getCities, getProvinces } from '../application/catalog-service.js?v=14';
 import { getCatalogOverview } from '../application/catalogs-service.js?v=14';
 import { createIncident } from '../application/incidents-service.js?v=14';
+import { handleBackendErrors, setFieldError, clearFieldError } from './validation-utils.js?v=1';
 
 let currentStep = 1;
 let catalogs = {};
@@ -159,6 +160,8 @@ async function handleSubmit(event) {
       window.location.href = incident.id ? `incident-detail.html?id=${encodeURIComponent(incident.id)}` : 'incidents.html';
     }, 1200);
   } catch (error) {
+    // Si la alerta global no existe, podemos crear un contenedor temporal o dejar que handleBackendErrors lo ponga bajo los inputs
+    handleBackendErrors(error, document.getElementById('formIncident'));
     showErrorAlert(error.message || 'Ocurrio un error inesperado al enviar el formulario.');
   } finally {
     hideSpinner('spinnerRegistrar', 'btnRegistrar');
@@ -273,29 +276,7 @@ function validateCoordinate(id, min, max, message) {
   return true;
 }
 
-function setFieldError(id, message) {
-  const field = $(`#${id}`);
-  if (!field) return;
-  field.classList.add('is-invalid');
-  const group = field.closest('.form-group') || field.parentElement;
-  const feedback = group?.querySelector('.invalid-feedback');
-  if (feedback) {
-    feedback.textContent = message;
-    feedback.style.display = 'block';
-  }
-}
-
-function clearFieldError(id) {
-  const field = $(`#${id}`);
-  if (!field) return;
-  field.classList.remove('is-invalid');
-  const group = field.closest('.form-group') || field.parentElement;
-  const feedback = group?.querySelector('.invalid-feedback');
-  if (feedback) {
-    feedback.textContent = '';
-    feedback.style.display = '';
-  }
-}
+// Se utilizan setFieldError y clearFieldError importados desde validation-utils.js
 
 function renderSummary() {
   const container = $('#resumenIncidencia');

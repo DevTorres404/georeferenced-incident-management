@@ -42,6 +42,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
     
     Route::post('/auth/2fa/enable', [TwoFactorAuthController::class, 'enable']);
+    Route::post('/auth/2fa/disable', [TwoFactorAuthController::class, 'disable']);
     Route::post('/auth/2fa/confirm', [TwoFactorAuthController::class, 'confirm']);
 
     Route::middleware('2fa.admin')->group(function () {

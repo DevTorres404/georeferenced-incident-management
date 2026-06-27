@@ -10,6 +10,25 @@ function escapeHtml(value) {
 function formatCatalogLabel(value) {
   if (!value) return '-';
 
+  const exactMatches = {
+    'EN_REVISION': 'En revisión',
+    'EN REVISION': 'En revisión',
+    'EN_PROGRESO': 'En progreso',
+    'EN PROGRESO': 'En progreso',
+    'EN_ATENCION': 'En atención',
+    'EN ATENCION': 'En atención',
+    'NUEVA': 'Nueva',
+    'PENDIENTE': 'Pendiente',
+    'RESUELTA': 'Resuelta',
+    'CERRADA': 'Cerrada',
+    'RECHAZADA': 'Rechazada',
+  };
+
+  const upperValue = String(value).toUpperCase().trim();
+  if (exactMatches[upperValue]) {
+    return exactMatches[upperValue];
+  }
+
   const normalized = String(value).replace(/_/g, ' ').trim();
 
   if (/^[A-Z0-9\s]+$/.test(normalized)) {

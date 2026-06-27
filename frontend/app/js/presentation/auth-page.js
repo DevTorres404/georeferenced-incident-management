@@ -1,5 +1,6 @@
 import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=14';
 import { isEmailVerified, suggestUsername, updateUser } from '../infrastructure/session-store.js?v=14';
+import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from './validation-utils.js?v=1';
 
 document.addEventListener('DOMContentLoaded', initAuthPage);
 
@@ -9,26 +10,32 @@ function initAuthPage() {
       registerView: document.getElementById('register-view'),
       profileView: document.getElementById('profile-view'),
       twoFactorView: document.getElementById('two-factor-view'),
+      setupTwoFactorView: document.getElementById('setup-2fa-view'),
     loginForm: document.getElementById('login-form'),
     registerForm: document.getElementById('register-form'),
     profileForm: document.getElementById('profile-form'),
     twoFactorForm: document.getElementById('two-factor-form'),
+    setupTwoFactorForm: document.getElementById('setup-2fa-form'),
     loginAlert: document.getElementById('login-alert'),
     registerAlert: document.getElementById('register-alert'),
     profileAlert: document.getElementById('profile-alert'),
     twoFactorAlert: document.getElementById('two-factor-alert'),
+    setupTwoFactorAlert: document.getElementById('setup-2fa-alert'),
     loginSpinner: document.getElementById('login-spinner'),
     registerSpinner: document.getElementById('register-spinner'),
     profileSpinner: document.getElementById('profile-spinner'),
     twoFactorSpinner: document.getElementById('two-factor-spinner'),
+    setupTwoFactorSpinner: document.getElementById('setup-2fa-spinner'),
     loginBtnText: document.getElementById('login-btn-text'),
     registerBtnText: document.getElementById('register-btn-text'),
     profileBtnText: document.getElementById('profile-btn-text'),
     twoFactorBtnText: document.getElementById('two-factor-btn-text'),
+    setupTwoFactorBtnText: document.getElementById('setup-2fa-btn-text'),
     loginSubmitBtn: document.getElementById('login-submit-btn'),
     registerSubmitBtn: document.getElementById('register-submit-btn'),
     profileSubmitBtn: document.getElementById('profile-submit-btn'),
     twoFactorSubmitBtn: document.getElementById('two-factor-submit-btn'),
+    setupTwoFactorSubmitBtn: document.getElementById('setup-2fa-submit-btn'),
       openRegisterBtn: document.getElementById('open-register-btn'),
       openLoginBtn: document.getElementById('open-login-btn'),
       backToLoginBtn: document.getElementById('back-to-login-btn'),
@@ -46,6 +53,8 @@ function initAuthPage() {
     registerPasswordConfirmInput: document.getElementById('register-password-confirm'),
     usernameInput: document.getElementById('username'),
     twoFactorCodeInput: document.getElementById('two-factor-code'),
+    setupTwoFactorCodeInput: document.getElementById('setup-2fa-code'),
+    setupTwoFactorQrContainer: document.getElementById('mandatory-2fa-qr-container'),
     dashboardLink: document.getElementById('dashboard-link'),
   };
 
@@ -53,6 +62,12 @@ function initAuthPage() {
   let tempTwoFactorToken = null;
 
   bindEvents();
+  setupValidationListeners(el.loginForm);
+  setupValidationListeners(el.registerForm);
+  setupValidationListeners(el.profileForm);
+  setupValidationListeners(el.twoFactorForm);
+  setupValidationListeners(el.setupTwoFactorForm);
+  
   bootstrap();
 
   async function bootstrap() {
@@ -74,6 +89,7 @@ function initAuthPage() {
     if (el.registerForm) el.registerForm.addEventListener('submit', handleRegisterSubmit);
     if (el.profileForm) el.profileForm.addEventListener('submit', handleProfileSubmit);
     if (el.twoFactorForm) el.twoFactorForm.addEventListener('submit', handleTwoFactorSubmit);
+    if (el.setupTwoFactorForm) el.setupTwoFactorForm.addEventListener('submit', handleSetupTwoFactorSubmit);
     
     if (el.openLoginBtn) el.openLoginBtn.addEventListener('click', () => switchView('login'));
     if (el.openRegisterBtn) el.openRegisterBtn.addEventListener('click', () => switchView('register'));
@@ -113,8 +129,7 @@ function initAuthPage() {
 
   async function handleLoginSubmit(event) {
     event.preventDefault();
-    if (!el.loginForm.checkValidity()) {
-      el.loginForm.classList.add('was-validated');
+    if (!validateFormFrontend(el.loginForm)) {
       return;
     }
     setLoading('login', true);
@@ -138,7 +153,7 @@ function initAuthPage() {
 
       routeAfterAuth(data.user);
     } catch (error) {
-      showAlert(el.loginAlert, error.message || 'No se pudo iniciar sesión.', 'danger');
+      handleBackendErrors(error, el.loginForm, el.loginAlert);
     } finally {
       setLoading('login', false);
     }
@@ -164,7 +179,7 @@ function initAuthPage() {
       tempTwoFactorToken = null;
       routeAfterAuth(data.user);
     } catch (error) {
-      showAlert(el.twoFactorAlert, error.message || 'Código incorrecto.', 'danger');
+      handleBackendErrors(error, el.twoFactorForm, el.twoFactorAlert);
       el.twoFactorCodeInput.value = '';
       el.twoFactorCodeInput.focus();
     } finally {
@@ -174,13 +189,12 @@ function initAuthPage() {
 
   async function handleRegisterSubmit(event) {
     event.preventDefault();
-    if (!el.registerForm.checkValidity()) {
-      el.registerForm.classList.add('was-validated');
+    if (!validateFormFrontend(el.registerForm)) {
       return;
     }
     
     if (el.registerPasswordInput.value !== el.registerPasswordConfirmInput.value) {
-      showAlert(el.registerAlert, 'Las contraseñas no coinciden.', 'danger');
+      setFieldError(el.registerPasswordConfirmInput, 'Las contraseñas no coinciden.');
       return;
     }
     setLoading('register', true);
@@ -202,7 +216,7 @@ function initAuthPage() {
           : data.verification_error,
       });
     } catch (error) {
-      showAlert(el.registerAlert, error.message || 'No se pudo completar el registro.', 'danger');
+      handleBackendErrors(error, el.registerForm, el.registerAlert);
     } finally {
       setLoading('register', false);
     }
@@ -265,6 +279,28 @@ function initAuthPage() {
     }
   }
 
+  async function handleSetupTwoFactorSubmit(event) {
+    event.preventDefault();
+    if (!el.setupTwoFactorForm.checkValidity()) {
+      el.setupTwoFactorForm.classList.add('was-validated');
+      return;
+    }
+    setLoading('setupTwoFactor', true);
+    hideAlert(el.setupTwoFactorAlert);
+
+    try {
+      await window.SGIGAuthService.confirmTwoFactor(el.setupTwoFactorCodeInput.value.trim());
+      const user = await window.SGIGAuthService.restoreSession();
+      routeAfterAuth(user);
+    } catch (error) {
+      showAlert(el.setupTwoFactorAlert, error.message || 'Código incorrecto.', 'danger');
+      el.setupTwoFactorCodeInput.value = '';
+      el.setupTwoFactorCodeInput.focus();
+    } finally {
+      setLoading('setupTwoFactor', false);
+    }
+  }
+
   function getAppPath(page) {
     return window.location.pathname.includes('/html/') ? page : `html/${page}`;
   }
@@ -283,6 +319,14 @@ function initAuthPage() {
     return value?.code || value?.codigo || '';
   }
 
+  function hasRoleAdmin(user) {
+    if (!user || !user.roles) return false;
+    return user.roles.some(r => {
+      const code = typeof r === 'string' ? r : (r.code || r.codigo);
+      return code === 'ADMIN';
+    });
+  }
+
   function routeAfterAuth(user, notice = {}) {
     if (!user) return;
 
@@ -292,6 +336,12 @@ function initAuthPage() {
       if (notice.verificationMessage) {
         showAlert(el.profileAlert, notice.verificationMessage, 'success');
       }
+      return;
+    }
+
+    if (hasRoleAdmin(user) && !user.two_factor_enabled) {
+      switchView('setup-2fa');
+      initMandatorySetup2FA();
       return;
     }
 
@@ -307,11 +357,13 @@ function initAuthPage() {
     if (el.registerView) el.registerView.classList.toggle('d-none', viewName !== 'register');
     if (el.profileView) el.profileView.classList.toggle('d-none', viewName !== 'profile');
     if (el.twoFactorView) el.twoFactorView.classList.toggle('d-none', viewName !== 'two-factor');
+    if (el.setupTwoFactorView) el.setupTwoFactorView.classList.toggle('d-none', viewName !== 'setup-2fa');
 
     if (viewName !== 'login' && el.loginAlert) hideAlert(el.loginAlert);
     if (viewName !== 'register' && el.registerAlert) hideAlert(el.registerAlert);
     if (viewName !== 'profile' && el.profileAlert) hideAlert(el.profileAlert);
     if (viewName !== 'two-factor' && el.twoFactorAlert) hideAlert(el.twoFactorAlert);
+    if (viewName !== 'setup-2fa' && el.setupTwoFactorAlert) hideAlert(el.setupTwoFactorAlert);
   }
 
   function setLoading(scope, isLoading) {
@@ -342,6 +394,12 @@ function initAuthPage() {
         text: el.twoFactorBtnText,
         label: 'Verificar y Entrar',
       },
+      setupTwoFactor: {
+        button: el.setupTwoFactorSubmitBtn,
+        spinner: el.setupTwoFactorSpinner,
+        text: el.setupTwoFactorBtnText,
+        label: 'Verificar y Continuar',
+      },
     }[scope];
 
     if (!map || !map.button) return;
@@ -358,6 +416,29 @@ function initAuthPage() {
     const icon = button.querySelector('i');
     icon.classList.toggle('fa-eye', !isHidden);
     icon.classList.toggle('fa-eye-slash', isHidden);
+  }
+
+  async function initMandatorySetup2FA() {
+    try {
+      const { qr_url } = await window.SGIGAuthService.enableTwoFactor();
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      script.onload = () => {
+        el.setupTwoFactorQrContainer.innerHTML = '';
+        new window.QRCode(el.setupTwoFactorQrContainer, {
+          text: qr_url,
+          width: 200,
+          height: 200,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: window.QRCode.CorrectLevel.H
+        });
+        el.setupTwoFactorForm.classList.remove('d-none');
+      };
+      document.body.appendChild(script);
+    } catch (e) {
+      showAlert(el.setupTwoFactorAlert, 'Error inicializando 2FA: ' + e.message, 'danger');
+    }
   }
 
   function showAlert(target, message, type = 'danger') {
