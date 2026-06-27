@@ -1,0 +1,123 @@
+/* ---- Usuarios y roles ---- */
+.user-roles-header {
+  padding: 18px 20px;
+}
+
+.user-roles-header .card-title {
+  float: none;
+  line-height: 1.25;
+}
+
+.user-roles-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  width: min(100%, 420px);
+}
+
+.user-roles-summary-item {
+  min-height: 68px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.user-roles-summary-item span,
+.user-roles-summary-item strong {
+  display: block;
+}
+
+.user-roles-summary-item span {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.user-roles-summary-item strong {
+  margin-top: 4px;
+  color: var(--color-text-main);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.user-roles-card .card-header,
+.user-roles-card .card-footer {
+  border-color: var(--color-border);
+}
+
+.user-roles-card .table td,
+.user-roles-card .table th {
+  vertical-align: middle;
+}
+
+.user-roles-card .pagination .page-link {
+  min-width: 32px;
+  text-align: center;
+}
+
+.user-role-group-filter .btn {
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.user-role-group-filter .btn.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+@media (max-width: 575.98px) {
+  .user-role-group-filter {
+    display: grid !important;
+    grid-template-columns: 1fr;
+  }
+
+  .user-role-group-filter .btn {
+    border-radius: 4px !important;
+    margin-bottom: 6px;
+  }
+}
+
+/* ---- Roles y permisos ---- */
+.access-control-card .card-header {
+  padding: 18px 20px;
+}
+
+.access-control-card .card-title {
+  float: none;
+  line-height: 1.25;
+}
+
+.permission-module {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.permission-module + .permission-module {
+  margin-top: 12px;
+}
+
+.permission-module h4 {
+  letter-spacing: 0;
+}
+
+/* AdminLTE deja el titulo lateral visible al colapsar; se oculta para no deformar la barra. */
+body.sidebar-collapse .sgi-sidebar-section-label {
+  display: none;
+}
+
+body.sidebar-collapse .main-sidebar:hover .sgi-sidebar-section-label {
+  display: block;
+}
+
+@media (max-width: 767.98px) {
+  .user-roles-summary {
+    grid-template-columns: 1fr;
+  }
+}
