@@ -1,0 +1,27 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# General dependencies fallback
+node_modules/
+vendor/
+
+# Gemini / Antigravity Agent Configuration
+.agents/

@@ -1,0 +1,123 @@
+const STORAGE_KEYS = {
+  token: 'auth_token',
+  user: 'user_data',
+  expiresAt: 'auth_expires_at',
+};
+
+function readUser() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.user);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSession(data) {
+  if (!data) {
+    clearSession();
+    return null;
+  }
+
+  if (data.access_token) {
+    localStorage.setItem(STORAGE_KEYS.token, data.access_token);
+  }
+
+  if (data.user) {
+    localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(data.user));
+  }
+
+  if (data.expires_at) {
+    localStorage.setItem(STORAGE_KEYS.expiresAt, data.expires_at);
+  } else if (data.expires_in) {
+    localStorage.setItem(STORAGE_KEYS.expiresAt, new Date(Date.now() + data.expires_in * 1000).toISOString());
+  }
+
+  return getSession();
+}
+
+function getSession() {
+  return {
+    token: localStorage.getItem(STORAGE_KEYS.token),
+    user: readUser(),
+    expiresAt: localStorage.getItem(STORAGE_KEYS.expiresAt),
+  };
+}
+
+function hasValidSession() {
+  const session = getSession();
+  if (!session.token || !session.expiresAt) {
+    return false;
+  }
+
+  const expiresAt = new Date(session.expiresAt).getTime();
+  return Number.isFinite(expiresAt) && expiresAt > Date.now();
+}
+
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEYS.token);
+  localStorage.removeItem(STORAGE_KEYS.user);
+  localStorage.removeItem(STORAGE_KEYS.expiresAt);
+}
+
+function formatExpiry(expiresAt = localStorage.getItem(STORAGE_KEYS.expiresAt)) {
+  const date = new Date(expiresAt || '');
+  if (Number.isNaN(date.getTime())) {
+    return 'No definida';
+  }
+
+  return date.toLocaleTimeString('es-EC', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function suggestUsername(user) {
+  const base = (user?.email || user?.nombre || 'usuario').split('@')[0];
+  return base.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 50) || 'usuario';
+}
+
+function updateUser(user) {
+  if (!user) return null;
+  localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
+  return user;
+}
+
+function isSessionExpired() {
+  const expiresAt = new Date(localStorage.getItem(STORAGE_KEYS.expiresAt) || '').getTime();
+  return Number.isFinite(expiresAt) && expiresAt <= Date.now();
+}
+
+function isEmailVerified(user) {
+  return Boolean(user?.email_verificado_at || user?.email_verified_at);
+}
+
+const api = {
+  STORAGE_KEYS,
+  readUser,
+  writeSession,
+  getSession,
+  hasValidSession,
+  clearSession,
+  formatExpiry,
+  suggestUsername,
+  updateUser,
+  isSessionExpired,
+  isEmailVerified,
+};
+
+window.SGIGSession = api;
+
+export {
+  STORAGE_KEYS,
+  clearSession,
+  formatExpiry,
+  getSession,
+  hasValidSession,
+  isEmailVerified,
+  isSessionExpired,
+  readUser,
+  suggestUsername,
+  updateUser,
+  writeSession,
+};

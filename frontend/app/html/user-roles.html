@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Usuarios y Roles | Sistema de Incidencias</title>
+
+  <!-- Google Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <!-- OverlayScrollbars -->
+  <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+  <!-- Estilos propios del sistema -->
+  <link rel="stylesheet" href="../css/app.css?v=16">
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+
+    <!-- Navbar inyectada por layout.js -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+    <!-- Sidebar inyectada por layout.js -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <!-- Brand Logo -->
+      <a href="dashboard.html" class="brand-link">
+        <i class="fas fa-map-marked-alt brand-image mt-1 ml-3" style="opacity: .8"></i>
+        <span class="brand-text font-weight-light">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <div class="content-wrapper">
+      
+    <!-- Pantalla de carga nativa -->
+    <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+      <div class="loader-orbit" aria-hidden="true">
+        <i class="fas fa-map-marker-alt"></i>
+      </div>
+    </div>
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0">
+                <i class="fas fa-user-tag text-primary mr-2"></i>Usuarios y Roles
+              </h1>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
+                <li class="breadcrumb-item active">Usuarios y Roles</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="container-fluid">
+          <div id="access-alert" class="alert d-none" role="alert"></div>
+
+          <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+              <h3 class="card-title mt-1">Directorio de Usuarios</h3>
+              <div class="card-tools">
+                <div class="input-group input-group-sm" style="width: 250px;">
+                  <input type="text" id="user-search" class="form-control float-right" placeholder="Buscar usuario o correo...">
+                  <div class="input-group-append">
+                    <button type="submit" class="btn btn-default">
+                      <i class="fas fa-search"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover text-nowrap align-middle">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol Actual</th>
+                    <th style="width: 250px;">Asignar Rol</th>
+                    <th style="width: 120px;" class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="user-role-table">
+                  <!-- Usuarios cargados via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Footer -->
+    <footer class="main-footer text-sm">
+      <strong>Sistema de Gestión de Incidencias Georreferenciadas &copy; 2026.</strong>
+      Todos los derechos reservados.
+    </footer>
+  </div>
+
+  <!-- jQuery -->
+  <script src="../../plugins/jquery/jquery.min.js"></script>
+  <!-- Bootstrap 4 -->
+  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- OverlayScrollbars -->
+  <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <!-- AdminLTE App -->
+  <script src="../../dist/js/adminlte.min.js"></script>
+  <!-- Módulos del sistema -->
+  <script src="../js/presentation/layout.js?v=16"></script>
+  <script type="module" src="../js/presentation/user-roles-page.js?v=16"></script>
+</body>
+
+</html>

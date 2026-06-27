@@ -11,6 +11,7 @@ use App\Users\Infrastructure\Http\Controllers\AccessControlController;
 use App\Users\Infrastructure\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
+
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [AuthController::class, 'google']);
