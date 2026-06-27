@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=16">
+  <link rel="stylesheet" href="../css/app.css?v=23">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -20,12 +20,9 @@
   <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
 
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link">
-      <span class="brand-image img-circle elevation-3"
-        style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
-        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
-      </span>
-      <span class="brand-text font-weight-bold ml-2">SGI</span>
+    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
+      <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
     </a>
     <div id="mainSidebar"></div>
   </aside>
@@ -41,15 +38,13 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0">
+            <h1 class="m-0 text-main font-weight-bold">
               <i class="fas fa-list-alt text-primary mr-2"></i>Gestión de Incidencias
             </h1>
+            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Administra y monitorea todas las incidencias reportadas en el sistema.</p>
           </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
-              <li class="breadcrumb-item active">Gestión de Incidencias</li>
-            </ol>
+          <div class="col-sm-6 d-none d-sm-block">
+            <!-- Breadcrumbs removidos -->
           </div>
         </div>
       </div>
@@ -59,18 +54,18 @@
       <div class="container-fluid">
         <div class="row mb-3">
           <div class="col-12 d-flex flex-wrap gap-2 align-items-center justify-content-between">
-            <div class="d-flex flex-wrap" style="gap:6px;">
-              <button class="btn btn-sm btn-outline-secondary filtro-btn active" data-filtro="todos">
-                Todos <span class="badge badge-secondary ml-1" id="cnt-todos"></span>
+            <div class="btn-group shadow-sm" role="group" aria-label="Filtros de estado">
+              <button class="btn btn-sm btn-outline-primary filtro-btn active" data-filtro="todos">
+                Todos <span class="badge badge-light ml-1" id="cnt-todos">0</span>
               </button>
-              <button class="btn btn-sm btn-outline-secondary filtro-btn" data-filtro="pendiente">
-                Pendiente <span class="badge badge-warning ml-1" id="cnt-pendiente"></span>
+              <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="pendiente">
+                Pendiente <span class="badge badge-light ml-1" id="cnt-pendiente">0</span>
               </button>
               <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="en proceso">
-                En proceso <span class="badge badge-primary ml-1" id="cnt-proceso"></span>
+                En proceso <span class="badge badge-light ml-1" id="cnt-proceso">0</span>
               </button>
-              <button class="btn btn-sm btn-outline-success filtro-btn" data-filtro="resuelta">
-                Resuelta <span class="badge badge-success ml-1" id="cnt-resuelta"></span>
+              <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="resuelta">
+                Resuelta <span class="badge badge-light ml-1" id="cnt-resuelta">0</span>
               </button>
             </div>
 
@@ -80,7 +75,7 @@
           </div>
         </div>
 
-        <div class="card card-outline card-primary shadow-sm">
+        <div class="card shadow-sm border-0 rounded-3">
           <div class="card-header">
             <h3 class="card-title">
               <i class="fas fa-table mr-2"></i>Listado de Incidencias
@@ -93,20 +88,20 @@
           </div>
           <div class="card-body">
             <div class="table-responsive">
-              <table id="tablaIncidencias" class="table table-hover table-bordered table-sm" style="width:100%">
-                <thead>
+              <table id="tablaIncidencias" class="table table-hover table-sm align-middle mb-0" style="width:100%">
+                <thead class="bg-light">
                   <tr>
-                    <th>Código</th>
-                    <th>Título</th>
-                    <th>Categoría</th>
-                    <th>Prioridad</th>
-                    <th>Estado</th>
-                    <th>Ciudad</th>
-                    <th>Fecha</th>
-                    <th class="text-center">Acciones</th>
+                    <th class="border-top-0 border-bottom-0">Código</th>
+                    <th class="border-top-0 border-bottom-0">Título</th>
+                    <th class="border-top-0 border-bottom-0">Categoría</th>
+                    <th class="border-top-0 border-bottom-0">Prioridad</th>
+                    <th class="border-top-0 border-bottom-0">Estado</th>
+                    <th class="border-top-0 border-bottom-0">Ciudad</th>
+                    <th class="border-top-0 border-bottom-0">Fecha</th>
+                    <th class="text-center border-top-0 border-bottom-0">Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="tablaBody"></tbody>
+                <tbody id="tablaBody" class="border-top-0"></tbody>
               </table>
             </div>
           </div>
@@ -115,9 +110,11 @@
     </div>
   </div>
 
-  <footer class="main-footer">
-    <strong>SGI - Sistema de Gestión de Incidencias Georreferenciadas</strong>
-    <span class="float-right text-muted"><b>Versión</b> 1.0.0</span>
+    <footer class="main-footer text-sm">
+    <div class="float-right d-none d-sm-inline">
+      Versión 1.0.0
+    </div>
+    <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
   </footer>
   <aside class="control-sidebar control-sidebar-dark"></aside>
 </div>
@@ -155,7 +152,7 @@
 <script src="../../plugins/datatables/jquery.dataTables.min.js"></script>
 <script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
-<script src="../js/presentation/layout.js?v=16"></script>
+<script src="../js/presentation/layout.js?v=17"></script>
 <script type="module" src="../js/presentation/incidents-page.js?v=16"></script>
 </body>
 </html>

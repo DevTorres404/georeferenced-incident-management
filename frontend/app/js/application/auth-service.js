@@ -61,6 +61,10 @@ async function confirmTwoFactor(code) {
   });
 }
 
+async function disableTwoFactor() {
+  return await request('/auth/2fa/disable', { method: 'POST' });
+}
+
 async function registerLocal(payload) {
   const data = await request('/register', {
     method: 'POST',
@@ -204,6 +208,7 @@ const authService = {
   verifyTwoFactorLogin,
   enableTwoFactor,
   confirmTwoFactor,
+  disableTwoFactor,
 };
 
 window.SGIGAuthService = authService;
@@ -218,4 +223,5 @@ export {
   verifyTwoFactorLogin,
   enableTwoFactor,
   confirmTwoFactor,
+  disableTwoFactor,
 };

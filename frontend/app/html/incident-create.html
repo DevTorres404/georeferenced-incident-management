@@ -1,451 +1,495 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SGI | Nueva Incidencia</title>
   <meta name="description" content="Formulario para registrar una nueva incidencia georreferenciada">
 
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=16">
+  <link rel="stylesheet" href="../css/app.css?v=23">
 
   <style>
     /* Indicador de pasos del formulario */
-    .stepper { display: flex; margin-bottom: 24px; }
-    .step {
-      flex: 1; text-align: center; padding: 10px 4px;
-      border-bottom: 3px solid #dee2e6; color: #adb5bd; font-size: 0.82rem;
-      transition: all 0.3s; cursor: default;
+    .stepper {
+      display: flex;
+      margin-bottom: 24px;
     }
-    .step.active { border-bottom-color: #007bff; color: #007bff; font-weight: 700; }
-    .step.done   { border-bottom-color: #28a745; color: #28a745; }
-    .step-icon   { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+
+    .step {
+      flex: 1;
+      text-align: center;
+      padding: 10px 4px;
+      border-bottom: 3px solid #dee2e6;
+      color: #adb5bd;
+      font-size: 0.82rem;
+      transition: all 0.3s;
+      cursor: default;
+    }
+
+    .step.active {
+      border-bottom-color: #007bff;
+      color: #007bff;
+      font-weight: 700;
+    }
+
+    .step.done {
+      border-bottom-color: #28a745;
+      color: #28a745;
+    }
+
+    .step-icon {
+      font-size: 1.3rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+
     /* Sección del formulario */
-    .form-section { display: none; }
-    .form-section.active { display: block; }
+    .form-section {
+      display: none;
+    }
+
+    .form-section.active {
+      display: block;
+    }
+
     /* Contador de caracteres */
-    .char-counter { font-size: 0.78rem; color: #adb5bd; }
-    .char-counter.warn  { color: #ffc107; }
-    .char-counter.ok    { color: #28a745; }
+    .char-counter {
+      font-size: 0.78rem;
+      color: #adb5bd;
+    }
+
+    .char-counter.warn {
+      color: #ffc107;
+    }
+
+    .char-counter.ok {
+      color: #28a745;
+    }
+
     /* Grupos de radio estilizados */
-    .radio-group-custom .custom-control { display: inline-flex; align-items: center; margin-right: 16px; }
+    .radio-group-custom .custom-control {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 16px;
+    }
   </style>
 </head>
+
 <body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
+  <div class="wrapper">
 
-  <div id="alertaGlobal" role="alert"></div>
+    <div id="alertaGlobal" role="alert"></div>
 
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
 
-  <!-- Sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link">
-      <span class="brand-image img-circle elevation-3"
-        style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
-        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
-      </span>
-      <span class="brand-text font-weight-bold ml-2">SGI</span>
-    </a>
-    <div id="mainSidebar"></div>
-  </aside>
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center"
+        style="padding: 10px 15px;">
+        <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+          style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+        <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
 
-  <!-- Contenido principal -->
-  <div class="content-wrapper">
-    <!-- Pantalla de carga nativa -->
-    <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-      <div class="loader-orbit" aria-hidden="true">
-        <i class="fas fa-map-marker-alt"></i>
+    <!-- Contenido principal -->
+    <div class="content-wrapper">
+      <!-- Pantalla de carga nativa -->
+      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+        <div class="loader-orbit" aria-hidden="true">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
       </div>
-    </div>
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">
-              <i class="fas fa-plus-circle text-primary mr-2"></i>Nueva Incidencia
-            </h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
-              <li class="breadcrumb-item"><a href="incidents.html">Incidencias</a></li>
-              <li class="breadcrumb-item active">Nueva Incidencia</li>
-            </ol>
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0">
+                <i class="fas fa-plus-circle text-primary mr-2"></i>Nueva Incidencia
+              </h1>
+            </div>
+            <div class="col-sm-6 d-none d-sm-block">
+              <!-- Breadcrumbs removidos -->
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
+      <!-- Main content -->
+      <div class="content">
+        <div class="container-fluid">
 
-        <!-- Indicador de pasos -->
-        <div class="stepper" id="stepper">
-          <div class="step active" id="step-1">
-            <span class="step-icon"><i class="fas fa-info-circle"></i></span>
-            Información General
+          <!-- Indicador de pasos -->
+          <div class="stepper" id="stepper">
+            <div class="step active" id="step-1">
+              <span class="step-icon"><i class="fas fa-info-circle"></i></span>
+              Información General
+            </div>
+            <div class="step" id="step-2">
+              <span class="step-icon"><i class="fas fa-map-marker-alt"></i></span>
+              Ubicación
+            </div>
+            <div class="step" id="step-3">
+              <span class="step-icon"><i class="fas fa-flag"></i></span>
+              Estado y Confirmación
+            </div>
           </div>
-          <div class="step" id="step-2">
-            <span class="step-icon"><i class="fas fa-map-marker-alt"></i></span>
-            Ubicación
-          </div>
-          <div class="step" id="step-3">
-            <span class="step-icon"><i class="fas fa-flag"></i></span>
-            Estado y Confirmación
-          </div>
-        </div>
 
-        <!-- Alerta de errores del formulario -->
-        <div id="alertaFormulario" style="display:none;" role="alert"></div>
+          <!-- Alerta de errores del formulario -->
+          <div id="alertaFormulario" style="display:none;" role="alert"></div>
 
-        <!-- ===== FORMULARIO PRINCIPAL ===== -->
-        <form id="formNuevaIncidencia" novalidate>
+          <!-- ===== FORMULARIO PRINCIPAL ===== -->
+          <form id="formNuevaIncidencia" novalidate>
 
-          <!-- ========================================
+            <!-- ========================================
                SECCIÓN 1: Información General
                ======================================== -->
-          <div class="form-section active" id="seccion1">
-            <div class="card card-primary card-outline">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-file-alt mr-2"></i>Información General de la Incidencia
-                </h3>
-              </div>
-              <div class="card-body">
-                <div class="row">
+            <div class="form-section active" id="seccion1">
+              <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-file-alt mr-2"></i>Información General de la Incidencia
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
 
-                  <!-- Título -->
-                  <div class="col-md-8">
-                    <div class="form-group">
-                      <label for="fTitulo">
-                        Título <span class="text-danger">*</span>
-                        <small class="text-muted">(mínimo 5 caracteres)</small>
-                      </label>
-                      <input type="text" class="form-control" id="fTitulo" name="titulo"
-                        placeholder="Ej: Bache profundo en Av. Principal"
-                        maxlength="120" autocomplete="off" aria-describedby="fTituloHelp">
-                      <div class="invalid-feedback"></div>
-                      <div class="d-flex justify-content-between mt-1">
-                        <small id="fTituloHelp" class="form-text text-muted">Describe brevemente la incidencia.</small>
-                        <span class="char-counter" id="cntTitulo">0/120</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Prioridad -->
-                  <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="fPrioridad">Prioridad <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fPrioridad" name="prioridad">
-                        <option value="">-- Seleccione Prioridad --</option>
-                        <option value="Crítica">🔴 Crítica — Atención inmediata</option>
-                        <option value="Alta">🟠 Alta — Urgente</option>
-                        <option value="Media">🟡 Media — Normal</option>
-                        <option value="Baja">🟢 Baja — Puede esperar</option>
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Tipo -->
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="fTipo">Tipo de Incidencia <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fTipo" name="tipo">
-                        <option value="">-- Seleccione Tipo --</option>
-                        <!-- Poblado por JS -->
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Subtipo -->
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="fSubtipo">Subtipo <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fSubtipo" name="subtipo" disabled>
-                        <option value="">-- Primero seleccione Tipo --</option>
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Descripción -->
-                  <div class="col-12">
-                    <div class="form-group">
-                      <label for="fDescripcion">
-                        Descripción <span class="text-danger">*</span>
-                        <small class="text-muted">(mínimo 20 caracteres)</small>
-                      </label>
-                      <textarea class="form-control" id="fDescripcion" name="descripcion"
-                        rows="4" maxlength="1000"
-                        placeholder="Describa detalladamente la incidencia: ubicación exacta, magnitud, afectados, etc."
-                        aria-describedby="fDescripcionHelp"></textarea>
-                      <div class="invalid-feedback"></div>
-                      <div class="d-flex justify-content-between mt-1">
-                        <small id="fDescripcionHelp" class="form-text text-muted">Sea lo más específico posible.</small>
-                        <span class="char-counter" id="cntDescripcion">0/1000</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Correo de contacto -->
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="fCorreo">
-                        Correo de Contacto <span class="text-danger">*</span>
-                      </label>
-                      <div class="input-group">
-                        <div class="input-group-prepend">
-                          <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <!-- Título -->
+                    <div class="col-md-8">
+                      <div class="form-group">
+                        <label for="fTitulo">
+                          Título <span class="text-danger">*</span>
+                          <small class="text-muted">(mínimo 5 caracteres)</small>
+                        </label>
+                        <input type="text" class="form-control" id="fTitulo" name="titulo"
+                          placeholder="Ej: Bache profundo en Av. Principal" maxlength="120" autocomplete="off"
+                          aria-describedby="fTituloHelp">
+                        <div class="invalid-feedback"></div>
+                        <div class="d-flex justify-content-between mt-1">
+                          <small id="fTituloHelp" class="form-text text-muted">Describe brevemente la
+                            incidencia.</small>
+                          <span class="char-counter" id="cntTitulo">0/120</span>
                         </div>
-                        <input type="email" class="form-control" id="fCorreo" name="correo"
-                          placeholder="usuario@correo.com" autocomplete="email">
                       </div>
-                      <div class="invalid-feedback" style="display:none;"></div>
-                      <small class="form-text text-muted">Para notificarle actualizaciones sobre su reporte.</small>
                     </div>
-                  </div>
 
-                </div><!-- /.row -->
-              </div>
-              <div class="card-footer text-right">
-                <button type="button" class="btn btn-primary" id="btnSiguiente1">
-                  Siguiente <i class="fas fa-arrow-right ml-1"></i>
-                </button>
-              </div>
-            </div>
-          </div><!-- /seccion1 -->
+                    <!-- Prioridad -->
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="fPrioridad">Prioridad <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fPrioridad" name="prioridad">
+                          <option value="">-- Seleccione Prioridad --</option>
+                          <option value="Crítica">🔴 Crítica — Atención inmediata</option>
+                          <option value="Alta">🟠 Alta — Urgente</option>
+                          <option value="Media">🟡 Media — Normal</option>
+                          <option value="Baja">🟢 Baja — Puede esperar</option>
+                        </select>
+                        <div class="invalid-feedback"></div>
+                      </div>
+                    </div>
 
-          <!-- ========================================
+                    <!-- Tipo -->
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="fTipo">Tipo de Incidencia <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fTipo" name="tipo">
+                          <option value="">-- Seleccione Tipo --</option>
+                          <!-- Poblado por JS -->
+                        </select>
+                        <div class="invalid-feedback"></div>
+                      </div>
+                    </div>
+
+                    <!-- Subtipo -->
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="fSubtipo">Subtipo <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fSubtipo" name="subtipo" disabled>
+                          <option value="">-- Primero seleccione Tipo --</option>
+                        </select>
+                        <div class="invalid-feedback"></div>
+                      </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-12">
+                      <div class="form-group">
+                        <label for="fDescripcion">
+                          Descripción <span class="text-danger">*</span>
+                          <small class="text-muted">(mínimo 20 caracteres)</small>
+                        </label>
+                        <textarea class="form-control" id="fDescripcion" name="descripcion" rows="4" maxlength="1000"
+                          placeholder="Describa detalladamente la incidencia: ubicación exacta, magnitud, afectados, etc."
+                          aria-describedby="fDescripcionHelp"></textarea>
+                        <div class="invalid-feedback"></div>
+                        <div class="d-flex justify-content-between mt-1">
+                          <small id="fDescripcionHelp" class="form-text text-muted">Sea lo más específico
+                            posible.</small>
+                          <span class="char-counter" id="cntDescripcion">0/1000</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Correo de contacto -->
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="fCorreo">
+                          Correo de Contacto <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                          </div>
+                          <input type="email" class="form-control" id="fCorreo" name="correo"
+                            placeholder="usuario@correo.com" autocomplete="email">
+                        </div>
+                        <div class="invalid-feedback" style="display:none;"></div>
+                        <small class="form-text text-muted">Para notificarle actualizaciones sobre su reporte.</small>
+                      </div>
+                    </div>
+
+                  </div><!-- /.row -->
+                </div>
+                <div class="card-footer text-right">
+                  <button type="button" class="btn btn-primary" id="btnSiguiente1">
+                    Siguiente <i class="fas fa-arrow-right ml-1"></i>
+                  </button>
+                </div>
+              </div>
+            </div><!-- /seccion1 -->
+
+            <!-- ========================================
                SECCIÓN 2: Ubicación
                ======================================== -->
-          <div class="form-section" id="seccion2">
-            <div class="card card-info card-outline">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-map-marker-alt mr-2"></i>Ubicación Geográfica
-                </h3>
-              </div>
-              <div class="card-body">
-                <div class="row">
+            <div class="form-section" id="seccion2">
+              <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Ubicación Geográfica
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
 
-                  <!-- País -->
-                  <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="fPais">País <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fPais" name="pais">
-                        <option value="">-- Seleccione País --</option>
-                        <!-- Poblado por JS -->
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Provincia -->
-                  <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="fProvincia">Provincia / Departamento <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fProvincia" name="provincia" disabled>
-                        <option value="">-- Seleccione Provincia --</option>
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Ciudad -->
-                  <div class="col-md-4">
-                    <div class="form-group">
-                      <label for="fCiudad">Ciudad / Distrito <span class="text-danger">*</span></label>
-                      <select class="form-control" id="fCiudad" name="ciudad" disabled>
-                        <option value="">-- Seleccione Ciudad --</option>
-                      </select>
-                      <div class="invalid-feedback"></div>
-                    </div>
-                  </div>
-
-                  <!-- Dirección referencial -->
-                  <div class="col-12">
-                    <div class="form-group">
-                      <label for="fDireccion">Dirección Referencial</label>
-                      <input type="text" class="form-control" id="fDireccion" name="direccion"
-                        placeholder="Ej: Av. Principal 456, frente al Banco Central">
-                      <small class="form-text text-muted">Ayuda a localizar la incidencia más fácilmente.</small>
-                    </div>
-                  </div>
-
-                  <!-- Latitud y Longitud -->
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="fLatitud">
-                        Latitud <small class="text-muted">(-90 a 90)</small>
-                      </label>
-                      <div class="input-group">
-                        <div class="input-group-prepend">
-                          <span class="input-group-text"><i class="fas fa-globe-americas"></i></span>
-                        </div>
-                        <input type="number" class="form-control" id="fLatitud" name="latitud"
-                          step="0.0001" min="-90" max="90"
-                          placeholder="Ej: -12.1191">
+                    <!-- País -->
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="fPais">País <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fPais" name="pais">
+                          <option value="">-- Seleccione País --</option>
+                          <!-- Poblado por JS -->
+                        </select>
+                        <div class="invalid-feedback"></div>
                       </div>
-                      <div class="invalid-feedback"></div>
-                      <small class="form-text text-muted">Opcional. Use hasta 4 decimales.</small>
                     </div>
-                  </div>
 
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label for="fLongitud">
-                        Longitud <small class="text-muted">(-180 a 180)</small>
-                      </label>
-                      <div class="input-group">
-                        <div class="input-group-prepend">
-                          <span class="input-group-text"><i class="fas fa-globe"></i></span>
-                        </div>
-                        <input type="number" class="form-control" id="fLongitud" name="longitud"
-                          step="0.0001" min="-180" max="180"
-                          placeholder="Ej: -77.0284">
+                    <!-- Provincia -->
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="fProvincia">Provincia / Departamento <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fProvincia" name="provincia" disabled>
+                          <option value="">-- Seleccione Provincia --</option>
+                        </select>
+                        <div class="invalid-feedback"></div>
                       </div>
-                      <div class="invalid-feedback"></div>
-                      <small class="form-text text-muted">Opcional. Use hasta 4 decimales.</small>
                     </div>
-                  </div>
 
-                  <!-- Mapa referencial -->
-                  <div class="col-12">
-                    <div class="map-placeholder" style="min-height:200px;">
-                      <i class="fas fa-map-marked-alt"></i>
-                      <strong>Mapa de selección de coordenadas</strong>
-                      <small class="text-center mt-1">
-                        Integrar con Leaflet.js para selección interactiva de punto en el mapa.<br>
-                        Las coordenadas se autocompletarán al hacer clic.
-                      </small>
+                    <!-- Ciudad -->
+                    <div class="col-md-4">
+                      <div class="form-group">
+                        <label for="fCiudad">Ciudad / Distrito <span class="text-danger">*</span></label>
+                        <select class="form-control" id="fCiudad" name="ciudad" disabled>
+                          <option value="">-- Seleccione Ciudad --</option>
+                        </select>
+                        <div class="invalid-feedback"></div>
+                      </div>
                     </div>
-                  </div>
 
+                    <!-- Dirección referencial -->
+                    <div class="col-12">
+                      <div class="form-group">
+                        <label for="fDireccion">Dirección Referencial</label>
+                        <input type="text" class="form-control" id="fDireccion" name="direccion"
+                          placeholder="Ej: Av. Principal 456, frente al Banco Central">
+                        <small class="form-text text-muted">Ayuda a localizar la incidencia más fácilmente.</small>
+                      </div>
+                    </div>
+
+                    <!-- Latitud y Longitud -->
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="fLatitud">
+                          Latitud <small class="text-muted">(-90 a 90)</small>
+                        </label>
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-globe-americas"></i></span>
+                          </div>
+                          <input type="number" class="form-control" id="fLatitud" name="latitud" step="0.0001" min="-90"
+                            max="90" placeholder="Ej: -12.1191">
+                        </div>
+                        <div class="invalid-feedback"></div>
+                        <small class="form-text text-muted">Opcional. Use hasta 4 decimales.</small>
+                      </div>
+                    </div>
+
+                    <div class="col-md-6">
+                      <div class="form-group">
+                        <label for="fLongitud">
+                          Longitud <small class="text-muted">(-180 a 180)</small>
+                        </label>
+                        <div class="input-group">
+                          <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fas fa-globe"></i></span>
+                          </div>
+                          <input type="number" class="form-control" id="fLongitud" name="longitud" step="0.0001"
+                            min="-180" max="180" placeholder="Ej: -77.0284">
+                        </div>
+                        <div class="invalid-feedback"></div>
+                        <small class="form-text text-muted">Opcional. Use hasta 4 decimales.</small>
+                      </div>
+                    </div>
+
+                    <!-- Mapa referencial -->
+                    <div class="col-12">
+                      <div class="map-placeholder" style="min-height:200px;">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <strong>Mapa de selección de coordenadas</strong>
+                        <small class="text-center mt-1">
+                          Integrar con Leaflet.js para selección interactiva de punto en el mapa.<br>
+                          Las coordenadas se autocompletarán al hacer clic.
+                        </small>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                  <button type="button" class="btn btn-secondary" id="btnAnterior2">
+                    <i class="fas fa-arrow-left mr-1"></i>Anterior
+                  </button>
+                  <button type="button" class="btn btn-info" id="btnSiguiente2">
+                    Siguiente <i class="fas fa-arrow-right ml-1"></i>
+                  </button>
                 </div>
               </div>
-              <div class="card-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" id="btnAnterior2">
-                  <i class="fas fa-arrow-left mr-1"></i>Anterior
-                </button>
-                <button type="button" class="btn btn-info" id="btnSiguiente2">
-                  Siguiente <i class="fas fa-arrow-right ml-1"></i>
-                </button>
-              </div>
-            </div>
-          </div><!-- /seccion2 -->
+            </div><!-- /seccion2 -->
 
-          <!-- ========================================
+            <!-- ========================================
                SECCIÓN 3: Estado y Confirmación
                ======================================== -->
-          <div class="form-section" id="seccion3">
-            <div class="card card-warning card-outline">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-flag mr-2"></i>Estado Inicial y Confirmación
-                </h3>
-              </div>
-              <div class="card-body">
-                <div class="row">
+            <div class="form-section" id="seccion3">
+              <div class="card shadow-sm border-0 rounded-3 mb-4">
+                <div class="card-header">
+                  <h3 class="card-title">
+                    <i class="fas fa-flag mr-2"></i>Estado Inicial y Confirmación
+                  </h3>
+                </div>
+                <div class="card-body">
+                  <div class="row">
 
-                  <!-- Estado (Radio Buttons) -->
-                  <div class="col-md-12">
-                    <div class="form-group">
-                      <label class="d-block mb-2">
-                        Estado Inicial <span class="text-danger">*</span>
-                      </label>
-                      <div class="radio-group-custom">
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" id="estadoPendiente" name="fEstado"
-                            class="custom-control-input" value="Pendiente" checked>
-                          <label class="custom-control-label" for="estadoPendiente">
-                            <span class="badge badge-pendiente mr-1">⬤</span>Pendiente
-                          </label>
+                    <!-- Estado (Radio Buttons) -->
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label class="d-block mb-2">
+                          Estado Inicial <span class="text-danger">*</span>
+                        </label>
+                        <div class="radio-group-custom">
+                          <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="estadoPendiente" name="fEstado" class="custom-control-input"
+                              value="Pendiente" checked>
+                            <label class="custom-control-label" for="estadoPendiente">
+                              <span class="badge badge-pendiente mr-1">⬤</span>Pendiente
+                            </label>
+                          </div>
+                          <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="estadoProceso" name="fEstado" class="custom-control-input"
+                              value="En Proceso">
+                            <label class="custom-control-label" for="estadoProceso">
+                              <span class="badge badge-proceso mr-1">⬤</span>En Proceso
+                            </label>
+                          </div>
+                          <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="estadoResuelta" name="fEstado" class="custom-control-input"
+                              value="Resuelta">
+                            <label class="custom-control-label" for="estadoResuelta">
+                              <span class="badge badge-resuelta mr-1">⬤</span>Resuelta
+                            </label>
+                          </div>
                         </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" id="estadoProceso" name="fEstado"
-                            class="custom-control-input" value="En Proceso">
-                          <label class="custom-control-label" for="estadoProceso">
-                            <span class="badge badge-proceso mr-1">⬤</span>En Proceso
-                          </label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                          <input type="radio" id="estadoResuelta" name="fEstado"
-                            class="custom-control-input" value="Resuelta">
-                          <label class="custom-control-label" for="estadoResuelta">
-                            <span class="badge badge-resuelta mr-1">⬤</span>Resuelta
-                          </label>
+                        <!-- Feedback para radios -->
+                        <div class="invalid-feedback d-block" data-feedback="fEstado" style="display:none!important;">
                         </div>
                       </div>
-                      <!-- Feedback para radios -->
-                      <div class="invalid-feedback d-block" data-feedback="fEstado" style="display:none!important;"></div>
                     </div>
-                  </div>
 
-                  <!-- Resumen de la incidencia -->
-                  <div class="col-12 mt-3">
-                    <div class="card bg-light mb-3">
-                      <div class="card-header">
-                        <i class="fas fa-clipboard-check mr-2"></i>Resumen de la incidencia a registrar
-                      </div>
-                      <div class="card-body" id="resumenIncidencia">
-                        <p class="text-muted text-center">Complete los pasos anteriores para ver el resumen.</p>
+                    <!-- Resumen de la incidencia -->
+                    <div class="col-12 mt-3">
+                      <div class="card bg-light mb-3">
+                        <div class="card-header">
+                          <i class="fas fa-clipboard-check mr-2"></i>Resumen de la incidencia a registrar
+                        </div>
+                        <div class="card-body" id="resumenIncidencia">
+                          <p class="text-muted text-center">Complete los pasos anteriores para ver el resumen.</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <!-- Checkbox de confirmación -->
-                  <div class="col-12">
-                    <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="fConfirmacion" name="confirmacion">
-                      <label class="custom-control-label" for="fConfirmacion">
-                        Confirmo que la información proporcionada es <strong>verídica y exacta</strong>,
-                        y que no estoy reportando una incidencia duplicada o falsa.
-                      </label>
-                      <div class="invalid-feedback"></div>
+                    <!-- Checkbox de confirmación -->
+                    <div class="col-12">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="fConfirmacion" name="confirmacion">
+                        <label class="custom-control-label" for="fConfirmacion">
+                          Confirmo que la información proporcionada es <strong>verídica y exacta</strong>,
+                          y que no estoy reportando una incidencia duplicada o falsa.
+                        </label>
+                        <div class="invalid-feedback"></div>
+                      </div>
                     </div>
-                  </div>
 
+                  </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                  <button type="button" class="btn btn-secondary" id="btnAnterior3">
+                    <i class="fas fa-arrow-left mr-1"></i>Anterior
+                  </button>
+                  <button type="submit" class="btn btn-success btn-lg" id="btnRegistrar">
+                    <i class="fas fa-save mr-2"></i>Registrar Incidencia
+                  </button>
                 </div>
               </div>
-              <div class="card-footer d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" id="btnAnterior3">
-                  <i class="fas fa-arrow-left mr-1"></i>Anterior
-                </button>
-                <button type="submit" class="btn btn-success btn-lg" id="btnRegistrar">
-                  <i class="fas fa-save mr-2"></i>Registrar Incidencia
-                </button>
-              </div>
-            </div>
-          </div><!-- /seccion3 -->
+            </div><!-- /seccion3 -->
 
-        </form>
+          </form>
 
-      </div><!-- /.container-fluid -->
-    </div><!-- /.content -->
-  </div><!-- /.content-wrapper -->
+        </div><!-- /.container-fluid -->
+      </div><!-- /.content -->
+    </div><!-- /.content-wrapper -->
 
-  <footer class="main-footer">
-    <strong>SGI — Sistema de Gestión de Incidencias Georreferenciadas</strong>
-    <span class="float-right text-muted"><b>Versión</b> 1.0.0</span>
-  </footer>
-  <aside class="control-sidebar control-sidebar-dark"></aside>
-</div><!-- /.wrapper -->
+    <!-- ===== FOOTER ===== -->
+    <footer class="main-footer text-sm">
+      <div class="float-right d-none d-sm-inline">
+        Versión 1.0.0
+      </div>
+      <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
+    </footer>
 
-<!-- Scripts -->
-<script src="../../plugins/jquery/jquery.min.js"></script>
-<script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-<script src="../../dist/js/adminlte.min.js"></script>
-<script src="../js/presentation/layout.js?v=16"></script>
+    <!-- Scripts -->
+    <script src="../../plugins/jquery/jquery.min.js"></script>
+    <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="../../dist/js/adminlte.min.js"></script>
+    <script src="../js/presentation/layout.js?v=17"></script>
 
-<script type="module" src="../js/presentation/incident-create-page.js?v=16"></script>
+    <script type="module" src="../js/presentation/incident-create-page.js?v=16"></script>
 </body>
+
 </html>

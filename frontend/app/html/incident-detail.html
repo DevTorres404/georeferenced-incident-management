@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/app.css?v=23">
 
   <style>
     .timeline-item .timeline-badge { top: 0; }
@@ -30,12 +30,9 @@
   <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
 
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link">
-      <span class="brand-image img-circle elevation-3"
-        style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
-        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
-      </span>
-      <span class="brand-text font-weight-bold ml-2">SGI</span>
+    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
+      <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
     </a>
     <div id="mainSidebar"></div>
   </aside>
@@ -45,16 +42,13 @@
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0" id="pageTitle">
-              <i class="fas fa-file-alt text-primary mr-2"></i>Detalle de Incidencia
+            <h1 class="m-0 text-main font-weight-bold" id="pageTitle">
+              <i class="fas fa-file-invoice mr-2 text-primary"></i>Detalle de Incidencia
             </h1>
+            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Información completa y seguimiento del caso.</p>
           </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
-              <li class="breadcrumb-item"><a href="incidents.html">Incidencias</a></li>
-              <li class="breadcrumb-item active" id="breadcrumbId">Detalle</li>
-            </ol>
+          <div class="col-sm-6 d-none d-sm-block">
+            <!-- Breadcrumbs removidos -->
           </div>
         </div>
       </div>
@@ -72,9 +66,11 @@
     </div>
   </div>
 
-  <footer class="main-footer">
-    <strong>SGI - Sistema de Gestión de Incidencias Georreferenciadas</strong>
-    <span class="float-right text-muted"><b>Versión</b> 1.0.0</span>
+    <footer class="main-footer text-sm">
+    <div class="float-right d-none d-sm-inline">
+      Versión 1.0.0
+    </div>
+    <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
   </footer>
   <aside class="control-sidebar control-sidebar-dark"></aside>
 </div>
@@ -115,7 +111,7 @@
 <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
-<script src="../js/presentation/layout.js?v=14"></script>
+<script src="../js/presentation/layout.js?v=17"></script>
 <script type="module" src="../js/presentation/incident-detail-page.js?v=14"></script>
 </body>
 </html>

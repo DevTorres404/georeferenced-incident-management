@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=16">
+  <link rel="stylesheet" href="../css/app.css?v=23">
 
   <style>
     .metric-card {
@@ -56,12 +56,9 @@
 
   <!-- Sidebar -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link">
-      <span class="brand-image img-circle elevation-3"
-        style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
-        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
-      </span>
-      <span class="brand-text font-weight-bold ml-2">SGI</span>
+    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
+      <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
     </a>
     <div id="mainSidebar"></div>
   </aside>
@@ -82,11 +79,8 @@
               <i class="fas fa-chart-bar text-primary mr-2"></i>Reportes y Estadísticas
             </h1>
           </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
-              <li class="breadcrumb-item active">Reportes</li>
-            </ol>
+          <div class="col-sm-6 d-none d-sm-block">
+            <!-- Breadcrumbs removidos -->
           </div>
         </div>
       </div>
@@ -96,15 +90,14 @@
       <div class="container-fluid">
 
         <!-- ===== FILTRO DE PERÍODO ===== -->
-        <div class="card card-outline card-secondary mb-4">
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
           <div class="card-body py-2">
             <form class="form-inline" id="filtroReporte">
-              <label class="mr-2 font-weight-bold">Período:</label>
-              <select class="form-control form-control-sm mr-2" id="selectPeriodo">
-                <option value="2025">Año 2025</option>
-                <option value="2024">Año 2024</option>
-                <option value="todos" selected>Todos</option>
-              </select>
+              <label class="mr-2 font-weight-bold">Desde:</label>
+              <input type="date" class="form-control form-control-sm mr-2" id="fFechaInicial" name="fecha_inicial">
+              <label class="mr-2 font-weight-bold">Hasta:</label>
+              <input type="date" class="form-control form-control-sm mr-2" id="fFechaFinal" name="fecha_final">
+              
               <label class="mr-2 font-weight-bold">Tipo:</label>
               <select class="form-control form-control-sm mr-2" id="selectTipoFiltro">
                 <option value="">Todos los tipos</option>
@@ -137,7 +130,7 @@
 
           <!-- Gráfico: Incidencias por mes y tipo (Bar apilado) -->
           <div class="col-lg-8">
-            <div class="card card-primary card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-bar mr-2"></i>Incidencias por Mes y Tipo
@@ -156,7 +149,7 @@
 
           <!-- Gráfico: Distribución por prioridad (Radar) -->
           <div class="col-lg-4">
-            <div class="card card-warning card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-pie mr-2"></i>Distribución por Prioridad
@@ -179,7 +172,7 @@
 
           <!-- Tasa de resolución mensual (Line) -->
           <div class="col-lg-6">
-            <div class="card card-success card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-line mr-2"></i>Tasa de Resolución Mensual (%)
@@ -198,7 +191,7 @@
 
           <!-- Tiempo promedio de resolución por tipo (Horizontal bar) -->
           <div class="col-lg-6">
-            <div class="card card-info card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-clock mr-2"></i>Tiempo Promedio de Resolución (días)
@@ -254,7 +247,7 @@
         <!-- ===== TABLA RESUMEN ===== -->
         <div class="row">
           <div class="col-12">
-            <div class="card card-outline card-dark">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-table mr-2"></i>Resumen de Incidencias por Estado y Tipo</h3>
                 <div class="card-tools">
@@ -289,9 +282,11 @@
     </div><!-- /.content -->
   </div><!-- /.content-wrapper -->
 
-  <footer class="main-footer">
-    <strong>SGI — Sistema de Gestión de Incidencias Georreferenciadas</strong>
-    <span class="float-right text-muted"><b>Versión</b> 1.0.0</span>
+    <footer class="main-footer text-sm">
+    <div class="float-right d-none d-sm-inline">
+      Versión 1.0.0
+    </div>
+    <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
   </footer>
   <aside class="control-sidebar control-sidebar-dark"></aside>
 </div>
@@ -302,7 +297,7 @@
 <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
 <script src="../../plugins/chart.js/Chart.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
-<script src="../js/presentation/layout.js?v=16"></script>
+<script src="../js/presentation/layout.js?v=17"></script>
 
 <script type="module" src="../js/presentation/reports-page.js?v=16"></script>
 </body>

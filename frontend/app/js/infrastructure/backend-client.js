@@ -105,14 +105,15 @@ function extractErrorMessage(data, fallback = 'La solicitud no pudo completarse.
   if (data?.message) return data.message;
 
   const statusMessages = {
-    400: 'La solicitud no es valida.',
-    401: 'Tu sesion expiro. Inicia sesion nuevamente.',
-    403: 'No tienes permisos para realizar esta accion.',
-    404: 'No se encontro el recurso solicitado.',
-    419: 'La sesion expiro. Actualiza e inicia sesion nuevamente.',
+    400: 'La solicitud no pudo procesarse. Revise los datos ingresados.',
+    401: 'Su sesión ha expirado. Inicie sesión nuevamente.',
+    403: 'No tiene permisos para realizar esta acción.',
+    404: 'El recurso solicitado no fue encontrado.',
+    409: 'Ya existe un registro con esta información.',
+    419: 'La sesión expiró. Recargue la página e intente nuevamente.',
     422: 'Revisa los datos ingresados.',
-    429: 'Demasiados intentos. Espera un momento e intenta otra vez.',
-    500: 'El servidor no pudo completar la solicitud.',
+    429: 'Ha realizado demasiados intentos. Espere un momento e intente nuevamente.',
+    500: 'Ocurrió un error interno. Intente nuevamente más tarde.',
   };
 
   return statusMessages[fallback] || fallback;

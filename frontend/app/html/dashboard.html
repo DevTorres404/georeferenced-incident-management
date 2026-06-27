@@ -15,7 +15,7 @@
   <!-- OverlayScrollbars -->
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <!-- Estilos propios del sistema -->
-  <link rel="stylesheet" href="../css/app.css?v=16">
+  <link rel="stylesheet" href="../css/app.css?v=23">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -28,11 +28,9 @@
 
   <!-- ===== SIDEBAR ===== -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link">
-      <span class="brand-image img-circle elevation-3" style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
-        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
-      </span>
-      <span class="brand-text font-weight-bold ml-2">SGI <small class="text-muted" style="font-size:0.65rem;">v1.0</small></span>
+    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
+      <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
     </a>
     <div id="mainSidebar"></div>
   </aside>
@@ -50,17 +48,14 @@
     <div class="content-header">
       <div class="container-fluid">
         <div class="row mb-2">
-          <div class="col-sm-6 d-flex align-items-center">
-            <h1 class="m-0 mr-3">
+          <div class="col-sm-6">
+            <h1 class="m-0 text-main font-weight-bold">
               <i class="fas fa-tachometer-alt text-primary mr-2"></i>Panel principal
             </h1>
-
+            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Resumen general del estado y distribución de incidencias.</p>
           </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
-              <li class="breadcrumb-item active">Panel principal</li>
-            </ol>
+          <div class="col-sm-6 d-none d-sm-block">
+            <!-- Breadcrumbs removidos para reducir redundancia visual -->
           </div>
         </div>
       </div>
@@ -80,7 +75,7 @@
 
           <!-- Gráfico de Tipos -->
           <div class="col-lg-5 col-md-12">
-            <div class="card card-primary card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-pie mr-2"></i>Incidencias por Tipo
@@ -99,7 +94,7 @@
 
           <!-- Gráfico de Estado -->
           <div class="col-lg-4 col-md-6">
-            <div class="card card-info card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-doughnut mr-2"></i>Por Estado
@@ -118,7 +113,7 @@
 
           <!-- Gráfico de Prioridad -->
           <div class="col-lg-3 col-md-6">
-            <div class="card card-warning card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-exclamation mr-2"></i>Por Prioridad
@@ -141,7 +136,7 @@
 
           <!-- Gráfico de tendencia mensual -->
           <div class="col-lg-8">
-            <div class="card card-success card-outline">
+            <div class="card shadow-sm border-0 rounded-3 mb-4">
               <div class="card-header">
                 <h3 class="card-title">
                   <i class="fas fa-chart-line mr-2"></i>Tendencia Mensual de Incidencias
@@ -261,9 +256,11 @@
   </div><!-- /.content-wrapper -->
 
   <!-- ===== FOOTER ===== -->
-  <footer class="main-footer">
+    <footer class="main-footer text-sm">
+    <div class="float-right d-none d-sm-inline">
+      Versión 1.0.0
+    </div>
     <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
-    <span class="float-right text-muted"><b>Versión</b> 1.0.0 &mdash; Proyecto Académico</span>
   </footer>
 
   <!-- ===== CONTROL SIDEBAR ===== -->
@@ -283,7 +280,7 @@
 <!-- AdminLTE -->
 <script src="../../dist/js/adminlte.min.js"></script>
 <!-- Módulos del sistema -->
-<script src="../js/presentation/layout.js?v=16"></script>
+<script src="../js/presentation/layout.js?v=17"></script>
 
 <script type="module" src="../js/presentation/dashboard-page.js?v=16"></script>
 </body>
