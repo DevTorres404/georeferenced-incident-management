@@ -1,5 +1,6 @@
 import { getAccessControlOverview, updateRolePermissions } from '../application/access-control-service.js?v=15';
 import { hidePageLoading, showPageLoading } from './incidents-ui.js?v=16';
+import { handleBackendErrors, setFormAlert } from './validation-utils.js?v=1';
 
 document.addEventListener('DOMContentLoaded', initRolePermissionsPage);
 
@@ -27,7 +28,7 @@ async function initRolePermissionsPage() {
     renderRoles(state);
     renderPermissions(state);
   } catch (error) {
-    showAlert(error.message || 'No se pudo cargar roles y permisos.', 'danger');
+    handleBackendErrors(error, null, document.getElementById('access-alert'));
   } finally {
     window.clearTimeout(loadingFallback);
     hidePageLoading();
@@ -52,7 +53,7 @@ function renderRoles(state) {
           <strong>${escapeHtml(role.name)}</strong>
           <span class="badge badge-light">${permissionCount}</span>
         </div>
-        <small>${escapeHtml(role.code)}</small>
+        <small>${escapeHtml(getRoleDescription(role.code))}</small>
       </button>`;
   }).join('');
 
@@ -81,9 +82,9 @@ function renderPermissions(state) {
   container.innerHTML = modules.map(([module, permissions]) => `
     <div class="permission-module mb-3">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(module)}</h4>
+        <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(formatModuleLabel(module))}</h4>
         <button type="button" class="btn btn-xs btn-outline-secondary js-toggle-module" data-module="${escapeHtml(module)}">
-          <i class="fas fa-check-double mr-1"></i>Seleccionar modulo
+          <i class="fas fa-check-double mr-1"></i>Seleccionar todo
         </button>
       </div>
       <div class="row">
@@ -97,7 +98,7 @@ function renderPermissions(state) {
                 value="${escapeAttr(permission.code)}"
                 ${selectedPermissions.has(permission.code) ? 'checked' : ''}>
               <label class="custom-control-label" for="permission-${escapeAttr(permission.code)}">
-                <span class="d-block">${escapeHtml(permission.name)}</span>
+                <span class="d-block">${escapeHtml(formatPermissionLabel(permission))}</span>
               </label>
             </div>
           </div>`).join('')}
@@ -115,6 +116,42 @@ function renderPermissions(state) {
   });
 }
 
+function formatModuleLabel(module) {
+  const labels = {
+    incidents: 'Incidencias',
+    comments: 'Comentarios',
+    users: 'Usuarios',
+    catalogs: 'Catálogos',
+    reportes: 'Reportes',
+    configuracion: 'Configuracion',
+    audit: 'Auditoría',
+  };
+  const key = String(module || '').toLowerCase();
+  return labels[key] || humanizeCode(module);
+}
+
+function formatPermissionLabel(permission) {
+  return permission?.name || humanizeCode(permission?.code);
+}
+
+function getRoleDescription(code) {
+  const descriptions = {
+    ADMIN: 'Administración completa',
+    SUPERVISOR: 'Supervisión y coordinación',
+    OPERADOR: 'Atención operativa',
+    CIUDADANO: 'Registro y seguimiento',
+  };
+  return descriptions[String(code || '').toUpperCase()] || 'Rol del sistema';
+}
+
+function humanizeCode(value) {
+  return String(value || '')
+    .replace(/[._-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 async function saveRolePermissions(state) {
   const role = selectedRole(state);
   if (!role) return;
@@ -130,9 +167,9 @@ async function saveRolePermissions(state) {
     replaceRole(state, response?.data);
     renderRoles(state);
     renderPermissions(state);
-    showAlert(response.message || 'Permisos actualizados.', 'success');
+    setFormAlert(document.getElementById('access-alert'), response.message || 'Permisos actualizados.', 'success');
   } catch (error) {
-    showAlert(error.message || 'No se pudieron guardar los permisos.', 'danger');
+    handleBackendErrors(error, null, document.getElementById('access-alert'));
   } finally {
     hidePageLoading();
   }
@@ -145,19 +182,6 @@ function selectedRole(state) {
 function replaceRole(state, updatedRole) {
   if (!updatedRole?.id) return;
   state.roles = state.roles.map((role) => role.id === updatedRole.id ? updatedRole : role);
-}
-
-function showAlert(message, type) {
-  const alert = document.getElementById('access-alert');
-  if (!alert) return;
-
-  alert.className = `alert alert-${type}`;
-  alert.textContent = message;
-  alert.classList.remove('d-none');
-
-  window.setTimeout(() => {
-    alert.classList.add('d-none');
-  }, 3500);
 }
 
 function emptyState(message) {
