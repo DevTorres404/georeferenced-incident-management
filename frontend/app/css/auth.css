@@ -1,0 +1,413 @@
+/* ============================================================
+   DISEÑO ADMINISTRATIVO MODERNO (Slate & Teal Proposal)
+============================================================ */
+
+:root {
+  /* Slate/Gris azulado para fondos oscuros */
+  --surface-dark: #1e293b; 
+  --surface-darker: #0f172a;
+  
+  /* Azul profesional/petróleo para botones principales */
+  --primary-color: #0284c7; 
+  --primary-hover: #0369a1;
+  --primary-active: #075985;
+  
+  /* Teal/Celeste para acentos y decoraciones */
+  --accent-color: #14b8a6; 
+  
+  /* Textos y fondos claros */
+  --text-dark: #334155; 
+  --text-muted: #64748b; 
+  --bg-light: #f8fafc; 
+  --card-bg: #ffffff; 
+  --border-color: #e2e8f0;
+  
+  /* Sombras y focos */
+  --focus-ring: rgba(2, 132, 199, 0.2);
+  --shadow-card: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.01);
+  --shadow-btn: 0 2px 4px -1px rgba(2, 132, 199, 0.15);
+}
+
+body.auth-page {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   ESTRUCTURA PRINCIPAL
+============================================================ */
+.auth-layout {
+  min-height: 100vh;
+}
+
+.auth-centered-container {
+  box-shadow: var(--shadow-card);
+  border-radius: 12px;
+}
+
+/* Lado Izquierdo (Hero) */
+.auth-hero {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.75) 0%, rgba(30, 41, 59, 0.75) 100%), url('../img/fondo.png');
+  background-size: cover;
+  background-position: center;
+  color: #f8fafc;
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Patrón sutil de puntos (estilo georreferenciación/malla) */
+.auth-hero::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(rgba(20, 184, 166, 0.12) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.auth-hero-content {
+  max-width: 480px;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--accent-color);
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.auth-eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-color);
+  margin-bottom: 0.75rem;
+}
+
+.auth-hero h1 {
+  font-size: 2.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 1.25rem;
+  color: #ffffff;
+}
+
+.auth-lead {
+  font-size: 1.05rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+}
+
+.auth-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.auth-feature-list .bg-info {
+  background-color: rgba(20, 184, 166, 0.15) !important;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+
+.auth-feature-list .text-white {
+  color: var(--accent-color) !important;
+}
+
+.auth-feature {
+  display: flex;
+  flex-direction: column;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+
+/* ============================================================
+   LADO DERECHO (FORMULARIO)
+============================================================ */
+.auth-form-zone {
+  background-color: var(--card-bg);
+  padding: 3rem 2rem;
+}
+
+.auth-panel {
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.auth-card-heading {
+  margin-bottom: 2rem;
+}
+
+.auth-card-heading h2 {
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: #0f172a;
+  margin-bottom: 0.5rem;
+}
+
+.auth-card-heading p.text-muted {
+  color: var(--text-muted) !important;
+  font-size: 0.95rem;
+}
+
+.auth-card-heading .small.text-muted {
+  color: var(--text-muted) !important;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+/* ============================================================
+   CONTROLES DE FORMULARIO
+============================================================ */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  color: var(--text-dark);
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  font-size: 0.875rem;
+}
+
+.form-control {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-dark);
+  padding: 0.65rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+  height: auto;
+}
+
+.form-control::placeholder {
+  color: #94a3b8;
+}
+
+/* Fix autocompletado amarillo */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover, 
+.form-control:-webkit-autofill:focus, 
+.form-control:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: var(--text-dark) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.form-control:hover {
+  border-color: #cbd5e1;
+}
+
+.form-control:focus {
+  background-color: #ffffff;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  outline: 0;
+}
+
+.input-group .form-control {
+  border-right: none;
+}
+
+.input-group-append .btn-auth-outline {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  padding: 0 0.875rem;
+}
+
+.input-group-append .btn-auth-outline:focus {
+  box-shadow: none;
+  border-color: var(--primary-color);
+}
+
+.form-control:focus + .input-group-append .btn-auth-outline {
+  border-color: var(--primary-color);
+}
+
+/* ============================================================
+   BOTONES Y ENLACES
+============================================================ */
+.btn-auth-primary {
+  background-color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: var(--shadow-btn);
+}
+
+.btn-auth-primary:hover,
+.btn-auth-primary:focus {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #fff;
+  box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.2);
+}
+
+.btn-auth-primary:active {
+  background-color: var(--primary-active);
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.btn-auth-primary:disabled {
+  background-color: #cbd5e1;
+  border-color: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-auth-google {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-dark);
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-auth-google:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.btn-auth-google:active {
+  background-color: #f1f5f9;
+}
+
+.auth-link {
+  color: var(--primary-color);
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.auth-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* Divider "o" */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: var(--text-muted);
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.auth-divider span {
+  padding: 0 1rem;
+  font-size: 0.85rem;
+  text-transform: lowercase;
+}
+
+/* ============================================================
+   ALERTAS Y HELPERS
+============================================================ */
+.auth-view .alert {
+  border-radius: 6px;
+  font-size: 0.875rem;
+  border: 1px solid transparent;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.alert-danger {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.alert-success {
+  background-color: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.alert-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.alert-info {
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.auth-helper {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2rem;
+}
+
+/* ============================================================
+   RESPONSIVO
+============================================================ */
+@media (max-width: 991.98px) {
+  .auth-hero {
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  
+  .auth-hero-content {
+    margin: 0 auto;
+  }
+  
+  .auth-brand {
+    margin: 0 auto 1.5rem auto;
+  }
+  
+  .auth-hero h1 {
+    font-size: 1.75rem;
+  }
+  
+  .auth-feature-list {
+    display: none;
+  }
+  
+  .auth-form-zone {
+    padding: 2rem 1.5rem;
+  }
+}

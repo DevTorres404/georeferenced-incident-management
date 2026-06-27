@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Roles y Permisos | Sistema de Incidencias</title>
+
+  <!-- Google Font -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <!-- OverlayScrollbars -->
+  <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <!-- AdminLTE -->
+  <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+  <!-- Estilos propios del sistema -->
+  <link rel="stylesheet" href="../css/app.css?v=16">
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+
+    <!-- Navbar inyectada por layout.js -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+    <!-- Sidebar inyectada por layout.js -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <!-- Brand Logo -->
+      <a href="dashboard.html" class="brand-link">
+        <i class="fas fa-map-marked-alt brand-image mt-1 ml-3" style="opacity: .8"></i>
+        <span class="brand-text font-weight-light">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <div class="content-wrapper">
+      
+    <!-- Pantalla de carga nativa -->
+    <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+      <div class="loader-orbit" aria-hidden="true">
+        <i class="fas fa-map-marker-alt"></i>
+      </div>
+    </div>
+      <script>
+        window.setTimeout(function () {
+          var loader = document.getElementById('pageLoader');
+          if (!loader) return;
+          loader.setAttribute('hidden', '');
+          loader.classList.add('d-none');
+          loader.setAttribute('aria-hidden', 'true');
+          loader.style.display = 'none';
+        }, 4000);
+      </script>
+      
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-6">
+              <h1 class="m-0">
+                <i class="fas fa-user-shield text-primary mr-2"></i>Roles y Permisos
+              </h1>
+            </div>
+            <div class="col-sm-6">
+              <ol class="breadcrumb float-sm-right">
+                <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
+                <li class="breadcrumb-item active">Roles y Permisos</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="container-fluid">
+          <div id="access-alert" class="alert d-none" role="alert"></div>
+
+          <div class="row">
+            <!-- Lista de Roles -->
+            <div class="col-md-4">
+              <div class="card card-outline card-primary shadow-sm">
+                <div class="card-header">
+                  <h3 class="card-title">Seleccionar Rol</h3>
+                </div>
+                <div class="card-body p-0">
+                  <div class="list-group list-group-flush" id="role-list">
+                    <!-- Los roles se inyectarán aquí -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Matriz de Permisos -->
+            <div class="col-md-8">
+              <div class="card card-outline card-info shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                  <h3 class="card-title">Matriz de Permisos</h3>
+                  <div class="card-tools">
+                    <button type="button" id="save-role-permissions-btn" class="btn btn-primary btn-sm">
+                      <i class="fas fa-save mr-1"></i> Guardar Cambios
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div id="permission-matrix" class="p-3">
+                    <!-- La matriz de permisos se inyectará aquí -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Footer -->
+    <footer class="main-footer text-sm">
+      <strong>Sistema de Gestión de Incidencias Georreferenciadas &copy; 2026.</strong>
+      Todos los derechos reservados.
+    </footer>
+  </div>
+
+  <!-- jQuery -->
+  <script src="../../plugins/jquery/jquery.min.js"></script>
+  <!-- Bootstrap 4 -->
+  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <!-- OverlayScrollbars -->
+  <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <!-- AdminLTE App -->
+  <script src="../../dist/js/adminlte.min.js"></script>
+  <!-- Módulos del sistema -->
+  <script src="../js/presentation/layout.js?v=16"></script>
+  <script type="module" src="../js/presentation/role-permissions-page.js?v=16"></script>
+</body>
+
+</html>

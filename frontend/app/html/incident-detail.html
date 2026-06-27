@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SGI | Detalle de Incidencia</title>
+  <meta name="description" content="Detalle completo de incidencia georreferenciada">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="../css/app.css">
+
+  <style>
+    .timeline-item .timeline-badge { top: 0; }
+    .comentario-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0;
+    }
+    .estado-badge-grande { font-size: 1rem; padding: 6px 14px; }
+    .detalle-label { font-size: 0.78rem; color: #6c757d; text-transform: uppercase; letter-spacing: .05em; }
+  </style>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper">
+  <div id="alertaGlobal" role="alert"></div>
+
+  <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <a href="dashboard.html" class="brand-link">
+      <span class="brand-image img-circle elevation-3"
+        style="background:linear-gradient(135deg,#007bff,#17a2b8);width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;">
+        <i class="fas fa-map-marked-alt text-white" style="font-size:1rem;"></i>
+      </span>
+      <span class="brand-text font-weight-bold ml-2">SGI</span>
+    </a>
+    <div id="mainSidebar"></div>
+  </aside>
+
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0" id="pageTitle">
+              <i class="fas fa-file-alt text-primary mr-2"></i>Detalle de Incidencia
+            </h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="dashboard.html">Inicio</a></li>
+              <li class="breadcrumb-item"><a href="incidents.html">Incidencias</a></li>
+              <li class="breadcrumb-item active" id="breadcrumbId">Detalle</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="container-fluid" id="contenidoDetalle">
+        <div class="text-center py-5" id="loadingDetalle">
+          <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+            <span class="sr-only">Cargando...</span>
+          </div>
+          <p class="mt-3 text-muted">Cargando detalle de incidencia...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="main-footer">
+    <strong>SGI - Sistema de Gestión de Incidencias Georreferenciadas</strong>
+    <span class="float-right text-muted"><b>Versión</b> 1.0.0</span>
+  </footer>
+  <aside class="control-sidebar control-sidebar-dark"></aside>
+</div>
+
+<div class="modal fade" id="modalEstado" tabindex="-1" role="dialog" aria-labelledby="modalEstadoLabel" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalEstadoLabel">
+          <i class="fas fa-exchange-alt mr-2"></i>Cambiar Estado de Incidencia
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="nuevoEstado">Nuevo Estado:</label>
+          <select class="form-control" id="nuevoEstado"></select>
+        </div>
+        <div class="form-group">
+          <label for="comentarioEstado">Comentario del cambio: <small class="text-muted">(opcional)</small></label>
+          <textarea class="form-control" id="comentarioEstado" rows="3"
+            placeholder="Explique brevemente el motivo del cambio de estado..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnGuardarEstado">
+          <i class="fas fa-save mr-1"></i>Guardar Cambio
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../../plugins/jquery/jquery.min.js"></script>
+<script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+<script src="../../dist/js/adminlte.min.js"></script>
+<script src="../js/presentation/layout.js?v=14"></script>
+<script type="module" src="../js/presentation/incident-detail-page.js?v=14"></script>
+</body>
+</html>
