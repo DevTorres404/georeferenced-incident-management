@@ -1,0 +1,251 @@
+/* ---- Institucional SGI ---- */
+.main-sidebar.sidebar-dark-primary {
+  background-color: #0f172a !important;
+}
+.main-sidebar.sidebar-dark-primary .brand-link {
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  color: #fff !important;
+}
+.main-sidebar.sidebar-dark-primary .sidebar {
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.main-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background-color: #0ea5e9 !important;
+  color: #fff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.main-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+  color: #fff !important;
+}
+
+.main-header.navbar {
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.brand-image.img-circle {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+}
+
+/* User panel icon bg */
+.user-panel .image > div {
+  background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+}
+
+/* ---- Bootstrap Overrides ---- */
+.btn-primary { background-color: var(--color-primary); border-color: var(--color-primary); }
+.btn-primary:hover { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); }
+.text-primary { color: var(--color-primary) !important; }
+.bg-primary { background-color: var(--color-primary) !important; }
+.badge-primary { background-color: var(--color-primary) !important; }
+.btn-outline-primary { color: var(--color-primary); border-color: var(--color-primary); }
+.btn-outline-primary:hover { background-color: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.page-item.active .page-link { background-color: var(--color-primary); border-color: var(--color-primary); }
+a { color: var(--color-primary); }
+a:hover { color: var(--color-primary-dark); }
+
+/* ============================================================
+   PREMIUM INSTITUTIONAL DESIGN OVERHAUL (BOOTSTRAP NATIVO)
+   ============================================================ */
+:root {
+  --color-primary: #0ea5e9;
+  --color-primary-dark: #0369a1;
+  --color-sidebar-bg: #071827;
+  --color-sidebar-bg-soft: #0f2740;
+  --color-sidebar-text: #cbd5e1;
+  --color-sidebar-active: #0ea5e9;
+  --color-background: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text-main: #0f172a;
+  --color-text-muted: #64748b;
+}
+
+body {
+  background-color: var(--color-background) !important;
+  color: var(--color-text-main);
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* Utilidades básicas */
+.text-main { color: var(--color-text-main) !important; }
+.bg-surface { background-color: var(--color-surface) !important; }
+
+/* Sidebar Oscuro Profesional */
+.sidebar-dark-primary {
+  background-color: var(--color-sidebar-bg) !important;
+}
+.sidebar-dark-primary .brand-link {
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+  color: #fff !important;
+}
+.sidebar-dark-primary .nav-sidebar .nav-item > .nav-link {
+  color: var(--color-sidebar-text) !important;
+}
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background-color: var(--color-sidebar-active) !important;
+  color: #ffffff !important;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(14, 165, 233, 0.25);
+}
+.sidebar-dark-primary .nav-sidebar .nav-item > .nav-link:not(.active):hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
+/* Botones (Override minimal de AdminLTE/Bootstrap) */
+.btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: #fff !important;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-dark) !important;
+  border-color: var(--color-primary-dark) !important;
+}
+
+/* Tabla - Encabezado suave */
+.table thead th {
+  background-color: #f8fafc;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  border-bottom: 2px solid var(--color-border) !important;
+  border-top: none !important;
+}
+
+/* ---- Layout SGI: identidad, navegación y acciones rápidas ---- */
+.main-sidebar.sidebar-dark-primary,
+.sidebar-dark-primary {
+  background: var(--color-sidebar-bg) !important;
+}
+
+.main-sidebar .brand-link,
+.sgi-brand-link {
+  min-height: 64px;
+  display: flex !important;
+  align-items: center;
+  padding: 12px 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.main-sidebar .brand-image,
+.sgi-brand-logo {
+  width: 38px !important;
+  height: 38px !important;
+  object-fit: contain;
+  padding: 4px;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.main-sidebar .brand-text,
+.sgi-brand-text {
+  margin-left: 10px;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+}
+
+.sgi-sidebar-section-label {
+  padding: 18px 16px 6px;
+  color: #7dd3fc;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar-dark-primary .nav-sidebar {
+  padding: 0 8px;
+}
+
+.sidebar-dark-primary .nav-sidebar .nav-link {
+  min-height: 42px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+}
+
+.sidebar-dark-primary .nav-sidebar .nav-link p {
+  font-size: 0.92rem;
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)) !important;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28);
+}
+
+.main-header.navbar {
+  min-height: 58px;
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sgi-user-toggle {
+  color: var(--color-text-main) !important;
+}
+
+.sgi-user-avatar-sm,
+.sgi-user-avatar-lg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.sgi-user-avatar-sm {
+  width: 32px;
+  height: 32px;
+  font-size: 0.9rem;
+}
+
+.sgi-user-avatar-lg {
+  width: 42px;
+  height: 42px;
+  font-size: 1.05rem;
+}
+
+.sgi-user-dropdown {
+  width: 270px;
+  padding: 10px;
+}
+
+.sgi-user-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.sgi-user-dropdown-meta {
+  min-width: 0;
+}
+
+.sgi-user-dropdown-meta h6,
+.sgi-user-dropdown-meta small {
+  display: block;
+  max-width: 178px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sgi-user-dropdown-meta h6 {
+  margin: 0;
+  color: var(--color-text-main);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.sgi-user-dropdown-meta small {
+  color: var(--color-text-muted);
+}
+
