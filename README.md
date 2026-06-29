@@ -237,74 +237,132 @@ Si se usa este modo, revisar que el backend permita CORS desde `http://localhost
 
 ## Arquitectura del backend
 
-El backend sigue una arquitectura Hexagonal / DDD por contextos funcionales dentro de `backend/app`.
+El backend sigue estrictamente una **Arquitectura Modular basada en DDD (Domain-Driven Design) y Arquitectura Hexagonal**. En lugar de la estructura tradicional MVC de Laravel, el código en `backend/app/` está organizado por **módulos o contextos funcionales** (ej: `Auth/`, `Incidents/`, `Users/`, `Catalogs/`).
 
-Capas principales:
+Dentro de cada módulo, se aplican las siguientes capas:
 
-- `Domain/`: entidades, contratos de repositorio y reglas del dominio. No debe depender de Laravel ni Eloquent.
-- `Application/`: casos de uso y DTOs. Orquesta flujos del sistema sin responder HTTP directamente.
-- `Infrastructure/`: controladores HTTP, modelos Eloquent, repositorios concretos y mapeadores.
+- **`Domain/`**: Contiene la lógica central de negocio (Entidades, Value Objects, contratos/interfaces de repositorios y eventos del dominio). Esta capa es **agnóstica** al framework, no depende de Laravel ni de Eloquent.
+- **`Application/`**: Contiene los Casos de Uso (Use Cases o Services) y DTOs. Orquesta los flujos del sistema utilizando las interfaces del dominio, sin interactuar directamente con peticiones HTTP o la base de datos directamente.
+- **`Infrastructure/`**: Contiene la implementación técnica de las interfaces del dominio. Aquí residen los Controladores HTTP, Modelos de Eloquent, Repositorios concretos y recursos de integración externos.
 
-Reglas importantes:
+Reglas importantes del backend:
 
-- Las rutas estan en `backend/routes/api.php`.
-- La autenticacion usa Laravel Sanctum.
-- La autenticacion de dos factores aplica para usuarios administrativos.
-- Los permisos se validan en backend con middleware.
-- El frontend solo oculta o bloquea acciones segun permisos recibidos; la regla real vive en backend.
+- Las rutas están centralizadas en `backend/routes/api.php`.
+- La autenticación principal usa **Laravel Sanctum**.
+- La base de datos, el sistema de roles y los catálogos no deben estar hardcodeados; todo proviene de la base de datos a través de las capas de infraestructura.
+- Los permisos se validan robustamente en el backend mediante middleware o policies. El frontend solo adapta la UI (oculta botones/menús), pero la verdadera regla y seguridad reside en el backend.
+
+## Conexión Frontend - Backend
+
+El SGI opera bajo un modelo desacoplado (Headless), donde el frontend (Vanilla JS) y el backend (Laravel) se comunican exclusivamente mediante una **API REST**.
+
+### Configurar la URL del backend según el modo de ejecución
+
+El backend no necesita cambios especiales para conectarse al frontend: normalmente se mantiene corriendo en:
+
+```text
+http://127.0.0.1:8000
+```
+
+El ajuste importante está en el frontend, en:
+
+```text
+frontend/app/js/core/config.js
+```
+
+Ese archivo define la URL base de la API:
+
+```js
+export const API_URL = window.SGIG_API_URL || window.SGI_API_URL || `${window.location.origin}/api`;
+```
+
+#### Frontend con Docker
+
+Si el frontend corre con Docker en `http://localhost:5500`, se puede dejar el valor por defecto:
+
+```js
+`${window.location.origin}/api`
+```
+
+En ese modo, nginx del frontend recibe las peticiones en:
+
+```text
+http://localhost:5500/api
+```
+
+y las redirige al backend local en:
+
+```text
+http://127.0.0.1:8000/api
+```
+
+#### Frontend sin Docker
+
+Si el frontend se levanta sin Docker con `php -S localhost:5500` o `npx http-server -p 5500`, no existe el proxy nginx de `/api`. En ese caso se debe apuntar directamente al backend local.
+
+Opción recomendada: definir la URL antes de cargar los módulos principales en los HTML:
+
+```html
+<script>
+  window.SGI_API_URL = 'http://127.0.0.1:8000/api';
+</script>
+```
+
+Opción alternativa: cambiar temporalmente `frontend/app/js/core/config.js` durante desarrollo local:
+
+```js
+export const API_URL = 'http://127.0.0.1:8000/api';
+```
+
+Cuando se usa frontend sin Docker, revisar también `backend/.env` para permitir el origen del frontend:
+
+```env
+FRONTEND_URL=http://localhost:5500
+SANCTUM_STATEFUL_DOMAINS=localhost:5500,127.0.0.1:5500
+SESSION_DOMAIN=localhost
+```
+
+Después de cambiar `.env`, limpiar configuración del backend:
+
+```bash
+cd backend
+php artisan config:clear
+```
+
+### Flujo de Comunicación:
+
+1. **Cliente HTTP Centralizado**: Todas las peticiones desde el frontend hacia el backend pasan por un único punto: `frontend/app/js/core/api-client.js`. Este módulo se encarga de inyectar automáticamente el token de autenticación (`Bearer`) y las cabeceras requeridas (como `Accept: application/json`).
+2. **Autenticación (Sanctum/Firebase)**: El usuario inicia sesión y obtiene un token (ya sea manejado por Firebase y luego intercambiado en el backend, o emitido directamente por Sanctum). El frontend guarda este token en `storage.js` y el `api-client.js` lo usa en subsiguientes peticiones HTTP.
+3. **Manejo de CORS y Proxy**: En el entorno Docker, el servidor Nginx del frontend (`localhost:5500`) actúa como un proxy inverso para la ruta `/api`, reenviando internamente las peticiones al contenedor del backend. Cuando se ejecuta sin Docker, el frontend debe apuntar a la URL completa del backend local (ej. `http://127.0.0.1:8000/api`) y el backend de Laravel debe estar configurado para aceptar peticiones CORS desde el origen del frontend.
+4. **Respuestas Globales**: El `api-client.js` intercepta errores globales (como `401 Unauthorized` o `403 Forbidden`) para destruir la sesión del frontend y redirigir al login o mostrar alertas genéricas de denegación de acceso.
+5. **Carga de UI Dinámica**: Tras autenticarse, el frontend consume los endpoints del backend para obtener el perfil del usuario, roles, permisos y menús habilitados para renderizar dinámicamente el `sidebar` y `topbar` basado en las restricciones impuestas por Laravel.
 
 ## Arquitectura del frontend
 
-El frontend no usa React, Vue ni Angular. Se mantiene como frontend estatico con Bootstrap, AdminLTE y JavaScript modular.
+El frontend no usa React, Vue ni Angular. Se mantiene como un **frontend Vanilla JS altamente modular** (utilizando ES6 Modules nativos), montado sobre Bootstrap y AdminLTE. Para evitar el típico código espagueti de Vanilla JS, se implementó una **Arquitectura por Módulos y Capas (inspirada en DDD)**, lo cual mantiene una fuerte consistencia conceptual con el diseño del backend.
 
-Estructura principal:
+### Estructura Principal (`frontend/app/js/`)
 
-```text
-frontend/app/js/
-  core/
-    api-client.js
-    auth-session.js
-    config.js
-    router.js
-    storage.js
-  layout/
-    layout.js
-    sidebar.js
-    topbar.js
-    loader.js
-  shared/
-    sanitizer.js
-    utils/
-    validators/
-  modules/
-    auth/
-    catalogs/
-    dashboard/
-    incidents/
-    profile/
-    reports/
-    roles/
-    users/
-```
+- **`core/`**: Infraestructura base de la aplicación. Aquí vive el `api-client.js` (cliente HTTP centralizado que maneja tokens), `router.js` (enrutamiento en el cliente), `auth-session.js` y `storage.js`.
+- **`layout/`**: Componentes globales de la interfaz (Application Shell). Contiene la lógica del `sidebar.js`, `topbar.js` y `loader.js`.
+- **`shared/`**: Utilidades puras compartidas entre múltiples dominios, como `sanitizer.js` para evitar ataques XSS, utilidades de manipulación del DOM y validadores genéricos.
+- **`modules/`**: El corazón del sistema (Vertical Slicing). Cada funcionalidad principal (ej. `auth`, `incidents`, `roles`, `users`) es un módulo independiente que agrupa todo su código.
 
-Responsabilidades:
+### Capas dentro de cada Módulo (`modules/`)
 
-- `core/`: configuracion global, cliente HTTP, sesion y utilidades base.
-- `layout/`: sidebar, topbar, menu de usuario y loader.
-- `shared/`: utilidades compartidas, validaciones y sanitizacion.
-- `modules/`: logica por dominio funcional.
-- `presentation/`: eventos, renderizado y comportamiento de pantalla.
-- `application/`: flujos y servicios de aplicacion del modulo.
-- `infrastructure/`: integraciones especificas del modulo cuando aplica.
+Al igual que en el backend, los módulos complejos se subdividen en sus propias capas internas:
+- **`application/`**: Contiene los "Services" (ej. `incidents-service.js`). Agrupa la lógica de flujos del frontend y delega las peticiones HTTP a `core/api-client.js`.
+- **`infrastructure/`**: Para configuraciones o SDKs externos específicos de ese módulo (ej. `firebase-config.js` dentro del módulo `auth`).
+- **`presentation/`**: Contiene las "Pages" o controladores de "UI" (ej. `incidents-page.js`). Es la única capa que interactúa con el DOM, inyecta datos HTML y captura eventos de usuario, delegando la lógica de procesamiento a `application/`.
 
-Reglas frontend:
+### Reglas Críticas del Frontend:
 
-- Las pantallas no deben llamar directamente a `fetch`.
-- El unico `fetch` central debe estar en `frontend/app/js/core/api-client.js`.
-- Los textos visibles van en espanol.
-- Los nombres tecnicos de archivos, carpetas, funciones y modulos van en ingles.
-- No hardcodear usuarios, roles, permisos, estados ni prioridades.
-- Usar `shared/sanitizer.js` o helpers equivalentes antes de insertar datos no confiables en HTML.
+- Las pantallas y controladores (`presentation`) **NUNCA** deben llamar directamente a `fetch` ni manipular cabeceras HTTP o tokens. Todo pasa por sus respectivos services en `application` y finalmente por el único `fetch` en `core/api-client.js`.
+- El frontend usa importaciones de módulos nativos (`<script type="module">`), por lo que el desarrollo local es inmediato y no depende de compilar con Webpack o Vite en tiempo real.
+- Todos los textos visibles en la interfaz para el usuario final van estrictamente en **español**.
+- Los nombres técnicos de archivos, carpetas, clases, funciones y variables van estrictamente en **inglés**.
+- **Regla de Oro:** No se deben hardcodear usuarios, roles, permisos, menús, estados de incidencias ni prioridades. La UI debe construirse dinámicamente según la información provista por la API del backend.
+- Siempre se debe usar `shared/sanitizer.js` o helpers equivalentes antes de insertar datos externos o no confiables en el DOM mediante `innerHTML`.
 
 ## CSS
 
@@ -320,6 +378,43 @@ frontend/app/css/
 ```
 
 Bootstrap y AdminLTE siguen siendo la base visual. El CSS propio debe limitarse a identidad SGI, sidebar, logo, loader, estados, tablas y ajustes puntuales.
+
+## Pruebas del backend
+
+El backend usa PHPUnit a traves de `php artisan test`. La configuracion de testing esta en `backend/phpunit.xml` y apunta a PostgreSQL/PostGIS:
+
+- Base de datos: `incident_management_system_testing`
+- Usuario: `user_im`
+- Password: `pass_im`
+- Broadcast: `null`
+- Queue: `sync`
+- Cache y sesion: memoria local de testing
+
+Crear la base de pruebas una sola vez:
+
+```sql
+CREATE DATABASE incident_management_system_testing;
+\c incident_management_system_testing
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
+
+Ejecutar pruebas desde `backend/`:
+
+```bash
+php artisan config:clear
+php artisan migrate:fresh --seed --env=testing
+php artisan test
+```
+
+Comandos frecuentes:
+
+```bash
+php artisan test --testsuite=Feature
+php artisan test --testsuite=Unit
+php artisan test tests/Feature/IncidentsTest.php
+php artisan test --stop-on-failure
+composer test
+```
 
 ## Comandos utiles
 
