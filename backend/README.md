@@ -1,58 +1,84 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Backend SGI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST del Sistema de Gestion de Incidencias, desarrollada en Laravel y organizada por modulos siguiendo Arquitectura Hexagonal / DDD.
 
-## About Laravel
+## Arquitectura
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+El codigo principal vive en `app/` separado por contextos funcionales:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- `Auth/`: autenticacion, Google/Firebase, 2FA, roles de usuario autenticado.
+- `Incidents/`: incidencias, estados, comentarios, adjuntos, asignaciones y notificaciones.
+- `Catalogs/`: catalogos usados por incidencias.
+- `Users/`: administracion de usuarios y roles.
+- `Shared/`: contratos, DTOs, controladores base y utilidades comunes.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Cada modulo mantiene sus capas:
 
-## Learning Laravel
+- `Domain/`: entidades, contratos y reglas puras del negocio.
+- `Application/`: casos de uso y DTOs.
+- `Infrastructure/`: controladores HTTP, repositorios Eloquent, modelos, eventos y servicios externos.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Tests del backend
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Los tests usan PHPUnit mediante `php artisan test`. La configuracion esta en `phpunit.xml`.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Por defecto el entorno de pruebas usa:
 
-## Agentic Development
+- `APP_ENV=testing`
+- `DB_CONNECTION=pgsql`
+- `DB_DATABASE=incident_management_system_testing`
+- `DB_USERNAME=user_im`
+- `DB_PASSWORD=pass_im`
+- `BROADCAST_CONNECTION=null`
+- `QUEUE_CONNECTION=sync`
+- `CACHE_STORE=array`
+- `SESSION_DRIVER=array`
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Antes de ejecutar pruebas por primera vez, crea la base de datos de testing en PostgreSQL y habilita PostGIS:
 
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```sql
+CREATE DATABASE incident_management_system_testing;
+\c incident_management_system_testing
+CREATE EXTENSION IF NOT EXISTS postgis;
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Luego, desde `backend/`:
 
-## Contributing
+```bash
+composer install
+php artisan config:clear
+php artisan migrate:fresh --seed --env=testing
+php artisan test
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Comandos utiles:
 
-## Code of Conduct
+```bash
+# Ejecutar toda la suite
+php artisan test
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Ejecutar solo Feature tests
+php artisan test --testsuite=Feature
 
-## Security Vulnerabilities
+# Ejecutar solo Unit tests
+php artisan test --testsuite=Unit
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Ejecutar un archivo especifico
+php artisan test tests/Feature/IncidentsTest.php
 
-## License
+# Detener al primer fallo
+php artisan test --stop-on-failure
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Tambien se puede usar el script de Composer:
+
+```bash
+composer test
+```
+
+## Consideraciones
+
+- Los tests no deben depender de Reverb en ejecucion; en testing el broadcast queda en `null`.
+- Los tests de incidencias deben respetar permisos y roles reales del backend.
+- Si una prueba toca datos geoespaciales, debe ejecutarse contra PostgreSQL/PostGIS, no SQLite.
+- No usar credenciales reales de Firebase ni valores de `.env` productivos en pruebas.
