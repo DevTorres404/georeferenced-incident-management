@@ -1,0 +1,250 @@
+.incident-location-card {
+  padding: 14px;
+}
+
+.location-summary-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e1e9f0;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.location-summary-band strong,
+.location-summary-band small {
+  display: block;
+}
+
+.location-summary-band strong {
+  color: #0b1f3a;
+  font-size: 1rem;
+}
+
+.location-summary-band small {
+  color: #607485;
+}
+
+.coordinate-box {
+  padding: 12px 14px;
+  border: 1px solid #e1e9f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coordinate-box span,
+.coordinate-box code {
+  display: block;
+}
+
+.coordinate-box span {
+  color: #6c7a89;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.coordinate-box code {
+  color: #0b1f3a;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.incident-detail-map {
+  display: flex;
+  min-height: 480px;
+  height: 55vh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #d7e5ef;
+  border-radius: 8px;
+  background: #edf6fb;
+}
+
+.incident-detail-map .map-empty-state,
+.incident-detail-map > i,
+.incident-detail-map > strong,
+.incident-detail-map > code,
+.incident-detail-map > small {
+  text-align: center;
+}
+
+.incident-detail-map .map-empty-state {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  color: #607485;
+}
+
+.incident-detail-map .map-empty-state i,
+.incident-detail-map > i {
+  color: #0d6efd;
+  font-size: 2rem;
+}
+
+.incident-detail-map > i,
+.incident-detail-map > strong,
+.incident-detail-map > code,
+.incident-detail-map > small {
+  margin: 4px;
+}
+
+.attachment-guidance {
+  background: #f7fcf8;
+}
+
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.attachment-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid #dce9df;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(31, 45, 61, 0.06);
+}
+
+.attachment-preview {
+  display: flex;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eefaf0, #f8fbff);
+}
+
+.attachment-preview-link,
+.attachment-preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.attachment-preview-link {
+  cursor: zoom-in;
+}
+
+.attachment-preview-image {
+  min-height: 180px;
+  object-fit: cover;
+}
+
+.attachment-preview-placeholder {
+  display: flex;
+  width: 100%;
+  min-height: 180px;
+  align-items: center;
+  justify-content: center;
+  color: #1f8f50;
+  font-size: 3rem;
+}
+
+.attachment-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.attachment-title {
+  margin: 0 0 6px;
+  color: #0b1f3a;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.attachment-meta {
+  min-width: 0;
+}
+
+.attachment-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: #607485;
+  font-size: 0.83rem;
+}
+
+.attachment-type-badge {
+  color: #1f8f50;
+  background: #ebf8ef;
+  border: 1px solid #cfead8;
+}
+
+.attachment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.attachment-preview-modal-body {
+  display: flex;
+  min-height: 60vh;
+  align-items: center;
+  justify-content: center;
+  background: #f4f8f5;
+}
+
+.attachment-preview-modal-image {
+  max-width: 100%;
+  max-height: 72vh;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 14px 30px rgba(31, 45, 61, 0.15);
+}
+
+.attachment-preview-modal-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #607485;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.attachment-preview-modal-fallback i {
+  color: #1f8f50;
+  font-size: 3rem;
+}
+
+@media (max-width: 991.98px) {
+  .incident-detail-map {
+    min-height: 420px;
+    height: 48vh;
+  }
+
+  .location-summary-band {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .attachment-preview,
+  .attachment-preview-placeholder,
+  .attachment-preview-image {
+    min-height: 160px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .incident-detail-map {
+    min-height: 340px;
+  }
+
+  .attachment-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

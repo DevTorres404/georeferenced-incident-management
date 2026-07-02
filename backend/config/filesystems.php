@@ -15,6 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
+    'incident_disk' => env('INCIDENT_FILESYSTEM_DISK', 'public'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks
@@ -58,6 +60,19 @@ return [
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,
+        ],
+
+        'rustfs' => [
+            'driver' => 's3',
+            'key' => env('RUSTFS_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('RUSTFS_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('RUSTFS_REGION', env('AWS_DEFAULT_REGION', 'us-east-1')),
+            'bucket' => env('RUSTFS_BUCKET', env('AWS_BUCKET', 'sgi-incidents')),
+            'url' => env('RUSTFS_URL'),
+            'endpoint' => env('RUSTFS_ENDPOINT', env('AWS_ENDPOINT', 'http://127.0.0.1:9000')),
+            'use_path_style_endpoint' => env('RUSTFS_USE_PATH_STYLE_ENDPOINT', true),
+            'throw' => true,
+            'report' => true,
         ],
 
     ],

@@ -10,6 +10,7 @@ use App\Users\Application\DTOs\UpdateManagedUserInputData;
 use App\Users\Application\DTOs\UserFiltersData;
 use App\Users\Application\UseCases\UserManagementUseCase;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,10 @@ use Illuminate\Validation\Rule;
  */
 class UserController extends ApiController
 {
-    public function __construct(private UserManagementUseCase $userManagementUseCase)
+    public function __construct(
+        private UserManagementUseCase $userManagementUseCase,
+        private AdminNotifier $adminNotifier
+    )
     {
     }
 
@@ -110,6 +114,12 @@ class UserController extends ApiController
                 roleCodes: $data['roles'] ?? ['CIUDADANO'],
                 assignedBy: $request->user()->id
             )
+        );
+
+        $this->adminNotifier->notify(
+            title: 'Usuario creado',
+            message: 'Se registró un nuevo usuario en el sistema.',
+            type: 'STATUS_CHANGE'
         );
 
         return response()->json([
@@ -233,12 +243,22 @@ class UserController extends ApiController
             'roles.*' => ['string', Rule::exists(Role::class, 'code')],
         ]);
 
+        $previousRole = $user->roles()->first();
+
         $user = $this->userManagementUseCase->syncRoles(
             new SyncUserRolesInputData(
                 userId: $user->id,
                 roleCodes: $data['roles'],
                 assignedBy: $request->user()->id
             )
+        );
+
+        $newRole = Role::where('code', $data['roles'][0])->first();
+        $userName = trim("{$user->firstName} {$user->lastName}") ?: $user->email;
+        $this->adminNotifier->notify(
+            title: 'Cambio de rol',
+            message: "El usuario {$userName} cambió de {$this->roleLabel($previousRole)} a {$this->roleLabel($newRole)}.",
+            type: 'STATUS_CHANGE'
         );
 
         return response()->json([
@@ -275,5 +295,9 @@ class UserController extends ApiController
             'password.min' => 'La contrasena debe tener al menos 8 caracteres.',
         ];
     }
-}
 
+    private function roleLabel(?Role $role): string
+    {
+        return $role?->name ?: $role?->code ?: 'Sin rol';
+    }
+}

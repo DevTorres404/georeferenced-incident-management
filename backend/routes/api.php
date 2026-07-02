@@ -7,6 +7,8 @@ use App\Catalogs\Infrastructure\Http\Controllers\CatalogController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
+use App\Operations\Infrastructure\Http\Controllers\OperationalStructureController;
+use App\TerritorialUnits\Infrastructure\Http\Controllers\TerritorialUnitController;
 use App\Users\Infrastructure\Http\Controllers\AccessControlController;
 use App\Users\Infrastructure\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -22,9 +24,6 @@ Route::get('/auth/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmai
 
 Route::prefix('catalogs')->middleware('throttle:catalogs.public')->group(function () {
     Route::get('/', [CatalogController::class, 'index']);
-    Route::get('/countries', [CatalogController::class, 'countries']);
-    Route::get('/countries/{pais}/provinces', [CatalogController::class, 'provinces']);
-    Route::get('/provinces/{provincia}/cities', [CatalogController::class, 'cities']);
     Route::get('/categories', [CatalogController::class, 'categories']);
     Route::get('/categories/{categoria}/subcategories', [CatalogController::class, 'subcategories']);
     Route::get('/priorities', [CatalogController::class, 'priorities']);
@@ -45,6 +44,23 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/auth/2fa/disable', [TwoFactorAuthController::class, 'disable']);
     Route::post('/auth/2fa/confirm', [TwoFactorAuthController::class, 'confirm']);
 
+    Route::prefix('territorial-units')->middleware('permission:territorial_units.view')->group(function () {
+        Route::get('/', [TerritorialUnitController::class, 'index']);
+        Route::get('/tree', [TerritorialUnitController::class, 'tree']);
+        Route::get('/search', [TerritorialUnitController::class, 'index']);
+        Route::get('/provinces', [TerritorialUnitController::class, 'provinces']);
+        Route::get('/provinces/{provinceId}/cantons', [TerritorialUnitController::class, 'cantons']);
+        Route::get('/cantons/{cantonId}/parishes', [TerritorialUnitController::class, 'parishes']);
+        Route::get('/{id}/children', [TerritorialUnitController::class, 'children']);
+        Route::get('/{id}/operational-zone', [TerritorialUnitController::class, 'operationalZone']);
+        Route::get('/{id}', [TerritorialUnitController::class, 'show']);
+    });
+
+    Route::post('/incidents', [IncidentController::class, 'store'])
+        ->middleware('throttle:incidents.store');
+    Route::post('/incidents/{incident}/attachments', [IncidentController::class, 'addAttachment'])
+        ->middleware('throttle:uploads');
+
     Route::middleware('2fa.admin')->group(function () {
         Route::get('/catalogs/roles', [CatalogController::class, 'roles'])->middleware('permission:users.view');
         Route::get('/catalogs/permissions', [CatalogController::class, 'permissions'])->middleware('permission:users.manage_roles');
@@ -52,13 +68,19 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/dashboard/metrics', [\App\Incidents\Infrastructure\Http\Controllers\DashboardController::class, 'metrics'])
             ->middleware('permission:incidents.view');
 
-        Route::post('/incidents', [IncidentController::class, 'store'])->middleware('throttle:incidents.store');
+        Route::prefix('territorial-units')->middleware('permission:territorial_units.manage')->group(function () {
+            Route::post('/', [TerritorialUnitController::class, 'store']);
+            Route::put('/{id}', [TerritorialUnitController::class, 'update']);
+            Route::patch('/{id}', [TerritorialUnitController::class, 'update']);
+            Route::delete('/{id}', [TerritorialUnitController::class, 'destroy']);
+        });
+
+        Route::get('/incidents/map', [IncidentController::class, 'map'])
+            ->middleware('permission:incidents.view');
         Route::apiResource('/incidents', IncidentController::class)
             ->parameters(['incidents' => 'incident'])
             ->except(['store']);
         Route::post('/incidents/{incident}/comments', [IncidentController::class, 'addComment']);
-        Route::post('/incidents/{incident}/attachments', [IncidentController::class, 'addAttachment'])
-            ->middleware('throttle:uploads');
         Route::post('/incidents/{incident}/assignments', [IncidentController::class, 'assign'])
             ->middleware('permission:incidents.assign');
         Route::patch('/incidents/{incident}/state', [IncidentController::class, 'changeState'])
@@ -79,6 +101,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             Route::get('/admin/access-control', [AccessControlController::class, 'index']);
             Route::put('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
             Route::patch('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
+
+            Route::prefix('admin/operations')->group(function () {
+                Route::get('zones', [OperationalStructureController::class, 'zones']);
+                Route::get('supervisors', [OperationalStructureController::class, 'supervisors']);
+                Route::get('operators', [OperationalStructureController::class, 'operators']);
+                Route::put('zones/{zoneId}/supervisor', [OperationalStructureController::class, 'assignSupervisor']);
+                Route::put('supervisors/{supervisorUserId}/operators', [OperationalStructureController::class, 'syncSupervisorOperators']);
+                Route::put('operators/{operatorUserId}/territory', [OperationalStructureController::class, 'assignOperatorTerritory']);
+                Route::patch('supervisors/{supervisorUserId}/profile', [OperationalStructureController::class, 'updateSupervisorProfile']);
+                Route::patch('operators/{operatorUserId}/profile', [OperationalStructureController::class, 'updateOperatorProfile']);
+            });
         });
 
         Route::middleware('permission:catalogs.manage')->group(function () {

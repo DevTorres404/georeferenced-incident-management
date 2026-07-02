@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=26">
+  <link rel="stylesheet" href="../css/app.css?v=31">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -37,14 +37,16 @@
     <div class="content-header">
       <div class="container-fluid">
         <div class="row mb-2">
-          <div class="col-sm-6">
+          <div class="col-sm-8">
             <h1 class="m-0 text-main font-weight-bold">
               <i class="fas fa-list-alt text-primary mr-2"></i>Gestión de Incidencias
             </h1>
-            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Administra y monitorea todas las incidencias reportadas en el sistema.</p>
+            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Consulta reportes georreferenciados por estado, prioridad y territorio.</p>
           </div>
-          <div class="col-sm-6 d-none d-sm-block">
-            <!-- Breadcrumbs removidos -->
+          <div class="col-sm-4 d-none d-sm-flex justify-content-end align-items-center">
+            <a href="incident-map.html" class="btn btn-outline-primary btn-sm">
+              <i class="fas fa-map-marked-alt mr-1"></i>Ver mapa
+            </a>
           </div>
         </div>
       </div>
@@ -69,9 +71,14 @@
               </button>
             </div>
 
-            <a href="incident-create.html" class="btn btn-primary btn-sm">
-              <i class="fas fa-plus mr-1"></i>Nueva Incidencia
-            </a>
+            <div class="d-flex flex-wrap" style="gap:8px;">
+              <a href="incident-map.html" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-map-marked-alt mr-1"></i>Mapa
+              </a>
+              <a href="incident-create.html" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus mr-1"></i>Nueva incidencia
+              </a>
+            </div>
           </div>
         </div>
 
@@ -96,7 +103,7 @@
                     <th class="border-top-0 border-bottom-0">Categoría</th>
                     <th class="border-top-0 border-bottom-0">Prioridad</th>
                     <th class="border-top-0 border-bottom-0">Estado</th>
-                    <th class="border-top-0 border-bottom-0">Ciudad</th>
+                    <th class="border-top-0 border-bottom-0">Territorio</th>
                     <th class="border-top-0 border-bottom-0">Fecha</th>
                     <th class="text-center border-top-0 border-bottom-0">Acciones</th>
                   </tr>
@@ -153,6 +160,6 @@
 <script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
 <script type="module" src="../js/layout/layout.js?v=20"></script>
-<script type="module" src="../js/modules/incidents/presentation/incidents-page.js?v=20"></script>
+<script type="module" src="../js/modules/incidents/presentation/incidents-page.js?v=21"></script>
 </body>
 </html>

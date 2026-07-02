@@ -20,7 +20,7 @@ final class LaravelFileStorageAdapter implements FileStoragePort
             throw new \RuntimeException('No se pudo leer el file temporal.');
         }
 
-        Storage::disk('public')->put($storagePath, $contents);
+        Storage::disk($this->incidentDisk())->put($storagePath, $contents);
 
         return new StoredFileData(
             originalName: $fileData->originalName,
@@ -29,5 +29,10 @@ final class LaravelFileStorageAdapter implements FileStoragePort
             sizeInBytes: $fileData->sizeInBytes,
             hash: hash_file('sha256', $fileData->temporaryPath)
         );
+    }
+
+    private function incidentDisk(): string
+    {
+        return (string) config('filesystems.incident_disk', 'public');
     }
 }

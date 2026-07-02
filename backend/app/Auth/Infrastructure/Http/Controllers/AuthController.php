@@ -19,6 +19,7 @@ use App\Auth\Application\UseCases\UpdateOwnProfileUseCase;
 use App\Auth\Application\UseCases\VerifyEmailUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use Illuminate\Routing\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,7 +41,8 @@ class AuthController extends Controller
         private CompleteProfileUseCase $completeProfileUseCase,
         private UpdateOwnProfileUseCase $updateOwnProfileUseCase,
         private VerifyEmailUseCase $verifyEmailUseCase,
-        private GoogleRegistrationUseCase $googleRegistrationUseCase
+        private GoogleRegistrationUseCase $googleRegistrationUseCase,
+        private AdminNotifier $adminNotifier
     ) {
     }
 
@@ -126,7 +128,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        return response()->json($this->registerUserUseCase->execute(
+        $response = $this->registerUserUseCase->execute(
             new RegisterUserInputData(
                 firstName: $firstName,
                 lastName: $lastName,
@@ -135,7 +137,15 @@ class AuthController extends Controller
                 password: $data['password'],
                 phone: $data['phone'] ?? null
             )
-        ), 201);
+        );
+
+        $this->adminNotifier->notify(
+            title: 'Usuario creado',
+            message: 'Se registró un nuevo usuario en el sistema.',
+            type: 'STATUS_CHANGE'
+        );
+
+        return response()->json($response, 201);
     }
 
     /**
@@ -173,17 +183,24 @@ class AuthController extends Controller
         }
 
         try {
-            return response()->json(
-                $this->googleRegistrationUseCase->execute(
+            $response = $this->googleRegistrationUseCase->execute(
                     new GoogleAuthInputData(
                         intent: $data['intent'],
                         idToken: $data['id_token'],
                         ip: (string) ($request->ip() ?? '127.0.0.1'),
                         userAgent: $request->userAgent()
                     )
-                ),
-                200
-            );
+                );
+
+            if ($data['intent'] === 'register') {
+                $this->adminNotifier->notify(
+                    title: 'Usuario creado',
+                    message: 'Se registró un nuevo usuario en el sistema.',
+                    type: 'STATUS_CHANGE'
+                );
+            }
+
+            return response()->json($response, 200);
         } catch (AuthException $e) {
             return response()->json([
                 'message' => $e->getMessage(),

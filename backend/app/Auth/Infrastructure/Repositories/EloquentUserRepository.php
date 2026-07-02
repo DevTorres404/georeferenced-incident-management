@@ -60,14 +60,15 @@ final class EloquentUserRepository implements UserRepositoryInterface
 
     public function assignRoleByCode(int $userId, string $roleCode): void
     {
-        $user = User::findOrFail($userId);
         $role = Role::where('code', $roleCode)->first();
 
         if (! $role) {
             return;
         }
 
-        if ($user->roles()->exists()) {
+        $user = User::query()->withCount('roles')->findOrFail($userId);
+
+        if ((int) $user->roles_count > 0) {
             return;
         }
 
@@ -142,9 +143,11 @@ final class EloquentUserRepository implements UserRepositoryInterface
 
     public function updateLastAccess(int $userId, ?string $lastAccessAt = null): void
     {
-        $user = User::findOrFail($userId);
-        $user->last_login = $lastAccessAt ?? now()->toIso8601String();
-        $user->save();
+        User::query()
+            ->whereKey($userId)
+            ->update([
+                'last_login' => $lastAccessAt ?? now()->toIso8601String(),
+            ]);
     }
 
     public function updateTwoFactorSecret(int $userId, ?string $secret, ?array $recoveryCodes = null): void

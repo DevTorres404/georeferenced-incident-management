@@ -420,34 +420,108 @@ function initAuthPage() {
 
   async function initMandatorySetup2FA() {
     try {
-      const { qr_url } = await window.SGIGAuthService.enableTwoFactor();
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      script.onload = () => {
-        el.setupTwoFactorQrContainer.innerHTML = '';
-        new window.QRCode(el.setupTwoFactorQrContainer, {
-          text: qr_url,
-          width: 200,
-          height: 200,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: window.QRCode.CorrectLevel.H
-        });
-        el.setupTwoFactorForm.classList.remove('d-none');
-      };
-      document.body.appendChild(script);
+      if (!el.setupTwoFactorQrContainer || !el.setupTwoFactorForm) return;
+
+      el.setupTwoFactorQrContainer.textContent = '';
+      const spinner = document.createElement('div');
+      spinner.className = 'spinner-border text-primary';
+      spinner.setAttribute('role', 'status');
+      spinner.appendChild(document.createElement('span')).className = 'sr-only';
+      el.setupTwoFactorQrContainer.appendChild(spinner);
+      el.setupTwoFactorForm.classList.add('d-none');
+
+      const data = await window.SGIGAuthService.enableTwoFactor();
+      let qrLibraryReady = false;
+
+      try {
+        await ensureQrCodeLibrary();
+        qrLibraryReady = Boolean(window.QRCode);
+      } catch {
+        qrLibraryReady = false;
+      }
+
+      renderMandatoryTwoFactorSetup(data.qr_url, data.secret, qrLibraryReady);
+
+      if (!qrLibraryReady) {
+        showAlert(
+          el.setupTwoFactorAlert,
+          'No se pudo generar el codigo QR. Ingresa la clave manual en tu aplicacion autenticadora.',
+          'warning'
+        );
+      }
+
+      el.setupTwoFactorForm.classList.remove('d-none');
     } catch (e) {
-      showAlert(el.setupTwoFactorAlert, 'Error inicializando 2FA: ' + e.message, 'danger');
+      showAlert(el.setupTwoFactorAlert, e.message || 'No se pudo inicializar la autenticacion en dos pasos.', 'danger');
     }
   }
 
+  function ensureQrCodeLibrary() {
+    if (window.QRCode) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-sgi-qrcode]');
+      if (existing) {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', reject, { once: true });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      script.async = true;
+      script.dataset.sgiQrcode = 'true';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('No se pudo cargar el generador de codigo QR.'));
+      document.head.appendChild(script);
+    });
+  }
+
+  function renderMandatoryTwoFactorSetup(qrUrl, secret, qrLibraryReady) {
+    el.setupTwoFactorQrContainer.textContent = '';
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'text-center';
+
+    if (qrLibraryReady && qrUrl) {
+      const qrBox = document.createElement('div');
+      qrBox.className = 'd-inline-block';
+      wrapper.appendChild(qrBox);
+
+      new window.QRCode(qrBox, {
+        text: qrUrl,
+        width: 200,
+        height: 200,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.H,
+      });
+    }
+
+    if (secret) {
+      const help = document.createElement('p');
+      help.className = 'small text-muted mb-1 mt-3';
+      help.textContent = 'Clave manual';
+      wrapper.appendChild(help);
+
+      const code = document.createElement('code');
+      code.className = 'd-inline-block bg-light border rounded px-3 py-2 text-break';
+      code.textContent = secret;
+      wrapper.appendChild(code);
+    }
+
+    el.setupTwoFactorQrContainer.appendChild(wrapper);
+  }
+
   function showAlert(target, message, type = 'danger') {
+    if (!target) return;
     target.className = `alert alert-${type} py-2 mb-3 text-start small`;
     target.textContent = message;
     target.classList.remove('d-none');
   }
 
   function hideAlert(target) {
+    if (!target) return;
     target.classList.add('d-none');
     target.textContent = '';
   }

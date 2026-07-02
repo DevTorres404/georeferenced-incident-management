@@ -1,4 +1,4 @@
-import { request } from '../../../core/api-client.js?v=14';
+import { request } from '../../../core/api-client.js?v=15';
 
 async function listIncidents(filters = {}) {
   const params = new URLSearchParams();
@@ -21,6 +21,23 @@ async function createIncident(payload) {
   return request('/incidents', {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+async function updateIncident(incidentId, payload) {
+  return request(`/incidents/${incidentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function uploadIncidentAttachment(incidentId, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return request(`/incidents/${incidentId}/attachments`, {
+    method: 'POST',
+    body: formData,
   });
 }
 
@@ -48,14 +65,21 @@ async function listStates() {
   return request('/catalogs/states');
 }
 
+async function listPriorities() {
+  return request('/catalogs/priorities');
+}
+
 const incidentsService = {
   listIncidents,
   createIncident,
+  updateIncident,
+  uploadIncidentAttachment,
   getIncident,
   deleteIncident,
   addIncidentComment,
   changeIncidentState,
   listStates,
+  listPriorities,
 };
 
 window.SGIGIncidentsService = incidentsService;
@@ -67,5 +91,8 @@ export {
   deleteIncident,
   getIncident,
   listIncidents,
+  listPriorities,
   listStates,
+  updateIncident,
+  uploadIncidentAttachment,
 };

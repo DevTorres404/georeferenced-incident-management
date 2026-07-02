@@ -1,6 +1,7 @@
 import { buildSidebarHtml } from './sidebar.js?v=20';
 import { buildTopbarHtml } from './topbar.js?v=20';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
+import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
 
 /**
  * ============================================================
@@ -13,13 +14,17 @@ window.SGINavigationStore = {
   menuItems: [
     { id: 'dashboard', label: 'Panel principal', icon: 'fa-tachometer-alt', href: 'dashboard.html', permission: 'dashboard.view' },
     { id: 'incidents', label: 'Incidencias', icon: 'fa-list-alt', href: 'incidents.html', permission: 'incidents.view' },
+    { id: 'incident-map', label: 'Mapa de incidencias', icon: 'fa-map-marked-alt', href: 'incident-map.html', permission: 'incidents.view' },
     { id: 'incident-create', label: 'Nueva incidencia', icon: 'fa-plus-circle', href: 'incident-create.html', permission: 'incidents.create' },
+    { id: 'territorial-units', label: 'Gestión territorial', icon: 'fa-sitemap', href: 'territorial-units.html', permission: 'territorial_units.manage', adminOnly: true },
     { id: 'role-permissions', label: 'Roles y permisos', icon: 'fa-user-shield', href: 'role-permissions.html', permission: 'users.manage_roles' },
     { id: 'user-roles', label: 'Usuarios y roles', icon: 'fa-user-tag', href: 'user-roles.html', permission: 'users.manage_roles' },
-    { id: 'reports', label: 'Reportes', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' }
+    { id: 'reports', label: 'Reportes', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' },
+    { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view', adminOnly: true }
   ],
   getAuthorizedMenu: function () {
     return this.menuItems.filter((item) => {
+      if (item.adminOnly && !hasRole('ADMIN')) return false;
       if (hasRole('CIUDADANO') && item.id === 'dashboard') return false;
       return !item.permission || hasPermission(item.permission);
     });
@@ -132,7 +137,13 @@ function getDefaultPageForSession() {
     ['users.manage_roles', 'role-permissions.html'],
   ];
   const match = candidates.find(([permission]) => hasPermission(permission));
-  return match ? match[1] : null;
+  if (match) return match[1];
+
+  if (hasRole('ADMIN') && hasPermission('audit.view')) {
+    return 'audit-logs.html';
+  }
+
+  return null;
 }
 function escapeHtml(value) {
   return String(value ?? '')
@@ -322,6 +333,19 @@ async function loadNavbarNotifications(forceRefresh = false) {
     renderBetterNavbarNotifications(0, []);
   }
 }
+
+function startRealtimeNotifications(user) {
+  subscribeToUserNotifications(user, async (notification) => {
+    sessionStorage.removeItem('SGI_notifications_cache');
+    await loadNavbarNotifications(true);
+    if (notification?.title && window.showGlobalAlert) {
+      window.showGlobalAlert(notification.title, 'info');
+    }
+  }).catch(() => {
+    // Si el WebSocket no esta disponible, la API REST sigue funcionando como respaldo.
+  });
+}
+
 function renderBetterNavbarNotifications(count, notifications) {
   const badge = document.getElementById('navbarNotificationsBadge');
   const header = document.getElementById('navbarNotificationsHeader');
@@ -432,13 +456,18 @@ async function renderLayout(activeId = '') {
   }
 
   // Block citizen from dashboard/admin routes
-  if (hasRole('CIUDADANO') && (activeId === 'dashboard' || activeId === 'user-roles' || activeId === 'role-permissions')) {
+  if (hasRole('CIUDADANO') && (activeId === 'dashboard' || activeId === 'user-roles' || activeId === 'role-permissions' || activeId === 'audit-logs')) {
     window.location.href = 'incident-create.html';
     return;
   }
   // Ruteo de Accesos por Permisos
   const menuItems = window.SGINavigationStore.getAuthorizedMenu();
   const currentItem = window.SGINavigationStore.menuItems.find(i => i.id === activeId);
+  if (currentItem?.adminOnly && !hasRole('ADMIN')) {
+    const defaultPage = getDefaultPageForSession();
+    window.location.href = defaultPage || getLoginPath();
+    return;
+  }
   if (currentItem && currentItem.permission && !hasPermission(currentItem.permission)) {
     if (!hasRole('ADMIN')) {
       const defaultPage = getDefaultPageForSession();
@@ -557,6 +586,7 @@ async function renderLayout(activeId = '') {
   });
   startInactivityWatcher();
   loadNavbarNotifications(true);
+  startRealtimeNotifications(user);
   if (window.SGINavigationStore) {
     window.SGINavigationStore.clearNavigation();
   }

@@ -32,7 +32,8 @@ class DatabaseSeeder extends Seeder
         $this->call(StateSeeder::class);
         $this->call(PrioritySeeder::class);
         $this->call(CategorySeeder::class);
-        $this->call(CountrySeeder::class);
+        $this->call(TerritorialUnitSeeder::class);
+        $this->call(OperationalStructureSeeder::class);
         $this->call(ConfigurationSeeder::class);
 
         // ──────────────────────────────────────────────
@@ -62,6 +63,9 @@ class DatabaseSeeder extends Seeder
         $this->call(DemoUserSeeder::class);
         $this->call(DemoIncidentSeeder::class);
         $this->call(DemoNotificationSeeder::class);
+        $this->call(DemoAuditLogSeeder::class);
+        $this->call(DemoAccessLogSeeder::class);
+        $this->call(DemoIncidentAttachmentSeeder::class);
+        $this->call(DemoUserIdentitySeeder::class);
     }
 }
-

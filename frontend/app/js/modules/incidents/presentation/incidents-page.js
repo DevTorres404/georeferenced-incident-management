@@ -116,7 +116,7 @@ function renderTable(state) {
     const categoryName = formatCatalogLabel(incident.category?.name || incident.subcategory?.name || '-');
     const priorityName = formatCatalogLabel(incident.priority?.name || '-');
     const stateName = formatCatalogLabel(incident.state?.name || '-');
-    const cityName = formatCatalogLabel(incident.city?.name || '-');
+    const territoryName = territoryLabel(incident);
 
     return `
       <tr id="fila-${incident.id}">
@@ -125,7 +125,7 @@ function renderTable(state) {
         <td>${escapeHtml(categoryName)}</td>
         <td><span class="badge ${getPriorityBadgeClass(priorityName)}">${escapeHtml(priorityName)}</span></td>
         <td><span class="badge ${getStateBadgeClass(stateName)}">${escapeHtml(stateName)}</span></td>
-        <td>${escapeHtml(cityName)}</td>
+        <td class="text-truncate" style="max-width:260px;" title="${escapeHtml(territoryName)}">${escapeHtml(territoryName)}</td>
         <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
         <td class="text-center" style="white-space:nowrap;">
           <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-primary mr-1" title="Ver detalle completo">
@@ -249,4 +249,15 @@ function setText(id, value) {
   if (element) {
     element.textContent = String(value);
   }
+}
+
+function territoryLabel(incident) {
+  const territorialUnit = incident?.territorial_unit || incident?.territorialUnit;
+  return formatCatalogLabel(
+    territorialUnit?.full_path
+      || territorialUnit?.name
+      || incident?.address_reference
+      || incident?.address
+      || '-'
+  );
 }

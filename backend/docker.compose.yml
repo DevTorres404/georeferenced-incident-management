@@ -50,6 +50,35 @@ services:
         networks:
             - backend
 
+    rustfs:
+        image: 'rustfs/rustfs:latest'
+        ports:
+            - '${FORWARD_RUSTFS_PORT:-9000}:9000'
+            - '${FORWARD_RUSTFS_CONSOLE_PORT:-9001}:9001'
+        environment:
+            RUSTFS_ADDRESS: ':9000'
+            RUSTFS_CONSOLE_ENABLE: 'true'
+            RUSTFS_CONSOLE_ADDRESS: ':9001'
+            RUSTFS_ACCESS_KEY: '${RUSTFS_ACCESS_KEY_ID:-rustfsadmin}'
+            RUSTFS_SECRET_KEY: '${RUSTFS_SECRET_ACCESS_KEY:-rustfsadmin123}'
+            RUSTFS_REGION: '${RUSTFS_REGION:-us-east-1}'
+        volumes:
+            - 'incident-management-backend-rustfs:/data'
+        networks:
+            - backend
+
+    rustfs-init:
+        image: 'minio/mc:latest'
+        depends_on:
+            - rustfs
+        entrypoint: >
+            /bin/sh -c "
+            until mc alias set rustfs http://rustfs:9000 '${RUSTFS_ACCESS_KEY_ID:-rustfsadmin}' '${RUSTFS_SECRET_ACCESS_KEY:-rustfsadmin123}'; do sleep 2; done;
+            mc mb --ignore-existing rustfs/${RUSTFS_BUCKET:-sgi-incidents};
+            "
+        networks:
+            - backend
+
 networks:
     backend:
         driver: bridge
@@ -58,4 +87,6 @@ volumes:
     incident-management-backend-pgsql:
         driver: local
     incident-management-backend-redis:
+        driver: local
+    incident-management-backend-rustfs:
         driver: local

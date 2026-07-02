@@ -16,7 +16,12 @@ use App\Catalogs\Infrastructure\Persistence\Repositories\EloquentCatalogReposito
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentRepository;
 use App\Incidents\Infrastructure\Storage\LaravelFileStorageAdapter;
+use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
+use App\Operations\Infrastructure\Persistence\Repositories\EloquentOperationalStructureRepository;
 use App\Shared\Application\Ports\FileStoragePort;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\TerritorialUnits\Domain\Repositories\TerritorialUnitRepositoryInterface;
+use App\TerritorialUnits\Infrastructure\Persistence\Repositories\EloquentTerritorialUnitRepository;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
 use App\Users\Domain\Repositories\UserRepositoryInterface as ModuleUserRepositoryInterface;
 use App\Users\Infrastructure\Persistence\Repositories\EloquentAccessControlRepository;
@@ -44,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FileStoragePort::class, LaravelFileStorageAdapter::class);
         $this->app->bind(ModuleUserRepositoryInterface::class, ModuleEloquentUserRepository::class);
         $this->app->bind(AccessControlRepositoryInterface::class, EloquentAccessControlRepository::class);
+        $this->app->bind(TerritorialUnitRepositoryInterface::class, EloquentTerritorialUnitRepository::class);
+        $this->app->bind(OperationalStructureRepositoryInterface::class, EloquentOperationalStructureRepository::class);
         $this->app->bind(\App\Auth\Application\Ports\PasswordHasherPort::class, \App\Auth\Infrastructure\Services\LaravelPasswordHasherAdapter::class);
         $this->app->bind(\App\Auth\Application\Ports\SessionManagerPort::class, \App\Auth\Infrastructure\Services\LaravelSessionManagerAdapter::class);
         $this->app->bind(\App\Auth\Application\Ports\UserNotificationPort::class, \App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter::class);
@@ -62,21 +69,21 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('login', function (Request $request) {
             $email = (string) $request->input('email');
             return [
-                Limit::perMinute(5)->by($request->ip()),
-                Limit::perMinute(5)->by($email . '|' . $request->ip()),
+                Limit::perMinute(5)->by($request->ip())->response($this->rateLimitResponse()),
+                Limit::perMinute(5)->by($email . '|' . $request->ip())->response($this->rateLimitResponse()),
             ];
         });
 
         RateLimiter::for('register', function (Request $request) {
             $email = (string) $request->input('email');
             return [
-                Limit::perHour(3)->by($request->ip()),
-                Limit::perHour(3)->by($email ?: $request->ip()),
+                Limit::perHour(3)->by($request->ip())->response($this->rateLimitResponse()),
+                Limit::perHour(3)->by($email ?: $request->ip())->response($this->rateLimitResponse()),
             ];
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
         });
 
         RateLimiter::for('catalogs.public', function (Request $request) {
@@ -90,8 +97,23 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('uploads', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
         });
     }
-}
 
+    private function rateLimitResponse(): callable
+    {
+        return function (Request $request, array $headers) {
+            app(AdminNotifier::class)->notify(
+                title: 'Rate limit activado',
+                message: 'Un usuario superó el límite de intentos permitidos.',
+                type: 'STATUS_CHANGE'
+            );
+
+            return response()->json([
+                'message' => 'Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.',
+                'code' => 'RATE_LIMIT_EXCEEDED',
+            ], 429, $headers);
+        };
+    }
+}

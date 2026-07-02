@@ -25,3 +25,6 @@ vendor/
 
 # Gemini / Antigravity Agent Configuration
 .agents/
+
+# Entregables y documentos
+ENTREGABLES/

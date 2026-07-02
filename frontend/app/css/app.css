@@ -2,3 +2,8 @@
 @import url("./components/components.css?v=20");
 @import url("./layout/shell.css?v=20");
 @import url("./pages/access-control.css?v=20");
+@import url("./pages/audit.css?v=1");
+@import url("./pages/incident-create.css?v=2");
+@import url("./pages/incident-detail.css?v=3");
+@import url("./pages/map.css?v=4");
+@import url("./pages/territorial-units.css?v=1");

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,6 +47,7 @@ class AccessControlTest extends TestCase
             ->assertJsonPath('message', 'Permisos del rol actualizados correctamente.');
 
         $this->assertTrue($role->permissions()->where('permissions.id', $permission->id)->exists());
+        $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de permisos'));
     }
 
     public function test_admin_can_sync_user_roles(): void
@@ -63,6 +65,7 @@ class AccessControlTest extends TestCase
             ->assertJsonPath('message', 'Roles actualizados correctamente.');
 
         $this->assertTrue($user->roles()->where('roles.id', $role->id)->exists());
+        $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de rol'));
     }
 
     public function test_non_admin_cannot_manage_roles(): void
@@ -107,5 +110,12 @@ class AccessControlTest extends TestCase
             'user' => $user,
             'token' => $user->createToken('test-token')->plainTextToken,
         ];
+    }
+
+    private function adminHasNotification(User $admin, string $title): bool
+    {
+        return Notification::where('user_id', $admin->id)
+            ->where('title', $title)
+            ->exists();
     }
 }

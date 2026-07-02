@@ -141,18 +141,22 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
     public function getTopCities(int $limit = 6): array
     {
-        $cities = Incident::join('core.cities', 'core.incidents.city_id', '=', 'core.cities.id')
-            ->leftJoin('core.provinces', 'core.cities.province_id', '=', 'core.provinces.id')
+        $territories = Incident::leftJoin('core.territorial_units as unit', 'core.incidents.territorial_unit_id', '=', 'unit.id')
+            ->leftJoin('core.territorial_units as parent', 'unit.parent_id', '=', 'parent.id')
+            ->leftJoin('core.territorial_units as grandparent', 'parent.parent_id', '=', 'grandparent.id')
+            ->leftJoin('core.territorial_units as greatgrandparent', 'grandparent.parent_id', '=', 'greatgrandparent.id')
             ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
             ->select(
-                'core.cities.name as city',
-                'core.provinces.name as province',
+                'unit.name as unit',
+                'parent.name as parent',
+                'grandparent.name as grandparent',
+                'greatgrandparent.name as greatgrandparent',
                 DB::raw('COUNT(*) as total'),
                 DB::raw("SUM(CASE WHEN core.states.name IN ('NUEVA', 'PENDIENTE') THEN 1 ELSE 0 END) as pending"),
                 DB::raw("SUM(CASE WHEN core.states.name IN ('EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION') THEN 1 ELSE 0 END) as progress"),
                 DB::raw("SUM(CASE WHEN core.states.name IN ('RESUELTA', 'CERRADA') THEN 1 ELSE 0 END) as resolved")
             )
-            ->groupBy('core.cities.name', 'core.provinces.name')
+            ->groupBy('unit.name', 'parent.name', 'grandparent.name', 'greatgrandparent.name')
             ->orderByDesc('total')
             ->limit($limit)
             ->get();
@@ -160,18 +164,18 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         $totalIncidents = Incident::count();
         $result = [];
 
-        foreach ($cities as $city) {
-            $label = $city->province ? "{$city->city}, {$city->province}" : $city->city;
-            $count = (int) $city->total;
+        foreach ($territories as $territory) {
+            $label = $this->territoryLabel($territory);
+            $count = (int) $territory->total;
             $pct = $totalIncidents > 0 ? round(($count / $totalIncidents) * 100) : 0;
 
             $result[] = [
                 'city' => $label,
                 'count' => $count,
                 'pct' => $pct,
-                'pending' => (int) $city->pending,
-                'progress' => (int) $city->progress,
-                'resolved' => (int) $city->resolved
+                'pending' => (int) $territory->pending,
+                'progress' => (int) $territory->progress,
+                'resolved' => (int) $territory->resolved
             ];
         }
 
@@ -188,5 +192,17 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             ->value('avg_days');
 
         return $avg ? (float) round($avg, 1) : 0.0;
+    }
+
+    private function territoryLabel(object $territory): string
+    {
+        $segments = array_filter([
+            $territory->unit,
+            $territory->parent,
+            $territory->grandparent,
+            $territory->greatgrandparent,
+        ]);
+
+        return $segments ? implode(', ', $segments) : 'Sin territorio';
     }
 }

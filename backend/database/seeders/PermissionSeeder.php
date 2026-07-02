@@ -29,6 +29,8 @@ class PermissionSeeder extends Seeder
             ['code' => 'users.manage_roles', 'name' => 'Gestionar roles de usuario', 'module' => 'users'],
 
             ['code' => 'catalogs.manage', 'name' => 'Gestionar catálogos', 'module' => 'catalogs'],
+            ['code' => 'territorial_units.view', 'name' => 'Ver unidades territoriales', 'module' => 'territorial_units'],
+            ['code' => 'territorial_units.manage', 'name' => 'Gestionar unidades territoriales', 'module' => 'territorial_units'],
 
             ['code' => 'reportes.ver', 'name' => 'Ver reportes', 'module' => 'reportes'],
             ['code' => 'reportes.exportar', 'name' => 'Exportar reportes', 'module' => 'reportes'],
@@ -55,14 +57,17 @@ class PermissionSeeder extends Seeder
                 'users.view',
                 'reportes.ver', 'reportes.exportar',
                 'catalogs.manage',
+                'territorial_units.view',
             ])->pluck('id')->toArray(),
             'OPERADOR' => Permission::whereIn('code', [
                 'incidents.view', 'incidents.edit',
                 'comments.create', 'comments.internal',
+                'territorial_units.view',
             ])->pluck('id')->toArray(),
             'CIUDADANO' => Permission::whereIn('code', [
                 'incidents.view', 'incidents.create',
                 'comments.create',
+                'territorial_units.view',
             ])->pluck('id')->toArray(),
         ];
 

@@ -9,6 +9,7 @@ use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
@@ -21,6 +22,11 @@ use App\Shared\Application\Results\PaginatedResult;
 interface IncidentRepositoryInterface
 {
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult;
+
+    /**
+     * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>
+     */
+    public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array;
 
     public function store(StoreIncidentInputData $data, int $userId): Incident;
 

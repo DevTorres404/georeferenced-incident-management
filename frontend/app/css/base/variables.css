@@ -1,17 +1,16 @@
 /* ============================================================
-   SISTEMA DE GESTIÃ“N DE INCIDENCIAS GEORREFERENCIADAS
+   SISTEMA DE GESTIÓN DE INCIDENCIAS GEORREFERENCIADAS
    Estilos personalizados - AdminLTE 3 + Bootstrap 4
    ============================================================ */
 
 /* ---- Variables de color ---- */
 :root {
-  --color-critica:   #dc3545;
-  --color-alta:      #fd7e14;
-  --color-media:     #ffc107;
-  --color-baja:      #28a745;
+  --color-critica: #dc3545;
+  --color-alta: #fd7e14;
+  --color-media: #ffc107;
+  --color-baja: #28a745;
   --color-pendiente: #6c757d;
-  --color-proceso:   #0ea5e9;
-  --color-resuelta:  #28a745;
+  --color-proceso: #0ea5e9;
+  --color-resuelta: #28a745;
   --color-header-bg: #001f3f;
 }
-

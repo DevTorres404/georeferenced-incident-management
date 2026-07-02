@@ -5,21 +5,27 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use Database\Seeders\CategorySeeder;
-use Database\Seeders\CountrySeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
+use Database\Seeders\TerritorialUnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class CatalogsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_public_catalogs_endpoint_returns_countries(): void
+    public function test_public_territorial_endpoint_returns_provinces(): void
     {
-        $this->seed([CountrySeeder::class]);
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, TerritorialUnitSeeder::class]);
+        $user = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $role = Role::where('code', 'CIUDADANO')->firstOrFail();
+        $user->roles()->sync([$role->id]);
 
-        $response = $this->getJson('/api/catalogs/countries');
+        Sanctum::actingAs($user, ['*']);
+
+        $response = $this->getJson('/api/territorial-units/provinces');
 
         $response->assertOk()
             ->assertJsonStructure(['data']);

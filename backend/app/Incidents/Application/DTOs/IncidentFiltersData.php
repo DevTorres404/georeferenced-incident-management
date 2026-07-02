@@ -8,7 +8,6 @@ final class IncidentFiltersData
         public readonly ?int $stateId = null,
         public readonly ?int $priorityId = null,
         public readonly ?int $categoryId = null,
-        public readonly ?int $cityId = null,
         public readonly ?bool $mine = null,
         public readonly ?bool $assignedToMe = null,
         public readonly ?bool $overdue = null,

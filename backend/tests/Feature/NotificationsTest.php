@@ -3,13 +3,32 @@
 namespace Tests\Feature;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Broadcasting\NotificationCreated;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class NotificationsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_notification_creation_dispatches_realtime_event(): void
+    {
+        Event::fake([NotificationCreated::class]);
+
+        $user = User::factory()->create();
+
+        Notification::create([
+            'user_id' => $user->id,
+            'title' => 'Incidencia registrada',
+            'message' => 'Tu incidencia INC-000123 fue registrada correctamente.',
+            'type' => 'STATUS_CHANGE',
+            'is_read' => false,
+        ]);
+
+        Event::assertDispatched(NotificationCreated::class);
+    }
 
     public function test_user_can_fetch_notifications(): void
     {

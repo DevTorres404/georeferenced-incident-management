@@ -9,7 +9,12 @@ use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
+use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
+use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
+use App\Operations\Infrastructure\Persistence\Models\SupervisorProfile;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\Auth\Infrastructure\Notifications\VerifyEmailNotification;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -18,6 +23,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -47,7 +53,7 @@ class User extends Authenticatable
     implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
+    use Auditable, HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
 
     protected $table = 'auth.users';
 
@@ -204,6 +210,31 @@ class User extends Authenticatable
         return $this->hasMany(LoginAttempt::class, 'user_id');
     }
 
+    public function territoryAssignments(): HasMany
+    {
+        return $this->hasMany(UserTerritory::class, 'user_id');
+    }
+
+    public function supervisorProfile(): HasOne
+    {
+        return $this->hasOne(SupervisorProfile::class, 'user_id');
+    }
+
+    public function operatorProfile(): HasOne
+    {
+        return $this->hasOne(OperatorProfile::class, 'user_id');
+    }
+
+    public function operatorAssignmentsAsSupervisor(): HasMany
+    {
+        return $this->hasMany(SupervisorOperatorAssignment::class, 'supervisor_user_id');
+    }
+
+    public function operatorAssignmentsAsOperator(): HasMany
+    {
+        return $this->hasMany(SupervisorOperatorAssignment::class, 'operator_user_id');
+    }
+
     // ──────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────
@@ -256,4 +287,3 @@ class User extends Authenticatable
         return "{$this->first_name} {$this->last_name}";
     }
 }
-

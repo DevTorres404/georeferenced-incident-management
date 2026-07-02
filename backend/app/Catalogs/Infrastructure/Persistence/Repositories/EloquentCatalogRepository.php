@@ -6,19 +6,13 @@ use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
 use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
-use App\Catalogs\Infrastructure\Persistence\Mappers\CityMapper;
-use App\Catalogs\Infrastructure\Persistence\Mappers\CountryMapper;
 use App\Catalogs\Infrastructure\Persistence\Mappers\PermissionMapper;
-use App\Catalogs\Infrastructure\Persistence\Mappers\ProvinceMapper;
 use App\Catalogs\Infrastructure\Persistence\Mappers\RoleMapper;
 use App\Catalogs\Infrastructure\Persistence\Mappers\StateMapper;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
-use App\Incidents\Infrastructure\Persistence\Models\City;
 use App\Incidents\Infrastructure\Persistence\Models\Configuration;
 use App\Incidents\Infrastructure\Persistence\Models\State;
-use App\Incidents\Infrastructure\Persistence\Models\Country;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
-use App\Incidents\Infrastructure\Persistence\Models\Province;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
 use App\Shared\Application\Results\PaginatedResult;
@@ -27,9 +21,6 @@ use Illuminate\Database\Eloquent\Model;
 final class EloquentCatalogRepository implements CatalogRepositoryInterface
 {
     private const MODELS = [
-        'countries' => Country::class,
-        'provinces' => Province::class,
-        'cities' => City::class,
         'categories' => Category::class,
         'subcategories' => Subcategory::class,
         'priorities' => Priority::class,
@@ -39,9 +30,6 @@ final class EloquentCatalogRepository implements CatalogRepositoryInterface
     ];
 
     public function __construct(
-        private CountryMapper $countryMapper,
-        private ProvinceMapper $provinceMapper,
-        private CityMapper $cityMapper,
         private StateMapper $stateMapper,
         private RoleMapper $roleMapper,
         private PermissionMapper $permissionMapper
@@ -51,11 +39,6 @@ final class EloquentCatalogRepository implements CatalogRepositoryInterface
     public function overview(): array
     {
         return [
-            'countries' => Country::activos()
-                ->orderBy('name')
-                ->get()
-                ->map(fn (Country $country) => $this->countryMapper->fromModel($country))
-                ->toArray(),
             'categories' => Category::activos()
                 ->with(['subcategories' => fn ($q) => $q->activos()->orderBy('name')])
                 ->orderBy('name')
@@ -79,35 +62,6 @@ final class EloquentCatalogRepository implements CatalogRepositoryInterface
                 ->map(fn (Role $role) => $this->roleMapper->fromModel($role))
                 ->toArray(),
         ];
-    }
-
-    public function countries()
-    {
-        return Country::activos()
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Country $country) => $this->countryMapper->fromModel($country))
-            ->toArray();
-    }
-
-    public function provinces(int $paisId)
-    {
-        return Province::activos()
-            ->where('country_id', $paisId)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (Province $province) => $this->provinceMapper->fromModel($province))
-            ->toArray();
-    }
-
-    public function cities(int $provinciaId)
-    {
-        return City::activos()
-            ->where('province_id', $provinciaId)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (City $city) => $this->cityMapper->fromModel($city))
-            ->toArray();
     }
 
     public function categories()
