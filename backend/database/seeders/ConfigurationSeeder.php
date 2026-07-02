@@ -45,19 +45,19 @@ class ConfigurationSeeder extends Seeder
             ],
             [
                 'key'         => 'mapa.latitud_centro',
-                'value'       => '-0.1807',
+                'value'       => '-1.8312',
                 'type'        => 'string',
-                'description' => 'Latitud del centro del mapa por defecto (Quito)',
+                'description' => 'Latitud del centro del mapa por defecto (Ecuador)',
             ],
             [
                 'key'         => 'mapa.longitud_centro',
                 'value'       => '-78.4678',
                 'type'        => 'string',
-                'description' => 'Longitud del centro del mapa por defecto (Quito)',
+                'description' => 'Longitud del centro del mapa por defecto (Ecuador)',
             ],
             [
                 'key'         => 'mapa.zoom_default',
-                'value'       => '13',
+                'value'       => '6',
                 'type'        => 'integer',
                 'description' => 'Nivel de zoom inicial del mapa',
             ],

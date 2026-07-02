@@ -23,8 +23,68 @@ El backend se ejecuta localmente con PHP y Composer. Docker se usa para servicio
 - PostgreSQL/PostGIS: `127.0.0.1:5432`
 - Redis: `127.0.0.1:6379`
 - Mailpit: `http://localhost:8025`
+- RustFS API S3: `http://127.0.0.1:9000`
+- RustFS consola: `http://127.0.0.1:9001`
 
-## Levantar el proyecto
+## Despliegue local completo recomendado
+
+Este es el flujo recomendado para trabajar el proyecto completo en local sin meter Laravel en Docker:
+
+- **Backend Laravel local** con PHP y Composer.
+- **Base de datos y servicios de apoyo en Docker**: PostgreSQL/PostGIS, Redis y Mailpit.
+- **Frontend en Docker** sirviendo `frontend/app` por nginx en `http://localhost:5500`.
+
+Este modo no afecta el levantamiento sin Docker porque no requiere cambiar el codigo del frontend ni modificar `frontend/app/js/core/config.js`. El frontend usa el proxy `/api` de nginx y el backend sigue corriendo normalmente en `http://127.0.0.1:8000`.
+
+### Resumen rapido
+
+Terminal 1, servicios de apoyo:
+
+```bash
+cd backend
+docker compose -f docker.compose.yml up -d
+```
+
+Terminal 2, backend Laravel:
+
+```bash
+cd backend
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+```
+
+Terminal 3, frontend:
+
+```bash
+cd frontend
+docker compose up -d
+```
+
+Abrir:
+
+```text
+http://localhost:5500
+```
+
+Si ya tienes `.env`, dependencias y migraciones listas, normalmente solo necesitas:
+
+```bash
+cd backend
+docker compose -f docker.compose.yml up -d
+php artisan serve
+```
+
+y en otra terminal:
+
+```bash
+cd frontend
+docker compose up -d
+```
+
+## Paso a paso del despliegue local recomendado
 
 ### 1. Servicios del backend con Docker
 
@@ -40,6 +100,7 @@ Esto levanta:
 - PostgreSQL con PostGIS.
 - Redis.
 - Mailpit para probar correos.
+- RustFS para almacenar evidencias y adjuntos compatibles con S3.
 
 Para detenerlos:
 
@@ -75,6 +136,15 @@ REDIS_PORT=6379
 SESSION_DRIVER=redis
 QUEUE_CONNECTION=redis
 CACHE_STORE=redis
+
+INCIDENT_FILESYSTEM_DISK=rustfs
+RUSTFS_ACCESS_KEY_ID=rustfsadmin
+RUSTFS_SECRET_ACCESS_KEY=rustfsadmin123
+RUSTFS_REGION=us-east-1
+RUSTFS_BUCKET=sgi-incidents
+RUSTFS_ENDPOINT=http://127.0.0.1:9000
+RUSTFS_URL=http://127.0.0.1:9000/sgi-incidents
+RUSTFS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
 Si cambias `DB_USERNAME`, `DB_PASSWORD` o `DB_DATABASE`, asegurate de que coincidan con los valores usados por `backend/docker.compose.yml`.
@@ -116,6 +186,55 @@ php artisan reverb:start
 php artisan pail
 ```
 
+## Almacenamiento de evidencias con RustFS
+
+Las imagenes y archivos adjuntos de incidencias no se guardan como binarios en PostgreSQL. El backend guarda el archivo en RustFS y registra en la base de datos solo la metadata en `core.incident_attachments`:
+
+- `incident_id`
+- `user_id`
+- `original_name`
+- `file_path`
+- `mime_type`
+- `file_size_bytes`
+- `file_hash`
+
+Laravel usa el disco configurado en:
+
+```env
+INCIDENT_FILESYSTEM_DISK=rustfs
+```
+
+El disco `rustfs` esta definido en `backend/config/filesystems.php` usando el driver `s3`, por lo que requiere la dependencia:
+
+```bash
+composer require league/flysystem-aws-s3-v3:^3.0
+```
+
+En desarrollo local, el `docker.compose.yml` del backend levanta RustFS y crea automaticamente el bucket `sgi-incidents`. La consola queda disponible en:
+
+```text
+http://127.0.0.1:9001
+```
+
+Usa las credenciales definidas en `.env`:
+
+```env
+RUSTFS_ACCESS_KEY_ID=rustfsadmin
+RUSTFS_SECRET_ACCESS_KEY=rustfsadmin123
+```
+
+Si RustFS no esta disponible temporalmente durante pruebas locales, se puede volver al almacenamiento local sin cambiar codigo:
+
+```env
+INCIDENT_FILESYSTEM_DISK=public
+```
+
+Despues de cambiar variables de entorno, limpiar configuracion:
+
+```bash
+php artisan config:clear
+```
+
 ### 5. Levantar frontend en Docker
 
 Desde la carpeta del frontend:
@@ -141,9 +260,59 @@ docker compose restart frontend
 
 En la mayoria de cambios HTML/CSS/JS basta con refrescar el navegador. Si el navegador mantiene cache, usar `Ctrl + F5`.
 
+### 6. Verificar conexion frontend-backend
+
+Con este modo recomendado no debes abrir archivos con `file://`. Siempre entra por:
+
+```text
+http://localhost:5500
+```
+
+El frontend llama a:
+
+```text
+http://localhost:5500/api
+```
+
+y nginx lo reenvia al backend local:
+
+```text
+http://127.0.0.1:8000/api
+```
+
+Por eso, para este modo no agregues manualmente:
+
+```html
+<script>
+  window.SGI_API_URL = 'http://127.0.0.1:8000/api';
+</script>
+```
+
+Ese ajuste solo aplica cuando levantas el frontend sin Docker.
+
+### 7. Apagar el entorno recomendado
+
+Detener el frontend:
+
+```bash
+cd frontend
+docker compose down
+```
+
+Detener servicios de apoyo del backend:
+
+```bash
+cd backend
+docker compose -f docker.compose.yml down
+```
+
+El backend local se detiene con `Ctrl + C` en la terminal donde corre `php artisan serve`.
+
 ## Levantamiento sin Docker
 
 Tambien se puede levantar el proyecto sin Docker, siempre que tengas instalados localmente PostgreSQL con PostGIS, Redis, PHP y Composer.
+
+Este modo es independiente del despliegue recomendado. Usalo solo si no quieres usar Docker Desktop para ningun servicio. En este caso si debes configurar la URL directa del backend en el frontend, porque no existe el proxy nginx `/api`.
 
 ### 1. Base de datos y servicios locales
 
@@ -234,6 +403,8 @@ Importante: sin nginx Docker no existe el proxy `/api` hacia Laravel. En ese cas
 ```
 
 Si se usa este modo, revisar que el backend permita CORS desde `http://localhost:5500`.
+
+Cuando vuelvas al modo recomendado con frontend en Docker, quita ese `window.SGI_API_URL` si lo agregaste en un HTML, o deja el valor por defecto de `frontend/app/js/core/config.js` para que vuelva a usar `/api`.
 
 ## Arquitectura del backend
 
@@ -327,6 +498,40 @@ Después de cambiar `.env`, limpiar configuración del backend:
 ```bash
 cd backend
 php artisan config:clear
+```
+
+## Mapa con MapLibre GL JS y OpenFreeMap
+
+El sistema incluye una pantalla de mapa para visualizar incidencias georreferenciadas:
+
+```text
+frontend/app/html/incident-map.html
+```
+
+El backend expone los puntos desde:
+
+```text
+GET /api/incidents/map
+```
+
+La pantalla usa **MapLibre GL JS** con **OpenFreeMap** como proveedor de estilo y mapa base vectorial. No requiere token, tarjeta ni configuracion externa. La base de datos sigue siendo PostgreSQL/PostGIS; MapLibre solo se usa como capa visual en el frontend.
+
+La pantalla de creacion de incidencias tambien usa MapLibre:
+
+- Permite seleccionar coordenadas haciendo clic en el mapa.
+- Permite mover un marcador arrastrable.
+- Autocompleta los campos de latitud y longitud.
+- Si el usuario escribe coordenadas manualmente, el marcador se mueve a esa ubicacion.
+- Valida que latitud y longitud esten completas y dentro de rango antes de enviar.
+
+Por defecto el mapa centra en Santa Elena, Ecuador. Opcionalmente se puede ajustar el centro inicial o el estilo:
+
+```html
+<script>
+  window.SGI_MAP_DEFAULT_CENTER = [-80.8587, -2.2262];
+  window.SGI_MAP_DEFAULT_ZOOM = 12;
+  window.SGI_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+</script>
 ```
 
 ### Flujo de Comunicación:

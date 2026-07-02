@@ -32,48 +32,6 @@ class CatalogController extends ApiController
     }
 
     /**
-     * Listar países.
-     *
-     * @group Ubicación
-     */
-    public function countries(): JsonResponse
-    {
-        return response()->json([
-            'data' => $this->catalogQueryUseCase->countries(),
-        ]);
-    }
-
-    /**
-     * Listar provincias.
-     *
-     * Devuelve las provincias de un país.
-     *
-     * @group Ubicación
-     * @urlParam pais int required El ID del país. Example: 1
-     */
-    public function provinces(int $pais): JsonResponse
-    {
-        return response()->json([
-            'data' => $this->catalogQueryUseCase->provinces($pais),
-        ]);
-    }
-
-    /**
-     * Listar ciudades.
-     *
-     * Devuelve las ciudades de una provincia.
-     *
-     * @group Ubicación
-     * @urlParam provincia int required El ID de la provincia. Example: 10
-     */
-    public function cities(int $provincia): JsonResponse
-    {
-        return response()->json([
-            'data' => $this->catalogQueryUseCase->cities($provincia),
-        ]);
-    }
-
-    /**
      * Listar categorías.
      *
      * @group Categorías y subcategorías
@@ -165,4 +123,3 @@ class CatalogController extends ApiController
         ]);
     }
 }
-

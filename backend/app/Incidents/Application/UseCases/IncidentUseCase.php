@@ -10,6 +10,7 @@ use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
@@ -32,6 +33,14 @@ final class IncidentUseCase
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
         return $this->incidentRepository->paginate($filters, $userId, $canManage);
+    }
+
+    /**
+     * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>
+     */
+    public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array
+    {
+        return $this->incidentRepository->mapPoints($filters, $userId, $canManage);
     }
 
     public function store(int $userId, StoreIncidentInputData $data): Incident

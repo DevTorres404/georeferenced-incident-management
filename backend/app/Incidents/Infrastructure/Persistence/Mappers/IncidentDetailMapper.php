@@ -5,6 +5,7 @@ namespace App\Incidents\Infrastructure\Persistence\Mappers;
 use App\Incidents\Application\DTOs\CategorySummaryData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\PrioritySummaryData;
+use App\Incidents\Application\DTOs\TerritorialUnitSummaryData;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 
 final class IncidentDetailMapper
@@ -26,7 +27,7 @@ final class IncidentDetailMapper
             code: $incident->code,
             title: $incident->title,
             description: $incident->description,
-            address: $incident->address,
+            address: $incident->address_reference ?: $incident->address,
             latitude: $incident->latitude !== null ? (string) $incident->latitude : null,
             longitude: $incident->longitude !== null ? (string) $incident->longitude : null,
             resolutionDate: $incident->resolution_date?->toIso8601String(),
@@ -46,7 +47,14 @@ final class IncidentDetailMapper
             priority: $incident->relationLoaded('priority') && $incident->priority
                 ? new PrioritySummaryData((int) $incident->priority->id, $incident->priority->name, (int) $incident->priority->level)
                 : null,
-            city: $this->incidentSummaryMapper->mapCity($incident),
+            territorialUnit: $incident->relationLoaded('territorialUnit') && $incident->territorialUnit
+                ? new TerritorialUnitSummaryData(
+                    (int) $incident->territorialUnit->id,
+                    $incident->territorialUnit->name,
+                    $incident->territorialUnit->type,
+                    $incident->territorialUnit->full_path
+                )
+                : null,
             history: $incident->relationLoaded('stateHistory')
                 ? $incident->stateHistory->map(fn ($item) => $this->historyEntryMapper->fromModel($item))->all()
                 : [],

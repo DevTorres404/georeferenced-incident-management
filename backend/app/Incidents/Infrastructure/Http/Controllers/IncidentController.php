@@ -6,21 +6,24 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Application\DTOs\AddCommentInputData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
-use App\Incidents\Infrastructure\Persistence\Models\City;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Throwable;
 
 /**
  * @group Incidencias
@@ -29,7 +32,10 @@ use Illuminate\Validation\Rule;
  */
 class IncidentController extends ApiController
 {
-    public function __construct(private IncidentUseCase $incidentUseCase)
+    public function __construct(
+        private IncidentUseCase $incidentUseCase,
+        private AdminNotifier $adminNotifier
+    )
     {
     }
 
@@ -42,7 +48,6 @@ class IncidentController extends ApiController
      * @queryParam state_id int Filtrar por ID de estado. Example: 1
      * @queryParam priority_id int Filtrar por ID de prioridad. Example: 2
      * @queryParam category_id int Filtrar por ID de categoría. Example: 3
-     * @queryParam city_id int Filtrar por ID de ciudad. Example: 10
      * @queryParam mine boolean Mostrar solo incidencias reportadas por mí. Example: 1
      * @queryParam assigned_to_me boolean Mostrar incidencias asignadas a mí. Example: 0
      * @queryParam overdue boolean Mostrar incidencias atrasadas. Example: 0
@@ -63,13 +68,12 @@ class IncidentController extends ApiController
             'state_id' => ['nullable', 'integer', Rule::exists(State::class, 'id')],
             'priority_id' => ['nullable', 'integer', Rule::exists(Priority::class, 'id')],
             'category_id' => ['nullable', 'integer', Rule::exists(Category::class, 'id')],
-            'city_id' => ['nullable', 'integer', Rule::exists(City::class, 'id')],
             'mine' => ['nullable', 'boolean'],
             'assigned_to_me' => ['nullable', 'boolean'],
             'overdue' => ['nullable', 'boolean'],
             'search' => ['nullable', 'string', 'max:120'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'radio_km' => ['nullable', 'numeric', 'min:0.1', 'max:200'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -78,7 +82,6 @@ class IncidentController extends ApiController
             stateId: $filters['state_id'] ?? null,
             priorityId: $filters['priority_id'] ?? null,
             categoryId: $filters['category_id'] ?? null,
-            cityId: $filters['city_id'] ?? null,
             mine: $filters['mine'] ?? null,
             assignedToMe: $filters['assigned_to_me'] ?? null,
             overdue: $filters['overdue'] ?? null,
@@ -95,6 +98,50 @@ class IncidentController extends ApiController
     }
 
     /**
+     * Mapa de incidencias.
+     *
+     * Devuelve incidencias georreferenciadas para visualizacion en mapa.
+     *
+     * @authenticated
+     */
+    public function map(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $filters = $request->validate([
+            'state_id' => ['nullable', 'integer', Rule::exists(State::class, 'id')],
+            'priority_id' => ['nullable', 'integer', Rule::exists(Priority::class, 'id')],
+            'category_id' => ['nullable', 'integer', Rule::exists(Category::class, 'id')],
+            'mine' => ['nullable', 'boolean'],
+            'assigned_to_me' => ['nullable', 'boolean'],
+            'search' => ['nullable', 'string', 'max:120'],
+            'min_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'max_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'min_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'max_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
+        ]);
+
+        $mapFilters = new IncidentMapFiltersData(
+            stateId: $filters['state_id'] ?? null,
+            priorityId: $filters['priority_id'] ?? null,
+            categoryId: $filters['category_id'] ?? null,
+            mine: $filters['mine'] ?? null,
+            assignedToMe: $filters['assigned_to_me'] ?? null,
+            search: $filters['search'] ?? null,
+            minLatitude: $filters['min_latitude'] ?? null,
+            maxLatitude: $filters['max_latitude'] ?? null,
+            minLongitude: $filters['min_longitude'] ?? null,
+            maxLongitude: $filters['max_longitude'] ?? null,
+            limit: (int) ($filters['limit'] ?? 500)
+        );
+
+        return response()->json([
+            'data' => $this->incidentUseCase->mapPoints($mapFilters, $user->id, $this->canManage($user)),
+        ]);
+    }
+
+    /**
      * Crear incidencia.
      *
      * Reporta una nueva incidencia en el sistema.
@@ -104,9 +151,9 @@ class IncidentController extends ApiController
      * @bodyParam description string required Descripción detallada. Example: Hay una fuga inmensa que está rompiendo el asfalto.
      * @bodyParam category_id int required ID de la categoría principal. Example: 1
      * @bodyParam subcategory_id int ID de la subcategoría. Example: 2
-     * @bodyParam priority_id int required ID de prioridad. Example: 3
-     * @bodyParam city_id int required ID de ciudad donde ocurre. Example: 10
-     * @bodyParam address string Dirección física. Example: Av. 10 de Agosto y Patria
+     * @bodyParam priority_id int ID de prioridad. Solo roles con gestion de incidencias pueden definirla. Example: 3
+     * @bodyParam territorial_unit_id int required ID de la unidad territorial nacional donde ocurre. Example: 10
+     * @bodyParam address_reference string Dirección o referencia física. Example: Av. 10 de Agosto y Patria
      * @bodyParam latitude float Coordenada de latitud. Example: -0.208
      * @bodyParam longitude float Coordenada de longitud. Example: -78.5
      * @bodyParam resolution_date date Fecha estimada de resolución. Example: 2026-06-30
@@ -118,18 +165,22 @@ class IncidentController extends ApiController
             return $this->forbid();
         }
 
-        $data = $request->validate($this->rules());
+        $canSetPriority = $this->canManage($user);
+        $data = $request->validate(
+            $this->rules(allowPriority: $canSetPriority),
+            $this->validationMessages()
+        );
 
         $dto = new StoreIncidentInputData(
             title: $data['title'],
             description: $data['description'],
             categoryId: $data['category_id'],
-            priorityId: $data['priority_id'],
-            cityId: $data['city_id'],
+            priorityId: $data['priority_id'] ?? null,
             subcategoryId: $data['subcategory_id'] ?? null,
-            address: $data['address'] ?? null,
+            address: $data['address_reference'] ?? ($data['address'] ?? null),
             latitude: $data['latitude'] ?? null,
             longitude: $data['longitude'] ?? null,
+            territorialUnitId: $data['territorial_unit_id'] ?? null,
             resolutionDate: $data['resolution_date'] ?? null
         );
 
@@ -179,7 +230,7 @@ class IncidentController extends ApiController
                 category: $detail->category,
                 subcategory: $detail->subcategory,
                 priority: $detail->priority,
-                city: $detail->city,
+                territorialUnit: $detail->territorialUnit,
                 history: $detail->history,
                 comments: $filteredComments,
                 attachments: $detail->attachments,
@@ -203,7 +254,7 @@ class IncidentController extends ApiController
      * @bodyParam description string Descripción detallada.
      * @bodyParam category_id int ID de la categoría principal.
      * @bodyParam priority_id int ID de prioridad.
-     * @bodyParam city_id int ID de ciudad donde ocurre.
+     * @bodyParam territorial_unit_id int ID de la unidad territorial donde ocurre.
      */
     public function update(Request $request, Incident $incident): JsonResponse
     {
@@ -212,18 +263,21 @@ class IncidentController extends ApiController
             return $this->forbid();
         }
 
-        $data = $request->validate($this->rules(partial: true));
+        $data = $request->validate(
+            $this->rules(partial: true, allowPriority: $this->canManage($user)),
+            $this->validationMessages()
+        );
 
         $dto = new UpdateIncidentInputData(
             title: $data['title'] ?? null,
             description: $data['description'] ?? null,
             categoryId: $data['category_id'] ?? null,
             priorityId: $data['priority_id'] ?? null,
-            cityId: $data['city_id'] ?? null,
             subcategoryId: $data['subcategory_id'] ?? null,
-            address: $data['address'] ?? null,
+            address: $data['address_reference'] ?? ($data['address'] ?? null),
             latitude: $data['latitude'] ?? null,
             longitude: $data['longitude'] ?? null,
+            territorialUnitId: $data['territorial_unit_id'] ?? null,
             resolutionDate: $data['resolution_date'] ?? null
         );
 
@@ -320,17 +374,28 @@ class IncidentController extends ApiController
             'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov,zip'],
         ]);
 
-        $uploadedFile = $data['file'];
-        $adjunto = $this->incidentUseCase->attachFile(
-            $incident->id,
-            $user->id,
-            new UploadedFileData(
-                originalName: $uploadedFile->getClientOriginalName(),
-                mimeType: $uploadedFile->getMimeType() ?? 'application/octet-stream',
-                sizeInBytes: $uploadedFile->getSize(),
-                temporaryPath: $uploadedFile->getRealPath() ?: $uploadedFile->getPathname()
-            )
-        );
+        try {
+            $uploadedFile = $data['file'];
+            $adjunto = $this->incidentUseCase->attachFile(
+                $incident->id,
+                $user->id,
+                new UploadedFileData(
+                    originalName: $uploadedFile->getClientOriginalName(),
+                    mimeType: $uploadedFile->getMimeType() ?? 'application/octet-stream',
+                    sizeInBytes: $uploadedFile->getSize(),
+                    temporaryPath: $uploadedFile->getRealPath() ?: $uploadedFile->getPathname()
+                )
+            );
+        } catch (Throwable $exception) {
+            $this->adminNotifier->notify(
+                title: 'Error del sistema',
+                message: 'Falló el procesamiento de una imagen o archivo adjunto.',
+                type: 'STATUS_CHANGE',
+                excludeUserIds: [(int) $user->id]
+            );
+
+            throw $exception;
+        }
 
         return response()->json([
             'message' => 'Adjunto cargado correctamente.',
@@ -407,21 +472,34 @@ class IncidentController extends ApiController
         }
     }
 
-    private function rules(bool $partial = false): array
+    private function rules(bool $partial = false, bool $allowPriority = true): array
     {
         $required = $partial ? 'sometimes' : 'required';
+        $priorityRules = $allowPriority
+            ? [$partial ? 'sometimes' : 'nullable', 'nullable', 'integer', Rule::exists(Priority::class, 'id')]
+            : ['prohibited'];
 
         return [
             'title' => [$required, 'string', 'max:200'],
             'description' => [$required, 'string'],
             'category_id' => [$required, 'integer', Rule::exists(Category::class, 'id')],
             'subcategory_id' => ['nullable', 'integer', Rule::exists(Subcategory::class, 'id')],
-            'priority_id' => [$required, 'integer', Rule::exists(Priority::class, 'id')],
-            'city_id' => [$required, 'integer', Rule::exists(City::class, 'id')],
-            'address' => ['nullable', 'string', 'max:255'],
+            'priority_id' => $priorityRules,
+            'state_id' => ['prohibited'],
+            'territorial_unit_id' => [$required, 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
+            'address' => ['nullable', 'string', 'max:500'],
+            'address_reference' => ['nullable', 'string', 'max:500'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'resolution_date' => ['nullable', 'date'],
+        ];
+    }
+
+    private function validationMessages(): array
+    {
+        return [
+            'priority_id.prohibited' => 'No puedes asignar la prioridad de una incidencia.',
+            'state_id.prohibited' => 'No puedes asignar el estado desde este formulario.',
         ];
     }
 }

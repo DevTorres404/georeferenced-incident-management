@@ -9,12 +9,6 @@ interface CatalogRepositoryInterface
 {
     public function overview(): array;
 
-    public function countries();
-
-    public function provinces(int $paisId);
-
-    public function cities(int $provinciaId);
-
     public function categories();
 
     public function subcategories(int $categoriaId);

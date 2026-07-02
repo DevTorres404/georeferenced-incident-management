@@ -16,11 +16,14 @@ final class EloquentAuditRepository implements AuditRepositoryInterface
         $query = AuditLog::with('user')->latest();
 
         if ($filters->table !== null && $filters->table !== '') {
-            $query->where('table_name', $filters->table);
+            $query->where(function ($query) use ($filters): void {
+                $query->where('auditable_type', 'ILIKE', "%{$filters->table}%")
+                    ->orWhere('tags->table', $filters->table);
+            });
         }
 
         if ($filters->tableId !== null) {
-            $query->where('table_id', $filters->tableId);
+            $query->where('auditable_id', $filters->tableId);
         }
 
         if ($filters->userId !== null) {
@@ -28,7 +31,7 @@ final class EloquentAuditRepository implements AuditRepositoryInterface
         }
 
         if ($filters->action !== null && $filters->action !== '') {
-            $query->where('action', $filters->action);
+            $query->where('event', $filters->action);
         }
 
         $result = $query->paginate($filters->perPage);

@@ -10,7 +10,8 @@
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=26">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="../css/app.css?v=34">
 
   <style>
     .timeline-item .timeline-badge { top: 0; }
@@ -107,11 +108,67 @@
   </div>
 </div>
 
+<div class="modal fade" id="modalPrioridad" tabindex="-1" role="dialog" aria-labelledby="modalPrioridadLabel" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalPrioridadLabel">
+          <i class="fas fa-layer-group mr-2"></i>Asignar Prioridad
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-0">
+          <label for="nuevaPrioridad">Prioridad:</label>
+          <select class="form-control" id="nuevaPrioridad"></select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnGuardarPrioridad">
+          <i class="fas fa-save mr-1"></i>Guardar Prioridad
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalAttachmentPreview" tabindex="-1" role="dialog" aria-labelledby="modalAttachmentPreviewLabel" aria-modal="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="modalAttachmentPreviewLabel">
+          <i class="fas fa-image mr-2"></i>Vista previa de evidencia
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body attachment-preview-modal-body">
+        <img id="attachmentPreviewModalImage" class="attachment-preview-modal-image d-none" alt="Vista previa de evidencia">
+        <div id="attachmentPreviewModalFallback" class="attachment-preview-modal-fallback d-none">
+          <i class="far fa-file-image mb-3"></i>
+          <p class="mb-0">No se pudo cargar la vista previa del archivo.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline-success" id="attachmentPreviewModalOpen">
+          <i class="fas fa-external-link-alt mr-1"></i>Abrir en otra pestaña
+        </a>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="../../plugins/jquery/jquery.min.js"></script>
 <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
 <script type="module" src="../js/layout/layout.js?v=20"></script>
-<script type="module" src="../js/modules/incidents/presentation/incident-detail-page.js?v=20"></script>
+<script type="module" src="../js/modules/incidents/presentation/incident-detail-page.js?v=26"></script>
 </body>
 </html>

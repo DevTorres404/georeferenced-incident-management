@@ -15,21 +15,6 @@ class CatalogQueryUseCase
         return $this->catalogRepository->overview();
     }
 
-    public function countries()
-    {
-        return $this->catalogRepository->countries();
-    }
-
-    public function provinces(int $paisId)
-    {
-        return $this->catalogRepository->provinces($paisId);
-    }
-
-    public function cities(int $provinciaId)
-    {
-        return $this->catalogRepository->cities($provinciaId);
-    }
-
     public function categories()
     {
         return $this->catalogRepository->categories();

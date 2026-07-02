@@ -3,11 +3,9 @@
 namespace App\Incidents\Infrastructure\Persistence\Mappers;
 
 use App\Incidents\Application\DTOs\CategorySummaryData;
-use App\Incidents\Application\DTOs\CitySummaryData;
-use App\Incidents\Application\DTOs\CountrySummaryData;
 use App\Incidents\Application\DTOs\IncidentSummaryData;
 use App\Incidents\Application\DTOs\PrioritySummaryData;
-use App\Incidents\Application\DTOs\ProvinceSummaryData;
+use App\Incidents\Application\DTOs\TerritorialUnitSummaryData;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 
 final class IncidentSummaryMapper
@@ -38,36 +36,17 @@ final class IncidentSummaryMapper
             priority: $incident->relationLoaded('priority') && $incident->priority
                 ? new PrioritySummaryData((int) $incident->priority->id, $incident->priority->name, (int) $incident->priority->level)
                 : null,
-            city: $this->mapCity($incident),
-            address: $incident->address,
+            territorialUnit: $incident->relationLoaded('territorialUnit') && $incident->territorialUnit
+                ? new TerritorialUnitSummaryData(
+                    (int) $incident->territorialUnit->id,
+                    $incident->territorialUnit->name,
+                    $incident->territorialUnit->type,
+                    $incident->territorialUnit->full_path
+                )
+                : null,
+            address: $incident->address_reference ?: $incident->address,
             resolutionDate: $incident->resolution_date?->toIso8601String(),
             createdAt: $incident->created_at?->toIso8601String()
-        );
-    }
-
-    public function mapCity(Incident $incident): ?CitySummaryData
-    {
-        if (! $incident->relationLoaded('city') || ! $incident->city) {
-            return null;
-        }
-
-        $province = $incident->city->relationLoaded('province') && $incident->city->province
-            ? new ProvinceSummaryData(
-                (int) $incident->city->province->id,
-                $incident->city->province->name,
-                $incident->city->province->relationLoaded('country') && $incident->city->province->country
-                    ? new CountrySummaryData(
-                        (int) $incident->city->province->country->id,
-                        $incident->city->province->country->name
-                    )
-                    : null
-            )
-            : null;
-
-        return new CitySummaryData(
-            (int) $incident->city->id,
-            $incident->city->name,
-            $province
         );
     }
 }

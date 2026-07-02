@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auditoria | Sistema de Incidencias</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
+  <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+  <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
+  <link rel="stylesheet" href="../css/app.css?v=27">
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+  <div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
+        <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+        <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
+
+    <div class="content-wrapper">
+      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+        <div class="loader-orbit" aria-hidden="true">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
+      </div>
+      <script>
+        window.setTimeout(function () {
+          var loader = document.getElementById('pageLoader');
+          if (!loader) return;
+          loader.setAttribute('hidden', '');
+          loader.classList.add('d-none');
+          loader.setAttribute('aria-hidden', 'true');
+          loader.style.display = 'none';
+        }, 4000);
+      </script>
+
+      <div class="content-header">
+        <div class="container-fluid">
+          <div class="row mb-2">
+            <div class="col-sm-8">
+              <h1 class="m-0">
+                <i class="fas fa-clipboard-list text-primary mr-2"></i>Logs de auditoria
+              </h1>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="container-fluid">
+          <div id="audit-alert" class="alert d-none" role="alert"></div>
+
+          <div class="card shadow-sm border-0 rounded-3 mb-4 audit-log-card">
+            <div class="card-header bg-white border-bottom audit-log-header">
+              <div>
+                <span class="text-uppercase small text-primary font-weight-bold">Auditoria</span>
+                <h3 class="card-title d-block mb-1 font-weight-bold text-main">Actividad del sistema</h3>
+                <p class="text-muted small mb-0">Consulta cambios registrados sobre usuarios e incidencias.</p>
+              </div>
+              <div class="audit-log-summary mt-3 mt-lg-0">
+                <div class="audit-log-summary-item">
+                  <span>Total</span>
+                  <strong id="audit-total">0</strong>
+                </div>
+                <div class="audit-log-summary-item">
+                  <span>Pagina</span>
+                  <strong id="audit-page-summary">1</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body border-bottom">
+              <form id="audit-filter-form" class="row align-items-end">
+                <div class="col-md-3">
+                  <label for="audit-table-filter" class="small text-muted font-weight-bold mb-1">Tabla o modelo</label>
+                  <input id="audit-table-filter" type="search" class="form-control" placeholder="incidents, users">
+                </div>
+                <div class="col-md-2 mt-3 mt-md-0">
+                  <label for="audit-record-filter" class="small text-muted font-weight-bold mb-1">ID registro</label>
+                  <input id="audit-record-filter" type="number" min="1" class="form-control" placeholder="Ej. 12">
+                </div>
+                <div class="col-md-2 mt-3 mt-md-0">
+                  <label for="audit-event-filter" class="small text-muted font-weight-bold mb-1">Evento</label>
+                  <select id="audit-event-filter" class="form-control">
+                    <option value="">Todos</option>
+                    <option value="created">Creado</option>
+                    <option value="updated">Actualizado</option>
+                    <option value="deleted">Eliminado</option>
+                    <option value="restored">Restaurado</option>
+                  </select>
+                </div>
+                <div class="col-md-2 mt-3 mt-md-0">
+                  <label for="audit-per-page" class="small text-muted font-weight-bold mb-1">Por pagina</label>
+                  <select id="audit-per-page" class="form-control">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                  </select>
+                </div>
+                <div class="col-md-3 mt-3 mt-md-0 d-flex">
+                  <button type="submit" class="btn btn-primary mr-2">
+                    <i class="fas fa-search mr-1"></i> Filtrar
+                  </button>
+                  <button type="button" id="audit-clear-filters" class="btn btn-outline-secondary">
+                    Limpiar
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover mb-0 audit-log-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Evento</th>
+                      <th>Registro</th>
+                      <th>Usuario</th>
+                      <th>Origen</th>
+                      <th>Cambios</th>
+                    </tr>
+                  </thead>
+                  <tbody id="audit-log-table-body">
+                    <tr>
+                      <td colspan="6" class="text-center text-muted py-4">Cargando registros...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+              <small id="audit-pagination-info" class="text-muted mb-2 mb-md-0">Sin registros</small>
+              <nav aria-label="Paginacion de auditoria">
+                <ul id="audit-pagination" class="pagination pagination-sm mb-0"></ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="main-footer text-sm">
+      <div class="float-right d-none d-sm-inline">Version 1.0.0</div>
+      <strong>Sistema de Gestion de Incidencias Georreferenciadas (SGI)</strong>
+    </footer>
+  </div>
+
+  <script src="../../plugins/jquery/jquery.min.js"></script>
+  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <script src="../../dist/js/adminlte.min.js"></script>
+  <script type="module" src="../js/layout/layout.js?v=20"></script>
+  <script type="module" src="../js/modules/audit/presentation/audit-logs-page.js?v=1"></script>
+</body>
+
+</html>

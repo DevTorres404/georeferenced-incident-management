@@ -20,7 +20,6 @@ class CatalogManagementTest extends TestCase
         
         // Seed catalogs, roles and permissions
         $this->seed([
-            \Database\Seeders\CountrySeeder::class,
             \Database\Seeders\CategorySeeder::class,
             \Database\Seeders\PrioritySeeder::class,
             \Database\Seeders\StateSeeder::class,
@@ -38,36 +37,7 @@ class CatalogManagementTest extends TestCase
                 'categories',
                 'priorities',
                 'states',
-                'countries'
             ]);
-    }
-
-    public function test_user_can_fetch_countries(): void
-    {
-        $response = $this->getJson('/api/catalogs/countries');
-        
-        $response->assertOk()
-            ->assertJsonStructure(['data' => [['id', 'name']]]);
-    }
-
-    public function test_user_can_fetch_provinces_by_country(): void
-    {
-        $countryId = \App\Incidents\Infrastructure\Persistence\Models\Country::first()->id;
-
-        $response = $this->getJson("/api/catalogs/countries/{$countryId}/provinces");
-        
-        $response->assertOk()
-            ->assertJsonStructure(['data' => [['id', 'name']]]);
-    }
-
-    public function test_user_can_fetch_cities_by_province(): void
-    {
-        $provinceId = \App\Incidents\Infrastructure\Persistence\Models\Province::first()->id;
-
-        $response = $this->getJson("/api/catalogs/provinces/{$provinceId}/cities");
-        
-        $response->assertOk()
-            ->assertJsonStructure(['data' => [['id', 'name']]]);
     }
 
     public function test_user_can_fetch_categories_and_subcategories(): void

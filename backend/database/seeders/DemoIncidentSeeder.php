@@ -4,11 +4,11 @@ namespace Database\Seeders;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
-use App\Incidents\Infrastructure\Persistence\Models\City;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -32,7 +32,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Bache',
                 'priority_level' => 2,
                 'state' => 'NUEVA',
-                'city' => 'Quito',
+                'territorial_unit' => 'Quito',
                 'address' => 'Av. Naciones Unidas y Amazonas',
                 'latitude' => -0.180653,
                 'longitude' => -78.467834,
@@ -50,7 +50,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Fuga de agua',
                 'priority_level' => 1,
                 'state' => 'EN_REVISION',
-                'city' => 'Guayaquil',
+                'territorial_unit' => 'Guayaquil',
                 'address' => 'Av. 9 de Octubre y Chile',
                 'latitude' => -2.190317,
                 'longitude' => -79.886207,
@@ -68,7 +68,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Luminaria apagada',
                 'priority_level' => 3,
                 'state' => 'EN_PROGRESO',
-                'city' => 'Cuenca',
+                'territorial_unit' => 'Cuenca',
                 'address' => 'Parque Calderon, costado norte',
                 'latitude' => -2.897414,
                 'longitude' => -79.004481,
@@ -89,7 +89,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Contenedor lleno',
                 'priority_level' => 3,
                 'state' => 'RESUELTA',
-                'city' => 'Manta',
+                'territorial_unit' => 'Manta',
                 'address' => 'Calle 13 y Av. 24',
                 'latitude' => -0.967653,
                 'longitude' => -80.708911,
@@ -110,7 +110,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Cable caido',
                 'priority_level' => 1,
                 'state' => 'CERRADA',
-                'city' => 'Ambato',
+                'territorial_unit' => 'Ambato',
                 'address' => 'Av. Cevallos y Mera',
                 'latitude' => -1.241667,
                 'longitude' => -78.619720,
@@ -132,7 +132,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Senalizacion vial',
                 'priority_level' => 4,
                 'state' => 'RECHAZADA',
-                'city' => 'Machala',
+                'territorial_unit' => 'Machala',
                 'address' => 'Av. 25 de Junio',
                 'latitude' => -3.258111,
                 'longitude' => -79.955392,
@@ -150,7 +150,7 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory' => 'Alcantarilla tapada',
                 'priority_level' => 2,
                 'state' => 'REABIERTA',
-                'city' => 'Portoviejo',
+                'territorial_unit' => 'Portoviejo',
                 'address' => 'Av. Manabi y America',
                 'latitude' => -1.054582,
                 'longitude' => -80.454451,
@@ -187,8 +187,9 @@ class DemoIncidentSeeder extends Seeder
                 'subcategory_id' => $subcategory->id,
                 'priority_id' => $this->priority($data['priority_level'])->id,
                 'state_id' => $state->id,
-                'city_id' => $this->city($data['city'])->id,
+                'territorial_unit_id' => $this->territorialUnit($data['territorial_unit'])->id,
                 'address' => $data['address'],
+                'address_reference' => $data['address'],
                 'latitude' => $data['latitude'],
                 'longitude' => $data['longitude'],
                 'reported_by_id' => $reporter->id,
@@ -334,9 +335,34 @@ class DemoIncidentSeeder extends Seeder
         return State::where('name', $name)->firstOrFail();
     }
 
-    private function city(string $name): City
+    private function territorialUnit(string $name): TerritorialUnit
     {
-        return City::where('name', $name)->firstOrFail();
+        $units = TerritorialUnit::query()
+            ->whereIn('type', [TerritorialUnit::TYPE_PARISH, TerritorialUnit::TYPE_CANTON])
+            ->get();
+
+        $unit = $units->first(fn (TerritorialUnit $territorialUnit) => $this->sameText($territorialUnit->name, $name));
+
+        if ($unit && $unit->type === TerritorialUnit::TYPE_PARISH) {
+            return $unit;
+        }
+
+        if ($unit && $unit->type === TerritorialUnit::TYPE_CANTON) {
+            $parish = TerritorialUnit::query()
+                ->where('parent_id', $unit->id)
+                ->where('type', TerritorialUnit::TYPE_PARISH)
+                ->orderByRaw('CASE WHEN name = ? THEN 0 ELSE 1 END', [$unit->name])
+                ->orderBy('name')
+                ->first();
+
+            if ($parish) {
+                return $parish;
+            }
+        }
+
+        return TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_PARISH)
+            ->firstOrFail();
     }
 
     private function sameText(string $left, string $right): bool

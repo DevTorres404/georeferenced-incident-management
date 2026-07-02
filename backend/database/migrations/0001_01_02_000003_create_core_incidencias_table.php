@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * Almacena los reportes ciudadanos con:
  *   - Clasificación (categoría, subcategoría, prioridad, estado)
- *   - Ubicación geográfica (ciudad + coordenadas + geometría PostGIS)
+ *   - Ubicación geográfica (unidad territorial + coordenadas + geometría PostGIS)
  *   - Trazabilidad (quién reportó, quién está asignado, SLA)
  *   - Soft delete para eliminación lógica
  */
@@ -43,9 +43,6 @@ return new class extends Migration
                 ->constrained('core.states');
 
             // ── Ubicación ──
-            $table->foreignId('city_id')
-                ->constrained('core.cities');
-
             $table->string('address', 255)->nullable();
 
             $table->decimal('latitude', 10, 8)->nullable()
@@ -89,7 +86,6 @@ return new class extends Migration
             $table->index('code', 'idx_incidents_code');
             $table->index('state_id', 'idx_incidents_state');
             $table->index('priority_id', 'idx_incidents_priority');
-            $table->index('city_id', 'idx_incidents_city');
             $table->index('reported_by_id', 'idx_incidents_reported_by');
             $table->index('current_assigned_id', 'idx_incidents_assigned');
             $table->index('created_at', 'idx_incidents_created_at');

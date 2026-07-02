@@ -18,7 +18,7 @@ final class IncidentSummaryData implements JsonSerializable
         public readonly ?CategorySummaryData $category = null,
         public readonly ?CategorySummaryData $subcategory = null,
         public readonly ?PrioritySummaryData $priority = null,
-        public readonly ?CitySummaryData $city = null,
+        public readonly ?TerritorialUnitSummaryData $territorialUnit = null,
         public readonly ?string $address = null,
         public readonly ?string $resolutionDate = null,
         public readonly ?string $createdAt = null
@@ -39,8 +39,9 @@ final class IncidentSummaryData implements JsonSerializable
             'category' => $this->category,
             'subcategory' => $this->subcategory,
             'priority' => $this->priority,
-            'city' => $this->city,
+            'territorial_unit' => $this->territorialUnit,
             'address' => $this->address,
+            'address_reference' => $this->address,
             'resolution_date' => $this->resolutionDate,
             'created_at' => $this->createdAt,
         ];

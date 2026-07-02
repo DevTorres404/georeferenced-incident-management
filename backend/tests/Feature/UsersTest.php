@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,6 +46,12 @@ class UsersTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.email', 'lucia@incidencias.local')
             ->assertJsonPath('data.username', 'lucia.morales');
+
+        $this->assertTrue(
+            Notification::where('user_id', $admin['user']->id)
+                ->where('title', 'Usuario creado')
+                ->exists()
+        );
     }
 
     private function authenticateAdmin(): array

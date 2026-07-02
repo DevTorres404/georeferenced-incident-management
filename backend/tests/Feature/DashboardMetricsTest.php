@@ -7,9 +7,6 @@ use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
-use App\Incidents\Infrastructure\Persistence\Models\City;
-use App\Incidents\Infrastructure\Persistence\Models\Province;
-use App\Incidents\Infrastructure\Persistence\Models\Country;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -26,7 +23,6 @@ class DashboardMetricsTest extends TestCase
         $stateR = State::where('name', 'RESUELTA')->firstOrFail();
         $cat = Category::firstOrFail();
         $pri = Priority::firstOrFail();
-        $city = City::firstOrFail();
 
         // Create incidents
         for ($i = 0; $i < 3; $i++) {
@@ -37,7 +33,6 @@ class DashboardMetricsTest extends TestCase
                 'state_id' => $stateN->id,
                 'category_id' => $cat->id,
                 'priority_id' => $pri->id,
-                'city_id' => $city->id,
                 'reported_by_id' => $admin['user']->id,
                 'latitude' => 0,
                 'longitude' => 0,
@@ -52,7 +47,6 @@ class DashboardMetricsTest extends TestCase
                 'state_id' => $stateR->id,
                 'category_id' => $cat->id,
                 'priority_id' => $pri->id,
-                'city_id' => $city->id,
                 'reported_by_id' => $admin['user']->id,
                 'latitude' => 0,
                 'longitude' => 0,
@@ -89,7 +83,6 @@ class DashboardMetricsTest extends TestCase
             \Database\Seeders\StateSeeder::class,
             \Database\Seeders\PrioritySeeder::class,
             \Database\Seeders\CategorySeeder::class,
-            \Database\Seeders\CountrySeeder::class,
         ]);
     }
 

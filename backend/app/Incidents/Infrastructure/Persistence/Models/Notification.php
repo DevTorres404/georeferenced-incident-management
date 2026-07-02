@@ -3,6 +3,8 @@
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Broadcasting\NotificationCreated;
+use App\Incidents\Infrastructure\Persistence\Mappers\NotificationMapper;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +26,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Notification extends Model
 {
     protected $table = 'core.notifications';
+
+    protected static function booted(): void
+    {
+        static::created(function (Notification $notification): void {
+            event(new NotificationCreated(
+                app(NotificationMapper::class)->fromModel($notification)
+            ));
+        });
+    }
 
     protected function casts(): array
     {
@@ -76,4 +87,3 @@ class Notification extends Model
         $this->markAsRead();
     }
 }
-

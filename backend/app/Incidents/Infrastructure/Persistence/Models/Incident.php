@@ -3,6 +3,8 @@
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,8 +30,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'subcategory_id',
     'priority_id',
     'state_id',
-    'city_id',
+    'territorial_unit_id',
     'address',
+    'address_reference',
     'latitude',
     'longitude',
     'reported_by_id',
@@ -37,7 +40,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 ])]
 class Incident extends Model
 {
-    use SoftDeletes;
+    use Auditable, SoftDeletes;
 
     protected $table = 'core.incidents';
 
@@ -99,14 +102,9 @@ class Incident extends Model
     // Relaciones — Ubicación
     // ──────────────────────────────────────────────
 
-    public function ciudad(): BelongsTo
+    public function territorialUnit(): BelongsTo
     {
-        return $this->belongsTo(City::class, 'city_id');
-    }
-
-    public function city(): BelongsTo
-    {
-        return $this->ciudad();
+        return $this->belongsTo(TerritorialUnit::class, 'territorial_unit_id');
     }
 
     // ──────────────────────────────────────────────
@@ -227,4 +225,3 @@ class Incident extends Model
         return $this->estaVencida();
     }
 }
-

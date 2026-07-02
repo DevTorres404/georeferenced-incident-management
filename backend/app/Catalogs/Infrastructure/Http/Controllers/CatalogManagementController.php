@@ -6,13 +6,11 @@ use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
 use App\Catalogs\Application\UseCases\CatalogManagementUseCase;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
-use App\Incidents\Infrastructure\Persistence\Models\City;
 use App\Incidents\Infrastructure\Persistence\Models\Configuration;
 use App\Incidents\Infrastructure\Persistence\Models\State;
-use App\Incidents\Infrastructure\Persistence\Models\Country;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
-use App\Incidents\Infrastructure\Persistence\Models\Province;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +25,10 @@ use Illuminate\Validation\Rule;
  */
 class CatalogManagementController extends ApiController
 {
-    public function __construct(private CatalogManagementUseCase $catalogManagementUseCase)
+    public function __construct(
+        private CatalogManagementUseCase $catalogManagementUseCase,
+        private AdminNotifier $adminNotifier
+    )
     {
     }
 
@@ -70,6 +71,8 @@ class CatalogManagementController extends ApiController
         $data = $request->validate($this->rules($catalog));
         $record = $this->catalogManagementUseCase->create($catalog, $data);
 
+        $this->notifyCatalogChange($request, $catalog);
+
         return response()->json([
             'message' => 'Registro creado correctamente.',
             'data' => $record,
@@ -107,6 +110,8 @@ class CatalogManagementController extends ApiController
         $data = $request->validate($this->rules($catalog, $record));
         $record = $this->catalogManagementUseCase->update($catalog, $id, $data);
 
+        $this->notifyCatalogChange($request, $catalog);
+
         return response()->json([
             'message' => 'Registro actualizado correctamente.',
             'data' => $record,
@@ -122,9 +127,11 @@ class CatalogManagementController extends ApiController
      * @urlParam catalog string required El nombre del catálogo. Example: categories
      * @urlParam id int required El ID del registro. Example: 2
      */
-    public function destroy(string $catalog, int $id): JsonResponse
+    public function destroy(Request $request, string $catalog, int $id): JsonResponse
     {
         $this->catalogManagementUseCase->delete($catalog, $id);
+
+        $this->notifyCatalogChange($request, $catalog);
 
         return response()->json([
             'message' => 'Registro eliminado correctamente.',
@@ -136,21 +143,6 @@ class CatalogManagementController extends ApiController
         $id = $record?->getKey();
 
         return match ($catalog) {
-            'countries' => [
-                'name' => ['required', 'string', 'max:100'],
-                'iso_code' => ['required', 'string', 'size:2', Rule::unique(Country::class, 'iso_code')->ignore($id)],
-                'is_active' => ['sometimes', 'boolean'],
-            ],
-            'provinces' => [
-                'country_id' => ['required', 'integer', Rule::exists(Country::class, 'id')],
-                'name' => ['required', 'string', 'max:100'],
-                'is_active' => ['sometimes', 'boolean'],
-            ],
-            'cities' => [
-                'province_id' => ['required', 'integer', Rule::exists(Province::class, 'id')],
-                'name' => ['required', 'string', 'max:100'],
-                'is_active' => ['sometimes', 'boolean'],
-            ],
             'categories' => [
                 'name' => ['required', 'string', 'max:100', Rule::unique(Category::class, 'name')->ignore($id)],
                 'description' => ['nullable', 'string', 'max:255'],
@@ -198,5 +190,17 @@ class CatalogManagementController extends ApiController
             default => [],
         };
     }
-}
 
+    private function notifyCatalogChange(Request $request, string $catalog): void
+    {
+        if (! in_array($catalog, ['categories', 'subcategories', 'priorities', 'states'], true)) {
+            return;
+        }
+
+        $this->adminNotifier->notify(
+            title: 'Configuración modificada',
+            message: 'Se cambió una categoría, subcategoría, prioridad o estado.',
+            type: 'STATUS_CHANGE'
+        );
+    }
+}

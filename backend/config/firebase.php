@@ -5,6 +5,17 @@ declare(strict_types=1);
 return [
     /*
      * ------------------------------------------------------------------------
+     * ID token verification
+     * ------------------------------------------------------------------------
+     *
+     * Small clock skews between the local machine and Google can make freshly
+     * issued ID tokens look like they were issued in the future.
+     */
+
+    'token_leeway_seconds' => env('FIREBASE_TOKEN_LEEWAY_SECONDS', 120),
+
+    /*
+     * ------------------------------------------------------------------------
      * Default Firebase project
      * ------------------------------------------------------------------------
      */

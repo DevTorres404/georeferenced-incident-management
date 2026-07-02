@@ -62,6 +62,27 @@ class TwoFactorAuthTest extends TestCase
         $this->assertNotNull($user->fresh()->two_factor_confirmed_at);
     }
 
+    public function test_confirm_2fa_setup_returns_validation_error_when_code_is_invalid(): void
+    {
+        $user = User::factory()->create([
+            'two_factor_secret' => 'ABCDEF123456',
+        ]);
+
+        $mockPort = Mockery::mock(TwoFactorAuthPort::class);
+        $mockPort->shouldReceive('verifyKey')->with('ABCDEF123456', '000000')->once()->andReturn(false);
+        $this->app->instance(TwoFactorAuthPort::class, $mockPort);
+
+        $response = $this->actingAs($user)
+            ->postJson('/api/auth/2fa/confirm', [
+                'code' => '000000',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('code');
+
+        $this->assertNull($user->fresh()->two_factor_confirmed_at);
+    }
+
     public function test_login_requires_2fa_if_enabled(): void
     {
         $user = User::factory()->create([
@@ -110,6 +131,37 @@ class TwoFactorAuthTest extends TestCase
 
         $verifyResponse->assertOk()
             ->assertJsonStructure(['access_token', 'user']);
+    }
+
+    public function test_verify_2fa_login_returns_validation_error_when_code_is_incorrect(): void
+    {
+        $user = User::factory()->create([
+            'email' => '2fauser-invalid-code@incidencias.local',
+            'password' => bcrypt('password'),
+            'two_factor_secret' => 'ABCDEF123456',
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $loginResponse = $this->postJson('/api/login', [
+            'email' => '2fauser-invalid-code@incidencias.local',
+            'password' => 'password',
+        ]);
+
+        $token = $loginResponse->json('two_factor_token');
+
+        $mockPort = Mockery::mock(TwoFactorAuthPort::class);
+        $mockPort->shouldReceive('verifyKey')->with('ABCDEF123456', '000000')->once()->andReturn(false);
+        $this->app->instance(TwoFactorAuthPort::class, $mockPort);
+
+        $verifyResponse = $this->postJson('/api/auth/2fa/verify-login', [
+            'two_factor_token' => $token,
+            'code' => '000000',
+        ]);
+
+        $verifyResponse->assertStatus(422)
+            ->assertJsonValidationErrors('code');
+
+        $this->assertNotNull($user->fresh()->two_factor_secret);
     }
 
     public function test_admin_is_blocked_without_2fa(): void

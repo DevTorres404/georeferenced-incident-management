@@ -15,9 +15,11 @@ const pendingControllers = new Map();
 async function requestRaw(path, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const token = localStorage.getItem(window.SGIGSession?.STORAGE_KEYS?.token || 'auth_token');
+  const hasBody = options.body !== undefined && options.body !== null;
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
     Accept: 'application/json',
-    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(hasBody && !isFormData ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
