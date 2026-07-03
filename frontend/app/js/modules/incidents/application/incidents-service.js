@@ -61,6 +61,17 @@ async function changeIncidentState(incidentId, payload) {
   });
 }
 
+async function assignIncidentOperators(incidentId, payload) {
+  return request(`/incidents/${incidentId}/assignments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function listAssignmentOperators() {
+  return request('/incidents/assignment-operators');
+}
+
 async function listStates() {
   return request('/catalogs/states');
 }
@@ -77,8 +88,10 @@ const incidentsService = {
   getIncident,
   deleteIncident,
   addIncidentComment,
+  assignIncidentOperators,
   changeIncidentState,
   listStates,
+  listAssignmentOperators,
   listPriorities,
 };
 
@@ -86,10 +99,12 @@ window.SGIGIncidentsService = incidentsService;
 
 export {
   addIncidentComment,
+  assignIncidentOperators,
   changeIncidentState,
   createIncident,
   deleteIncident,
   getIncident,
+  listAssignmentOperators,
   listIncidents,
   listPriorities,
   listStates,

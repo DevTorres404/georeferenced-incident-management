@@ -189,8 +189,9 @@ class TerritorialUnitSeeder extends Seeder
             'Z3' => 'Costa Sur',
             'Z4' => 'Sierra Norte / Centro',
             'Z5' => 'Sierra Sur / Austro',
-            'Z6' => 'Amazonia',
+            'Z6' => 'Amazonia Sur',
             'Z7' => 'Insular',
+            'Z8' => 'Amazonia Norte',
         ];
 
         $created = [];
@@ -216,8 +217,9 @@ class TerritorialUnitSeeder extends Seeder
             '24', '12', '07' => 'Z3',
             '04', '10', '17', '05', '18' => 'Z4',
             '02', '06', '03', '01', '11' => 'Z5',
-            '21', '22', '15', '16', '14', '19' => 'Z6',
+            '21', '22', '15' => 'Z8',
             '20' => 'Z7',
+            '16', '14', '19' => 'Z6',
             default => '',
         };
     }

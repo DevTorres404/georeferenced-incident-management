@@ -1,0 +1,91 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+class OperationalZoneGeometrySeeder extends Seeder
+{
+    private const GEOJSON_PATH = '../frontend/app/data/ecuador-operational-provinces.geojson';
+
+    public function run(): void
+    {
+        $path = base_path(self::GEOJSON_PATH);
+
+        if (! is_file($path)) {
+            throw new RuntimeException("No se encontro el GeoJSON provincial: {$path}");
+        }
+
+        $contents = (string) file_get_contents($path);
+        $contents = preg_replace('/^\xEF\xBB\xBF/', '', $contents) ?: $contents;
+        $payload = json_decode($contents, true);
+
+        if (! is_array($payload) || ! isset($payload['features']) || ! is_array($payload['features'])) {
+            throw new RuntimeException('El GeoJSON provincial no tiene un formato valido.');
+        }
+
+        $geometriesByProvince = [];
+
+        foreach ($payload['features'] as $feature) {
+            $provinceName = $this->normalizeProvinceName($feature['properties']['province_name'] ?? '');
+            $geometry = $feature['geometry'] ?? null;
+
+            if ($provinceName === '' || ! is_array($geometry)) {
+                continue;
+            }
+
+            $geometriesByProvince[$provinceName] = $geometry;
+        }
+
+        $zones = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->with(['children' => fn ($query) => $query->where('type', TerritorialUnit::TYPE_PROVINCE)])
+            ->get();
+
+        foreach ($zones as $zone) {
+            $provinceGeometries = [];
+
+            foreach ($zone->children as $province) {
+                $provinceKey = $this->normalizeProvinceName($province->name);
+
+                if (isset($geometriesByProvince[$provinceKey])) {
+                    $provinceGeometries[] = $geometriesByProvince[$provinceKey];
+                }
+            }
+
+            if ($provinceGeometries === []) {
+                continue;
+            }
+
+            $this->updateZoneCoverageArea((int) $zone->id, $provinceGeometries);
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $geometries
+     */
+    private function updateZoneCoverageArea(int $zoneId, array $geometries): void
+    {
+        $quotedGeometries = array_map(
+            fn (array $geometry): string => 'ST_SetSRID(ST_GeomFromGeoJSON('.DB::getPdo()->quote(json_encode($geometry, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)).'), 4326)',
+            $geometries
+        );
+
+        $sql = sprintf(
+            'UPDATE core.territorial_units SET coverage_area = ST_Multi(ST_UnaryUnion(ST_Collect(ARRAY[%s]))) WHERE id = ?',
+            implode(', ', $quotedGeometries)
+        );
+
+        DB::update($sql, [$zoneId]);
+    }
+
+    private function normalizeProvinceName(string $name): string
+    {
+        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', trim($name));
+
+        return strtolower($normalized !== false ? $normalized : trim($name));
+    }
+}

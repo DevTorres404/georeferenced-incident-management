@@ -45,4 +45,24 @@ final class OperationalAssignmentException extends Exception
     {
         return new self('El supervisor debe tener una zona operativa activa asignada.', 422);
     }
+
+    public static function supervisorProfileInactive(): self
+    {
+        return new self('El supervisor seleccionado no tiene un perfil operativo activo.', 422);
+    }
+
+    public static function operatorProfileInactive(): self
+    {
+        return new self('El operador seleccionado no tiene un perfil operativo activo.', 422);
+    }
+
+    public static function supervisorTransferLimitExceeded(): self
+    {
+        return new self('El nuevo supervisor supera el limite maximo de operadores.', 422);
+    }
+
+    public static function operatorCapacityExceeded(): self
+    {
+        return new self('El operador seleccionado no tiene capacidad suficiente para recibir las incidencias activas.', 422);
+    }
 }

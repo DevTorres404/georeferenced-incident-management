@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * Niveles predefinidos:
  *   1 = Crítica (8h), 2 = Alta (24h), 3 = Media (72h), 4 = Baja (168h)
  */
-#[Fillable(['name', 'level', 'color', 'sla_hours', 'is_active'])]
+#[Fillable(['name', 'level', 'color', 'sla_hours', 'weight', 'is_active'])]
 class Priority extends Model
 {
     protected $table = 'core.priorities';
@@ -22,6 +22,7 @@ class Priority extends Model
         return [
             'level'     => 'integer',
             'sla_hours' => 'integer',
+            'weight'    => 'integer',
             'is_active' => 'boolean',
         ];
     }
@@ -36,4 +37,3 @@ class Priority extends Model
         return $query->where('is_active', true);
     }
 }
-

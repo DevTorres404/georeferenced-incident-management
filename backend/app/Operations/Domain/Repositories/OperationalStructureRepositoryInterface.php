@@ -6,6 +6,7 @@ use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
 use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
+use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SupervisorProfileData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
 use App\Operations\Application\DTOs\UpdateOperatorProfileInputData;
@@ -33,6 +34,8 @@ interface OperationalStructureRepositoryInterface
     public function syncSupervisorOperators(SyncSupervisorOperatorsInputData $data): SupervisorProfileData;
 
     public function assignOperatorTerritory(AssignOperatorTerritoryInputData $data): OperatorProfileData;
+
+    public function replaceZoneOperator(ReplaceZoneOperatorInputData $data): OperatorProfileData;
 
     public function updateSupervisorProfile(UpdateSupervisorProfileInputData $data): SupervisorProfileData;
 

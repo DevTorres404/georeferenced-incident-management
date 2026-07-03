@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', initIncidentDetailPage);
 
 async function initIncidentDetailPage() {
   if (typeof window.renderLayout === 'function') {
-    window.renderLayout('incidents');
+    window.renderLayout('incident-detail');
   }
 
   const incidentId = new URLSearchParams(window.location.search).get('id');

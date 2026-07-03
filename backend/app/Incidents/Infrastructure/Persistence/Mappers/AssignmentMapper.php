@@ -18,6 +18,8 @@ final class AssignmentMapper
             incidentId: (int) $assignment->incident_id,
             userId: (int) $assignment->user_id,
             assignedById: $assignment->assigned_by_id ? (int) $assignment->assigned_by_id : null,
+            assignmentRole: (string) ($assignment->assignment_role ?? 'primary'),
+            active: (bool) ($assignment->active ?? $assignment->isActive()),
             assignmentDate: $assignment->assignment_date?->toIso8601String(),
             unassignmentDate: $assignment->unassignment_date?->toIso8601String(),
             user: $assignment->relationLoaded('user') && $assignment->user

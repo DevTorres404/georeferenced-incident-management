@@ -16,6 +16,20 @@ final class IncidentSummaryMapper
 
     public function fromModel(Incident $incident): IncidentSummaryData
     {
+        $zoneName = null;
+        if ($incident->relationLoaded('territorialUnit') && $incident->territorialUnit) {
+            $current = $incident->territorialUnit;
+
+            while ($current) {
+                if ($current->type === \App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                    $zoneName = $current->name;
+                    break;
+                }
+
+                $current = $current->relationLoaded('parent') ? $current->parent : null;
+            }
+        }
+
         return new IncidentSummaryData(
             id: (int) $incident->id,
             code: $incident->code,
@@ -44,9 +58,27 @@ final class IncidentSummaryMapper
                     $incident->territorialUnit->full_path
                 )
                 : null,
+            zoneName: $zoneName,
             address: $incident->address_reference ?: $incident->address,
             resolutionDate: $incident->resolution_date?->toIso8601String(),
-            createdAt: $incident->created_at?->toIso8601String()
+            createdAt: $incident->created_at?->toIso8601String(),
+            dueDate: $incident->due_date?->toIso8601String(),
+            assignments: $incident->relationLoaded('assignments')
+                ? $incident->assignments
+                    ->where('active', true)
+                    ->sortBy(fn ($assignment) => $assignment->assignment_role === 'primary' ? 0 : 1)
+                    ->map(function ($assignment): array {
+                        $user = $assignment->relationLoaded('user') ? $assignment->user : null;
+
+                        return [
+                            'user_id' => (int) $assignment->user_id,
+                            'assignment_role' => (string) $assignment->assignment_role,
+                            'full_name' => $user ? trim($user->first_name.' '.$user->last_name) : null,
+                        ];
+                    })
+                    ->values()
+                    ->all()
+                : []
         );
     }
 }

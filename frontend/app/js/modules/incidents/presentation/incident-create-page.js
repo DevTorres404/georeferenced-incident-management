@@ -555,7 +555,6 @@ function validateStep(step) {
 function validateLocation() {
   let valid = true;
   valid = validateRequiredCoordinatePair() && valid;
-  valid = validateTerritorialSelection() && valid;
   updateLocationSummary();
   return valid;
 }
@@ -741,16 +740,25 @@ function updateLocationSummary() {
   const lng = $('#fLongitud')?.value?.trim();
   const territory = selectedTerritorialPath();
   const hasCoordinates = lat && lng;
+  const hasTerritory = territory !== 'No especificada';
 
   setText('#selectedLocationText', address || (hasCoordinates ? 'Punto seleccionado en el mapa' : 'Sin ubicacion seleccionada'));
-  setText('#selectedTerritoryText', territory !== 'No especificada' ? territory : 'Selecciona una provincia para completar el territorio.');
+  setText('#selectedTerritoryText', hasTerritory ? territory : (hasCoordinates ? 'Se detectara automaticamente al registrar' : 'Selecciona una provincia o pick en el mapa.'));
   setText('#selectedLatitude', lat || '-');
   setText('#selectedLongitude', lng || '-');
 
   const badge = $('#locationStatusBadge');
   if (badge) {
-    badge.textContent = hasCoordinates ? 'Ubicacion seleccionada' : 'Pendiente';
-    badge.className = hasCoordinates ? 'badge badge-success px-3 py-2' : 'badge badge-light border px-3 py-2';
+    if (hasCoordinates && hasTerritory) {
+      badge.textContent = 'Ubicacion completa';
+      badge.className = 'badge badge-success px-3 py-2';
+    } else if (hasCoordinates) {
+      badge.textContent = 'Zona se detectara automaticamente';
+      badge.className = 'badge badge-info px-3 py-2';
+    } else {
+      badge.textContent = 'Pendiente';
+      badge.className = 'badge badge-light border px-3 py-2';
+    }
   }
 }
 

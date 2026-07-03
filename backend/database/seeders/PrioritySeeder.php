@@ -14,37 +14,40 @@ class PrioritySeeder extends Seeder
     {
         $priorities = [
             [
-                'name'      => 'Crítica',
-                'level'     => 1,
-                'color'     => '#DC2626',
+                'name' => 'Crítica',
+                'level' => 1,
+                'color' => '#DC2626',
                 'sla_hours' => 8,
+                'weight' => 5,
             ],
             [
-                'name'      => 'Alta',
-                'level'     => 2,
-                'color'     => '#F97316',
+                'name' => 'Alta',
+                'level' => 2,
+                'color' => '#F97316',
                 'sla_hours' => 24,
+                'weight' => 3,
             ],
             [
-                'name'      => 'Media',
-                'level'     => 3,
-                'color'     => '#EAB308',
+                'name' => 'Media',
+                'level' => 3,
+                'color' => '#EAB308',
                 'sla_hours' => 72,
+                'weight' => 2,
             ],
             [
-                'name'      => 'Baja',
-                'level'     => 4,
-                'color'     => '#22C55E',
-                'sla_hours' => 168, // 7 días
+                'name' => 'Baja',
+                'level' => 4,
+                'color' => '#22C55E',
+                'sla_hours' => 168,
+                'weight' => 1,
             ],
         ];
 
-        foreach ($priorities as $prioridad) {
+        foreach ($priorities as $priority) {
             Priority::updateOrCreate(
-                ['level' => $prioridad['level']],
-                $prioridad
+                ['level' => $priority['level']],
+                $priority
             );
         }
     }
 }
-

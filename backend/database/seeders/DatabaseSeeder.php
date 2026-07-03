@@ -33,6 +33,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PrioritySeeder::class);
         $this->call(CategorySeeder::class);
         $this->call(TerritorialUnitSeeder::class);
+        $this->call(OperationalZoneGeometrySeeder::class);
         $this->call(OperationalStructureSeeder::class);
         $this->call(ConfigurationSeeder::class);
 

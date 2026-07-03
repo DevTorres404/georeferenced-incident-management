@@ -23,6 +23,8 @@ async function initIncidentsPage() {
     filteredIncidents: [],
     pendingDeleteId: null,
     dataTable: null,
+    activeStateFilter: 'todos',
+    activePriorityFilter: 'todas'
   };
 
   bindDeleteConfirmation(state);
@@ -50,17 +52,41 @@ function bindFilters(state) {
     button.addEventListener('click', () => {
       document.querySelectorAll('.filtro-btn').forEach((item) => item.classList.remove('active'));
       button.classList.add('active');
-
-      const filter = button.dataset.filtro;
-      const normalized = String(filter || '').toLowerCase();
-
-      state.filteredIncidents = normalized === 'todos'
-        ? [...state.incidents]
-        : state.incidents.filter((incident) => matchesStateFilter(incident, normalized));
-
-      renderTable(state);
+      state.activeStateFilter = String(button.dataset.filtro || '').toLowerCase();
+      applyFilters(state);
     });
   });
+
+  document.querySelectorAll('.priority-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelectorAll('.priority-btn').forEach((item) => {
+        item.classList.remove('active', 'btn-dark');
+        item.classList.add('bg-white');
+      });
+      button.classList.add('active', 'btn-dark');
+      button.classList.remove('bg-white');
+      state.activePriorityFilter = String(button.dataset.prioridad || '').toLowerCase();
+      applyFilters(state);
+    });
+  });
+}
+
+function applyFilters(state) {
+  state.filteredIncidents = state.incidents.filter((incident) => {
+    const matchState = state.activeStateFilter === 'todos' || matchesStateFilter(incident, state.activeStateFilter);
+    const matchPriority = state.activePriorityFilter === 'todas' || matchesPriorityFilter(incident, state.activePriorityFilter);
+    return matchState && matchPriority;
+  });
+  renderTable(state);
+}
+
+function matchesPriorityFilter(incident, filter) {
+  const priorityName = String(incident.priority?.name || '').toLowerCase();
+  if (filter === 'critica') return priorityName.includes('crític') || priorityName.includes('critic');
+  if (filter === 'alta') return priorityName.includes('alta');
+  if (filter === 'media') return priorityName.includes('media');
+  if (filter === 'baja') return priorityName.includes('baja');
+  return false;
 }
 
 function matchesStateFilter(incident, filter) {
@@ -120,18 +146,18 @@ function renderTable(state) {
 
     return `
       <tr id="fila-${incident.id}">
-        <td><span class="badge badge-dark">${code}</span></td>
-        <td class="text-truncate" style="max-width:240px;" title="${title}">${title}</td>
-        <td>${escapeHtml(categoryName)}</td>
-        <td><span class="badge ${getPriorityBadgeClass(priorityName)}">${escapeHtml(priorityName)}</span></td>
-        <td><span class="badge ${getStateBadgeClass(stateName)}">${escapeHtml(stateName)}</span></td>
-        <td class="text-truncate" style="max-width:260px;" title="${escapeHtml(territoryName)}">${escapeHtml(territoryName)}</td>
-        <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
+        <td><div class="table-ticket-code">${code}</div></td>
+        <td class="text-truncate font-weight-bold text-dark" style="max-width:240px;" title="${title}">${title}</td>
+        <td><span class="text-muted"><i class="fas fa-folder mr-1" style="opacity:0.5;"></i>${escapeHtml(categoryName)}</span></td>
+        <td><span class="badge ${getPriorityBadgeClass(priorityName)} shadow-sm">${escapeHtml(priorityName)}</span></td>
+        <td><span class="badge ${getStateBadgeClass(stateName)} shadow-sm">${escapeHtml(stateName)}</span></td>
+        <td class="text-truncate text-muted" style="max-width:260px;" title="${escapeHtml(territoryName)}"><i class="fas fa-map-marker-alt mr-1 text-primary" style="opacity:0.6;"></i>${escapeHtml(territoryName)}</td>
+        <td><span class="text-muted">${escapeHtml(formatShortDate(incident.created_at))}</span></td>
         <td class="text-center" style="white-space:nowrap;">
-          <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-primary mr-1" title="Ver detalle completo">
+          <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-primary shadow-sm mr-1" title="Ver detalle completo" style="border-radius:0.4rem;">
             <i class="fas fa-external-link-alt"></i>
           </a>
-          <button class="btn btn-xs btn-danger js-delete-incident" title="Eliminar" data-id="${incident.id}" data-code="${code}">
+          <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" title="Eliminar" data-id="${incident.id}" data-code="${code}" style="border-radius:0.4rem;">
             <i class="fas fa-trash"></i>
           </button>
         </td>
@@ -183,7 +209,7 @@ function renderTable(state) {
       },
       pageLength: 5,
       lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
-      order: [[6, 'desc']],
+      ordering: false,
       initComplete: function() {
         if (tableEl) {
           tableEl.style.transition = 'opacity 0.25s ease';

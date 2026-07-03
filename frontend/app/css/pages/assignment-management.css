@@ -1,0 +1,142 @@
+.assignment-kpis {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.assignment-kpi {
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
+  border: 1px solid rgba(32, 76, 133, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 14px 32px rgba(31, 41, 55, 0.08);
+  padding: 1rem 1.1rem;
+}
+
+.assignment-kpi-label {
+  color: #6c757d;
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.assignment-kpi strong {
+  color: #173a63;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.assignment-chip {
+  background: #eef4fb;
+  border-radius: 999px;
+  color: #1b3f69;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0 0.35rem 0.35rem 0;
+  padding: 0.32rem 0.7rem;
+}
+
+.assignment-chip.assignment-chip-support {
+  background: #f4f4f4;
+  color: #4a5568;
+}
+
+.assignment-row-actions .btn {
+  min-width: 40px;
+}
+
+.assignment-modal-summary {
+  background: #f8fbff;
+  border: 1px solid rgba(23, 58, 99, 0.08);
+  border-radius: 0.9rem;
+  padding: 0.95rem 1rem;
+}
+
+.support-operators-list {
+  display: grid;
+  gap: 0.75rem;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.support-operator-item {
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+}
+
+.support-operator-item.disabled {
+  background: #f8f9fa;
+  opacity: 0.65;
+}
+
+.support-operator-meta {
+  flex: 1;
+}
+
+.support-operator-name {
+  color: #173a63;
+  display: block;
+  font-weight: 700;
+}
+
+.support-operator-caption {
+  color: #6c757d;
+  display: block;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 767.98px) {
+  .assignment-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---- Zone Banner (Supervisor) ---- */
+.assignment-zone-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 0.85rem;
+  padding: 0.85rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.assignment-zone-banner-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.assignment-zone-banner-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.assignment-zone-banner-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.assignment-zone-banner-name {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-weight: 700;
+}

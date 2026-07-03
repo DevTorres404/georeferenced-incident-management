@@ -6,6 +6,10 @@ export function buildTopbarHtml(user) {
   const initial = escapeHtml(user.initial || 'U');
   const email = escapeHtml(user.email || '');
   const role = escapeHtml(user.role || 'Sin rol asignado');
+  const profileLink = user.showProfileLink === false ? '' : `
+          <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
+            <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
+          </a>`;
 
   return `
     <ul class="navbar-nav">
@@ -24,11 +28,11 @@ export function buildTopbarHtml(user) {
           <div class="dropdown-divider"></div>
           <div id="navbarNotificationsList" style="max-height: 300px; overflow-y: auto;"></div>
           <div class="dropdown-divider"></div>
-          <a href="#" id="btnMarkAllRead" class="dropdown-item dropdown-footer text-primary">Marcar todas como leídas</a>
+          <a href="#" id="btnMarkAllRead" class="dropdown-item dropdown-footer text-primary">Marcar todas como leidas</a>
         </div>
       </li>
       <li class="nav-item dropdown user-menu">
-        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menú de usuario">
+        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menu de usuario">
           <span class="sgi-user-avatar-sm">${initial}</span>
           <span class="d-none d-md-inline ml-2 font-weight-semibold">${firstName}</span>
         </a>
@@ -42,11 +46,9 @@ export function buildTopbarHtml(user) {
             </div>
           </div>
           <div class="dropdown-divider my-2"></div>
-          <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
-            <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
-          </a>
+          ${profileLink}
           <a href="#" id="btnLogout" class="dropdown-item rounded px-3 py-2 text-danger">
-            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
+            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesion
           </a>
         </div>
       </li>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Gestion territorial</title>
+  <title>SGI | Redirigiendo a operación nacional</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
@@ -35,13 +35,13 @@
         <div class="row mb-2">
           <div class="col-sm-8">
             <h1 class="m-0 text-main font-weight-bold">
-              <i class="fas fa-sitemap text-primary mr-2"></i>Gestion territorial
+              <i class="fas fa-exchange-alt text-primary mr-2"></i>Modulo consolidado
             </h1>
-            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Administra provincias, cantones, parroquias y sectores.</p>
+            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">La administración territorial ahora se gestiona desde Operación nacional.</p>
           </div>
           <div class="col-sm-4 text-sm-right mt-3 mt-sm-0">
-            <button type="button" class="btn btn-primary" id="btnNewUnit">
-              <i class="fas fa-plus mr-1"></i>Nueva unidad
+            <button type="button" class="btn btn-primary" data-go-operational-structure="true">
+              <i class="fas fa-network-wired mr-1"></i>Ir a operación nacional
             </button>
           </div>
         </div>
@@ -50,60 +50,20 @@
 
     <div class="content">
       <div class="container-fluid">
-        <div class="row">
-          <div class="col-lg-7">
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
             <div class="card border-0 shadow-sm">
-              <div class="card-header">
-                <div class="d-flex align-items-center justify-content-between">
-                  <h3 class="card-title mb-0">Arbol territorial</h3>
-                  <input type="search" class="form-control form-control-sm territorial-search" id="territorialSearch" placeholder="Buscar por nombre">
+              <div class="card-body text-center py-5">
+                <div class="display-4 text-primary mb-3">
+                  <i class="fas fa-network-wired"></i>
                 </div>
-              </div>
-              <div class="card-body">
-                <div id="territorialTree" class="territorial-tree"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-lg-5">
-            <div class="card border-0 shadow-sm">
-              <div class="card-header">
-                <h3 class="card-title mb-0" id="territorialFormTitle">Nueva unidad territorial</h3>
-              </div>
-              <div class="card-body">
-                <form id="territorialForm" novalidate>
-                  <input type="hidden" id="territorialId">
-                  <div class="form-group">
-                    <label for="territorialName">Nombre</label>
-                    <input type="text" class="form-control" id="territorialName" maxlength="120" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="territorialType">Tipo</label>
-                    <select class="form-control" id="territorialType" required>
-                      <option value="province">Provincia</option>
-                      <option value="canton">Canton</option>
-                      <option value="parish">Parroquia</option>
-                      <option value="sector">Sector / Barrio</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="territorialParent">Unidad padre</label>
-                    <select class="form-control" id="territorialParent"></select>
-                    <small class="form-text text-muted">La lista se filtra segun el tipo seleccionado.</small>
-                  </div>
-                  <div class="form-group">
-                    <label for="territorialCode">Codigo</label>
-                    <input type="text" class="form-control" id="territorialCode" maxlength="60">
-                  </div>
-                  <div class="custom-control custom-switch mb-3">
-                    <input type="checkbox" class="custom-control-input" id="territorialActive" checked>
-                    <label class="custom-control-label" for="territorialActive">Activo</label>
-                  </div>
-                  <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetUnit">Limpiar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                  </div>
-                </form>
+                <h3 class="font-weight-bold mb-3">La gestión territorial independiente ya no es necesaria</h3>
+                <p class="text-muted mb-4">
+                  La cobertura, zonas operativas, supervisores, operadores y límites administrativos quedaron centralizados en la pantalla de operación nacional.
+                </p>
+                <button type="button" class="btn btn-primary" data-go-operational-structure="true">
+                  <i class="fas fa-arrow-right mr-1"></i>Abrir operación nacional
+                </button>
               </div>
             </div>
           </div>
@@ -121,7 +81,7 @@
 <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
-<script type="module" src="../js/layout/layout.js?v=20"></script>
+<script type="module" src="../js/layout/layout.js?v=22"></script>
 <script type="module" src="../js/modules/territorial-units/presentation/territorial-units-page.js?v=2"></script>
 </body>
 </html>

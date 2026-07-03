@@ -216,6 +216,7 @@ final class EloquentCatalogRepository implements CatalogRepositoryInterface
             'level' => (int) $priority->level,
             'color' => $priority->color,
             'sla_hours' => (int) $priority->sla_hours,
+            'weight' => (int) $priority->weight,
             'is_active' => (bool) $priority->is_active,
         ];
     }

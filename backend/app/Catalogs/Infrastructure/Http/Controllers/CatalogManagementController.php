@@ -161,6 +161,7 @@ class CatalogManagementController extends ApiController
                 'level' => ['required', 'integer', 'min:1', 'max:10', Rule::unique(Priority::class, 'level')->ignore($id)],
                 'color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
                 'sla_hours' => ['required', 'integer', 'min:1'],
+                'weight' => ['required', 'integer', 'min:1', 'max:999'],
                 'is_active' => ['sometimes', 'boolean'],
             ],
             'states' => [
