@@ -1,0 +1,123 @@
+/* ==========================================================================
+   Gestión de Incidencias - Estilos Premium
+   ========================================================================== */
+
+.inc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.inc-kpi-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.inc-kpi-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.inc-kpi-card.active {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+  border-color: #0ea5e9;
+  box-shadow: 0 15px 35px rgba(14, 165, 233, 0.15);
+}
+
+.inc-kpi-content {
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+}
+
+.inc-kpi-label {
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.25rem;
+}
+
+.inc-kpi-card.active .inc-kpi-label {
+  color: #0284c7;
+}
+
+.inc-kpi-number {
+  color: #0f172a;
+  font-size: 2rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.inc-kpi-icon {
+  position: absolute;
+  right: -10px;
+  bottom: -20px;
+  font-size: 5rem;
+  opacity: 0.06;
+  z-index: 1;
+  transform: rotate(-10deg);
+  transition: all 0.3s ease;
+}
+
+.inc-kpi-card:hover .inc-kpi-icon {
+  transform: rotate(0) scale(1.1);
+  opacity: 0.1;
+}
+
+.inc-kpi-card.active .inc-kpi-icon {
+  opacity: 0.15;
+}
+
+/* Specific icon colors */
+.inc-kpi-icon.text-warning { color: #f59e0b !important; }
+.inc-kpi-icon.text-info { color: #0ea5e9 !important; }
+.inc-kpi-icon.text-success { color: #10b981 !important; }
+
+/* Table Improvements */
+.table-ticket-code {
+  font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: inline-block;
+  letter-spacing: 0.02em;
+}
+
+#tablaIncidencias tbody tr,
+#tablaUltimas tbody tr {
+  transition: background-color 0.2s ease;
+}
+#tablaIncidencias tbody tr:hover,
+#tablaUltimas tbody tr:hover {
+  background-color: rgba(14, 165, 233, 0.04);
+}
+
+.btn-xs {
+  padding: 0.2rem 0.4rem;
+  font-size: 0.875rem;
+  border-radius: 0.4rem;
+}
+
+/* Responsiveness */
+@media (max-width: 1200px) {
+  .inc-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 768px) {
+  .inc-kpi-grid { grid-template-columns: 1fr; }
+}

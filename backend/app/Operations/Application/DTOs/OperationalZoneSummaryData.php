@@ -10,7 +10,10 @@ final class OperationalZoneSummaryData implements JsonSerializable
         public readonly OperationalTerritoryData $zone,
         public readonly ?OperationalUserData $supervisor,
         public readonly int $maxOperators,
-        public readonly int $activeOperatorsCount
+        public readonly int $activeOperatorsCount,
+        public readonly int $activeIncidents,
+        public readonly float $averageWorkloadPoints,
+        public readonly array $provincesCovered
     ) {
     }
 
@@ -21,6 +24,9 @@ final class OperationalZoneSummaryData implements JsonSerializable
             'supervisor' => $this->supervisor,
             'max_operators' => $this->maxOperators,
             'active_operators_count' => $this->activeOperatorsCount,
+            'active_incidents' => $this->activeIncidents,
+            'average_workload_points' => $this->averageWorkloadPoints,
+            'provinces_covered' => $this->provincesCovered,
         ];
     }
 }

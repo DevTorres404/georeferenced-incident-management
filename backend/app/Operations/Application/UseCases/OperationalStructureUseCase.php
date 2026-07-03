@@ -6,6 +6,7 @@ use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
 use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
+use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SupervisorProfileData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
 use App\Operations\Application\DTOs\UpdateOperatorProfileInputData;
@@ -55,6 +56,11 @@ final class OperationalStructureUseCase
     public function assignOperatorTerritory(AssignOperatorTerritoryInputData $data): OperatorProfileData
     {
         return $this->operationalStructureRepository->assignOperatorTerritory($data);
+    }
+
+    public function replaceZoneOperator(ReplaceZoneOperatorInputData $data): OperatorProfileData
+    {
+        return $this->operationalStructureRepository->replaceZoneOperator($data);
     }
 
     public function updateSupervisorProfile(UpdateSupervisorProfileInputData $data): SupervisorProfileData

@@ -4,6 +4,7 @@ namespace App\Incidents\Infrastructure\Http\Controllers;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Application\DTOs\AddCommentInputData;
+use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
@@ -231,6 +232,9 @@ class IncidentController extends ApiController
                 subcategory: $detail->subcategory,
                 priority: $detail->priority,
                 territorialUnit: $detail->territorialUnit,
+                reporter: $detail->reporter,
+                assignedOperator: $detail->assignedOperator,
+                sla: $detail->sla,
                 history: $detail->history,
                 comments: $filteredComments,
                 attachments: $detail->attachments,
@@ -421,15 +425,55 @@ class IncidentController extends ApiController
         }
 
         $data = $request->validate([
-            'user_id' => ['required', 'integer', Rule::exists(User::class, 'id')],
+            'user_id' => ['nullable', 'integer', Rule::exists(User::class, 'id')],
+            'primary_user_id' => ['nullable', 'integer', Rule::exists(User::class, 'id')],
+            'support_user_ids' => ['nullable', 'array'],
+            'support_user_ids.*' => ['integer', Rule::exists(User::class, 'id')],
         ]);
 
-        $asignacion = $this->incidentUseCase->assign($incident->id, $user->id, $data['user_id']);
+        $primaryUserId = (int) ($data['primary_user_id'] ?? $data['user_id'] ?? 0);
+
+        if ($primaryUserId <= 0) {
+            return response()->json([
+                'message' => 'Debes seleccionar un operador principal.',
+            ], 422);
+        }
+
+        $supportUserIds = array_values(array_unique(array_map(
+            'intval',
+            array_filter($data['support_user_ids'] ?? [], fn ($value) => (int) $value !== $primaryUserId)
+        )));
+
+        try {
+            $asignacion = $this->incidentUseCase->assign(
+                $incident->id,
+                $user->id,
+                new AssignIncidentOperatorsInputData(
+                    primaryOperatorId: $primaryUserId,
+                    supportOperatorIds: $supportUserIds
+                )
+            );
+        } catch (IncidentException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        }
 
         return response()->json([
             'message' => 'Incidencia asignada correctamente.',
             'data' => $asignacion,
         ], 201);
+    }
+
+    public function assignmentOperators(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $this->can($user, 'incidents.assign')) {
+            return $this->forbid();
+        }
+
+        return response()->json([
+            'data' => $this->incidentUseCase->assignmentOperatorOptions($user->id),
+        ]);
     }
 
     /**
@@ -486,7 +530,7 @@ class IncidentController extends ApiController
             'subcategory_id' => ['nullable', 'integer', Rule::exists(Subcategory::class, 'id')],
             'priority_id' => $priorityRules,
             'state_id' => ['prohibited'],
-            'territorial_unit_id' => [$required, 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
+            'territorial_unit_id' => ['nullable', 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
             'address' => ['nullable', 'string', 'max:500'],
             'address_reference' => ['nullable', 'string', 'max:500'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],

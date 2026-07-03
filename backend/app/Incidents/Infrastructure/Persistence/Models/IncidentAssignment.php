@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'incident_id',
     'user_id',
     'assigned_by_id',
+    'assignment_role',
+    'active',
     'assignment_date',
     'unassignment_date',
 ])]
@@ -24,10 +26,14 @@ class IncidentAssignment extends Model
 {
     protected $table = 'core.incident_assignments';
 
+    public const ROLE_PRIMARY = 'primary';
+    public const ROLE_SUPPORT = 'support';
+
     protected function casts(): array
     {
         return [
-            'assignment_date'    => 'datetime',
+            'active' => 'boolean',
+            'assignment_date' => 'datetime',
             'unassignment_date' => 'datetime',
         ];
     }
@@ -59,7 +65,7 @@ class IncidentAssignment extends Model
 
     public function estaActiva(): bool
     {
-        return is_null($this->unassignment_date);
+        return (bool) $this->active && is_null($this->unassignment_date);
     }
 
     public function isActive(): bool
@@ -67,4 +73,3 @@ class IncidentAssignment extends Model
         return $this->estaActiva();
     }
 }
-

@@ -3,10 +3,13 @@
 namespace App\Incidents\Domain\Repositories;
 
 use App\Incidents\Application\DTOs\AddCommentInputData;
+use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\AssignmentData;
+use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\CommentData;
+use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
@@ -44,7 +47,12 @@ interface IncidentRepositoryInterface
 
     public function attachFile(int $incidentId, int $userId, StoredFileData $storedFileData): AttachmentData;
 
-    public function assign(int $incidentId, int $userId, int $assigneeUserId): AssignmentData;
+    public function assign(int $incidentId, int $userId, AssignIncidentOperatorsInputData $data): IncidentAssignmentBatchData;
+
+    /**
+     * @return array<int, AssignmentOperatorOptionData>
+     */
+    public function assignmentOperatorOptions(int $userId): array;
 
     public function changeState(int $incidentId, int $userId, ChangeStateInputData $data): Incident;
 

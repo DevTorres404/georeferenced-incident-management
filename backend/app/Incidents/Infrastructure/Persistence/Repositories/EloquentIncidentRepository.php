@@ -4,10 +4,13 @@ namespace App\Incidents\Infrastructure\Persistence\Repositories;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Application\DTOs\AddCommentInputData;
+use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\AssignmentData;
+use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\CommentData;
+use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
@@ -26,24 +29,38 @@ use App\Incidents\Infrastructure\Persistence\Mappers\IncidentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentSummaryMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentTransitionMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\NotificationMapper;
-use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
-use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
+use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
+use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\Shared\Application\DTOs\StoredFileData;
 use App\Shared\Application\Results\PaginatedResult;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final class EloquentIncidentRepository implements IncidentRepositoryInterface
 {
+    private const INACTIVE_WORKLOAD_STATE_NAMES = [
+        'RESUELTA',
+        'CERRADA',
+        'CANCELADA',
+        'RECHAZADA',
+        'RESOLVED',
+        'CLOSED',
+        'CANCELLED',
+        'REJECTED',
+    ];
+
     private const RELATIONS = [
         'category',
         'subcategory',
@@ -52,6 +69,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         'territorialUnit.'.TerritorialUnit::PARENT_CHAIN,
         'reporter.roles',
         'currentAssignee.roles',
+        'assignments.user',
     ];
 
     public function __construct(
@@ -69,29 +87,29 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
         $query = Incident::query()->with(self::RELATIONS)->latest();
-
-        if (! $canManage) {
-            $query->where(function ($q) use ($userId) {
-                $q->where('reported_by_id', $userId)
-                    ->orWhere('current_assigned_id', $userId);
-            });
-        }
+        $this->applyIncidentVisibilityScope($query, $userId);
 
         if ($filters->stateId !== null) {
             $query->where('state_id', $filters->stateId);
         }
+
         if ($filters->priorityId !== null) {
             $query->where('priority_id', $filters->priorityId);
         }
+
         if ($filters->categoryId !== null) {
             $query->where('category_id', $filters->categoryId);
         }
+
         if ($filters->mine === true) {
             $query->where('reported_by_id', $userId);
         }
 
         if ($filters->assignedToMe === true) {
-            $query->where('current_assigned_id', $userId);
+            $query->whereHas('assignments', function ($assignmentQuery) use ($userId) {
+                $assignmentQuery->where('user_id', $userId)
+                    ->where('active', true);
+            });
         }
 
         if ($filters->overdue === true) {
@@ -100,8 +118,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
         if (! empty($filters->search)) {
             $search = $filters->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'ILIKE', "%{$search}%")
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('code', 'ILIKE', "%{$search}%")
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
@@ -138,12 +156,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ->whereNotNull('longitude')
             ->latest();
 
-        if (! $canManage) {
-            $query->where(function ($q) use ($userId) {
-                $q->where('reported_by_id', $userId)
-                    ->orWhere('current_assigned_id', $userId);
-            });
-        }
+        $this->applyIncidentVisibilityScope($query, $userId);
 
         if ($filters->stateId !== null) {
             $query->where('state_id', $filters->stateId);
@@ -162,13 +175,16 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         }
 
         if ($filters->assignedToMe === true) {
-            $query->where('current_assigned_id', $userId);
+            $query->whereHas('assignments', function ($assignmentQuery) use ($userId) {
+                $assignmentQuery->where('user_id', $userId)
+                    ->where('active', true);
+            });
         }
 
         if (! empty($filters->search)) {
             $search = $filters->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'ILIKE', "%{$search}%")
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('code', 'ILIKE', "%{$search}%")
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%")
                     ->orWhere('address', 'ILIKE', "%{$search}%");
@@ -222,13 +238,22 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             throw IncidentException::transitionNotAllowed();
         }
 
-        return DB::transaction(function () use ($data, $initialState, $userId) {
+        $territorialUnitId = $data->territorialUnitId;
+
+        if ($territorialUnitId === null && $data->latitude !== null && $data->longitude !== null) {
+            $resolved = $this->resolveTerritorialUnitFromCoordinates($data->latitude, $data->longitude);
+            if ($resolved) {
+                $territorialUnitId = $resolved->id;
+            }
+        }
+
+        return DB::transaction(function () use ($data, $initialState, $userId, $territorialUnitId) {
             $incident = Incident::create([
                 'title' => $data->title,
                 'description' => $data->description,
                 'category_id' => $data->categoryId,
                 'priority_id' => $data->priorityId,
-                'territorial_unit_id' => $data->territorialUnitId,
+                'territorial_unit_id' => $territorialUnitId,
                 'subcategory_id' => $data->subcategoryId,
                 'address' => $data->address,
                 'address_reference' => $data->address,
@@ -255,7 +280,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 type: 'STATUS_CHANGE'
             );
 
-            $this->notifyOperators(
+            $this->notifyZoneSupervisorsOrAdmins(
+                incident: $incident->load('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Nueva incidencia creada',
                 message: 'Nueva incidencia reportada en '.$incident->category()->value('name').'.',
                 type: 'STATUS_CHANGE'
@@ -263,17 +289,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
             if ($incident->priority_id !== null && (int) $incident->priority()->value('level') === 1) {
                 $sector = $incident->territorialUnit?->full_path ?: ($incident->address_reference ?: 'el sector reportado');
-                $this->notifySupervisors(
-                    title: 'Incidencia crítica creada',
-                    message: "Se reportó una incidencia crítica en {$sector}.",
+                $this->notifyZoneSupervisorsForIncident(
+                    incident: $incident,
+                    title: 'Incidencia critica creada',
+                    message: "Se reporto una incidencia critica en {$sector}.",
                     type: 'STATUS_CHANGE'
                 );
             }
 
             if ($incident->latitude === null || $incident->longitude === null) {
                 app(AdminNotifier::class)->notify(
-                    title: 'Error de geolocalización',
-                    message: "La incidencia {$incident->code} fue creada sin coordenadas válidas.",
+                    title: 'Error de geolocalizacion',
+                    message: "La incidencia {$incident->code} fue creada sin coordenadas validas.",
                     type: 'STATUS_CHANGE'
                 );
             }
@@ -334,46 +361,67 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         $incident = Incident::findOrFail($incidentId);
         $previousPriorityId = $incident->priority_id;
         $updateData = [];
-        if ($data->title !== null) $updateData['title'] = $data->title;
-        if ($data->description !== null) $updateData['description'] = $data->description;
-        if ($data->categoryId !== null) $updateData['category_id'] = $data->categoryId;
-        if ($data->priorityId !== null) $updateData['priority_id'] = $data->priorityId;
-        if (property_exists($data, 'territorialUnitId')) $updateData['territorial_unit_id'] = $data->territorialUnitId;
-        if (property_exists($data, 'subcategoryId')) $updateData['subcategory_id'] = $data->subcategoryId;
+
+        if ($data->title !== null) {
+            $updateData['title'] = $data->title;
+        }
+
+        if ($data->description !== null) {
+            $updateData['description'] = $data->description;
+        }
+
+        if ($data->categoryId !== null) {
+            $updateData['category_id'] = $data->categoryId;
+        }
+
+        if ($data->priorityId !== null) {
+            $updateData['priority_id'] = $data->priorityId;
+        }
+
+        if (property_exists($data, 'territorialUnitId')) {
+            $updateData['territorial_unit_id'] = $data->territorialUnitId;
+        }
+
+        if (property_exists($data, 'subcategoryId')) {
+            $updateData['subcategory_id'] = $data->subcategoryId;
+        }
+
         if (property_exists($data, 'address')) {
             $updateData['address'] = $data->address;
             $updateData['address_reference'] = $data->address;
         }
-        if (property_exists($data, 'latitude')) $updateData['latitude'] = $data->latitude;
-        if (property_exists($data, 'longitude')) $updateData['longitude'] = $data->longitude;
-        if (property_exists($data, 'resolutionDate')) $updateData['resolution_date'] = $data->resolutionDate;
-        
-        if (!empty($updateData)) {
+
+        if (property_exists($data, 'latitude')) {
+            $updateData['latitude'] = $data->latitude;
+        }
+
+        if (property_exists($data, 'longitude')) {
+            $updateData['longitude'] = $data->longitude;
+        }
+
+        if (property_exists($data, 'resolutionDate')) {
+            $updateData['resolution_date'] = $data->resolutionDate;
+        }
+
+        if ($updateData !== []) {
             $incident->update($updateData);
         }
 
         if ($data->priorityId !== null && (int) $previousPriorityId !== $data->priorityId) {
             $priorityName = Priority::find($data->priorityId)?->name ?? 'actualizada';
-            $message = "La prioridad de la incidencia {$incident->code} cambiÃ³ a {$priorityName}.";
+            $message = "La prioridad de la incidencia {$incident->code} cambio a {$priorityName}.";
 
-            if ($incident->current_assigned_id) {
-                $this->createNotification(
-                    userId: (int) $incident->current_assigned_id,
-                    title: 'Cambio de prioridad',
-                    message: $message,
-                    type: 'STATUS_CHANGE'
-                );
-            } else {
-                $this->notifyOperators(
-                    title: 'Cambio de prioridad',
-                    message: $message,
-                    type: 'STATUS_CHANGE'
-                );
-            }
+            $this->notifyAssignedOperators(
+                incidentId: (int) $incident->id,
+                title: 'Cambio de prioridad',
+                message: $message,
+                type: 'STATUS_CHANGE'
+            );
 
-            $this->notifySupervisors(
+            $this->notifyZoneSupervisorsForIncident(
+                incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Cambio manual de prioridad',
-                message: "Un operador cambió la prioridad de la incidencia {$incident->code} a {$priorityName}.",
+                message: "Se cambio la prioridad de la incidencia {$incident->code} a {$priorityName}.",
                 type: 'STATUS_CHANGE'
             );
         }
@@ -389,8 +437,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         $incident->delete();
 
         app(AdminNotifier::class)->notify(
-            title: 'Acción crítica',
-            message: "Un usuario eliminó o cerró forzadamente una incidencia: {$incidentCode}.",
+            title: 'Accion critica',
+            message: "Un usuario elimino o cerro forzadamente una incidencia: {$incidentCode}.",
             type: 'STATUS_CHANGE'
         );
     }
@@ -409,16 +457,25 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             $this->createNotification(
                 userId: (int) $incident->reported_by_id,
                 title: 'Comentario recibido',
-                message: "Un operador respondiÃ³ en tu incidencia {$incident->code}.",
+                message: "Un operador respondio en tu incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
             );
         }
 
-        if ((int) $incident->reported_by_id === $userId && $incident->current_assigned_id) {
-            $this->createNotification(
-                userId: (int) $incident->current_assigned_id,
+        if ((int) $incident->reported_by_id === $userId) {
+            $this->notifyAssignedOperators(
+                incidentId: (int) $incident->id,
                 title: 'Comentario recibido',
-                message: "El ciudadano respondió en la incidencia {$incident->code}.",
+                message: "El ciudadano respondio en la incidencia {$incident->code}.",
+                type: 'NEW_COMMENT'
+            );
+        }
+
+        if ($this->isSupervisorUserId($userId)) {
+            $this->notifyAssignedOperators(
+                incidentId: (int) $incident->id,
+                title: 'Comentario del supervisor',
+                message: "El supervisor agrego un comentario en la incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
             );
         }
@@ -443,16 +500,16 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             $this->createNotification(
                 userId: (int) $incident->reported_by_id,
                 title: 'Evidencia agregada',
-                message: "Se agregÃ³ una actualizaciÃ³n o evidencia a tu incidencia {$incident->code}.",
+                message: "Se agrego una actualizacion o evidencia a tu incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
             );
         }
 
-        if ((int) $incident->reported_by_id === $userId && $incident->current_assigned_id) {
-            $this->createNotification(
-                userId: (int) $incident->current_assigned_id,
+        if ((int) $incident->reported_by_id === $userId) {
+            $this->notifyAssignedOperators(
+                incidentId: (int) $incident->id,
                 title: 'Evidencia agregada',
-                message: "Se adjuntó nueva evidencia a la incidencia {$incident->code}.",
+                message: "Se adjunto nueva evidencia a la incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
             );
         }
@@ -460,44 +517,133 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         return $this->attachmentMapper->fromModel($attachment);
     }
 
-    public function assign(int $incidentId, int $userId, int $assigneeUserId): AssignmentData
+    public function assign(int $incidentId, int $userId, AssignIncidentOperatorsInputData $data): IncidentAssignmentBatchData
     {
-        $incident = Incident::findOrFail($incidentId);
-        $previousAssigneeId = $incident->current_assigned_id ? (int) $incident->current_assigned_id : null;
+        return DB::transaction(function () use ($incidentId, $userId, $data): IncidentAssignmentBatchData {
+            $incident = Incident::query()
+                ->with(['state', 'priority', 'territorialUnit.'.TerritorialUnit::PARENT_CHAIN])
+                ->lockForUpdate()
+                ->findOrFail($incidentId);
 
-        $asignacion = IncidentAssignment::create([
-            'incident_id' => $incidentId,
-            'user_id' => $assigneeUserId,
-            'assigned_by_id' => $userId,
-        ]);
+            $this->ensureUserCanAssignIncident($userId, $incident);
 
-        $this->createNotification(
-            userId: $assigneeUserId,
-            title: 'Incidencia asignada',
-            message: "Se te asignÃ³ la incidencia {$incident->code}.",
-            type: 'INCIDENT_ASSIGNED'
-        );
+            $desiredAssignments = [
+                $data->primaryOperatorId => IncidentAssignment::ROLE_PRIMARY,
+            ];
 
-        if ($previousAssigneeId && $previousAssigneeId !== $assigneeUserId) {
-            $this->createNotification(
-                userId: $previousAssigneeId,
-                title: 'Incidencia reasignada',
-                message: "La incidencia {$incident->code} fue reasignada a otro operador.",
-                type: 'INCIDENT_ASSIGNED'
+            foreach ($data->supportOperatorIds as $supportOperatorId) {
+                if ($supportOperatorId === $data->primaryOperatorId) {
+                    continue;
+                }
+
+                $desiredAssignments[$supportOperatorId] = IncidentAssignment::ROLE_SUPPORT;
+            }
+
+            foreach ($desiredAssignments as $operatorUserId => $assignmentRole) {
+                $this->ensureOperatorCanReceiveIncident($incident, (int) $operatorUserId);
+                $this->ensureOperatorCanCoverIncidentZone((int) $operatorUserId, $incident);
+            }
+
+            $activeAssignments = IncidentAssignment::query()
+                ->where('incident_id', $incidentId)
+                ->where('active', true)
+                ->lockForUpdate()
+                ->get()
+                ->keyBy(fn (IncidentAssignment $assignment) => (int) $assignment->user_id);
+
+            $now = now();
+
+            foreach ($activeAssignments as $operatorUserId => $activeAssignment) {
+                $desiredRole = $desiredAssignments[(int) $operatorUserId] ?? null;
+
+                if ($desiredRole === null || $desiredRole !== $activeAssignment->assignment_role) {
+                    $activeAssignment->forceFill([
+                        'active' => false,
+                        'unassignment_date' => $now,
+                    ])->save();
+                }
+            }
+
+            foreach ($desiredAssignments as $operatorUserId => $assignmentRole) {
+                $existingAssignment = $activeAssignments->get((int) $operatorUserId);
+
+                if (
+                    $existingAssignment instanceof IncidentAssignment
+                    && $existingAssignment->active
+                    && $existingAssignment->assignment_role === $assignmentRole
+                ) {
+                    continue;
+                }
+
+                IncidentAssignment::create([
+                    'incident_id' => $incidentId,
+                    'user_id' => (int) $operatorUserId,
+                    'assigned_by_id' => $userId,
+                    'assignment_role' => $assignmentRole,
+                    'active' => true,
+                ]);
+            }
+
+            if ($this->shouldMoveIncidentToAssignedState($incident)) {
+                $assignedStateId = State::query()
+                    ->whereIn('name', ['ASIGNADA', 'ASSIGNED'])
+                    ->value('id');
+
+                if ($assignedStateId) {
+                    $previousStateId = (int) $incident->state_id;
+                    $incident->forceFill(['state_id' => $assignedStateId])->save();
+
+                    IncidentState::create([
+                        'incident_id' => $incident->id,
+                        'previous_state_id' => $previousStateId,
+                        'new_state_id' => $assignedStateId,
+                        'user_id' => $userId,
+                        'comment' => 'Asignacion operativa registrada.',
+                    ]);
+                }
+            }
+
+            $freshAssignments = IncidentAssignment::query()
+                ->with(['user', 'assignedBy'])
+                ->where('incident_id', $incidentId)
+                ->where('active', true)
+                ->orderByRaw("CASE WHEN assignment_role = 'primary' THEN 0 ELSE 1 END")
+                ->orderBy('assignment_date')
+                ->get();
+
+            foreach ($freshAssignments as $assignment) {
+                $message = $assignment->assignment_role === IncidentAssignment::ROLE_PRIMARY
+                    ? "Se te asigno la incidencia {$incident->code} como responsable principal."
+                    : "Se te asigno la incidencia {$incident->code} como operador de apoyo.";
+
+                $this->createNotification(
+                    userId: (int) $assignment->user_id,
+                    title: 'Incidencia asignada',
+                    message: $message,
+                    type: 'INCIDENT_ASSIGNED'
+                );
+            }
+
+            $incident->refresh();
+
+            return new IncidentAssignmentBatchData(
+                incidentId: $incidentId,
+                currentAssigneeUserId: $incident->current_assigned_id ? (int) $incident->current_assigned_id : null,
+                assignments: $freshAssignments
+                    ->map(fn (IncidentAssignment $assignment): AssignmentData => $this->assignmentMapper->fromModel($assignment))
+                    ->all()
             );
-        }
-
-        return $this->assignmentMapper->fromModel($asignacion->load(['user', 'assignedBy']));
+        });
     }
 
     public function changeState(int $incidentId, int $userId, ChangeStateInputData $data): \App\Incidents\Domain\Entities\Incident
     {
         $incident = Incident::findOrFail($incidentId);
-        $anterior = $incident->state_id;
-        $previousState = State::find($anterior);
+        $previousStateId = $incident->state_id;
+        $previousState = State::find($previousStateId);
         $newState = State::findOrFail($data->stateId);
 
-        DB::transaction(function () use ($incident, $data, $userId, $anterior, $newState) {
+        DB::transaction(function () use ($incident, $data, $userId, $previousStateId, $newState) {
             $incident->update([
                 'state_id' => $data->stateId,
                 'resolution_date' => $newState->is_final_state ? now() : null,
@@ -505,7 +651,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
             IncidentState::create([
                 'incident_id' => $incident->id,
-                'previous_state_id' => $anterior,
+                'previous_state_id' => $previousStateId,
                 'new_state_id' => $data->stateId,
                 'user_id' => $userId,
                 'comment' => $data->comment,
@@ -526,9 +672,66 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             type: $type
         );
 
+        if ($this->isOperatorUserId($userId)) {
+            $this->notifyZoneSupervisorsForIncident(
+                incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
+                title: 'Actualizacion del operador',
+                message: "La incidencia {$incident->code} fue actualizada por un operador.",
+                type: 'STATUS_CHANGE'
+            );
+        }
+
         $this->notifySupervisorsForStateChange($incident, $newState);
 
         return $this->incidentMapper->fromModel($incident->fresh()->load(self::RELATIONS));
+    }
+
+    /**
+     * @return array<int, AssignmentOperatorOptionData>
+     */
+    public function assignmentOperatorOptions(int $userId): array
+    {
+        $viewer = User::query()->with('roles')->findOrFail($userId);
+        $viewerZoneIds = $viewer->tieneRol('ADMIN') ? [] : $this->activeZoneIdsForUser($userId);
+
+        $operators = User::query()
+            ->with(['roles', 'operatorProfile', 'territoryAssignments.territory.'.TerritorialUnit::PARENT_CHAIN])
+            ->where('is_active', true)
+            ->whereHas('roles', fn ($query) => $query->where('code', 'OPERADOR')->where('is_active', true))
+            ->whereHas('operatorProfile', fn ($query) => $query->where('active', true))
+            ->get()
+            ->filter(function (User $operator) use ($viewer, $viewerZoneIds): bool {
+                if ($viewer->tieneRol('ADMIN')) {
+                    return true;
+                }
+
+                $operatorZoneIds = $this->activeZoneIdsForTerritoryAssignments($operator->territoryAssignments->all());
+
+                return array_intersect($viewerZoneIds, $operatorZoneIds) !== [];
+            })
+            ->values();
+
+        return $operators->map(function (User $operator): AssignmentOperatorOptionData {
+            $zone = $this->firstOperationalZoneFromAssignments($operator->territoryAssignments->all());
+            $profile = $operator->operatorProfile;
+            $activeIncidents = $this->activeIncidentCountForOperator((int) $operator->id);
+            $workloadPoints = $this->activeWorkloadPointsForOperator((int) $operator->id);
+            $maxActive = (int) ($profile?->max_active_incidents ?? OperatorProfile::DEFAULT_MAX_ACTIVE_INCIDENTS);
+            $maxWorkload = (int) ($profile?->max_workload_points ?? OperatorProfile::DEFAULT_MAX_WORKLOAD_POINTS);
+
+            return new AssignmentOperatorOptionData(
+                userId: (int) $operator->id,
+                fullName: trim($operator->first_name.' '.$operator->last_name),
+                email: $operator->email,
+                zoneId: $zone ? (int) $zone->id : null,
+                zoneName: $zone?->name,
+                activeIncidents: $activeIncidents,
+                workloadPoints: $workloadPoints,
+                maxActiveIncidents: $maxActive,
+                maxWorkloadPoints: $maxWorkload,
+                available: $activeIncidents < $maxActive && $workloadPoints < $maxWorkload
+            );
+        })->all();
     }
 
     public function notifications(int $userId, NotificationFiltersData $filters): PaginatedResult
@@ -607,31 +810,38 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         $this->createNotification($userId, $title, $message, $type);
     }
 
-    private function notifyOperators(string $title, string $message, string $type): void
+    private function notifyAssignedOperators(int $incidentId, string $title, string $message, string $type): void
     {
-        foreach ($this->operatorUserIds() as $operatorUserId) {
-            $this->createNotificationIfMissing($operatorUserId, $title, $message, $type);
-        }
+        IncidentAssignment::query()
+            ->where('incident_id', $incidentId)
+            ->where('active', true)
+            ->pluck('user_id')
+            ->unique()
+            ->each(function ($operatorUserId) use ($title, $message, $type): void {
+                $this->createNotificationIfMissing((int) $operatorUserId, $title, $message, $type);
+            });
     }
 
-    private function notifySupervisors(string $title, string $message, string $type): void
+    private function notifyZoneSupervisorsForIncident(Incident $incident, string $title, string $message, string $type): void
     {
-        foreach ($this->supervisorUserIds() as $supervisorUserId) {
+        foreach ($this->zoneSupervisorUserIdsForIncident($incident) as $supervisorUserId) {
             $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type);
         }
     }
 
-    /**
-     * @return array<int, int>
-     */
-    private function operatorUserIds(): array
+    private function notifyZoneSupervisorsOrAdmins(Incident $incident, string $title, string $message, string $type): void
     {
-        return User::query()
-            ->where('is_active', true)
-            ->whereHas('roles', fn ($query) => $query->where('code', 'OPERADOR')->where('is_active', true))
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+        $supervisorUserIds = $this->zoneSupervisorUserIdsForIncident($incident);
+
+        if ($supervisorUserIds === []) {
+            app(AdminNotifier::class)->notify($title, $message, $type);
+
+            return;
+        }
+
+        foreach ($supervisorUserIds as $supervisorUserId) {
+            $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type);
+        }
     }
 
     /**
@@ -647,19 +857,112 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ->all();
     }
 
+    /**
+     * @return array<int, int>
+     */
+    private function zoneSupervisorUserIdsForIncident(Incident $incident): array
+    {
+        $zone = $this->resolveOperationalZoneForIncident($incident);
+
+        if (! $zone) {
+            return [];
+        }
+
+        return UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zone->id)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function resolveOperationalZoneForIncident(Incident $incident): ?TerritorialUnit
+    {
+        if ($incident->latitude !== null && $incident->longitude !== null) {
+            try {
+                $spatialZone = TerritorialUnit::query()
+                    ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+                    ->where('is_active', true)
+                    ->whereNotNull('coverage_area')
+                    ->whereRaw(
+                        'ST_Within(ST_SetSRID(ST_MakePoint(?, ?), 4326), coverage_area)',
+                        [(float) $incident->longitude, (float) $incident->latitude]
+                    )
+                    ->first();
+
+                if ($spatialZone) {
+                    return $spatialZone;
+                }
+            } catch (\Throwable) {
+                // Column coverage_area may not exist yet; fall through to hierarchical lookup.
+            }
+        }
+
+        $territory = $incident->relationLoaded('territorialUnit')
+            ? $incident->territorialUnit
+            : $incident->territorialUnit()->with(TerritorialUnit::PARENT_CHAIN)->first();
+
+        return $territory ? $this->resolveOperationalZoneModel($territory) : null;
+    }
+
+    private function resolveTerritorialUnitFromCoordinates(float $latitude, float $longitude): ?TerritorialUnit
+    {
+        try {
+            $zone = TerritorialUnit::query()
+                ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+                ->where('is_active', true)
+                ->whereNotNull('coverage_area')
+                ->whereRaw(
+                    'ST_Within(ST_SetSRID(ST_MakePoint(?, ?), 4326), coverage_area)',
+                    [(float) $longitude, (float) $latitude]
+                )
+                ->first();
+
+            if ($zone) {
+                return $zone;
+            }
+        } catch (\Throwable) {
+            // Column coverage_area may not exist yet; fall through.
+        }
+
+        return null;
+    }
+
+    private function resolveOperationalZoneModel(TerritorialUnit $territory): ?TerritorialUnit
+    {
+        if ($territory->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+            return $territory;
+        }
+
+        $current = $territory;
+
+        while ($current->parent) {
+            $current = $current->parent;
+
+            if ($current->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                return $current;
+            }
+        }
+
+        return null;
+    }
+
     private function notifySupervisorsForStateChange(Incident $incident, State $newState): void
     {
         $normalizedState = strtoupper(str_replace(' ', '_', $newState->name));
 
         match ($normalizedState) {
-            'RECHAZADA' => $this->notifySupervisors(
+            'RECHAZADA' => $this->notifyZoneSupervisorsForIncident(
+                incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Incidencia rechazada',
                 message: "Una incidencia fue rechazada por el operador: {$incident->code}.",
                 type: 'STATUS_CHANGE'
             ),
-            'CERRADA' => $this->notifySupervisors(
+            'CERRADA' => $this->notifyZoneSupervisorsForIncident(
+                incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Incidencia cerrada',
-                message: "Se cerró la incidencia {$incident->code}.",
+                message: "Se cerro la incidencia {$incident->code}.",
                 type: 'INCIDENT_CLOSED'
             ),
             default => null,
@@ -697,7 +1000,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ],
             default => [
                 'Cambio de estado',
-                "Tu incidencia {$incidentCode} cambiÃ³ de {$previousLabel} a {$newLabel}.",
+                "Tu incidencia {$incidentCode} cambio de {$previousLabel} a {$newLabel}.",
                 'STATUS_CHANGE',
             ],
         };
@@ -710,6 +1013,257 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         }
 
         return mb_convert_case(strtolower(str_replace('_', ' ', $stateName)), MB_CASE_TITLE, 'UTF-8');
+    }
+
+    private function ensureUserCanAssignIncident(int $userId, Incident $incident): void
+    {
+        $user = User::query()->with('roles')->findOrFail($userId);
+
+        if (! $user->tieneRol('ADMIN') && ! $user->tieneRol('SUPERVISOR')) {
+            throw IncidentException::assignmentForbidden();
+        }
+
+        if ($user->tieneRol('SUPERVISOR') && ! $this->incidentBelongsToUserZones($incident, $userId)) {
+            throw IncidentException::supervisorZoneAccessDenied();
+        }
+    }
+
+    private function ensureOperatorCanReceiveIncident(Incident $incident, int $assigneeUserId): void
+    {
+        $operator = User::query()
+            ->whereKey($assigneeUserId)
+            ->where('is_active', true)
+            ->whereHas('roles', fn ($query) => $query->where('code', 'OPERADOR')->where('is_active', true))
+            ->lockForUpdate()
+            ->first();
+
+        if (! $operator) {
+            throw IncidentException::operatorAssignmentUnavailable();
+        }
+
+        $profile = OperatorProfile::query()
+            ->where('user_id', $assigneeUserId)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $profile || ! $profile->active) {
+            throw IncidentException::operatorAssignmentUnavailable();
+        }
+
+        $addsActiveLoad = $this->incidentAddsActiveLoad($incident, $assigneeUserId);
+        $currentActiveIncidents = $this->activeIncidentCountForOperator($assigneeUserId);
+        $currentWorkloadPoints = $this->activeWorkloadPointsForOperator($assigneeUserId);
+
+        $nextActiveIncidents = $currentActiveIncidents + ($addsActiveLoad ? 1 : 0);
+        $nextWorkloadPoints = $currentWorkloadPoints + ($addsActiveLoad ? (int) ($incident->priority?->weight ?? 0) : 0);
+
+        if (
+            $nextActiveIncidents > (int) $profile->max_active_incidents
+            || $nextWorkloadPoints > (int) $profile->max_workload_points
+        ) {
+            throw IncidentException::operatorCapacityExceeded();
+        }
+    }
+
+    private function ensureOperatorCanCoverIncidentZone(int $operatorUserId, Incident $incident): void
+    {
+        $incidentZone = $this->resolveOperationalZoneForIncident($incident);
+
+        if (! $incidentZone) {
+            return;
+        }
+
+        $operatorZoneIds = $this->activeZoneIdsForUser($operatorUserId);
+
+        if (! in_array((int) $incidentZone->id, $operatorZoneIds, true)) {
+            throw IncidentException::operatorAssignmentUnavailable();
+        }
+    }
+
+    private function incidentAddsActiveLoad(Incident $incident, int $assigneeUserId): bool
+    {
+        $alreadyAssigned = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('user_id', $assigneeUserId)
+            ->where('active', true)
+            ->exists();
+
+        if ($alreadyAssigned) {
+            return false;
+        }
+
+        return $this->stateCountsAsActiveLoad($incident->state?->name);
+    }
+
+    private function activeIncidentCountForOperator(int $assigneeUserId): int
+    {
+        return Incident::query()
+            ->whereHas('assignments', function ($assignmentQuery) use ($assigneeUserId) {
+                $assignmentQuery->where('user_id', $assigneeUserId)
+                    ->where('active', true);
+            })
+            ->whereDoesntHave('state', fn ($stateQuery) => $stateQuery->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->count();
+    }
+
+    private function activeWorkloadPointsForOperator(int $assigneeUserId): int
+    {
+        return (int) Incident::query()
+            ->join('core.incident_assignments', function ($join) use ($assigneeUserId) {
+                $join->on('core.incident_assignments.incident_id', '=', 'core.incidents.id')
+                    ->where('core.incident_assignments.user_id', '=', $assigneeUserId)
+                    ->where('core.incident_assignments.active', '=', true);
+            })
+            ->leftJoin('core.priorities', 'core.priorities.id', '=', 'core.incidents.priority_id')
+            ->join('core.states', 'core.states.id', '=', 'core.incidents.state_id')
+            ->whereNotIn('core.states.name', self::INACTIVE_WORKLOAD_STATE_NAMES)
+            ->sum(DB::raw('COALESCE(core.priorities.weight, 0)'));
+    }
+
+    private function stateCountsAsActiveLoad(?string $stateName): bool
+    {
+        if ($stateName === null) {
+            return true;
+        }
+
+        return ! in_array($stateName, self::INACTIVE_WORKLOAD_STATE_NAMES, true);
+    }
+
+    private function applyIncidentVisibilityScope($query, int $userId): void
+    {
+        $user = User::query()->with('roles')->find($userId);
+
+        if (! $user) {
+            $query->whereRaw('1 = 0');
+
+            return;
+        }
+
+        if ($user->tieneRol('ADMIN')) {
+            return;
+        }
+
+        if ($user->tieneRol('SUPERVISOR')) {
+            $zoneIds = $this->activeZoneIdsForUser($userId);
+
+            if ($zoneIds === []) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $query->whereHas('territorialUnit', function ($territoryQuery) use ($zoneIds) {
+                $this->applyZoneFilterToTerritoryQuery($territoryQuery, $zoneIds);
+            });
+
+            return;
+        }
+
+        if ($user->tieneRol('OPERADOR')) {
+            $query->whereHas('assignments', function ($assignmentQuery) use ($userId) {
+                $assignmentQuery->where('user_id', $userId)
+                    ->where('active', true);
+            });
+
+            return;
+        }
+
+        $query->where('reported_by_id', $userId);
+    }
+
+    private function applyZoneFilterToTerritoryQuery($query, array $zoneIds): void
+    {
+        $query->where(function ($territoryScope) use ($zoneIds) {
+            $territoryScope->whereIn('id', $zoneIds)
+                ->orWhereIn('parent_id', $zoneIds)
+                ->orWhereHas('parent', fn ($parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent', fn ($parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent.parent', fn ($parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent.parent.parent', fn ($parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds));
+        });
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function activeZoneIdsForUser(int $userId): array
+    {
+        $assignments = UserTerritory::query()
+            ->with('territory.'.TerritorialUnit::PARENT_CHAIN)
+            ->active()
+            ->where('user_id', $userId)
+            ->get();
+
+        return $this->activeZoneIdsForTerritoryAssignments($assignments->all());
+    }
+
+    /**
+     * @param array<int, UserTerritory> $assignments
+     * @return array<int, int>
+     */
+    private function activeZoneIdsForTerritoryAssignments(array $assignments): array
+    {
+        return collect($assignments)
+            ->map(fn (UserTerritory $assignment) => $assignment->territory ? $this->resolveOperationalZoneModel($assignment->territory) : null)
+            ->filter()
+            ->map(fn (TerritorialUnit $zone) => (int) $zone->id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param array<int, UserTerritory> $assignments
+     */
+    private function firstOperationalZoneFromAssignments(array $assignments): ?TerritorialUnit
+    {
+        foreach ($assignments as $assignment) {
+            if (! $assignment instanceof UserTerritory || ! $assignment->territory) {
+                continue;
+            }
+
+            $zone = $this->resolveOperationalZoneModel($assignment->territory);
+
+            if ($zone) {
+                return $zone;
+            }
+        }
+
+        return null;
+    }
+
+    private function incidentBelongsToUserZones(Incident $incident, int $userId): bool
+    {
+        $zone = $this->resolveOperationalZoneForIncident($incident);
+
+        if (! $zone) {
+            return false;
+        }
+
+        return in_array((int) $zone->id, $this->activeZoneIdsForUser($userId), true);
+    }
+
+    private function isSupervisorUserId(int $userId): bool
+    {
+        return User::query()
+            ->whereKey($userId)
+            ->whereHas('roles', fn ($query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
+            ->exists();
+    }
+
+    private function isOperatorUserId(int $userId): bool
+    {
+        return User::query()
+            ->whereKey($userId)
+            ->whereHas('roles', fn ($query) => $query->where('code', 'OPERADOR')->where('is_active', true))
+            ->exists();
+    }
+
+    private function shouldMoveIncidentToAssignedState(Incident $incident): bool
+    {
+        $stateName = strtoupper((string) ($incident->state?->name ?? ''));
+
+        return in_array($stateName, ['NUEVA', 'PENDIENTE', 'PENDING'], true);
     }
 
     private function generarCodigo(): string

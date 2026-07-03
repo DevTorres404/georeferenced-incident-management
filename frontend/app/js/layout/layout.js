@@ -14,18 +14,32 @@ window.SGINavigationStore = {
   menuItems: [
     { id: 'dashboard', label: 'Panel principal', icon: 'fa-tachometer-alt', href: 'dashboard.html', permission: 'dashboard.view' },
     { id: 'incidents', label: 'Incidencias', icon: 'fa-list-alt', href: 'incidents.html', permission: 'incidents.view' },
+    { id: 'assignment-management', label: 'Gestion de asignaciones', icon: 'fa-tasks', href: 'assignment-management.html', permission: 'incidents.assign' },
     { id: 'incident-map', label: 'Mapa de incidencias', icon: 'fa-map-marked-alt', href: 'incident-map.html', permission: 'incidents.view' },
     { id: 'incident-create', label: 'Nueva incidencia', icon: 'fa-plus-circle', href: 'incident-create.html', permission: 'incidents.create' },
-    { id: 'territorial-units', label: 'Gestión territorial', icon: 'fa-sitemap', href: 'territorial-units.html', permission: 'territorial_units.manage', adminOnly: true },
+    { id: 'operational-structure', label: 'Operacion nacional', icon: 'fa-network-wired', href: 'operational-structure.html', permission: 'operations.view' },
     { id: 'role-permissions', label: 'Roles y permisos', icon: 'fa-user-shield', href: 'role-permissions.html', permission: 'users.manage_roles' },
     { id: 'user-roles', label: 'Usuarios y roles', icon: 'fa-user-tag', href: 'user-roles.html', permission: 'users.manage_roles' },
     { id: 'reports', label: 'Reportes', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' },
-    { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view', adminOnly: true }
+    { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view' }
   ],
+  pagePermissions: {
+    about: 'about.view',
+    profile: 'profile.view',
+    'incident-detail': 'incidents.detail',
+    dashboard: 'dashboard.view',
+    incidents: 'incidents.view',
+    'incident-map': 'incidents.view',
+    'incident-create': 'incidents.create',
+    'assignment-management': 'incidents.assign',
+    'operational-structure': 'operations.view',
+    'role-permissions': 'users.manage_roles',
+    'user-roles': 'users.manage_roles',
+    reports: 'reportes.ver',
+    'audit-logs': 'audit.view',
+  },
   getAuthorizedMenu: function () {
     return this.menuItems.filter((item) => {
-      if (item.adminOnly && !hasRole('ADMIN')) return false;
-      if (hasRole('CIUDADANO') && item.id === 'dashboard') return false;
       return !item.permission || hasPermission(item.permission);
     });
   },
@@ -123,10 +137,10 @@ function formatUserRoles(user) {
 function getAvailableMenus() {
   return window.SGINavigationStore.getAuthorizedMenu();
 }
+function getPagePermission(activeId) {
+  return window.SGINavigationStore.pagePermissions?.[activeId] || null;
+}
 function getDefaultPageForSession() {
-  if (hasRole('CIUDADANO') && hasPermission('incidents.create')) {
-    return 'incident-create.html';
-  }
   // Orden de candidatos: se retorna la primera página que el usuario puede ver.
   // Si ningún permiso coincide, se retorna null para mostrar acceso denegado.
   const candidates = [
@@ -134,14 +148,12 @@ function getDefaultPageForSession() {
     ['incidents.create', 'incident-create.html'],
     ['incidents.view', 'incidents.html'],
     ['reportes.ver', 'reports.html'],
+    ['operations.view', 'operational-structure.html'],
     ['users.manage_roles', 'role-permissions.html'],
+    ['audit.view', 'audit-logs.html'],
   ];
   const match = candidates.find(([permission]) => hasPermission(permission));
   if (match) return match[1];
-
-  if (hasRole('ADMIN') && hasPermission('audit.view')) {
-    return 'audit-logs.html';
-  }
 
   return null;
 }
@@ -455,20 +467,15 @@ async function renderLayout(activeId = '') {
     return;
   }
 
-  // Block citizen from dashboard/admin routes
-  if (hasRole('CIUDADANO') && (activeId === 'dashboard' || activeId === 'user-roles' || activeId === 'role-permissions' || activeId === 'audit-logs')) {
-    window.location.href = 'incident-create.html';
-    return;
-  }
   // Ruteo de Accesos por Permisos
   const menuItems = window.SGINavigationStore.getAuthorizedMenu();
   const currentItem = window.SGINavigationStore.menuItems.find(i => i.id === activeId);
-  if (currentItem?.adminOnly && !hasRole('ADMIN')) {
-    const defaultPage = getDefaultPageForSession();
-    window.location.href = defaultPage || getLoginPath();
+  if (activeId === 'territorial-units') {
+    window.location.href = 'operational-structure.html';
     return;
   }
-  if (currentItem && currentItem.permission && !hasPermission(currentItem.permission)) {
+  const requiredPermission = currentItem?.permission || getPagePermission(activeId);
+  if (requiredPermission && !hasPermission(requiredPermission)) {
     if (!hasRole('ADMIN')) {
       const defaultPage = getDefaultPageForSession();
       if (!defaultPage) {
@@ -492,6 +499,7 @@ async function renderLayout(activeId = '') {
     initial: userInitial,
     email: userEmail,
     role: userRole,
+    showProfileLink: hasPermission('profile.view'),
   });
   const navEl = document.getElementById('mainNavbar');
   if (navEl) navEl.innerHTML = navbarHtml;

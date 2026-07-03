@@ -99,6 +99,7 @@ function renderPermissions(state) {
                 ${selectedPermissions.has(permission.code) ? 'checked' : ''}>
               <label class="custom-control-label" for="permission-${escapeAttr(permission.code)}">
                 <span class="d-block">${escapeHtml(formatPermissionLabel(permission))}</span>
+                ${permission?.description ? `<small class="d-block text-muted">${escapeHtml(permission.description)}</small>` : ''}
               </label>
             </div>
           </div>`).join('')}
@@ -118,13 +119,18 @@ function renderPermissions(state) {
 
 function formatModuleLabel(module) {
   const labels = {
+    about: 'Informacion',
+    dashboard: 'Panel principal',
     incidents: 'Incidencias',
     comments: 'Comentarios',
+    profile: 'Perfil',
     users: 'Usuarios',
-    catalogs: 'Catálogos',
+    operations: 'Cobertura operativa',
+    catalogs: 'Catalogos',
+    territorial_units: 'Territorio',
     reportes: 'Reportes',
     configuracion: 'Configuracion',
-    audit: 'Auditoría',
+    audit: 'Auditoria',
   };
   const key = String(module || '').toLowerCase();
   return labels[key] || humanizeCode(module);
@@ -136,9 +142,9 @@ function formatPermissionLabel(permission) {
 
 function getRoleDescription(code) {
   const descriptions = {
-    ADMIN: 'Administración completa',
-    SUPERVISOR: 'Supervisión y coordinación',
-    OPERADOR: 'Atención operativa',
+    ADMIN: 'Administracion completa',
+    SUPERVISOR: 'Supervision y coordinacion',
+    OPERADOR: 'Atencion operativa',
     CIUDADANO: 'Registro y seguimiento',
   };
   return descriptions[String(code || '').toUpperCase()] || 'Rol del sistema';
@@ -159,7 +165,7 @@ async function saveRolePermissions(state) {
   const permissions = [...document.querySelectorAll('.permission-checkbox:checked')]
     .map((checkbox) => checkbox.value);
 
-  showPageLoading('Guardando permisos', 'Actualizando configuración del rol...');
+  showPageLoading('Guardando permisos', 'Actualizando configuracion del rol...');
 
   try {
     const response = await updateRolePermissions(role.id, permissions);

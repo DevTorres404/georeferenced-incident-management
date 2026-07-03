@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
   <link rel="stylesheet" href="../css/app.css?v=31">
+  <link rel="stylesheet" href="../css/pages/incidents.css">
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
@@ -44,9 +45,7 @@
             <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Consulta reportes georreferenciados por estado, prioridad y territorio.</p>
           </div>
           <div class="col-sm-4 d-none d-sm-flex justify-content-end align-items-center">
-            <a href="incident-map.html" class="btn btn-outline-primary btn-sm">
-              <i class="fas fa-map-marked-alt mr-1"></i>Ver mapa
-            </a>
+            <!-- Botón movido a las acciones globales -->
           </div>
         </div>
       </div>
@@ -55,29 +54,60 @@
     <div class="content">
       <div class="container-fluid">
         <div class="row mb-3">
-          <div class="col-12 d-flex flex-wrap gap-2 align-items-center justify-content-between">
-            <div class="btn-group shadow-sm" role="group" aria-label="Filtros de estado">
-              <button class="btn btn-sm btn-outline-primary filtro-btn active" data-filtro="todos">
-                Todos <span class="badge badge-light ml-1" id="cnt-todos">0</span>
-              </button>
-              <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="pendiente">
-                Pendiente <span class="badge badge-light ml-1" id="cnt-pendiente">0</span>
-              </button>
-              <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="en proceso">
-                En proceso <span class="badge badge-light ml-1" id="cnt-proceso">0</span>
-              </button>
-              <button class="btn btn-sm btn-outline-primary filtro-btn" data-filtro="resuelta">
-                Resuelta <span class="badge badge-light ml-1" id="cnt-resuelta">0</span>
-              </button>
-            </div>
+          <!-- Botones de Acción Globales -->
+          <div class="col-12 d-flex justify-content-end mb-3" style="gap: 12px;">
+             <a href="incident-map.html" class="btn btn-outline-primary btn-sm shadow-sm font-weight-bold">
+               <i class="fas fa-map-marked-alt mr-1"></i>Ver en Mapa
+             </a>
+             <a href="incident-create.html" class="btn btn-primary btn-sm shadow-sm font-weight-bold">
+               <i class="fas fa-plus mr-1"></i>Nueva incidencia
+             </a>
+          </div>
 
-            <div class="d-flex flex-wrap" style="gap:8px;">
-              <a href="incident-map.html" class="btn btn-outline-primary btn-sm">
-                <i class="fas fa-map-marked-alt mr-1"></i>Mapa
-              </a>
-              <a href="incident-create.html" class="btn btn-primary btn-sm">
-                <i class="fas fa-plus mr-1"></i>Nueva incidencia
-              </a>
+          <!-- Grid de KPI Cards (Filtros) -->
+          <div class="col-12 mb-3">
+            <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="font-size:0.75rem; letter-spacing:0.05em;"><i class="fas fa-filter mr-1"></i>Filtrar por Estado</h6>
+            <div class="inc-kpi-grid">
+              <div class="inc-kpi-card active filtro-btn" data-filtro="todos">
+                <div class="inc-kpi-content">
+                  <span class="inc-kpi-label">Todas las Incidencias</span>
+                  <strong class="inc-kpi-number" id="cnt-todos">0</strong>
+                </div>
+                <div class="inc-kpi-icon"><i class="fas fa-layer-group"></i></div>
+              </div>
+              <div class="inc-kpi-card filtro-btn" data-filtro="pendiente">
+                <div class="inc-kpi-content">
+                  <span class="inc-kpi-label">Pendientes</span>
+                  <strong class="inc-kpi-number text-warning" id="cnt-pendiente">0</strong>
+                </div>
+                <div class="inc-kpi-icon text-warning"><i class="fas fa-clock"></i></div>
+              </div>
+              <div class="inc-kpi-card filtro-btn" data-filtro="en proceso">
+                <div class="inc-kpi-content">
+                  <span class="inc-kpi-label">En Proceso</span>
+                  <strong class="inc-kpi-number text-info" id="cnt-proceso">0</strong>
+                </div>
+                <div class="inc-kpi-icon text-info"><i class="fas fa-cogs"></i></div>
+              </div>
+              <div class="inc-kpi-card filtro-btn" data-filtro="resuelta">
+                <div class="inc-kpi-content">
+                  <span class="inc-kpi-label">Resueltas</span>
+                  <strong class="inc-kpi-number text-success" id="cnt-resuelta">0</strong>
+                </div>
+                <div class="inc-kpi-icon text-success"><i class="fas fa-check-circle"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filtros de Prioridad (Pills) -->
+          <div class="col-12 mb-4">
+            <h6 class="text-uppercase text-muted font-weight-bold mb-3" style="font-size:0.75rem; letter-spacing:0.05em;"><i class="fas fa-sort-amount-down mr-1"></i>Filtrar por Prioridad</h6>
+            <div class="d-flex flex-wrap" style="gap: 10px;">
+              <button class="btn btn-sm btn-dark font-weight-bold priority-btn active shadow-sm rounded-pill px-3" data-prioridad="todas">Todas</button>
+              <button class="btn btn-sm btn-outline-danger font-weight-bold priority-btn bg-white shadow-sm rounded-pill px-3" data-prioridad="critica"><i class="fas fa-exclamation-circle mr-1"></i>Crítica</button>
+              <button class="btn btn-sm btn-outline-warning font-weight-bold priority-btn bg-white shadow-sm rounded-pill px-3" data-prioridad="alta"><i class="fas fa-arrow-up mr-1"></i>Alta</button>
+              <button class="btn btn-sm btn-outline-info font-weight-bold priority-btn bg-white shadow-sm rounded-pill px-3" data-prioridad="media"><i class="fas fa-minus mr-1"></i>Media</button>
+              <button class="btn btn-sm btn-outline-secondary font-weight-bold priority-btn bg-white shadow-sm rounded-pill px-3" data-prioridad="baja"><i class="fas fa-arrow-down mr-1"></i>Baja</button>
             </div>
           </div>
         </div>
@@ -98,14 +128,14 @@
               <table id="tablaIncidencias" class="table table-hover table-sm align-middle mb-0" style="width:100%">
                 <thead class="bg-light">
                   <tr>
-                    <th class="border-top-0 border-bottom-0">Código</th>
-                    <th class="border-top-0 border-bottom-0">Título</th>
-                    <th class="border-top-0 border-bottom-0">Categoría</th>
-                    <th class="border-top-0 border-bottom-0">Prioridad</th>
-                    <th class="border-top-0 border-bottom-0">Estado</th>
-                    <th class="border-top-0 border-bottom-0">Territorio</th>
-                    <th class="border-top-0 border-bottom-0">Fecha</th>
-                    <th class="text-center border-top-0 border-bottom-0">Acciones</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-hashtag text-muted mr-1"></i>Código</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-heading text-muted mr-1"></i>Título</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-folder text-muted mr-1"></i>Categoría</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-exclamation-triangle text-muted mr-1"></i>Prioridad</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-tasks text-muted mr-1"></i>Estado</th>
+                    <th class="border-top-0 border-bottom-0"><i class="fas fa-map-marker-alt text-muted mr-1"></i>Territorio</th>
+                    <th class="border-top-0 border-bottom-0"><i class="far fa-calendar-alt text-muted mr-1"></i>Fecha</th>
+                    <th class="text-center border-top-0 border-bottom-0"><i class="fas fa-cogs text-muted mr-1"></i>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="tablaBody" class="border-top-0"></tbody>
@@ -159,7 +189,7 @@
 <script src="../../plugins/datatables/jquery.dataTables.min.js"></script>
 <script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
 <script src="../../dist/js/adminlte.min.js"></script>
-<script type="module" src="../js/layout/layout.js?v=20"></script>
+<script type="module" src="../js/layout/layout.js?v=22"></script>
 <script type="module" src="../js/modules/incidents/presentation/incidents-page.js?v=21"></script>
 </body>
 </html>

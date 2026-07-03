@@ -10,12 +10,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable([
     'user_id',
     'max_operators',
+    'active',
 ])]
 final class SupervisorProfile extends Model
 {
     protected $table = 'auth.supervisor_profiles';
 
     public const DEFAULT_MAX_OPERATORS = 5;
+
+    protected function casts(): array
+    {
+        return [
+            'max_operators' => 'integer',
+            'active' => 'boolean',
+        ];
+    }
 
     public function user(): BelongsTo
     {

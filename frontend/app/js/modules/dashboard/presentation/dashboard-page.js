@@ -10,19 +10,44 @@ import {
   showPageLoading,
 } from '../../incidents/presentation/incidents-ui.js?v=16';
 
+const CHART_COLORS = {
+  info: '#0ea5e9',
+  success: '#10b981',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+  purple: '#8b5cf6',
+  indigo: '#6366f1',
+  teal: '#14b8a6',
+};
+
+const CATEGORY_PALETTE = [
+  CHART_COLORS.info,
+  CHART_COLORS.success,
+  CHART_COLORS.warning,
+  CHART_COLORS.danger,
+  CHART_COLORS.purple,
+  CHART_COLORS.indigo,
+];
+
+const STATE_COLORS = {
+  PENDIENTE: '#94a3b8',
+  'EN PROCESO': CHART_COLORS.info,
+  RESUELTA: CHART_COLORS.success,
+};
+
 document.addEventListener('DOMContentLoaded', initDashboardPage);
 
 async function initDashboardPage() {
   window.renderLayout?.('dashboard');
 
-  showPageLoading('Cargando panel', 'Consultando métricas...');
+  showPageLoading('Cargando panel', 'Consultando metricas...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
   try {
     const metrics = await getDashboardMetrics();
     renderKPIs(metrics.kpis || {});
     renderPriorityBars(metrics.countsByPriority || {}, metrics.kpis?.total || 0);
-    renderQuickInfo(metrics);
+    renderInfoCards(metrics);
     renderRecentIncidents(metrics.recentIncidents || []);
     renderCharts(metrics);
   } catch (error) {
@@ -33,32 +58,30 @@ async function initDashboardPage() {
   }
 }
 
+/* ── KPIs ────────────────────────────────────────────────────────────────── */
 
 function renderKPIs(kpis) {
-  const row = $('#kpiRow');
-  if (!row) return;
+  const grid = $('#kpiRow');
+  if (!grid) return;
 
   const items = [
-    { value: kpis.total || 0, label: 'Total Incidencias', icon: 'fa-clipboard-list', color: 'bg-info', href: 'incidents.html' },
-    { value: kpis.pending || 0, label: 'Pendientes', icon: 'fa-clock', color: 'bg-warning', href: 'incidents.html' },
-    { value: kpis.progress || 0, label: 'En Proceso', icon: 'fa-spinner', color: 'bg-primary', href: 'incidents.html' },
-    { value: kpis.resolved || 0, label: 'Resueltas', icon: 'fa-check-circle', color: 'bg-success', href: 'incidents.html' },
+    { value: kpis.total || 0, label: 'Total Incidencias', icon: 'fa-clipboard-list', accent: 'info' },
+    { value: kpis.pending || 0, label: 'Pendientes', icon: 'fa-clock', accent: 'warning' },
+    { value: kpis.progress || 0, label: 'En Proceso', icon: 'fa-spinner', accent: 'primary' },
+    { value: kpis.resolved || 0, label: 'Resueltas', icon: 'fa-check-circle', accent: 'success' },
   ];
 
-  row.innerHTML = items.map((item) => `
-    <div class="col-lg-3 col-6">
-      <div class="small-box ${item.color}">
-        <div class="inner">
-          <h3>${Number(item.value || 0)}</h3>
-          <p>${escapeHtml(item.label)}</p>
-        </div>
-        <div class="icon"><i class="fas ${item.icon}"></i></div>
-        <a href="${item.href}" class="small-box-footer">
-          Ver detalle <i class="fas fa-arrow-circle-right"></i>
-        </a>
+  grid.innerHTML = items.map((item) => `
+    <a href="incidents.html" class="dash-kpi-card" data-accent="${item.accent}">
+      <div class="dash-kpi-content">
+        <span class="dash-kpi-label">${escapeHtml(item.label)}</span>
+        <span class="dash-kpi-number">${Number(item.value || 0)}</span>
       </div>
-    </div>`).join('');
+      <i class="fas ${item.icon} dash-kpi-icon text-${item.accent}"></i>
+    </a>`).join('');
 }
+
+/* ── Priority Bars ───────────────────────────────────────────────────────── */
 
 function renderPriorityBars(countsByPriority, total) {
   const container = $('#barrasPrioridad');
@@ -66,57 +89,83 @@ function renderPriorityBars(countsByPriority, total) {
 
   const entries = Object.entries(countsByPriority);
   if (!entries.length) {
-    container.innerHTML = '<p class="text-muted text-center mb-0">Sin incidencias por prioridad.</p>';
+    container.innerHTML = '<p class="text-muted text-center mb-0" style="font-size:0.85rem;">Sin incidencias por prioridad.</p>';
     return;
   }
 
   container.innerHTML = entries.map(([label, count]) => {
-    const percent = total > 0 ? Math.round((Number(count) / total) * 100) : 0;
+    const pct = total > 0 ? Math.round((Number(count) / total) * 100) : 0;
     return `
-      <div class="mb-3">
-        <span class="text-bold">${escapeHtml(formatCatalogLabel(label))}</span>
-        <span class="float-right text-muted">${Number(count)} (${percent}%)</span>
-        <div class="progress mt-1">
-          <div class="progress-bar ${progressClass(label)}" style="width:${percent}%" role="progressbar" aria-valuenow="${percent}" aria-valuemin="0" aria-valuemax="100"></div>
+      <div class="dash-priority-item">
+        <div class="dash-priority-meta">
+          <span class="dash-priority-label">
+            <span class="dash-priority-dot" style="background:${priorityColor(label)};"></span>
+            ${escapeHtml(formatCatalogLabel(label))}
+          </span>
+          <span class="dash-priority-count">${Number(count)} &middot; ${pct}%</span>
+        </div>
+        <div class="dash-priority-bar">
+          <div class="dash-priority-bar-fill" style="width:${pct}%; background:${priorityColor(label)};"></div>
         </div>
       </div>`;
   }).join('');
 }
 
-function renderQuickInfo(metrics) {
-  const infoBoxes = document.querySelectorAll('.content .info-box');
+function priorityColor(label) {
+  const v = String(label || '').toUpperCase();
+  if (v.includes('CRIT')) return CHART_COLORS.danger;
+  if (v.includes('ALTA')) return CHART_COLORS.warning;
+  if (v.includes('MEDIA')) return CHART_COLORS.info;
+  if (v.includes('BAJA')) return CHART_COLORS.success;
+  return '#94a3b8';
+}
+
+/* ── Info Cards ──────────────────────────────────────────────────────────── */
+
+function renderInfoCards(metrics) {
+  const stack = $('#infoStack');
+  if (!stack) return;
+
   const topCity = metrics.topCities?.[0] || null;
   const topCategory = topEntry(metrics.countsByCategory || {});
+  const avgDays = Number(metrics.averageResolutionDays || 0);
 
-  updateInfoBox(infoBoxes[0], {
-    number: topCity?.city || 'Sin datos',
-    description: topCity ? `${topCity.count} incidencias registradas` : 'No hay incidencias registradas',
-    percent: topCity?.pct || 0,
-  });
+  stack.innerHTML = `
+    <div class="dash-info-card">
+      <div class="dash-info-icon dash-info-icon--primary">
+        <i class="fas fa-map-marker-alt"></i>
+      </div>
+      <div class="dash-info-body">
+        <span class="dash-info-label">Ciudad con mas incidencias</span>
+        <span class="dash-info-value">${escapeHtml(topCity?.city || 'Sin datos')}</span>
+        <span class="dash-info-caption">${topCity ? `${topCity.count} incidencias registradas` : 'No hay datos disponibles'}</span>
+      </div>
+    </div>
 
-  updateInfoBox(infoBoxes[1], {
-    number: topCategory ? formatCatalogLabel(topCategory[0]) : 'Sin datos',
-    description: topCategory ? `${topCategory[1]} incidencias` : 'No hay categorias registradas',
-    percent: metrics.kpis?.total ? Math.round((topCategory?.[1] || 0) / metrics.kpis.total * 100) : 0,
-  });
+    <div class="dash-info-card">
+      <div class="dash-info-icon dash-info-icon--danger">
+        <i class="fas fa-fire"></i>
+      </div>
+      <div class="dash-info-body">
+        <span class="dash-info-label">Tipo mas frecuente</span>
+        <span class="dash-info-value">${topCategory ? escapeHtml(formatCatalogLabel(topCategory[0])) : 'Sin datos'}</span>
+        <span class="dash-info-caption">${topCategory ? `${topCategory[1]} incidencias` : 'No hay categorias registradas'}</span>
+      </div>
+    </div>
 
-  updateInfoBox(infoBoxes[2], {
-    number: `${Number(metrics.averageResolutionDays || 0).toFixed(1)} dias`,
-    description: 'En incidencias resueltas',
-    percent: Math.min(Math.round(Number(metrics.averageResolutionDays || 0) * 10), 100),
-  });
+    <div class="dash-info-card">
+      <div class="dash-info-icon dash-info-icon--warning">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="dash-info-body">
+        <span class="dash-info-label">Tiempo promedio de resolucion</span>
+        <span class="dash-info-value">${avgDays.toFixed(1)} dias</span>
+        <span class="dash-info-caption">En incidencias resueltas</span>
+      </div>
+    </div>`;
 }
 
-function updateInfoBox(box, data) {
-  if (!box) return;
-  const number = box.querySelector('.info-box-number');
-  const description = box.querySelector('.progress-description');
-  const bar = box.querySelector('.progress-bar');
-
-  if (number) number.textContent = data.number;
-  if (description) description.textContent = data.description;
-  if (bar) bar.style.width = `${data.percent || 0}%`;
-}
+/* ── Recent Incidents Table ──────────────────────────────────────────────── */
 
 function renderRecentIncidents(incidents) {
   const tbody = $('#tablaUltimasBody');
@@ -125,7 +174,7 @@ function renderRecentIncidents(incidents) {
   if (!incidents.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="text-center text-muted py-3">
+        <td colspan="7" class="text-center text-muted py-4">
           <i class="fas fa-inbox mr-1"></i>Sin incidencias recientes.
         </td>
       </tr>`;
@@ -139,12 +188,12 @@ function renderRecentIncidents(incidents) {
 
     return `
       <tr>
-        <td><span class="badge badge-dark">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
-        <td class="text-truncate" style="max-width:160px;" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin titulo')}</td>
+        <td><span class="dash-table-code">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
+        <td class="dash-table-title" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin titulo')}</td>
         <td>${escapeHtml(category)}</td>
         <td><span class="badge ${getPriorityBadgeClass(priority)}">${escapeHtml(priority)}</span></td>
         <td><span class="badge ${getStateBadgeClass(state)}">${escapeHtml(state)}</span></td>
-        <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
+        <td style="white-space:nowrap;">${escapeHtml(formatShortDate(incident.created_at))}</td>
         <td>
           <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-outline-primary" title="Ver detalle">
             <i class="fas fa-eye"></i>
@@ -153,6 +202,8 @@ function renderRecentIncidents(incidents) {
       </tr>`;
   }).join('');
 }
+
+/* ── Charts ──────────────────────────────────────────────────────────────── */
 
 function renderCharts(metrics) {
   if (!window.Chart) return;
@@ -173,15 +224,35 @@ function renderDoughnut(canvasId, dataMap) {
       labels: entries.map(([label]) => formatCatalogLabel(label)),
       datasets: [{
         data: entries.map(([, value]) => Number(value)),
-        backgroundColor: ['#007bff', '#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6f42c1'],
-        borderWidth: 2,
+        backgroundColor: CATEGORY_PALETTE.slice(0, entries.length),
+        borderWidth: 0,
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#ffffff',
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      legend: { position: 'bottom', labels: { boxWidth: 12, fontSize: 11 } },
-      cutoutPercentage: 55,
+      cutoutPercentage: 60,
+      legend: {
+        position: 'bottom',
+        labels: {
+          boxWidth: 10,
+          fontSize: 11,
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle',
+        },
+      },
+      plugins: {
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 11 },
+          padding: 10,
+          cornerRadius: 8,
+        },
+      },
     },
   });
 }
@@ -189,26 +260,47 @@ function renderDoughnut(canvasId, dataMap) {
 function renderStateChart(countsByState) {
   const canvas = document.getElementById('graficoPorEstado');
   if (!canvas) return;
+
   const labels = ['Pendiente', 'En proceso', 'Resuelta'];
+  const colors = [STATE_COLORS.PENDIENTE, STATE_COLORS['EN PROCESO'], STATE_COLORS.RESUELTA];
 
   new Chart(canvas.getContext('2d'), {
-    type: 'horizontalBar',
+    type: 'bar',
     data: {
       labels,
       datasets: [{
         label: 'Incidencias',
         data: labels.map((label) => Number(countsByState[label] || 0)),
-        backgroundColor: ['#6c757d', '#007bff', '#28a745'],
+        backgroundColor: colors,
         borderWidth: 0,
+        borderRadius: 6,
+        barPercentage: 0.6,
       }],
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: true,
       legend: { display: false },
       scales: {
-        xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
-        yAxes: [{ ticks: { fontSize: 11 } }],
+        x: {
+          beginAtZero: true,
+          ticks: { precision: 0, font: { size: 11 }, color: '#64748b' },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        },
+        y: {
+          ticks: { font: { size: 11 }, color: '#334155' },
+          grid: { display: false },
+        },
+      },
+      plugins: {
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 11 },
+          padding: 10,
+          cornerRadius: 8,
+        },
       },
     },
   });
@@ -223,46 +315,75 @@ function renderTrendChart(trend) {
     data: {
       labels: trend.months || [],
       datasets: [
-        dataset('Registradas', trend.registered || [], '#007bff'),
-        dataset('Resueltas', trend.resolved || [], '#28a745'),
-        dataset('Pendientes', trend.pending || [], '#ffc107'),
+        buildDataset('Registradas', trend.registered || [], CHART_COLORS.info),
+        buildDataset('Resueltas', trend.resolved || [], CHART_COLORS.success),
+        buildDataset('Pendientes', trend.pending || [], CHART_COLORS.warning),
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      legend: { position: 'top', labels: { boxWidth: 12, fontSize: 11 } },
+      legend: {
+        position: 'top',
+        labels: {
+          boxWidth: 10,
+          fontSize: 11,
+          padding: 16,
+          usePointStyle: true,
+          pointStyle: 'circle',
+        },
+      },
       scales: {
-        xAxes: [{ gridLines: { color: 'rgba(0,0,0,0.05)' } }],
-        yAxes: [{ ticks: { beginAtZero: true, precision: 0 }, gridLines: { color: 'rgba(0,0,0,0.05)' } }],
+        x: {
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          ticks: { font: { size: 11 }, color: '#64748b' },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { precision: 0, font: { size: 11 }, color: '#64748b' },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        },
+      },
+      plugins: {
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 11 },
+          padding: 10,
+          cornerRadius: 8,
+          intersect: false,
+          mode: 'index',
+        },
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index',
       },
     },
   });
 }
 
-function dataset(label, data, color) {
+function buildDataset(label, data, color) {
   return {
     label,
     data,
     borderColor: color,
-    backgroundColor: `${color}14`,
-    borderWidth: 2,
-    pointRadius: 4,
+    backgroundColor: `${color}18`,
+    borderWidth: 2.5,
+    pointRadius: 3,
+    pointHoverRadius: 5,
+    pointBackgroundColor: color,
+    pointBorderColor: '#ffffff',
+    pointBorderWidth: 2,
     fill: true,
+    tension: 0.35,
   };
 }
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
 
 function topEntry(values) {
   const entries = Object.entries(values);
   if (!entries.length) return null;
   return entries.sort((a, b) => Number(b[1]) - Number(a[1]))[0];
-}
-
-function progressClass(label) {
-  const value = String(label || '').toUpperCase();
-  if (value.includes('CRIT')) return 'bg-danger';
-  if (value.includes('ALTA')) return 'bg-warning';
-  if (value.includes('MEDIA')) return 'bg-info';
-  if (value.includes('BAJA')) return 'bg-success';
-  return 'bg-secondary';
 }

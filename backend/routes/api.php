@@ -66,7 +66,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/catalogs/permissions', [CatalogController::class, 'permissions'])->middleware('permission:users.manage_roles');
 
         Route::get('/dashboard/metrics', [\App\Incidents\Infrastructure\Http\Controllers\DashboardController::class, 'metrics'])
-            ->middleware('permission:incidents.view');
+            ->middleware('permission:dashboard.view');
 
         Route::prefix('territorial-units')->middleware('permission:territorial_units.manage')->group(function () {
             Route::post('/', [TerritorialUnitController::class, 'store']);
@@ -77,6 +77,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
         Route::get('/incidents/map', [IncidentController::class, 'map'])
             ->middleware('permission:incidents.view');
+        Route::get('/incidents/assignment-operators', [IncidentController::class, 'assignmentOperators'])
+            ->middleware('permission:incidents.assign');
         Route::apiResource('/incidents', IncidentController::class)
             ->parameters(['incidents' => 'incident'])
             ->except(['store']);
@@ -101,17 +103,27 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             Route::get('/admin/access-control', [AccessControlController::class, 'index']);
             Route::put('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
             Route::patch('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
+        });
 
-            Route::prefix('admin/operations')->group(function () {
-                Route::get('zones', [OperationalStructureController::class, 'zones']);
-                Route::get('supervisors', [OperationalStructureController::class, 'supervisors']);
-                Route::get('operators', [OperationalStructureController::class, 'operators']);
-                Route::put('zones/{zoneId}/supervisor', [OperationalStructureController::class, 'assignSupervisor']);
-                Route::put('supervisors/{supervisorUserId}/operators', [OperationalStructureController::class, 'syncSupervisorOperators']);
-                Route::put('operators/{operatorUserId}/territory', [OperationalStructureController::class, 'assignOperatorTerritory']);
-                Route::patch('supervisors/{supervisorUserId}/profile', [OperationalStructureController::class, 'updateSupervisorProfile']);
-                Route::patch('operators/{operatorUserId}/profile', [OperationalStructureController::class, 'updateOperatorProfile']);
-            });
+        Route::prefix('admin/operations')->group(function () {
+            Route::get('zones', [OperationalStructureController::class, 'zones'])
+                ->middleware('permission:operations.view');
+            Route::get('supervisors', [OperationalStructureController::class, 'supervisors'])
+                ->middleware('permission:operations.view');
+            Route::get('operators', [OperationalStructureController::class, 'operators'])
+                ->middleware('permission:operations.view');
+            Route::put('zones/{zoneId}/supervisor', [OperationalStructureController::class, 'assignSupervisor'])
+                ->middleware('permission:operations.manage');
+            Route::put('supervisors/{supervisorUserId}/operators', [OperationalStructureController::class, 'syncSupervisorOperators'])
+                ->middleware('permission:operations.manage');
+            Route::put('operators/{operatorUserId}/territory', [OperationalStructureController::class, 'assignOperatorTerritory'])
+                ->middleware('permission:operations.manage');
+            Route::put('operators/{operatorUserId}/replacement', [OperationalStructureController::class, 'replaceOperator'])
+                ->middleware('permission:operations.manage');
+            Route::patch('supervisors/{supervisorUserId}/profile', [OperationalStructureController::class, 'updateSupervisorProfile'])
+                ->middleware('permission:operations.manage');
+            Route::patch('operators/{operatorUserId}/profile', [OperationalStructureController::class, 'updateOperatorProfile'])
+                ->middleware('permission:operations.manage');
         });
 
         Route::middleware('permission:catalogs.manage')->group(function () {

@@ -19,9 +19,12 @@ final class IncidentSummaryData implements JsonSerializable
         public readonly ?CategorySummaryData $subcategory = null,
         public readonly ?PrioritySummaryData $priority = null,
         public readonly ?TerritorialUnitSummaryData $territorialUnit = null,
+        public readonly ?string $zoneName = null,
         public readonly ?string $address = null,
         public readonly ?string $resolutionDate = null,
-        public readonly ?string $createdAt = null
+        public readonly ?string $createdAt = null,
+        public readonly ?string $dueDate = null,
+        public readonly array $assignments = []
     ) {
     }
 
@@ -40,10 +43,13 @@ final class IncidentSummaryData implements JsonSerializable
             'subcategory' => $this->subcategory,
             'priority' => $this->priority,
             'territorial_unit' => $this->territorialUnit,
+            'zone_name' => $this->zoneName,
             'address' => $this->address,
             'address_reference' => $this->address,
             'resolution_date' => $this->resolutionDate,
             'created_at' => $this->createdAt,
+            'due_date' => $this->dueDate,
+            'assignments' => $this->assignments,
         ];
     }
 }

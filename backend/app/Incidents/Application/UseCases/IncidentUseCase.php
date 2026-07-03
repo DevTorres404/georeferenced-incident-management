@@ -3,8 +3,10 @@
 namespace App\Incidents\Application\UseCases;
 
 use App\Incidents\Application\DTOs\AddCommentInputData;
-use App\Incidents\Application\DTOs\AssignmentData;
+use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
+use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
+use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
@@ -80,9 +82,17 @@ final class IncidentUseCase
         return $this->incidentRepository->attachFile($incidentId, $userId, $storedFile);
     }
 
-    public function assign(int $incidentId, int $userId, int $assigneeUserId): AssignmentData
+    public function assign(int $incidentId, int $userId, AssignIncidentOperatorsInputData $data): IncidentAssignmentBatchData
     {
-        return $this->incidentRepository->assign($incidentId, $userId, $assigneeUserId);
+        return $this->incidentRepository->assign($incidentId, $userId, $data);
+    }
+
+    /**
+     * @return array<int, AssignmentOperatorOptionData>
+     */
+    public function assignmentOperatorOptions(int $userId): array
+    {
+        return $this->incidentRepository->assignmentOperatorOptions($userId);
     }
 
     public function changeState(int $incidentId, int $userId, array $roleCodes, ChangeStateInputData $data): Incident

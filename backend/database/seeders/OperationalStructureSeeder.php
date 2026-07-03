@@ -40,8 +40,9 @@ final class OperationalStructureSeeder extends Seeder
                 ['zone_code' => 'Z3', 'first_name' => 'Carmen', 'last_name' => 'Piguave', 'email' => 'supervisor.costa.sur@incidents.local', 'username' => 'carmen.piguave', 'phone' => '0991000003'],
                 ['zone_code' => 'Z4', 'first_name' => 'Diego', 'last_name' => 'Burbano', 'email' => 'supervisor.sierra.centro@incidents.local', 'username' => 'diego.burbano', 'phone' => '0991000004'],
                 ['zone_code' => 'Z5', 'first_name' => 'Elena', 'last_name' => 'Siguenza', 'email' => 'supervisor.austro@incidents.local', 'username' => 'elena.siguenza', 'phone' => '0991000005'],
-                ['zone_code' => 'Z6', 'first_name' => 'Fabian', 'last_name' => 'Shiguango', 'email' => 'supervisor.amazonia@incidents.local', 'username' => 'fabian.shiguango', 'phone' => '0991000006'],
-                ['zone_code' => 'Z7', 'first_name' => 'Gabriela', 'last_name' => 'Muñoz', 'email' => 'supervisor.insular@incidents.local', 'username' => 'gabriela.munoz', 'phone' => '0991000007'],
+                ['zone_code' => 'Z6', 'first_name' => 'Fabian', 'last_name' => 'Shiguango', 'email' => 'supervisor.amazonia.sur@incidents.local', 'username' => 'fabian.shiguango', 'phone' => '0991000006'],
+                ['zone_code' => 'Z7', 'first_name' => 'Gabriela', 'last_name' => 'Munoz', 'email' => 'supervisor.insular@incidents.local', 'username' => 'gabriela.munoz', 'phone' => '0991000007'],
+                ['zone_code' => 'Z8', 'first_name' => 'Hector', 'last_name' => 'Jimpikit', 'email' => 'supervisor.amazonia.norte@incidents.local', 'username' => 'hector.jimpikit', 'phone' => '0991000008'],
             ];
 
             foreach ($supervisors as $index => $data) {
@@ -55,7 +56,7 @@ final class OperationalStructureSeeder extends Seeder
 
                 SupervisorProfile::query()->updateOrCreate(
                     ['user_id' => $supervisor->id],
-                    ['max_operators' => 5]
+                    ['max_operators' => 5, 'active' => true]
                 );
 
                 $this->syncActiveTerritory((int) $supervisor->id, (int) $zone->id, (int) $admin->id);
@@ -74,7 +75,12 @@ final class OperationalStructureSeeder extends Seeder
 
                     OperatorProfile::query()->updateOrCreate(
                         ['user_id' => $operator->id],
-                        ['incident_capacity' => OperatorProfile::DEFAULT_INCIDENT_CAPACITY]
+                        [
+                            'incident_capacity' => OperatorProfile::DEFAULT_INCIDENT_CAPACITY,
+                            'max_active_incidents' => OperatorProfile::DEFAULT_MAX_ACTIVE_INCIDENTS,
+                            'max_workload_points' => OperatorProfile::DEFAULT_MAX_WORKLOAD_POINTS,
+                            'active' => true,
+                        ]
                     );
 
                     $this->syncActiveTerritory((int) $operator->id, (int) $zone->id, (int) $admin->id);
@@ -102,17 +108,32 @@ final class OperationalStructureSeeder extends Seeder
      */
     private function user(array $data, int $roleId, int $assignedBy): User
     {
-        $user = User::query()->updateOrCreate(
-            ['email' => $data['email']],
-            [
+        $user = User::query()
+            ->where('email', $data['email'])
+            ->orWhere('username', $data['username'])
+            ->first();
+
+        if ($user) {
+            $user->forceFill([
+                'email' => $data['email'],
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'username' => $data['username'],
                 'phone' => $data['phone'],
                 'password' => 'password',
                 'is_active' => true,
-            ]
-        );
+            ])->save();
+        } else {
+            $user = User::query()->create([
+                'email' => $data['email'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'username' => $data['username'],
+                'phone' => $data['phone'],
+                'password' => 'password',
+                'is_active' => true,
+            ]);
+        }
 
         $user->forceFill([
             'email_verified_at' => now(),

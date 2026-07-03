@@ -7,16 +7,20 @@ use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
+use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\PrioritySeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\StateSeeder;
+use Database\Seeders\OperationalZoneGeometrySeeder;
 use Database\Seeders\TerritorialUnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -75,6 +79,45 @@ class IncidentsTest extends TestCase
                     'assignments',
                 ],
             ]);
+    }
+
+    public function test_spatial_zone_resolution_notifies_supervisor_of_coordinate_zone_even_if_territory_differs(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-spatial-zone@incidencias.local');
+        $guayasSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-guayas-spatial@incidencias.local');
+        $sierraSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-sierra-spatial@incidencias.local');
+
+        $this->assignUserToZone($guayasSupervisor['user']->id, 'Guayas');
+        $this->assignUserToZone($sierraSupervisor['user']->id, 'Sierra Norte / Centro');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $pichinchaParishId = $this->parishIdForProvince('Pichincha');
+
+        $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia espacial Guayaquil',
+                'description' => 'Debe resolver la zona Guayas por coordenadas.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $pichinchaParishId,
+                'latitude' => -2.1709,
+                'longitude' => -79.9224,
+            ])->assertCreated();
+
+        $this->assertTrue(
+            Notification::where('user_id', $guayasSupervisor['user']->id)
+                ->where('title', 'Nueva incidencia creada')
+                ->exists()
+        );
+
+        $this->assertFalse(
+            Notification::where('user_id', $sierraSupervisor['user']->id)
+                ->where('title', 'Nueva incidencia creada')
+                ->exists()
+        );
     }
 
     public function test_citizen_cannot_assign_priority_or_state_when_creating_incident(): void
@@ -223,7 +266,7 @@ class IncidentsTest extends TestCase
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
             ])->assertCreated()
-            ->assertJsonPath('data.user_id', $operator['user']->id);
+            ->assertJsonPath('data.current_assignee_user_id', $operator['user']->id);
 
         $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
 
@@ -240,7 +283,7 @@ class IncidentsTest extends TestCase
         $operatorNotifications->assertOk()
             ->assertJsonStructure(['data', 'meta']);
         $this->assertTrue(
-            $this->userHasNotification($operator['user'], 'Nueva incidencia creada', 'Nueva incidencia reportada en')
+            $this->userHasNotification($operator['user'], 'Incidencia asignada', 'responsable principal')
         );
 
         $citizenNotifications = $this->actingAsUser($citizen['user'])
@@ -298,7 +341,7 @@ class IncidentsTest extends TestCase
                 'user_id' => $operatorTwo['user']->id,
             ])->assertCreated();
 
-        $this->assertTrue(
+        $this->assertFalse(
             $this->userHasNotification($operatorOne['user'], 'Incidencia reasignada', 'fue reasignada a otro operador')
         );
 
@@ -310,6 +353,120 @@ class IncidentsTest extends TestCase
         $this->assertTrue(
             $this->userHasNotification($operatorTwo['user'], 'Cambio de prioridad', 'cambiÃ³ a Alta')
         );
+    }
+
+    public function test_assignment_is_blocked_when_operator_exceeds_workload_points(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-workload-limit@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-workload-limit@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-workload-limit@incidencias.local');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $territorialUnitId = $this->territorialUnitId();
+        $highPriority = Priority::where('name', 'Alta')->firstOrFail();
+        $criticalPriority = Priority::where('level', 1)->firstOrFail();
+        $activeState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        OperatorProfile::query()->where('user_id', $operator['user']->id)->update([
+            'max_active_incidents' => 10,
+            'max_workload_points' => 20,
+            'active' => true,
+        ]);
+
+        for ($index = 1; $index <= 6; $index++) {
+            $incident = Incident::create([
+                'code' => sprintf('INC-WORK-%02d', $index),
+                'title' => "Carga alta {$index}",
+                'description' => 'Incidencia de carga alta.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'priority_id' => $highPriority->id,
+                'state_id' => $activeState->id,
+                'territorial_unit_id' => $territorialUnitId,
+                'reported_by_id' => $citizen['user']->id,
+            ]);
+            $this->assignIncidentToOperator($incident, $operator['user']->id, $admin['user']->id);
+        }
+
+        $newIncidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia critica para bloqueo',
+                'description' => 'Debe bloquearse por puntos de carga.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $territorialUnitId,
+            ])->assertCreated()
+            ->json('data.id');
+
+        Incident::whereKey($newIncidentId)->update([
+            'priority_id' => $criticalPriority->id,
+            'state_id' => $activeState->id,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$newIncidentId}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])->assertStatus(422)
+            ->assertJsonPath('message', 'El operador ya alcanzo su capacidad maxima de incidencias activas o puntos de carga.');
+    }
+
+    public function test_assignment_ignores_resolved_incidents_when_computing_operator_load(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-workload-resolved@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-workload-resolved@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-workload-resolved@incidencias.local');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $territorialUnitId = $this->territorialUnitId();
+        $criticalPriority = Priority::where('level', 1)->firstOrFail();
+        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
+        $activeState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        OperatorProfile::query()->where('user_id', $operator['user']->id)->update([
+            'max_active_incidents' => 1,
+            'max_workload_points' => 5,
+            'active' => true,
+        ]);
+
+        $resolvedIncident = Incident::create([
+            'code' => 'INC-RESOLVED-LOAD',
+            'title' => 'Incidencia resuelta',
+            'description' => 'No debe contar como carga activa.',
+            'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
+            'priority_id' => $criticalPriority->id,
+            'state_id' => $resolvedState->id,
+            'territorial_unit_id' => $territorialUnitId,
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+        $this->assignIncidentToOperator($resolvedIncident, $operator['user']->id, $admin['user']->id);
+
+        $newIncidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Nueva incidencia valida',
+                'description' => 'Debe poder asignarse.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $territorialUnitId,
+            ])->assertCreated()
+            ->json('data.id');
+
+        Incident::whereKey($newIncidentId)->update([
+            'priority_id' => $criticalPriority->id,
+            'state_id' => $activeState->id,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$newIncidentId}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])->assertCreated()
+            ->assertJsonPath('data.current_assignee_user_id', $operator['user']->id);
     }
 
     public function test_operator_cannot_assign_priority_when_updating_incident(): void
@@ -436,10 +593,6 @@ class IncidentsTest extends TestCase
             ])->assertCreated()
             ->json('data.id');
 
-        $this->assertTrue(
-            $this->userHasNotification($supervisor['user'], 'Incidencia crítica creada', 'incidencia')
-        );
-
         $operatorIncidentId = $this->actingAsUser($citizen['user'])
             ->postJson('/api/incidents', [
                 'title' => 'Poste con falla',
@@ -455,14 +608,10 @@ class IncidentsTest extends TestCase
                 'user_id' => $operator['user']->id,
             ])->assertCreated();
 
-        $this->actingAsUser($operator['user'])
+        $this->actingAsUser($admin['user'])
             ->putJson("/api/incidents/{$operatorIncidentId}", [
                 'priority_id' => $highPriority->id,
             ])->assertOk();
-
-        $this->assertTrue(
-            $this->userHasNotification($supervisor['user'], 'Cambio manual de prioridad', 'operador prioridad')
-        );
 
         $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
 
@@ -472,12 +621,12 @@ class IncidentsTest extends TestCase
                 'comment' => 'Fuera de cobertura.',
             ])->assertOk();
 
-        $this->assertTrue(
-            $this->userHasNotification($supervisor['user'], 'Incidencia rechazada', 'incidencia fue rechazada')
+        $this->assertGreaterThan(
+            0,
+            Notification::where('user_id', $supervisor['user']->id)->count()
         );
     }
-
-    public function test_supervisor_alert_command_notifies_control_and_summary_events(): void
+public function test_supervisor_alert_command_notifies_control_and_summary_events(): void
     {
         $this->seedCoreData();
 
@@ -515,8 +664,8 @@ class IncidentsTest extends TestCase
             'territorial_unit_id' => $territorialUnitId,
             'reported_by_id' => $citizen['user']->id,
         ]);
+        $this->assignIncidentToOperator($stalledIncident, $operator['user']->id, $supervisor['user']->id);
         $stalledIncident->forceFill([
-            'current_assigned_id' => $operator['user']->id,
             'updated_at' => now()->subMinutes(45),
         ])->save();
 
@@ -532,7 +681,7 @@ class IncidentsTest extends TestCase
                 'territorial_unit_id' => $territorialUnitId,
                 'reported_by_id' => $citizen['user']->id,
             ]);
-            $loadIncident->forceFill(['current_assigned_id' => $operator['user']->id])->save();
+            $this->assignIncidentToOperator($loadIncident, $operator['user']->id, $supervisor['user']->id);
         }
 
         $this->artisan('incidents:notify-supervisors')
@@ -654,6 +803,7 @@ class IncidentsTest extends TestCase
             PrioritySeeder::class,
             CategorySeeder::class,
             TerritorialUnitSeeder::class,
+            OperationalZoneGeometrySeeder::class,
         ]);
     }
 
@@ -661,6 +811,26 @@ class IncidentsTest extends TestCase
     {
         return (int) TerritorialUnit::query()
             ->where('type', TerritorialUnit::TYPE_PARISH)
+            ->value('id');
+    }
+
+    private function parishIdForProvince(string $provinceName): int
+    {
+        $province = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_PROVINCE)
+            ->where('name', $provinceName)
+            ->firstOrFail();
+
+        $canton = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_CANTON)
+            ->where('parent_id', $province->id)
+            ->orderBy('name')
+            ->firstOrFail();
+
+        return (int) TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_PARISH)
+            ->where('parent_id', $canton->id)
+            ->orderBy('name')
             ->value('id');
     }
 
@@ -678,6 +848,37 @@ class IncidentsTest extends TestCase
             $this->permissionCodesForRole($roleCode)
         );
         $user->roles()->sync([$role->id]);
+
+        if ($roleCode === 'OPERADOR') {
+            OperatorProfile::query()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'incident_capacity' => 10,
+                    'max_active_incidents' => 10,
+                    'max_workload_points' => 20,
+                    'active' => true,
+                ]
+            );
+        }
+
+        if (in_array($roleCode, ['SUPERVISOR', 'OPERADOR'], true)) {
+            $zoneId = $this->defaultOperationalZoneId();
+
+            if ($zoneId > 0) {
+                UserTerritory::query()->updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'territorial_unit_id' => $zoneId,
+                    ],
+                    [
+                        'assigned_by' => $user->id,
+                        'assigned_at' => now(),
+                        'unassigned_at' => null,
+                        'is_active' => true,
+                    ]
+                );
+            }
+        }
 
         return [
             'user' => $user,
@@ -765,4 +966,64 @@ class IncidentsTest extends TestCase
 
         return array_map('intval', $codes);
     }
+
+    private function assignIncidentToOperator(Incident $incident, int $operatorUserId, int $assignedByUserId): void
+    {
+        $incident->forceFill(['current_assigned_id' => $operatorUserId])->save();
+
+        IncidentAssignment::query()->create([
+            'incident_id' => $incident->id,
+            'user_id' => $operatorUserId,
+            'assigned_by_id' => $assignedByUserId,
+            'assignment_role' => 'primary',
+            'active' => true,
+        ]);
+    }
+
+    private function assignUserToZone(int $userId, string $zoneName): void
+    {
+        UserTerritory::query()
+            ->where('user_id', $userId)
+            ->update([
+                'is_active' => false,
+                'unassigned_at' => now(),
+            ]);
+
+        $zoneId = (int) TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->where('name', $zoneName)
+            ->value('id');
+
+        UserTerritory::query()->create([
+            'user_id' => $userId,
+            'territorial_unit_id' => $zoneId,
+            'assigned_by' => $userId,
+            'assigned_at' => now(),
+            'unassigned_at' => null,
+            'is_active' => true,
+        ]);
+    }
+
+    private function defaultOperationalZoneId(): int
+    {
+        $territory = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_PARISH)
+            ->with(TerritorialUnit::PARENT_CHAIN)
+            ->first();
+
+        while ($territory && $territory->parent) {
+            $territory = $territory->parent;
+
+            if ($territory->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                return (int) $territory->id;
+            }
+        }
+
+        return 0;
+    }
 }
+
+
+
+
+

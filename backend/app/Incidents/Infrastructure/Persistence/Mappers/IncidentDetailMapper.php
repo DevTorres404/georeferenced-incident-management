@@ -22,6 +22,63 @@ final class IncidentDetailMapper
 
     public function fromModel(Incident $incident): IncidentDetailData
     {
+        $reporter = null;
+        if ($incident->relationLoaded('reporter') && $incident->reporter) {
+            $reporter = [
+                'name' => $incident->reporter->first_name . ' ' . $incident->reporter->last_name,
+                'email' => $incident->reporter->email,
+                'phone' => $incident->reporter->phone ?? 'Sin registro',
+                'type' => $incident->reporter->tieneRol('OPERADOR') ? 'Operador' : 'Ciudadano',
+            ];
+        }
+
+        $assignedOperator = null;
+        if ($incident->relationLoaded('currentAssignee') && $incident->currentAssignee) {
+            $op = $incident->currentAssignee;
+            $profile = \App\Operations\Infrastructure\Persistence\Models\OperatorProfile::where('user_id', $op->id)->first();
+            $assignment = \App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment::where('operator_user_id', $op->id)->active()->first();
+            $supervisor = $assignment ? $assignment->supervisor : null;
+
+            $assignedOperator = [
+                'name' => $op->first_name . ' ' . $op->last_name,
+                'supervisor_name' => $supervisor ? ($supervisor->first_name . ' ' . $supervisor->last_name) : 'Sin supervisor',
+                'active_incidents_count' => \App\Incidents\Infrastructure\Persistence\Models\Incident::where('current_assigned_id', $op->id)
+                    ->whereNotIn('state_id', [4, 5, 6, 7]) // Assuming typical closed states
+                    ->count(),
+                'workload_points' => 0, // Simplified for this view, or calculate if needed
+                'max_workload_points' => $profile ? $profile->max_workload_points : 20,
+            ];
+        }
+
+        $sla = null;
+        if ($incident->priority && $incident->created_at) {
+            $now = \Carbon\Carbon::now();
+            $maxTimeHours = $incident->priority->sla_hours ?? 24;
+            $dueDate = $incident->due_date ?? clone $incident->created_at->addHours($maxTimeHours);
+            
+            $elapsedMinutes = $incident->created_at->diffInMinutes($now);
+            $elapsedStr = floor($elapsedMinutes / 60) . 'h ' . ($elapsedMinutes % 60) . 'min';
+
+            $status = $now->greaterThan($dueDate) ? 'Fuera de tiempo' : 'Dentro del tiempo';
+            if ($incident->resolution_date) {
+                $status = 'Completado';
+            }
+
+            $lastStateChange = $incident->updated_at;
+            if ($incident->relationLoaded('stateHistory') && $incident->stateHistory->isNotEmpty()) {
+                $lastStateChange = $incident->stateHistory->first()->created_at;
+            }
+            $timeInStateMinutes = $lastStateChange->diffInMinutes($now);
+            $timeInStateStr = floor($timeInStateMinutes / 60) . 'h ' . ($timeInStateMinutes % 60) . 'min';
+
+            $sla = [
+                'max_time' => $maxTimeHours . 'h',
+                'elapsed_time' => $elapsedStr,
+                'status' => $status,
+                'time_in_state' => $timeInStateStr,
+            ];
+        }
+
         return new IncidentDetailData(
             id: (int) $incident->id,
             code: $incident->code,
@@ -55,6 +112,9 @@ final class IncidentDetailMapper
                     $incident->territorialUnit->full_path
                 )
                 : null,
+            reporter: $reporter,
+            assignedOperator: $assignedOperator,
+            sla: $sla,
             history: $incident->relationLoaded('stateHistory')
                 ? $incident->stateHistory->map(fn ($item) => $this->historyEntryMapper->fromModel($item))->all()
                 : [],
