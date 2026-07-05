@@ -72,7 +72,7 @@ function initAuthPage() {
 
   async function bootstrap() {
     if (window.location.protocol === 'file:') {
-      showAlert(el.loginAlert, 'Abre esta página desde http://localhost:5500 para que Firebase y el WebSocket funcionen.', 'danger');
+      showAlert(el.loginAlert, 'Abre esta página desde un servidor web para que Firebase, la API y el WebSocket funcionen correctamente.', 'danger');
       return;
     }
 

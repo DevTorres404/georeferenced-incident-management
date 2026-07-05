@@ -1,4 +1,4 @@
-import { subscribePrivateChannel } from '../../../core/realtime-client.js?v=20';
+import { subscribePrivateChannel } from '../../../core/realtime-client.js?v=21';
 
 async function subscribeToUserNotifications(user, onNotification) {
   const userId = user?.id || user?.user_id;

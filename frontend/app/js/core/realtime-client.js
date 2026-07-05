@@ -1,5 +1,5 @@
 import { API_URL, REVERB_APP_KEY, REVERB_HOST, REVERB_PORT, REVERB_SCHEME } from './config.js?v=20';
-import { getSession } from './auth-session.js?v=14';
+import { getSession } from './auth-session.js?v=15';
 
 const PUSHER_CDN = 'https://js.pusher.com/8.4.0/pusher.min.js';
 

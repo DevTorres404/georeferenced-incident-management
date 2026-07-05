@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Gestión de roles y permisos del Sistema de Gestión de Incidencias Georreferenciadas.">
   <title>Roles y permisos | Sistema de Incidencias</title>
 
   <!-- Google Font -->
@@ -16,7 +17,8 @@
   <!-- AdminLTE -->
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
   <!-- Estilos propios del sistema -->
-  <link rel="stylesheet" href="../css/app.css?v=58">
+  <link rel="stylesheet" href="../css/app.css?v=60">
+  <script src="../config/env.js?v=1"></script>
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -57,16 +59,20 @@
         }, 4000);
       </script>
 
-      <div class="content-header">
+      <!-- Page Header -->
+      <div class="content-header rp-page-header">
         <div class="container-fluid">
-          <div class="row mb-2">
-            <div class="col-sm-6">
-              <h1 class="m-0">
-                <i class="fas fa-user-shield text-primary mr-2"></i>Roles y permisos
+          <div class="d-flex align-items-end justify-content-between flex-wrap">
+            <div>
+              <span class="rp-page-eyebrow">
+                <i class="fas fa-shield-alt mr-1"></i>Control de acceso
+              </span>
+              <h1 class="rp-page-title">
+                <i class="fas fa-user-shield rp-page-title-icon"></i>Roles y permisos
               </h1>
-            </div>
-            <div class="col-sm-6 d-none d-sm-block">
-              <!-- Breadcrumbs removidos -->
+              <p class="rp-page-subtitle">
+                Define qué acciones puede ejecutar cada rol y qué pantallas aparecen en el menú.
+              </p>
             </div>
           </div>
         </div>
@@ -79,10 +85,12 @@
           <div class="row">
             <!-- Lista de roles -->
             <div class="col-md-4">
-              <div class="card shadow-sm border-0 rounded-3 mb-4 access-control-card">
-                <div class="card-header bg-white border-bottom">
-                  <span class="text-uppercase small text-primary font-weight-bold">Roles</span>
-                  <h3 class="card-title d-block mb-0 font-weight-bold text-main">Roles del sistema</h3>
+              <div class="card shadow-sm border-0 rounded-3 mb-4 access-control-card rp-roles-card">
+                <div class="card-header rp-card-header">
+                  <span class="rp-card-eyebrow">
+                    <i class="fas fa-id-badge mr-1"></i>Roles
+                  </span>
+                  <h3 class="card-title d-block mb-0 font-weight-bold">Roles del sistema</h3>
                   <p class="text-muted small mb-0">Selecciona un rol para revisar sus permisos.</p>
                 </div>
                 <div class="card-body p-0">
@@ -95,16 +103,18 @@
 
             <!-- Matriz de permisos -->
             <div class="col-md-8">
-              <div class="card shadow-sm border-0 rounded-3 mb-4 access-control-card">
-                <div class="card-header bg-white border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+              <div class="card shadow-sm border-0 rounded-3 mb-4 access-control-card rp-permissions-card">
+                <div class="card-header rp-card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
                   <div>
-                    <span class="text-uppercase small text-primary font-weight-bold">Permisos</span>
-                    <h3 class="card-title d-block mb-0 font-weight-bold text-main">Permisos asignados</h3>
+                    <span class="rp-card-eyebrow">
+                      <i class="fas fa-key mr-1"></i>Permisos
+                    </span>
+                    <h3 class="card-title d-block mb-0 font-weight-bold">Permisos asignados</h3>
                     <p class="text-muted small mb-0">Activa o desactiva acciones disponibles para el rol seleccionado.</p>
                   </div>
-                  <div class="card-tools">
-                    <button type="button" id="save-role-permissions-btn" class="btn btn-primary btn-sm">
-                      <i class="fas fa-save mr-1"></i> Guardar cambios
+                  <div class="card-tools mt-3 mt-md-0">
+                    <button type="button" id="save-role-permissions-btn" class="btn btn-primary rp-save-btn">
+                      <i class="fas fa-save mr-1"></i>Guardar cambios
                     </button>
                   </div>
                 </div>
@@ -137,8 +147,8 @@
     <!-- AdminLTE App -->
     <script src="../../dist/js/adminlte.min.js"></script>
     <!-- Módulos del sistema -->
-  <script type="module" src="../js/layout/layout.js?v=35"></script>
-    <script type="module" src="../js/modules/roles/presentation/role-permissions-page.js?v=24"></script>
+  <script type="module" src="../js/layout/layout.js?v=36"></script>
+    <script type="module" src="../js/modules/roles/presentation/role-permissions-page.js?v=25"></script>
 </body>
 
 </html>

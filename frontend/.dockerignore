@@ -1,0 +1,15 @@
+.git
+.github
+.cache
+.vscode
+.idea
+node_modules
+docs
+docs_html
+*.log
+*.zip
+*.bak
+*.backup
+.env
+.env.*
+!.env.example
