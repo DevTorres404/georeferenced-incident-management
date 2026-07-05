@@ -1,9 +1,13 @@
+/* ==========================================================================
+   Auditoria - Estilos Premium
+   ========================================================================== */
+
 .audit-log-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  padding: 18px 20px;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
 }
 
 .audit-log-header .card-title {
@@ -14,16 +18,23 @@
 .audit-log-summary {
   display: grid;
   grid-template-columns: repeat(2, minmax(92px, 1fr));
-  gap: 10px;
+  gap: 0.75rem;
   width: min(100%, 240px);
 }
 
 .audit-log-summary-item {
   min-height: 64px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #f8fafc 0%, #f0f9ff 100%);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.audit-log-summary-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .audit-log-summary-item span,
@@ -32,7 +43,7 @@
 }
 
 .audit-log-summary-item span {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #64748b);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.2;
@@ -40,7 +51,7 @@
 
 .audit-log-summary-item strong {
   margin-top: 4px;
-  color: var(--color-text-main);
+  color: var(--color-text-main, #0f172a);
   font-size: 1.1rem;
   line-height: 1;
 }
@@ -51,7 +62,7 @@
 }
 
 .audit-log-table th {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
   text-transform: uppercase;
 }
@@ -61,7 +72,7 @@
 }
 
 .audit-log-details summary {
-  color: var(--color-primary);
+  color: var(--color-primary, #0ea5e9);
   cursor: pointer;
   font-weight: 700;
 }
@@ -72,10 +83,10 @@
   margin: 6px 0 10px;
   padding: 10px;
   overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: #0f172a;
-  color: #e5eefb;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.75rem;
+  background: var(--color-text-main, #0f172a);
+  color: #e2e8f0;
   font-size: 0.78rem;
   white-space: pre-wrap;
 }
@@ -83,7 +94,7 @@
 .audit-log-json-label {
   display: inline-block;
   margin-top: 8px;
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #64748b);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;

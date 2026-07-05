@@ -1,304 +1,250 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Reportes y Estadísticas</title>
-  <meta name="description" content="Reportes y métricas del Sistema de Gestión de Incidencias Georreferenciadas">
+  <title>SGI | Reportes y Estadisticas</title>
+  <meta name="description"
+    content="Reportes y metricas del Sistema de Gestion de Incidencias Georreferenciadas">
 
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
   <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="../../plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
   <link rel="stylesheet" href="../../dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="../css/app.css?v=26">
-
-  <style>
-    .metric-card {
-      border-radius: 12px; padding: 22px 20px; color: #fff;
-      display: flex; align-items: center; gap: 18px;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.14);
-      /* Altura uniforme entre tarjetas de la misma fila */
-      height: 100%;
-      min-height: 110px;
-    }
-    .metric-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
-    .metric-icon { font-size: 2.6rem; opacity: 0.75; }
-    .metric-num  { font-size: 2.2rem; font-weight: 700; line-height: 1; }
-    .metric-lbl  { font-size: 0.84rem; opacity: 0.85; }
-    .metric-sub  { font-size: 0.75rem; opacity: 0.7; margin-top: 2px; }
-    .ranking-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 8px 0; border-bottom: 1px solid #f0f0f0;
-    }
-    .ranking-pos {
-      width: 28px; height: 28px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem; color: #fff;
-    }
-    .heat-cell {
-      display: inline-block; width: 30px; height: 30px;
-      border-radius: 4px; margin: 2px;
-      transition: transform 0.15s;
-    }
-    .heat-cell:hover { transform: scale(1.2); }
-    .export-btn { transition: all 0.2s; }
-    .export-btn:hover { transform: translateY(-2px); }
-  </style>
+  <link rel="stylesheet" href="../css/app.css?v=55">
+  <link rel="stylesheet" href="../css/pages/reports.css?v=2">
 </head>
+
 <body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
+  <div class="wrapper">
+    <div id="alertaGlobal" role="alert"></div>
 
-  <div id="alertaGlobal" role="alert"></div>
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
 
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+      <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center"
+        style="padding: 10px 15px;">
+        <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+          style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+        <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
+      </a>
+      <div id="mainSidebar"></div>
+    </aside>
 
-  <!-- Sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
-      <img src="../img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
-      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
-    </a>
-    <div id="mainSidebar"></div>
-  </aside>
-
-  <!-- Contenido principal -->
-  <div class="content-wrapper">
-    <!-- Pantalla de carga nativa -->
-    <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-      <div class="loader-orbit" aria-hidden="true">
-        <i class="fas fa-map-marker-alt"></i>
+    <div class="content-wrapper reports-wrapper">
+      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+        <div class="loader-orbit" aria-hidden="true">
+          <i class="fas fa-map-marker-alt"></i>
+        </div>
       </div>
-    </div>
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">
-              <i class="fas fa-chart-bar text-primary mr-2"></i>Reportes y Estadísticas
-            </h1>
-          </div>
-          <div class="col-sm-6 d-none d-sm-block">
-            <!-- Breadcrumbs removidos -->
+
+      <div class="content-header reports-header">
+        <div class="container-fluid">
+          <div class="row align-items-center">
+            <div class="col">
+              <h1 class="m-0">
+                <i class="fas fa-chart-bar text-primary mr-2"></i>Reportes y Estadisticas
+              </h1>
+              <p class="text-muted mb-0 mt-1" style="font-size:0.88rem;">Analiza el rendimiento del
+                sistema, tendencias de incidencias e indicadores de eficiencia operativa.</p>
+            </div>
+            <div class="col-auto d-none d-md-block">
+              <span class="badge badge-info px-3 py-2"><i class="fas fa-sync-alt mr-1"></i>Datos en
+                tiempo real</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="content">
-      <div class="container-fluid">
+      <div class="content">
+        <div class="container-fluid">
 
-        <!-- ===== FILTRO DE PERÍODO ===== -->
-        <div class="card shadow-sm border-0 rounded-3 mb-4">
-          <div class="card-body py-2">
-            <form class="form-inline" id="filtroReporte">
-              <label class="mr-2 font-weight-bold">Desde:</label>
-              <input type="date" class="form-control form-control-sm mr-2" id="fFechaInicial" name="fecha_inicial">
-              <label class="mr-2 font-weight-bold">Hasta:</label>
-              <input type="date" class="form-control form-control-sm mr-2" id="fFechaFinal" name="fecha_final">
-              
-              <label class="mr-2 font-weight-bold">Tipo:</label>
-              <select class="form-control form-control-sm mr-2" id="selectTipoFiltro">
-                <option value="">Todos los tipos</option>
-                <option value="infraestructura">Infraestructura</option>
-                <option value="seguridad">Seguridad</option>
-                <option value="ambiental">Ambiental</option>
-                <option value="servicios">Servicios Públicos</option>
-                <option value="social">Social</option>
-              </select>
-              <button type="button" class="btn btn-sm btn-primary mr-2" id="btnFiltrar">
-                <i class="fas fa-filter mr-1"></i>Filtrar
+          <!-- FILTRO DE PERIODO -->
+          <form class="reports-filter-bar mb-4" id="filtroReporte">
+            <label>Desde:</label>
+            <input type="date" class="form-control form-control-sm" id="fFechaInicial" name="fecha_inicial"
+              style="width:150px;">
+            <label>Hasta:</label>
+            <input type="date" class="form-control form-control-sm" id="fFechaFinal" name="fecha_final"
+              style="width:150px;">
+            <label>Categoria:</label>
+            <select class="form-control form-control-sm" id="selectTipoFiltro" style="width:160px;">
+              <option value="">Todas las categorias</option>
+            </select>
+            <label>Estado:</label>
+            <select class="form-control form-control-sm" id="selectEstadoFiltro" style="width:160px;">
+              <option value="">Todos los estados</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-primary" id="btnFiltrar">
+              <i class="fas fa-filter mr-1"></i>Filtrar
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btnLimpiarFiltros">
+              <i class="fas fa-undo mr-1"></i>Limpiar
+            </button>
+            <div class="reports-filter-actions">
+              <button type="button" class="btn btn-sm btn-outline-success" id="btnExportExcel">
+                <i class="fas fa-file-excel mr-1"></i>Excel
               </button>
-              <div class="ml-auto d-flex" style="gap:8px;">
-                <button type="button" class="btn btn-sm btn-outline-success export-btn" onclick="mostrarAlerta('Exportación a Excel simulada correctamente.','success')">
-                  <i class="fas fa-file-excel mr-1"></i>Excel
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-danger export-btn" onclick="mostrarAlerta('Exportación a PDF simulada correctamente.','info')">
-                  <i class="fas fa-file-pdf mr-1"></i>PDF
-                </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" id="btnExportPDF">
+                <i class="fas fa-file-pdf mr-1"></i>PDF
+              </button>
+            </div>
+          </form>
+
+          <section class="reports-brief-card mb-4">
+            <div class="reports-brief-header">
+              <div>
+                <h3><i class="fas fa-analytics mr-2"></i>Lectura ejecutiva</h3>
+                <p class="mb-0">Resumen corto del comportamiento operativo segun los filtros activos.</p>
               </div>
-            </form>
-          </div>
-        </div>
+            </div>
+            <div class="reports-brief-grid" id="reportInsightCards"></div>
+            <div class="reports-brief-narrative" id="reportInsightNarrative"></div>
+          </section>
 
-        <!-- ===== KPI CARDS ===== -->
-        <div class="row" id="kpiCards"></div>
+          <!-- KPI CARDS -->
+          <div class="reports-kpi-grid mb-4" id="kpiCards"></div>
 
-        <!-- ===== FILA 2: Gráficos principales ===== -->
-        <div class="row">
-
-          <!-- Gráfico: Incidencias por mes y tipo (Bar apilado) -->
-          <div class="col-lg-8">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-chart-bar mr-2"></i>Incidencias por Mes y Tipo
-                </h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+          <!-- FILA 2: Graficos principales -->
+          <div class="row mb-4">
+            <div class="col-lg-8">
+              <div class="reports-chart-card">
+                <div class="reports-chart-header">
+                  <h3><i class="fas fa-chart-bar mr-1"></i>Incidencias por Mes y Tipo</h3>
+                  <button type="button" class="btn btn-sm btn-tool" data-card-widget="collapse">
                     <i class="fas fa-minus"></i>
                   </button>
                 </div>
-              </div>
-              <div class="card-body">
-                <canvas id="graficoMesTipo" style="max-height:300px;"></canvas>
+                <div class="reports-chart-body">
+                  <canvas id="graficoMesTipo" style="max-height:300px;"></canvas>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Gráfico: Distribución por prioridad (Radar) -->
-          <div class="col-lg-4">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-chart-pie mr-2"></i>Distribución por Prioridad
-                </h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+            <div class="col-lg-4">
+              <div class="reports-chart-card">
+                <div class="reports-chart-header">
+                  <h3><i class="fas fa-chart-pie mr-1"></i>Distribucion por Prioridad</h3>
+                  <button type="button" class="btn btn-sm btn-tool" data-card-widget="collapse">
                     <i class="fas fa-minus"></i>
                   </button>
                 </div>
-              </div>
-              <div class="card-body">
-                <canvas id="graficoPrioridad" style="max-height:300px;"></canvas>
+                <div class="reports-chart-body">
+                  <canvas id="graficoPrioridad" style="max-height:300px;"></canvas>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ===== FILA 3: Tasa de resolución + Tiempo respuesta ===== -->
-        <div class="row">
-
-          <!-- Tasa de resolución mensual (Line) -->
-          <div class="col-lg-6">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-chart-line mr-2"></i>Tasa de Resolución Mensual (%)
-                </h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+          <!-- FILA 3: Tasa de resolucion + Tiempo respuesta -->
+          <div class="row mb-4">
+            <div class="col-lg-6">
+              <div class="reports-chart-card">
+                <div class="reports-chart-header">
+                  <h3><i class="fas fa-chart-line mr-1"></i>Tasa de Resolucion Mensual (%)</h3>
+                  <button type="button" class="btn btn-sm btn-tool" data-card-widget="collapse">
                     <i class="fas fa-minus"></i>
                   </button>
                 </div>
-              </div>
-              <div class="card-body">
-                <canvas id="graficoTasa" style="max-height:240px;"></canvas>
+                <div class="reports-chart-body">
+                  <canvas id="graficoTasa" style="max-height:240px;"></canvas>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Tiempo promedio de resolución por tipo (Horizontal bar) -->
-          <div class="col-lg-6">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-clock mr-2"></i>Tiempo Promedio de Resolución (días)
-                </h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+            <div class="col-lg-6">
+              <div class="reports-chart-card">
+                <div class="reports-chart-header">
+                  <h3><i class="fas fa-clock mr-1"></i>Tiempo Promedio de Resolucion (dias)</h3>
+                  <button type="button" class="btn btn-sm btn-tool" data-card-widget="collapse">
                     <i class="fas fa-minus"></i>
                   </button>
                 </div>
-              </div>
-              <div class="card-body">
-                <canvas id="graficoTiempo" style="max-height:240px;"></canvas>
+                <div class="reports-chart-body">
+                  <canvas id="graficoTiempo" style="max-height:240px;"></canvas>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- ===== FILA 4: Rankings + Tabla resumen ===== -->
-        <div class="row">
-
-          <!-- Ranking de ciudades -->
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-trophy mr-2 text-warning"></i>Top Ciudades</h3>
+          <!-- FILA 4: Rankings + Eficiencia -->
+          <div class="row mb-4">
+            <div class="col-lg-4">
+              <div class="reports-ranking-card">
+                <div class="reports-ranking-header">
+                  <i class="fas fa-trophy text-warning"></i>
+                  <h3>Top Ciudades</h3>
+                </div>
+                <div class="reports-ranking-body" id="rankingCiudades"></div>
               </div>
-              <div class="card-body" id="rankingCiudades"></div>
+            </div>
+            <div class="col-lg-4">
+              <div class="reports-ranking-card">
+                <div class="reports-ranking-header">
+                  <i class="fas fa-list-ol text-info"></i>
+                  <h3>Top Tipos</h3>
+                </div>
+                <div class="reports-ranking-body" id="rankingTipos"></div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="reports-efficiency-card">
+                <div class="reports-efficiency-header">
+                  <i class="fas fa-tachometer-alt text-success"></i>
+                  <h3>Indicadores de Eficiencia</h3>
+                </div>
+                <div class="reports-efficiency-body" id="indicadoresEficiencia"></div>
+              </div>
             </div>
           </div>
 
-          <!-- Ranking de tipos -->
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-list-ol mr-2 text-info"></i>Top Tipos</h3>
-              </div>
-              <div class="card-body" id="rankingTipos"></div>
-            </div>
-          </div>
-
-          <!-- Indicadores de eficiencia -->
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-tachometer-alt mr-2 text-success"></i>Indicadores de Eficiencia</h3>
-              </div>
-              <div class="card-body" id="indicadoresEficiencia"></div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ===== TABLA RESUMEN ===== -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-3 mb-4">
-              <div class="card-header">
-                <h3 class="card-title"><i class="fas fa-table mr-2"></i>Resumen de Incidencias por Estado y Tipo</h3>
-                <div class="card-tools">
-                  <button type="button" class="btn btn-tool" data-card-widget="collapse">
+          <!-- TABLA RESUMEN -->
+          <div class="row">
+            <div class="col-12">
+              <div class="reports-summary-card">
+                <div class="reports-summary-header">
+                  <h3><i class="fas fa-table mr-1"></i>Resumen de Incidencias por Estado y Tipo</h3>
+                  <button type="button" class="btn btn-sm btn-tool" data-card-widget="collapse">
                     <i class="fas fa-minus"></i>
                   </button>
                 </div>
-              </div>
-              <div class="card-body p-0">
                 <div class="table-responsive">
-                  <table class="table table-bordered table-sm mb-0">
-                    <thead class="thead-dark">
+                  <table class="reports-table mb-0">
+                    <thead>
                       <tr>
                         <th>Tipo</th>
                         <th class="text-center">Pendiente</th>
                         <th class="text-center">En Proceso</th>
                         <th class="text-center">Resuelta</th>
                         <th class="text-center">Total</th>
-                        <th>% Resolución</th>
+                        <th style="min-width:140px;">% Resolucion</th>
                       </tr>
                     </thead>
                     <tbody id="tablaResumen"></tbody>
-                    <tfoot class="bg-light font-weight-bold" id="tablaResumenTotal"></tfoot>
+                    <tfoot id="tablaResumenTotal"></tfoot>
                   </table>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-      </div><!-- /.container-fluid -->
-    </div><!-- /.content -->
-  </div><!-- /.content-wrapper -->
+        </div>
+      </div>
+    </div>
 
     <footer class="main-footer text-sm">
-    <div class="float-right d-none d-sm-inline">
-      Versión 1.0.0
-    </div>
-    <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
-  </footer>
-  <aside class="control-sidebar control-sidebar-dark"></aside>
-</div>
+      <div class="float-right d-none d-sm-inline">Version 1.0.0</div>
+      <strong>Sistema de Gestion de Incidencias Georreferenciadas (SGI)</strong>
+    </footer>
+  </div>
 
-<!-- Scripts -->
-<script src="../../plugins/jquery/jquery.min.js"></script>
-<script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-<script src="../../plugins/chart.js/Chart.min.js"></script>
-<script src="../../dist/js/adminlte.min.js"></script>
-<script type="module" src="../js/layout/layout.js?v=22"></script>
-
-<script type="module" src="../js/modules/reports/presentation/reports-page.js?v=20"></script>
+  <script src="../../plugins/jquery/jquery.min.js"></script>
+  <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="../../plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+  <script src="../../plugins/chart.js/Chart.min.js"></script>
+  <script src="../../dist/js/adminlte.min.js"></script>
+  <script type="module" src="../js/layout/layout.js?v=27"></script>
+  <script type="module" src="../js/modules/reports/presentation/reports-page.js?v=24"></script>
 </body>
+
 </html>

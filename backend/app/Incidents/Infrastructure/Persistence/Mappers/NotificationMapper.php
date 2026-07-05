@@ -12,6 +12,7 @@ final class NotificationMapper
         return new NotificationData(
             id: (int) $notification->id,
             userId: (int) $notification->user_id,
+            incidentId: $notification->incident_id ? (int) $notification->incident_id : null,
             title: $notification->title,
             message: $notification->message,
             type: $notification->type,

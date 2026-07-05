@@ -1,10 +1,14 @@
+/* ==========================================================================
+   Mapa de Incidencias - Estilos Premium
+   ========================================================================== */
+
 .incidents-map {
   position: relative;
   min-height: 620px;
   width: 100%;
   overflow: hidden;
-  border-radius: 6px;
-  background: #eef5f8;
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%);
 }
 
 .incident-map-list-card {
@@ -19,6 +23,11 @@
 .incident-map-list .list-group-item {
   border-left: 0;
   border-right: 0;
+  transition: background-color 0.2s ease;
+}
+
+.incident-map-list .list-group-item:hover {
+  background-color: rgba(14, 165, 233, 0.04);
 }
 
 .incident-map-marker {
@@ -33,22 +42,27 @@
   outline: 0;
   appearance: none;
   -webkit-appearance: none;
+  transition: transform 0.2s ease;
+}
+
+.incident-map-marker:hover {
+  transform: scale(1.2);
 }
 
 .incident-map-marker.is-critical {
-  background: #dc3545;
+  background: var(--color-critica, #dc3545);
 }
 
 .incident-map-marker.is-high {
-  background: #fd7e14;
+  background: var(--color-alta, #fd7e14);
 }
 
 .incident-map-marker.is-medium {
-  background: #17a2b8;
+  background: var(--color-proceso, #0ea5e9);
 }
 
 .incident-map-marker.is-low {
-  background: #28a745;
+  background: var(--color-resuelta, #28a745);
 }
 
 .incident-map-popup {
@@ -68,7 +82,7 @@
 }
 
 .incident-map-popup dt {
-  color: #6c757d;
+  color: var(--color-text-muted, #64748b);
   font-weight: 600;
 }
 
@@ -85,12 +99,12 @@
   gap: 10px;
   padding: 24px;
   text-align: center;
-  color: #38505f;
-  background: linear-gradient(135deg, #eef7fb 0%, #f7fbfc 100%);
+  color: var(--color-text-muted, #64748b);
+  background: linear-gradient(160deg, #f0f9ff 0%, #f8fafc 100%);
 }
 
 .map-empty-state i {
-  color: #17a2b8;
+  color: var(--color-primary, #0ea5e9);
   font-size: 3rem;
 }
 
@@ -98,10 +112,10 @@
   position: relative;
   min-height: 320px;
   width: 100%;
-  border: 1px solid #d8e3e8;
-  border-radius: 6px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
   overflow: hidden;
-  background: #eef5f8;
+  background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%);
 }
 
 .coordinate-picker-map-lg {
@@ -121,25 +135,32 @@
   gap: 4px;
   padding: 4px;
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(56, 80, 95, 0.16);
-  border-radius: 6px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.75rem;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 
 .map-layer-switcher button {
   border: 0;
-  border-radius: 4px;
+  border-radius: 0.5rem;
   background: transparent;
-  color: #38505f;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1;
   padding: 8px 10px;
+  transition: all 0.2s ease;
+}
+
+.map-layer-switcher button:hover {
+  background: rgba(14, 165, 233, 0.1);
+  color: var(--color-primary, #0ea5e9);
 }
 
 .map-layer-switcher button.is-active {
-  background: #17a2b8;
+  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
   color: #fff;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 @media (max-width: 767.98px) {

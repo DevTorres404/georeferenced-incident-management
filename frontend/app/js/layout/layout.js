@@ -1,4 +1,4 @@
-import { buildSidebarHtml } from './sidebar.js?v=20';
+import { buildSidebarHtml } from './sidebar.js?v=23';
 import { buildTopbarHtml } from './topbar.js?v=20';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
@@ -12,16 +12,45 @@ import { subscribeToUserNotifications } from '../modules/notifications/applicati
 window.SGINavigationStore = {
   NAV_STATE_KEY: 'SGI_nav_state',
   menuItems: [
-    { id: 'dashboard', label: 'Panel principal', icon: 'fa-tachometer-alt', href: 'dashboard.html', permission: 'dashboard.view' },
-    { id: 'incidents', label: 'Incidencias', icon: 'fa-list-alt', href: 'incidents.html', permission: 'incidents.view' },
-    { id: 'assignment-management', label: 'Gestion de asignaciones', icon: 'fa-tasks', href: 'assignment-management.html', permission: 'incidents.assign' },
-    { id: 'incident-map', label: 'Mapa de incidencias', icon: 'fa-map-marked-alt', href: 'incident-map.html', permission: 'incidents.view' },
-    { id: 'incident-create', label: 'Nueva incidencia', icon: 'fa-plus-circle', href: 'incident-create.html', permission: 'incidents.create' },
-    { id: 'operational-structure', label: 'Operacion nacional', icon: 'fa-network-wired', href: 'operational-structure.html', permission: 'operations.view' },
-    { id: 'role-permissions', label: 'Roles y permisos', icon: 'fa-user-shield', href: 'role-permissions.html', permission: 'users.manage_roles' },
-    { id: 'user-roles', label: 'Usuarios y roles', icon: 'fa-user-tag', href: 'user-roles.html', permission: 'users.manage_roles' },
-    { id: 'reports', label: 'Reportes', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' },
-    { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view' }
+    {
+      id: 'workspace',
+      label: 'Centro operativo',
+      icon: 'fa-th-large',
+      children: [
+        { id: 'dashboard', label: 'Panel principal', icon: 'fa-tachometer-alt', href: 'dashboard.html', permission: 'dashboard.view' },
+        { id: 'reports', label: 'Reportes y estadisticas', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' },
+        { id: 'notifications', label: 'Notificaciones', icon: 'fa-bell', href: 'notifications.html', permission: 'dashboard.view' },
+      ],
+    },
+    {
+      id: 'incident-hub',
+      label: 'Gestion de incidencias',
+      icon: 'fa-exclamation-circle',
+      children: [
+        { id: 'incidents', label: 'Listado general', icon: 'fa-list-alt', href: 'incidents.html', permission: 'incidents.view' },
+        { id: 'assignment-management', label: 'Gestion de asignaciones', icon: 'fa-tasks', href: 'assignment-management.html', permission: 'incidents.assign' },
+        { id: 'incident-map', label: 'Mapa de incidencias', icon: 'fa-map-marked-alt', href: 'incident-map.html', permission: 'incidents.view' },
+        { id: 'incident-create', label: 'Nueva incidencia', icon: 'fa-plus-circle', href: 'incident-create.html', permission: 'incidents.create' },
+      ],
+    },
+    {
+      id: 'territorial-ops',
+      label: 'Cobertura nacional',
+      icon: 'fa-network-wired',
+      children: [
+        { id: 'operational-structure', label: 'Operacion nacional', icon: 'fa-draw-polygon', href: 'operational-structure.html', permission: 'operations.view' },
+      ],
+    },
+    {
+      id: 'admin-tools',
+      label: 'Administracion',
+      icon: 'fa-shield-alt',
+      children: [
+        { id: 'role-permissions', label: 'Roles y permisos', icon: 'fa-user-shield', href: 'role-permissions.html', permission: 'users.manage_roles' },
+        { id: 'user-roles', label: 'Usuarios y roles', icon: 'fa-user-tag', href: 'user-roles.html', permission: 'users.manage_roles' },
+        { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view' },
+      ],
+    },
   ],
   pagePermissions: {
     about: 'about.view',
@@ -36,12 +65,11 @@ window.SGINavigationStore = {
     'role-permissions': 'users.manage_roles',
     'user-roles': 'users.manage_roles',
     reports: 'reportes.ver',
+    notifications: 'dashboard.view',
     'audit-logs': 'audit.view',
   },
   getAuthorizedMenu: function () {
-    return this.menuItems.filter((item) => {
-      return !item.permission || hasPermission(item.permission);
-    });
+    return filterAuthorizedMenuItems(this.menuItems);
   },
   startNavigation: function (href) {
     sessionStorage.setItem(this.NAV_STATE_KEY, JSON.stringify({ inProgress: true, target: href, timestamp: Date.now() }));
@@ -135,7 +163,7 @@ function formatUserRoles(user) {
   return roles.length ? roles.join(', ') : 'Sin rol asignado';
 }
 function getAvailableMenus() {
-  return window.SGINavigationStore.getAuthorizedMenu();
+  return flattenMenuItems(window.SGINavigationStore.getAuthorizedMenu());
 }
 function getPagePermission(activeId) {
   return window.SGINavigationStore.pagePermissions?.[activeId] || null;
@@ -360,56 +388,119 @@ function startRealtimeNotifications(user) {
 
 function renderBetterNavbarNotifications(count, notifications) {
   const badge = document.getElementById('navbarNotificationsBadge');
-  const header = document.getElementById('navbarNotificationsHeader');
+  const badgeCount = document.getElementById('navbarNotificationsBadgeCount');
   const list = document.getElementById('navbarNotificationsList');
+  const btnMarkAll = document.getElementById('btnMarkAllRead');
+
   if (badge) {
-    badge.textContent = String(count);
+    badge.textContent = count > 99 ? '99+' : String(count);
     badge.style.display = count > 0 ? 'inline-block' : 'none';
   }
-  if (header) {
-    header.textContent = count === 1 ? '1 notificación pendiente' : `${count} notificaciones pendientes`;
+  if (badgeCount) {
+    badgeCount.textContent = String(count);
+    badgeCount.style.display = count > 0 ? 'inline-block' : 'none';
   }
+  if (btnMarkAll) {
+    btnMarkAll.style.display = count > 0 ? 'block' : 'none';
+  }
+
   if (!list) return;
+
   if (!notifications.length) {
-    list.innerHTML = html`
-      <span class="dropdown-item text-muted">
-        <i class="far fa-bell-slash mr-2"></i>Sin notificaciones
-      </span>`;
+    list.innerHTML = `
+      <div class="sgi-notif-empty">
+        <i class="far fa-bell-slash"></i>
+        <span>Sin notificaciones nuevas</span>
+      </div>`;
     return;
   }
-  list.innerHTML = html`${notifications.map((notification) => `
-    <button type="button" class="dropdown-item text-left border-0 bg-transparent js-notification-item" data-notification-id="${escapeHtml(notification.id)}">
-      <i class="fas ${escapeHtml(getNotificationIcon(notification.type))} mr-2 ${escapeHtml(getNotificationColor(notification.type))}"></i>
-      <span>${escapeHtml(notification.title || notification.message || 'Notificación')}</span>
-      <span class="float-right text-muted text-sm">${escapeHtml(formatRelativeTime(notification.created_at || notification.createdAt))}</span>
-    </button>
-    <div class="dropdown-divider"></div>`)}`;
+
+  list.innerHTML = notifications.map((notification) => {
+    const isUnread = !notification.is_read && !notification.isRead;
+    const iconClass = getNotificationIconClass(notification.type);
+    const typeClass = getNotificationTypeClass(notification.type);
+    const time = formatRelativeTime(notification.created_at || notification.createdAt);
+
+    return `
+      <button type="button" class="sgi-notif-item ${isUnread ? 'is-unread' : ''} js-notification-item"
+              data-notification-id="${escapeHtml(String(notification.id))}"
+              data-incident-id="${escapeHtml(String(notification.incident_id ?? notification.incidentId ?? ''))}">
+        <div class="sgi-notif-icon ${typeClass}">
+          <i class="fas ${iconClass}"></i>
+        </div>
+        <div class="sgi-notif-body">
+          <span class="sgi-notif-title">${escapeHtml(notification.title || 'Notificacion')}</span>
+          <span class="sgi-notif-message">${escapeHtml(notification.message || '')}</span>
+        </div>
+        <span class="sgi-notif-time">${escapeHtml(time)}</span>
+      </button>`;
+  }).join('');
+
   if (window.SGIDomUtils?.delegateEvent) {
     window.SGIDomUtils.delegateEvent(list, '.js-notification-item', 'click', async (e, item) => {
       const id = item.dataset.notificationId;
+      const incidentId = item.dataset.incidentId;
       if (!id) return;
       try {
         await mutateBackend(`/notifications/${id}/read`, { method: 'PATCH' });
-        await loadNavbarNotifications(true);
+        item.style.transition = 'opacity 0.25s ease, max-height 0.25s ease, padding 0.25s ease';
+        item.style.opacity = '0';
+        item.style.maxHeight = '0';
+        item.style.paddingTop = '0';
+        item.style.paddingBottom = '0';
+        item.style.overflow = 'hidden';
+        setTimeout(() => item.remove(), 260);
+        const currentCount = Math.max((parseInt(badge?.textContent || '0', 10) || 1) - 1, 0);
+        if (badge) {
+          badge.textContent = currentCount > 99 ? '99+' : String(currentCount);
+          badge.style.display = currentCount > 0 ? 'inline-block' : 'none';
+        }
+        if (badgeCount) {
+          badgeCount.textContent = String(currentCount);
+          badgeCount.style.display = currentCount > 0 ? 'inline-block' : 'none';
+        }
+        if (btnMarkAll) {
+          btnMarkAll.style.display = currentCount > 0 ? 'block' : 'none';
+        }
+        if (currentCount === 0 && list) {
+          list.innerHTML = `
+            <div class="sgi-notif-empty">
+              <i class="far fa-bell-slash"></i>
+              <span>Sin notificaciones nuevas</span>
+            </div>`;
+        }
+        if (incidentId) {
+          window.location.href = `incident-detail.html?id=${incidentId}`;
+        }
       } catch {
         showLayoutMessage('No se pudo marcar la notificacion como leida.', 'danger');
       }
     });
   }
 }
-function getNotificationIcon(type) {
+function getNotificationIconClass(type) {
   const value = String(type || '').toLowerCase();
-  if (value.includes('success') || value.includes('resolved')) return 'fa-check-circle';
+  if (value.includes('assigned') || value.includes('asign')) return 'fa-user-check';
+  if (value.includes('status') || value.includes('cambio')) return 'fa-sync-alt';
+  if (value.includes('closed') || value.includes('resolved') || value.includes('resuelta')) return 'fa-check-circle';
+  if (value.includes('comment') || value.includes('comentario')) return 'fa-comment-dots';
+  if (value.includes('overdue') || value.includes('vencida')) return 'fa-exclamation-triangle';
   if (value.includes('warning')) return 'fa-clock';
-  if (value.includes('error') || value.includes('danger')) return 'fa-exclamation-circle';
+  if (value.includes('error') || value.includes('danger')) return 'fa-times-circle';
   return 'fa-info-circle';
 }
-function getNotificationColor(type) {
+
+function getNotificationTypeClass(type) {
   const value = String(type || '').toLowerCase();
-  if (value.includes('success') || value.includes('resolved')) return 'text-success';
-  if (value.includes('warning')) return 'text-warning';
-  if (value.includes('error') || value.includes('danger')) return 'text-danger';
-  return 'text-info';
+  if (value.includes('assigned') || value.includes('asign')) return 'type-assigned';
+  if (value.includes('closed') || value.includes('resolved') || value.includes('resuelta')) return 'type-closed';
+  if (value.includes('status') || value.includes('cambio')) return 'type-info';
+  if (value.includes('comment') || value.includes('comentario')) return 'type-info';
+  if (value.includes('overdue') || value.includes('vencida')) return 'type-warning';
+  if (value.includes('warning')) return 'type-warning';
+  if (value.includes('error') || value.includes('danger')) return 'type-danger';
+  if (value.includes('success')) return 'type-success';
+  return 'type-info';
 }
 function formatRelativeTime(value) {
   const timestamp = new Date(value || '').getTime();
@@ -432,30 +523,81 @@ function showLayoutMessage(message, type = 'success') {
   }, 3500);
 }
 /**
- * Alerta global unificada con icono y botón de cierre.
- * Se expone como window.showGlobalAlert para que backend-client.js y otros módulos la usen.
+ * Toast premium unificado con icono, barra de progreso y cierre.
+ * Se expone como window.showGlobalAlert para que backend-client.js y otros modulos la usen.
  */
-function showGlobalAlert(message, type = 'success') {
-  const target = document.getElementById('alertaGlobal');
-  if (!target) {
-    console.warn('[SGI] showGlobalAlert: elemento #alertaGlobal no encontrado.');
-    return;
+function showGlobalAlert(message, type = 'success', title = '') {
+  let stack = document.querySelector('.sgi-toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.className = 'sgi-toast-stack';
+    document.body.appendChild(stack);
   }
+
   const icons = {
-    success: 'check-circle',
-    danger: 'times-circle',
-    warning: 'exclamation-triangle',
-    info: 'info-circle',
+    success: 'fa-check-circle',
+    danger: 'fa-times-circle',
+    warning: 'fa-exclamation-triangle',
+    info: 'fa-info-circle',
   };
-  target.className = `alert alert-${type} alert-dismissible fade show`;
-  target.innerHTML = `<i class="fas fa-${icons[type] || 'info-circle'} mr-2"></i>${escapeHtml(message)}<button type="button" class="close" data-dismiss="alert" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>`;
-  target.style.display = 'block';
-  window.setTimeout(() => {
-    target.style.display = 'none';
-  }, 5000);
+
+  const titles = {
+    success: 'Operacion exitosa',
+    danger: 'Error',
+    warning: 'Atencion',
+    info: 'Notificacion',
+  };
+
+  const toast = document.createElement('div');
+  toast.className = 'sgi-toast';
+  toast.innerHTML = `
+    <div class="sgi-toast-icon toast-${type}">
+      <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
+    </div>
+    <div class="sgi-toast-body">
+      <span class="sgi-toast-title">${escapeHtml(title || titles[type] || 'Notificacion')}</span>
+      <span class="sgi-toast-message">${escapeHtml(message)}</span>
+    </div>
+    <button type="button" class="sgi-toast-close" aria-label="Cerrar">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="sgi-toast-progress">
+      <div class="sgi-toast-progress-fill" style="width:100%;"></div>
+    </div>
+  `;
+
+  stack.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      toast.classList.add('is-visible');
+    });
+  });
+
+  const duration = 5000;
+  const progressFill = toast.querySelector('.sgi-toast-progress-fill');
+  if (progressFill) {
+    progressFill.style.transitionDuration = `${duration}ms`;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        progressFill.style.width = '0%';
+      });
+    });
+  }
+
+  const dismiss = () => {
+    toast.classList.remove('is-visible');
+    toast.classList.add('is-leaving');
+    setTimeout(() => toast.remove(), 400);
+  };
+
+  toast.querySelector('.sgi-toast-close')?.addEventListener('click', dismiss);
+  setTimeout(dismiss, duration);
 }
-// Exposición global para que backend-client.js y otros módulos externos puedan usarla
+// Exposicion global para que backend-client.js y otros modulos externos puedan usarla
 window.showGlobalAlert = showGlobalAlert;
+window.requestBackend = requestBackend;
+window.mutateBackend = mutateBackend;
 
 
 async function renderLayout(activeId = '') {
@@ -469,7 +611,7 @@ async function renderLayout(activeId = '') {
 
   // Ruteo de Accesos por Permisos
   const menuItems = window.SGINavigationStore.getAuthorizedMenu();
-  const currentItem = window.SGINavigationStore.menuItems.find(i => i.id === activeId);
+  const currentItem = flattenMenuItems(window.SGINavigationStore.menuItems).find(i => i.id === activeId);
   if (activeId === 'territorial-units') {
     window.location.href = 'operational-structure.html';
     return;
@@ -514,9 +656,35 @@ async function renderLayout(activeId = '') {
       const link = e.target.closest('a.nav-link');
       if (!link) return;
       
+      const navItem = link.closest('.nav-item.has-treeview');
       const href = link.getAttribute('href');
-      if (!href || href === '#' || href.startsWith('javascript:')) return;
-      
+      if (!href || href.startsWith('javascript:')) return;
+
+      if (link.dataset.menuToggle === 'true' || href === '#') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        if (navItem) {
+          const isOpen = navItem.classList.contains('menu-open');
+          const siblingItems = Array.from(navItem.parentElement?.children || [])
+            .filter((item) => item !== navItem && item.classList?.contains('has-treeview'));
+
+          siblingItems.forEach((item) => {
+            const siblingLink = Array.from(item.children || []).find((child) => child.classList?.contains('nav-link'));
+            item.classList.remove('menu-open');
+            siblingLink?.classList.remove('active');
+            siblingLink?.setAttribute('aria-expanded', 'false');
+          });
+
+          navItem.classList.toggle('menu-open', !isOpen);
+          link.classList.toggle('active', !isOpen);
+          link.setAttribute('aria-expanded', String(!isOpen));
+        }
+
+        return;
+      }
+
       e.preventDefault();
       
       // Evitar recargar la misma página si ya estamos en ella
@@ -600,3 +768,28 @@ async function renderLayout(activeId = '') {
   }
 }
 window.renderLayout = renderLayout;
+
+function filterAuthorizedMenuItems(items = []) {
+  return items.reduce((result, item) => {
+    const children = Array.isArray(item.children) ? filterAuthorizedMenuItems(item.children) : [];
+    const canViewItem = !item.permission || hasPermission(item.permission);
+
+    if (children.length) {
+      result.push({ ...item, children });
+      return result;
+    }
+
+    if (canViewItem) {
+      result.push({ ...item });
+    }
+
+    return result;
+  }, []);
+}
+
+function flattenMenuItems(items = []) {
+  return items.flatMap((item) => {
+    const children = Array.isArray(item.children) ? flattenMenuItems(item.children) : [];
+    return item.href ? [{ ...item, children: undefined }, ...children] : children;
+  });
+}

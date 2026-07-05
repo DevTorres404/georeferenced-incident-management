@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'user_id',
+    'incident_id',
     'title',
     'message',
     'type',

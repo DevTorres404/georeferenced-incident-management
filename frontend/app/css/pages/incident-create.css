@@ -11,12 +11,6 @@
   padding-bottom: 4px;
 }
 
-.incident-create-header h1 {
-  color: var(--color-text-main, #0f172a);
-  font-weight: 800;
-  font-size: 1.4rem;
-}
-
 .incident-create-header p {
   font-size: 0.88rem;
 }

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Gestión de Incidencias - Estilos Premium
+   Gestion de Incidencias - Estilos Premium
    ========================================================================== */
 
 .inc-kpi-grid {
@@ -14,7 +14,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   padding: 1.25rem 1.5rem;
@@ -30,7 +30,7 @@
 
 .inc-kpi-card.active {
   background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
-  border-color: #0ea5e9;
+  border-color: var(--color-primary, #0ea5e9);
   box-shadow: 0 15px 35px rgba(14, 165, 233, 0.15);
 }
 
@@ -41,7 +41,7 @@
 }
 
 .inc-kpi-label {
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -50,11 +50,11 @@
 }
 
 .inc-kpi-card.active .inc-kpi-label {
-  color: #0284c7;
+  color: var(--color-primary, #0ea5e9);
 }
 
 .inc-kpi-number {
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
   font-size: 2rem;
   line-height: 1;
   font-weight: 700;
@@ -82,17 +82,17 @@
 
 /* Specific icon colors */
 .inc-kpi-icon.text-warning { color: #f59e0b !important; }
-.inc-kpi-icon.text-info { color: #0ea5e9 !important; }
+.inc-kpi-icon.text-info { color: var(--color-primary, #0ea5e9) !important; }
 .inc-kpi-icon.text-success { color: #10b981 !important; }
 
 /* Table Improvements */
 .table-ticket-code {
   font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 0.5rem;
   padding: 0.35rem 0.6rem;
-  color: #475569;
+  color: var(--color-text-muted, #64748b);
   font-weight: 600;
   font-size: 0.85rem;
   display: inline-block;
