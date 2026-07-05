@@ -10,6 +10,7 @@ async function getAccessControlOverview() {
   return {
     roles: (data.roles || []).map(normalizeRole),
     permissionsByModule: normalizePermissionsByModule(data.permissions_by_module || data.permissionsByModule || {}),
+    navigationItems: normalizeNavigationItems(data.navigation_items || data.navigationItems || []),
     users: (data.users || []).map(normalizeUser),
   };
 }
@@ -79,6 +80,19 @@ function normalizePermissionsByModule(groups = {}) {
       (permissions || []).map(normalizePermission),
     ])
   );
+}
+
+function normalizeNavigationItems(items = []) {
+  return (items || []).map((item = {}) => ({
+    id: item.id ?? item.navigation_item_id ?? item.navigationItemId,
+    code: item.code || item.codigo || '',
+    label: item.label || item.nombre || item.name || item.code || 'Menu',
+    icon: item.icon || '',
+    route: item.route || item.href || '',
+    permission: item.permission || item.permission_code || item.permissionCode || '',
+    active: item.active ?? item.activo ?? true,
+    children: normalizeNavigationItems(item.children || []),
+  }));
 }
 
 function normalizeUser(user = {}) {

@@ -1,4 +1,4 @@
-import { getAccessControlOverview, updateRolePermissions } from '../application/access-control-service.js?v=15';
+import { getAccessControlOverview, updateRolePermissions } from '../application/access-control-service.js?v=16';
 import { hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16';
 import { handleBackendErrors, setFormAlert } from '../../../shared/validators/validation-utils.js?v=1';
 
@@ -12,7 +12,12 @@ async function initRolePermissionsPage() {
   const state = {
     roles: [],
     permissionsByModule: {},
+    navigationItems: [],
     selectedRoleCode: null,
+    permissionSearchTerm: '',
+    showNavigationOnly: false,
+    searchRenderTimer: null,
+    keepSearchFocus: false,
   };
 
   bindActions(state);
@@ -23,6 +28,7 @@ async function initRolePermissionsPage() {
     const overview = await getAccessControlOverview();
     state.roles = overview.roles;
     state.permissionsByModule = overview.permissionsByModule;
+    state.navigationItems = overview.navigationItems || [];
     state.selectedRoleCode = state.roles[0]?.code || null;
 
     renderRoles(state);
@@ -48,12 +54,14 @@ function renderRoles(state) {
     const permissionCount = role.permissions?.length || 0;
 
     return `
-      <button type="button" class="list-group-item list-group-item-action ${activeClass}" data-role-code="${escapeHtml(role.code)}">
-        <div class="d-flex align-items-center justify-content-between">
-          <strong>${escapeHtml(role.name)}</strong>
+      <button type="button" class="list-group-item list-group-item-action role-permission-item ${activeClass}" data-role-code="${escapeHtml(role.code)}">
+        <div class="d-flex align-items-start justify-content-between">
+          <div>
+            <strong>${escapeHtml(role.name)}</strong>
+            <small class="d-block">${escapeHtml(getRoleDescription(role.code))}</small>
+          </div>
           <span class="badge badge-light">${permissionCount}</span>
         </div>
-        <small>${escapeHtml(getRoleDescription(role.code))}</small>
       </button>`;
   }).join('');
 
@@ -77,12 +85,22 @@ function renderPermissions(state) {
   }
 
   const selectedPermissions = new Set((role.permissions || []).map((permission) => permission.code));
-  const modules = Object.entries(state.permissionsByModule);
+  const navigationByPermission = buildNavigationPermissionIndex(state.navigationItems);
+  const modules = filterPermissionModules(state.permissionsByModule, navigationByPermission, state);
+  const navigationPreview = buildAuthorizedNavigationPreview(state.navigationItems, selectedPermissions);
+  const navigationPermissionCount = countNavigationPermissions(state.navigationItems, selectedPermissions);
 
-  container.innerHTML = modules.map(([module, permissions]) => `
+  container.innerHTML = `
+    ${renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount)}
+    ${renderPermissionToolbar(state)}
+    <div class="permission-modules">
+      ${modules.length ? modules.map(([module, permissions]) => `
     <div class="permission-module mb-3">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(formatModuleLabel(module))}</h4>
+        <div>
+          <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(formatModuleLabel(module))}</h4>
+          <small class="text-muted">${permissions.length} permiso${permissions.length === 1 ? '' : 's'} en este modulo</small>
+        </div>
         <button type="button" class="btn btn-xs btn-outline-secondary js-toggle-module" data-module="${escapeHtml(module)}">
           <i class="fas fa-check-double mr-1"></i>Seleccionar todo
         </button>
@@ -90,7 +108,8 @@ function renderPermissions(state) {
       <div class="row">
         ${(permissions || []).map((permission) => `
           <div class="col-md-6 col-xl-4">
-            <div class="custom-control custom-checkbox mb-2">
+            <div class="permission-card ${selectedPermissions.has(permission.code) ? 'is-enabled' : ''}">
+              <div class="custom-control custom-checkbox">
               <input type="checkbox"
                 class="custom-control-input permission-checkbox"
                 id="permission-${escapeAttr(permission.code)}"
@@ -99,12 +118,17 @@ function renderPermissions(state) {
                 ${selectedPermissions.has(permission.code) ? 'checked' : ''}>
               <label class="custom-control-label" for="permission-${escapeAttr(permission.code)}">
                 <span class="d-block">${escapeHtml(formatPermissionLabel(permission))}</span>
+                ${renderNavigationBadges(navigationByPermission.get(permission.code))}
                 ${permission?.description ? `<small class="d-block text-muted">${escapeHtml(permission.description)}</small>` : ''}
               </label>
+              </div>
             </div>
           </div>`).join('')}
       </div>
-    </div>`).join('');
+    </div>`).join('') : emptyState('No hay permisos que coincidan con el filtro actual.')}
+    </div>`;
+
+  bindPermissionFilters(container, state);
 
   container.querySelectorAll('.js-toggle-module').forEach((button) => {
     button.addEventListener('click', () => {
@@ -115,6 +139,178 @@ function renderPermissions(state) {
       });
     });
   });
+}
+
+function renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount) {
+  return `
+    <section class="role-permission-overview">
+      <div class="role-permission-heading">
+        <span class="text-uppercase small font-weight-bold">Rol seleccionado</span>
+        <h2>${escapeHtml(role.name)}</h2>
+        <p>${escapeHtml(getRoleDescription(role.code))}. Los permisos marcados definen acciones del backend y tambien que pantallas aparecen en el menu.</p>
+      </div>
+      <div class="role-permission-stats">
+        <div>
+          <span>Permisos activos</span>
+          <strong>${selectedPermissions.size}</strong>
+        </div>
+        <div>
+          <span>Pantallas visibles</span>
+          <strong>${navigationPermissionCount}</strong>
+        </div>
+        <div>
+          <span>Grupos de menu</span>
+          <strong>${navigationPreview.length}</strong>
+        </div>
+      </div>
+      <div class="role-menu-preview">
+        <div class="role-menu-preview-title">
+          <i class="fas fa-sitemap mr-1"></i>Menu que vera este rol
+        </div>
+        ${navigationPreview.length ? navigationPreview.map((item) => `
+          <div class="role-menu-preview-group">
+            <strong><i class="fas ${escapeHtml(item.icon || 'fa-circle')} mr-1"></i>${escapeHtml(item.label)}</strong>
+            <span>${escapeHtml(item.children.map((child) => child.label).join(' / '))}</span>
+          </div>`).join('') : '<p class="text-muted mb-0">Este rol no tiene pantallas visibles con los permisos actuales.</p>'}
+      </div>
+    </section>`;
+}
+
+function renderPermissionToolbar(state) {
+  return `
+    <div class="permission-toolbar">
+      <div class="input-group input-group-sm permission-search">
+        <div class="input-group-prepend">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+        <input id="permission-search-input" type="search" class="form-control"
+          placeholder="Buscar permiso, modulo o pantalla..."
+          value="${escapeAttr(state.permissionSearchTerm)}">
+      </div>
+      <label class="permission-nav-filter mb-0">
+        <input id="permission-navigation-only" type="checkbox" ${state.showNavigationOnly ? 'checked' : ''}>
+        Mostrar solo permisos que habilitan pantallas
+      </label>
+    </div>`;
+}
+
+function bindPermissionFilters(container, state) {
+  const searchInput = container.querySelector('#permission-search-input');
+  const navigationOnlyInput = container.querySelector('#permission-navigation-only');
+
+  if (state.keepSearchFocus && searchInput) {
+    searchInput.focus();
+    searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    state.keepSearchFocus = false;
+  }
+
+  searchInput?.addEventListener('input', () => {
+    state.permissionSearchTerm = searchInput.value;
+    state.keepSearchFocus = true;
+    window.clearTimeout(state.searchRenderTimer);
+    state.searchRenderTimer = window.setTimeout(() => renderPermissions(state), 180);
+  });
+
+  navigationOnlyInput?.addEventListener('change', () => {
+    state.showNavigationOnly = navigationOnlyInput.checked;
+    renderPermissions(state);
+  });
+}
+
+function filterPermissionModules(permissionsByModule, navigationByPermission, state) {
+  const searchTerm = normalizeSearchTerm(state.permissionSearchTerm);
+
+  return Object.entries(permissionsByModule)
+    .map(([module, permissions]) => [
+      module,
+      (permissions || []).filter((permission) => {
+        const navigationEntries = navigationByPermission.get(permission.code) || [];
+        if (state.showNavigationOnly && !navigationEntries.length) {
+          return false;
+        }
+
+        if (!searchTerm) {
+          return true;
+        }
+
+        return normalizeSearchTerm([
+          module,
+          permission.code,
+          permission.name,
+          permission.description,
+          navigationEntries.map((entry) => entry.label).join(' '),
+        ].join(' ')).includes(searchTerm);
+      }),
+    ])
+    .filter(([, permissions]) => permissions.length);
+}
+
+function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new Set()) {
+  return (items || []).reduce((result, item) => {
+    if (!canShowNavigationItem(item, selectedPermissions)) {
+      return result;
+    }
+
+    const children = buildAuthorizedNavigationPreview(item.children || [], selectedPermissions);
+    if ((item.children || []).length && !children.length) {
+      return result;
+    }
+
+    result.push({ ...item, children });
+    return result;
+  }, []);
+}
+
+function canShowNavigationItem(item, selectedPermissions) {
+  return !item.permission || selectedPermissions.has(item.permission);
+}
+
+function countNavigationPermissions(items = [], selectedPermissions = new Set()) {
+  return flattenNavigationItems(buildAuthorizedNavigationPreview(items, selectedPermissions))
+    .filter((item) => item.route)
+    .length;
+}
+
+function flattenNavigationItems(items = []) {
+  return items.flatMap((item) => [item, ...flattenNavigationItems(item.children || [])]);
+}
+
+function buildNavigationPermissionIndex(items = [], parentLabel = '') {
+  const index = new Map();
+
+  (items || []).forEach((item) => {
+    const currentLabel = parentLabel ? `${parentLabel} / ${item.label}` : item.label;
+    const permission = item.permission || '';
+
+    if (permission) {
+      const entries = index.get(permission) || [];
+      entries.push({
+        label: currentLabel,
+        route: item.route || '',
+        active: item.active !== false,
+      });
+      index.set(permission, entries);
+    }
+
+    const childIndex = buildNavigationPermissionIndex(item.children || [], currentLabel);
+    childIndex.forEach((entries, code) => {
+      index.set(code, [...(index.get(code) || []), ...entries]);
+    });
+  });
+
+  return index;
+}
+
+function renderNavigationBadges(entries = []) {
+  if (!entries.length) return '';
+
+  return `
+    <div class="permission-navigation-impact">
+      ${entries.map((entry) => `
+        <span class="badge badge-info mr-1 mb-1" title="${escapeAttr(entry.route || 'Grupo de navegacion')}">
+          <i class="fas fa-compass mr-1"></i>${escapeHtml(entry.label)}
+        </span>`).join('')}
+    </div>`;
 }
 
 function formatModuleLabel(module) {
@@ -156,6 +352,14 @@ function humanizeCode(value) {
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function normalizeSearchTerm(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }
 
 async function saveRolePermissions(state) {

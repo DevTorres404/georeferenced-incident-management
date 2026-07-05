@@ -4,6 +4,14 @@ const STORAGE_KEYS = {
   expiresAt: 'auth_expires_at',
 };
 
+function clearSessionScopedCache() {
+  Object.keys(sessionStorage)
+    .filter((key) => key.startsWith('SGI_API_CACHE_') || key === 'SGI_notifications_cache' || key === 'SGI_nav_state')
+    .forEach((key) => sessionStorage.removeItem(key));
+
+  window.SGIGApi?.clearApiCache?.();
+}
+
 function readUser() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.user);
@@ -20,6 +28,7 @@ function writeSession(data) {
   }
 
   if (data.access_token) {
+    clearSessionScopedCache();
     localStorage.setItem(STORAGE_KEYS.token, data.access_token);
   }
 
@@ -58,6 +67,7 @@ function clearSession() {
   localStorage.removeItem(STORAGE_KEYS.token);
   localStorage.removeItem(STORAGE_KEYS.user);
   localStorage.removeItem(STORAGE_KEYS.expiresAt);
+  clearSessionScopedCache();
 }
 
 function formatExpiry(expiresAt = localStorage.getItem(STORAGE_KEYS.expiresAt)) {
@@ -94,6 +104,7 @@ function isEmailVerified(user) {
 
 const api = {
   STORAGE_KEYS,
+  clearSessionScopedCache,
   readUser,
   writeSession,
   getSession,
@@ -111,6 +122,7 @@ window.SGIGSession = api;
 export {
   STORAGE_KEYS,
   clearSession,
+  clearSessionScopedCache,
   formatExpiry,
   getSession,
   hasValidSession,

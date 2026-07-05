@@ -125,6 +125,211 @@
   letter-spacing: 0;
 }
 
+.role-permission-item {
+  border: 0;
+  border-left: 4px solid transparent;
+  padding: 1rem 1.1rem;
+}
+
+.role-permission-item.active {
+  border-left-color: var(--color-primary, #0ea5e9);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(3, 105, 161, 0.08));
+  color: var(--color-text-main, #0f172a);
+}
+
+.role-permission-item small {
+  color: var(--color-text-muted, #64748b);
+}
+
+.role-permission-overview {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 0.8fr) minmax(240px, 1.1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 36%),
+    linear-gradient(135deg, #f8fafc 0%, #eef7ff 100%);
+}
+
+.role-permission-heading span,
+.role-menu-preview-title {
+  color: var(--color-primary-dark, #0369a1);
+  letter-spacing: 0.04em;
+}
+
+.role-permission-heading h2 {
+  margin: 0.15rem 0 0.35rem;
+  color: var(--color-text-main, #0f172a);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.role-permission-heading p {
+  margin: 0;
+  color: var(--color-text-muted, #64748b);
+  line-height: 1.45;
+}
+
+.role-permission-stats {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.role-permission-stats div {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.role-permission-stats span,
+.role-permission-stats strong {
+  display: block;
+}
+
+.role-permission-stats span {
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.role-permission-stats strong {
+  color: var(--color-text-main, #0f172a);
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.role-menu-preview {
+  max-height: 230px;
+  overflow: auto;
+  padding: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.role-menu-preview-title {
+  margin-bottom: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.76rem;
+}
+
+.role-menu-preview-group {
+  padding: 0.55rem 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.role-menu-preview-group:first-of-type {
+  border-top: 0;
+}
+
+.role-menu-preview-group strong,
+.role-menu-preview-group span {
+  display: block;
+}
+
+.role-menu-preview-group strong {
+  color: var(--color-text-main, #0f172a);
+}
+
+.role-menu-preview-group span {
+  margin-top: 0.15rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.84rem;
+}
+
+.permission-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.permission-search {
+  max-width: 420px;
+}
+
+.permission-nav-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-text-muted, #64748b);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.permission-card {
+  min-height: 118px;
+  margin-bottom: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.95rem;
+  background: #ffffff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.permission-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.permission-card.is-enabled {
+  border-color: rgba(14, 165, 233, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(240, 249, 255, 0.86) 100%);
+}
+
+.permission-card .custom-control-label {
+  width: 100%;
+  cursor: pointer;
+}
+
+.permission-card .custom-control-label > span:first-child {
+  color: var(--color-text-main, #0f172a);
+  font-weight: 800;
+}
+
+.permission-navigation-impact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.25rem 0 0.15rem;
+}
+
+.permission-navigation-impact .badge {
+  max-width: 100%;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.12);
+  color: var(--color-primary-dark, #0369a1);
+  font-weight: 700;
+  white-space: normal;
+  text-align: left;
+}
+
+@media (max-width: 1199.98px) {
+  .role-permission-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .permission-search {
+    max-width: none;
+  }
+}
+
 /* AdminLTE deja el titulo lateral visible al colapsar; se oculta para no deformar la barra. */
 body.sidebar-collapse .sgi-sidebar-section-label {
   display: none;

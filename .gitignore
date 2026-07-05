@@ -18,10 +18,30 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+backend/.env
+backend/.env.*
+!backend/.env.example
 
 # General dependencies fallback
 node_modules/
 vendor/
+backend/vendor/
+backend/node_modules/
+
+# Backend sensitive/runtime files
+backend/storage/*.key
+backend/storage/app/firebase_credentials.json
+backend/storage/app/firebase/*.json
+backend/storage/app/private/*
+backend/storage/logs/*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+*.sql
+*.dump
+*.bak
+*.backup
 
 # Gemini / Antigravity Agent Configuration
 .agents/

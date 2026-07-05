@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         // ──────────────────────────────────────────────
         $this->call(RoleSeeder::class);
         $this->call(PermissionSeeder::class);
+        $this->call(NavigationItemSeeder::class);
 
         // ──────────────────────────────────────────────
         // 2. Core: Catálogos base

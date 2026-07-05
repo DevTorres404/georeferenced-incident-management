@@ -1,0 +1,182 @@
+name: sgi-backend-prod
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        WWWUSER: ${WWWUSER:-1000}
+        WWWGROUP: ${WWWGROUP:-1000}
+    image: sgi-backend:prod
+    restart: unless-stopped
+    env_file:
+      - ${SGI_ENV_FILE:-.env}
+    depends_on:
+      pgsql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./public:/var/www/html/public
+      - sgi-storage:/var/www/html/storage
+      - sgi-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - sgi-backend
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+      - reverb
+    ports:
+      - "${APP_HTTP_BIND:-127.0.0.1}:${APP_HTTP_PORT:-8000}:80"
+    volumes:
+      - ./docker/production/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/var/www/html/public:ro
+      - sgi-storage:/var/www/html/storage:ro
+    networks:
+      - sgi-backend
+
+  queue:
+    image: sgi-backend:prod
+    restart: unless-stopped
+    command: php artisan queue:work redis --tries=3 --timeout=120 --sleep=3
+    env_file:
+      - ${SGI_ENV_FILE:-.env}
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      pgsql:
+        condition: service_healthy
+    volumes:
+      - sgi-storage:/var/www/html/storage
+      - sgi-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - sgi-backend
+
+  scheduler:
+    image: sgi-backend:prod
+    restart: unless-stopped
+    command: php artisan schedule:work
+    env_file:
+      - ${SGI_ENV_FILE:-.env}
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      pgsql:
+        condition: service_healthy
+    volumes:
+      - sgi-storage:/var/www/html/storage
+      - sgi-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - sgi-backend
+
+  reverb:
+    image: sgi-backend:prod
+    restart: unless-stopped
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+    env_file:
+      - ${SGI_ENV_FILE:-.env}
+    depends_on:
+      app:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    expose:
+      - "8080"
+    volumes:
+      - sgi-storage:/var/www/html/storage
+      - sgi-bootstrap-cache:/var/www/html/bootstrap/cache
+    networks:
+      - sgi-backend
+
+  pgsql:
+    image: postgis/postgis:16-3.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-incident_management_system}
+      POSTGRES_USER: ${DB_USERNAME:-sgi}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - sgi-pgsql:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sgi} -d ${DB_DATABASE:-incident_management_system}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgi-backend
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - sgi-redis:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgi-backend
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY_ID:?RUSTFS_ACCESS_KEY_ID is required}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_ACCESS_KEY:?RUSTFS_SECRET_ACCESS_KEY is required}
+      RUSTFS_REGION: ${RUSTFS_REGION:-us-east-1}
+    volumes:
+      - sgi-rustfs:/data
+    expose:
+      - "9000"
+      - "9001"
+    networks:
+      - sgi-backend
+
+  rustfs-init:
+    image: minio/mc:latest
+    restart: "no"
+    depends_on:
+      - rustfs
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set rustfs http://rustfs:9000 \"$${RUSTFS_ACCESS_KEY_ID}\" \"$${RUSTFS_SECRET_ACCESS_KEY}\"; do sleep 2; done;
+      mc mb --ignore-existing rustfs/$${RUSTFS_BUCKET};
+      mc anonymous set none rustfs/$${RUSTFS_BUCKET};
+      "
+    env_file:
+      - ${SGI_ENV_FILE:-.env}
+    networks:
+      - sgi-backend
+
+networks:
+  sgi-backend:
+    driver: bridge
+
+volumes:
+  sgi-storage:
+    driver: local
+  sgi-bootstrap-cache:
+    driver: local
+  sgi-pgsql:
+    driver: local
+  sgi-redis:
+    driver: local
+  sgi-rustfs:
+    driver: local

@@ -1,5 +1,5 @@
-import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=14';
-import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=14';
+import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=16';
+import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=15';
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
 document.addEventListener('DOMContentLoaded', initAuthPage);

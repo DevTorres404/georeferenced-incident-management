@@ -15,6 +15,10 @@ async function listOperationalOperators() {
   return Array.isArray(response?.data) ? response.data : [];
 }
 
+async function getOperationalZonesGeoJson() {
+  return requestBackend('/admin/operations/zones/geojson', { noCache: true });
+}
+
 async function updateOperationalOperatorProfile(operatorUserId, payload) {
   const response = await requestBackend(`/admin/operations/operators/${operatorUserId}/profile`, {
     method: 'PATCH',
@@ -60,6 +64,7 @@ export {
   listOperationalZones,
   listOperationalSupervisors,
   listOperationalOperators,
+  getOperationalZonesGeoJson,
   assignOperationalZoneSupervisor,
   replaceOperationalZoneOperator,
   updateOperationalOperatorProfile,

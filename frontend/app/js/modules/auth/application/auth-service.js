@@ -1,6 +1,6 @@
 import { firebaseConfig } from '../infrastructure/firebase-config.js';
-import { request, requestRaw } from '../../../core/api-client.js?v=14';
-import { clearSession, updateUser, writeSession } from '../../../core/auth-session.js';
+import { request, requestRaw } from '../../../core/api-client.js?v=21';
+import { clearSession, updateUser, writeSession } from '../../../core/auth-session.js?v=15';
 
 let firebaseAuthPromise = null;
 
@@ -36,8 +36,7 @@ async function loginWithEmail(email, password) {
     return data;
   }
 
-  writeSession(data);
-  return data;
+  return persistSessionWithFreshUser(data);
 }
 
 async function verifyTwoFactorLogin(twoFactorToken, code) {
@@ -46,8 +45,7 @@ async function verifyTwoFactorLogin(twoFactorToken, code) {
     body: JSON.stringify({ two_factor_token: twoFactorToken, code }),
   });
 
-  writeSession(data);
-  return data;
+  return persistSessionWithFreshUser(data);
 }
 
 async function enableTwoFactor() {
@@ -71,8 +69,7 @@ async function registerLocal(payload) {
     body: JSON.stringify(payload),
   });
 
-  writeSession(data);
-  return data;
+  return persistSessionWithFreshUser(data);
 }
 
 async function submitGoogleToken(idToken, intent) {
@@ -81,8 +78,32 @@ async function submitGoogleToken(idToken, intent) {
     body: JSON.stringify({ id_token: idToken, intent }),
   });
 
+  return persistSessionWithFreshUser(data);
+}
+
+async function refreshAuthenticatedUser() {
+  if (!window.SGIGSession?.hasValidSession?.()) {
+    return null;
+  }
+
+  const data = await request('/me', { noCache: true });
+  if (data.user) {
+    updateUser(data.user);
+    return data.user;
+  }
+
+  return null;
+}
+
+async function persistSessionWithFreshUser(data) {
   writeSession(data);
-  return data;
+
+  try {
+    const user = await refreshAuthenticatedUser();
+    return user ? { ...data, user } : data;
+  } catch {
+    return data;
+  }
 }
 
 async function completeProfile(username) {
@@ -105,7 +126,7 @@ async function restoreSession() {
   }
 
   try {
-    const data = await request('/me');
+    const data = await request('/me', { noCache: true });
     if (data.user) {
       updateUser(data.user);
     }
