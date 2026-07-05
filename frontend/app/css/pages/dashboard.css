@@ -15,7 +15,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   padding: 1.35rem 1.5rem;
@@ -69,7 +69,7 @@
 }
 
 .dash-kpi-label {
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.82rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -78,7 +78,7 @@
 }
 
 .dash-kpi-number {
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
   font-size: 2rem;
   line-height: 1;
   font-weight: 700;
@@ -102,7 +102,7 @@
 
 /* ---- Chart Cards ---- */
 .dash-chart-card {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
@@ -126,11 +126,11 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
 }
 
 .dash-chart-header h3 i {
-  color: #0ea5e9;
+  color: var(--color-primary, #0ea5e9);
   margin-right: 0.5rem;
 }
 
@@ -171,7 +171,7 @@
 }
 
 .dash-priority-count {
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.82rem;
   font-weight: 500;
 }
@@ -199,7 +199,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0.85rem;
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   padding: 1rem 1.1rem;
@@ -225,7 +225,7 @@
 }
 
 .dash-info-icon--primary {
-  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
 }
 .dash-info-icon--danger {
   background: linear-gradient(135deg, #ef4444, #dc2626);
@@ -241,7 +241,7 @@
 
 .dash-info-label {
   display: block;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
   font-weight: 500;
   margin-bottom: 0.15rem;
@@ -249,7 +249,7 @@
 
 .dash-info-value {
   display: block;
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.2;
@@ -264,7 +264,7 @@
 
 /* ---- Recent Incidents Table ---- */
 .dash-table-card {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
@@ -284,11 +284,11 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
 }
 
 .dash-table-header h3 i {
-  color: #0ea5e9;
+  color: var(--color-primary, #0ea5e9);
   margin-right: 0.5rem;
 }
 
@@ -303,7 +303,7 @@
 
 .dash-table thead th {
   background: #f8fafc;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   font-size: 0.78rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -335,7 +335,7 @@
 .dash-table-code {
   font-family: 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
   background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 0.4rem;
   padding: 0.2rem 0.5rem;
   color: #475569;
@@ -353,7 +353,7 @@
 
 /* ---- Map Placeholder (Premium) ---- */
 .dash-map-card {
-  background: #ffffff;
+  background: var(--color-surface, #ffffff);
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 1rem;
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
@@ -373,11 +373,11 @@
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-main, #0f172a);
 }
 
 .dash-map-header h3 i {
-  color: #0ea5e9;
+  color: var(--color-primary, #0ea5e9);
   margin-right: 0.5rem;
 }
 
@@ -394,14 +394,14 @@
   align-items: center;
   justify-content: center;
   min-height: 260px;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   text-align: center;
   padding: 1.5rem;
 }
 
 .dash-map-placeholder i {
   font-size: 2.5rem;
-  color: #0ea5e9;
+  color: var(--color-primary, #0ea5e9);
   opacity: 0.5;
   margin-bottom: 0.75rem;
 }
@@ -430,8 +430,8 @@
   gap: 0.35rem;
   font-size: 0.75rem;
   color: #475569;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface, #ffffff);
+  border: 1px solid var(--color-border, #e2e8f0);
   border-radius: 999px;
   padding: 0.25rem 0.6rem;
 }

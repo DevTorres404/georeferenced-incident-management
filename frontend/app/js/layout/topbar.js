@@ -19,16 +19,19 @@ export function buildTopbarHtml(user) {
     </ul>
     <ul class="navbar-nav ml-auto">
       <li class="nav-item dropdown" id="notificationsDropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#">
+        <a class="nav-link sgi-notif-bell" data-toggle="dropdown" href="#" aria-label="Notificaciones">
           <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge" id="navbarNotificationsBadge" style="display:none;">0</span>
+          <span class="sgi-notif-badge" id="navbarNotificationsBadge" style="display:none;">0</span>
         </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <span class="dropdown-header" id="navbarNotificationsHeader">0 notificaciones</span>
-          <div class="dropdown-divider"></div>
-          <div id="navbarNotificationsList" style="max-height: 300px; overflow-y: auto;"></div>
-          <div class="dropdown-divider"></div>
-          <a href="#" id="btnMarkAllRead" class="dropdown-item dropdown-footer text-primary">Marcar todas como leidas</a>
+        <div class="dropdown-menu dropdown-menu-right sgi-notif-dropdown">
+          <div class="sgi-notif-dropdown-header">
+            <h6><i class="far fa-bell"></i>Notificaciones</h6>
+            <span class="badge" id="navbarNotificationsBadgeCount" style="display:none;">0</span>
+          </div>
+          <div id="navbarNotificationsList" class="sgi-notif-dropdown-list"></div>
+          <button type="button" id="btnMarkAllRead" class="sgi-notif-dropdown-footer" style="display:none;">
+            <i class="fas fa-check-double mr-1"></i>Marcar todas como leidas
+          </button>
         </div>
       </li>
       <li class="nav-item dropdown user-menu">

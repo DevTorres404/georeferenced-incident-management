@@ -277,7 +277,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 userId: $userId,
                 title: 'Incidencia registrada',
                 message: "Tu incidencia {$incident->code} fue registrada correctamente.",
-                type: 'STATUS_CHANGE'
+                type: 'STATUS_CHANGE',
+                incidentId: (int) $incident->id
             );
 
             $this->notifyZoneSupervisorsOrAdmins(
@@ -301,7 +302,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 app(AdminNotifier::class)->notify(
                     title: 'Error de geolocalizacion',
                     message: "La incidencia {$incident->code} fue creada sin coordenadas validas.",
-                    type: 'STATUS_CHANGE'
+                    type: 'STATUS_CHANGE',
+                    incidentId: (int) $incident->id
                 );
             }
 
@@ -439,7 +441,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         app(AdminNotifier::class)->notify(
             title: 'Accion critica',
             message: "Un usuario elimino o cerro forzadamente una incidencia: {$incidentCode}.",
-            type: 'STATUS_CHANGE'
+            type: 'STATUS_CHANGE',
+            incidentId: $incidentId
         );
     }
 
@@ -458,13 +461,14 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 userId: (int) $incident->reported_by_id,
                 title: 'Comentario recibido',
                 message: "Un operador respondio en tu incidencia {$incident->code}.",
-                type: 'NEW_COMMENT'
+                type: 'NEW_COMMENT',
+                incidentId: $incidentId
             );
         }
 
         if ((int) $incident->reported_by_id === $userId) {
             $this->notifyAssignedOperators(
-                incidentId: (int) $incident->id,
+                incidentId: $incidentId,
                 title: 'Comentario recibido',
                 message: "El ciudadano respondio en la incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
@@ -473,7 +477,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
         if ($this->isSupervisorUserId($userId)) {
             $this->notifyAssignedOperators(
-                incidentId: (int) $incident->id,
+                incidentId: $incidentId,
                 title: 'Comentario del supervisor',
                 message: "El supervisor agrego un comentario en la incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
@@ -501,13 +505,14 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 userId: (int) $incident->reported_by_id,
                 title: 'Evidencia agregada',
                 message: "Se agrego una actualizacion o evidencia a tu incidencia {$incident->code}.",
-                type: 'NEW_COMMENT'
+                type: 'NEW_COMMENT',
+                incidentId: $incidentId
             );
         }
 
         if ((int) $incident->reported_by_id === $userId) {
             $this->notifyAssignedOperators(
-                incidentId: (int) $incident->id,
+                incidentId: $incidentId,
                 title: 'Evidencia agregada',
                 message: "Se adjunto nueva evidencia a la incidencia {$incident->code}.",
                 type: 'NEW_COMMENT'
@@ -620,7 +625,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                     userId: (int) $assignment->user_id,
                     title: 'Incidencia asignada',
                     message: $message,
-                    type: 'INCIDENT_ASSIGNED'
+                    type: 'INCIDENT_ASSIGNED',
+                    incidentId: $incidentId
                 );
             }
 
@@ -669,7 +675,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             userId: (int) $incident->reported_by_id,
             title: $title,
             message: $message,
-            type: $type
+            type: $type,
+            incidentId: $incidentId
         );
 
         if ($this->isOperatorUserId($userId)) {
@@ -784,19 +791,20 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ]);
     }
 
-    private function createNotification(int $userId, string $title, string $message, string $type): void
+    private function createNotification(int $userId, string $title, string $message, string $type, ?int $incidentId = null): void
     {
         Notification::create([
             'user_id' => $userId,
+            'incident_id' => $incidentId,
             'title' => $title,
             'message' => $message,
             'type' => $type,
         ]);
 
-        app(AdminNotifier::class)->notify($title, $message, $type, [$userId]);
+        app(AdminNotifier::class)->notify($title, $message, $type, [$userId], $incidentId);
     }
 
-    private function createNotificationIfMissing(int $userId, string $title, string $message, string $type): void
+    private function createNotificationIfMissing(int $userId, string $title, string $message, string $type, ?int $incidentId = null): void
     {
         $exists = Notification::where('user_id', $userId)
             ->where('title', $title)
@@ -807,7 +815,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             return;
         }
 
-        $this->createNotification($userId, $title, $message, $type);
+        $this->createNotification($userId, $title, $message, $type, $incidentId);
     }
 
     private function notifyAssignedOperators(int $incidentId, string $title, string $message, string $type): void
@@ -817,15 +825,15 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ->where('active', true)
             ->pluck('user_id')
             ->unique()
-            ->each(function ($operatorUserId) use ($title, $message, $type): void {
-                $this->createNotificationIfMissing((int) $operatorUserId, $title, $message, $type);
+            ->each(function ($operatorUserId) use ($title, $message, $type, $incidentId): void {
+                $this->createNotificationIfMissing((int) $operatorUserId, $title, $message, $type, $incidentId);
             });
     }
 
     private function notifyZoneSupervisorsForIncident(Incident $incident, string $title, string $message, string $type): void
     {
         foreach ($this->zoneSupervisorUserIdsForIncident($incident) as $supervisorUserId) {
-            $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type);
+            $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type, (int) $incident->id);
         }
     }
 
@@ -834,13 +842,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         $supervisorUserIds = $this->zoneSupervisorUserIdsForIncident($incident);
 
         if ($supervisorUserIds === []) {
-            app(AdminNotifier::class)->notify($title, $message, $type);
+            app(AdminNotifier::class)->notify($title, $message, $type, [], (int) $incident->id);
 
             return;
         }
 
         foreach ($supervisorUserIds as $supervisorUserId) {
-            $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type);
+            $this->createNotificationIfMissing($supervisorUserId, $title, $message, $type, (int) $incident->id);
         }
     }
 

@@ -1,6 +1,10 @@
+/* ==========================================================================
+   Usuarios y Roles / Roles y Permisos - Estilos Premium
+   ========================================================================== */
+
 /* ---- Usuarios y roles ---- */
 .user-roles-header {
-  padding: 18px 20px;
+  padding: 1.25rem 1.5rem;
 }
 
 .user-roles-header .card-title {
@@ -11,16 +15,23 @@
 .user-roles-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(96px, 1fr));
-  gap: 10px;
+  gap: 0.75rem;
   width: min(100%, 420px);
 }
 
 .user-roles-summary-item {
   min-height: 68px;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #f8fafc 0%, #f0f9ff 100%);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.user-roles-summary-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .user-roles-summary-item span,
@@ -29,7 +40,7 @@
 }
 
 .user-roles-summary-item span {
-  color: var(--color-text-muted);
+  color: var(--color-text-muted, #64748b);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.2;
@@ -37,14 +48,14 @@
 
 .user-roles-summary-item strong {
   margin-top: 4px;
-  color: var(--color-text-main);
+  color: var(--color-text-main, #0f172a);
   font-size: 1.35rem;
   line-height: 1;
 }
 
 .user-roles-card .card-header,
 .user-roles-card .card-footer {
-  border-color: var(--color-border);
+  border-color: var(--color-border, #e2e8f0);
 }
 
 .user-roles-card .table td,
@@ -61,13 +72,14 @@
   min-width: 0;
   font-weight: 600;
   white-space: nowrap;
+  border-radius: 0.5rem;
 }
 
 .user-role-group-filter .btn.active {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
+  border-color: var(--color-primary, #0ea5e9);
   color: #ffffff;
-  box-shadow: none;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 @media (max-width: 575.98px) {
@@ -77,14 +89,14 @@
   }
 
   .user-role-group-filter .btn {
-    border-radius: 4px !important;
+    border-radius: 0.5rem !important;
     margin-bottom: 6px;
   }
 }
 
 /* ---- Roles y permisos ---- */
 .access-control-card .card-header {
-  padding: 18px 20px;
+  padding: 1.25rem 1.5rem;
 }
 
 .access-control-card .card-title {
@@ -93,14 +105,20 @@
 }
 
 .permission-module {
-  padding: 14px 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: #ffffff;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 1rem;
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.permission-module:hover {
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .permission-module + .permission-module {
-  margin-top: 12px;
+  margin-top: 0.75rem;
 }
 
 .permission-module h4 {

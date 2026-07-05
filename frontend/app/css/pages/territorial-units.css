@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Unidades Territoriales - Estilos Premium
+   ========================================================================== */
+
 .territorial-search {
   max-width: 240px;
 }
@@ -23,7 +27,7 @@
   top: 18px;
   left: -12px;
   width: 10px;
-  border-top: 1px solid #d4e1e7;
+  border-top: 1px solid var(--color-border, #e2e8f0);
 }
 
 .territorial-tree > ul > li::before {
@@ -35,8 +39,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid #e4edf1;
-  border-radius: 6px;
-  background: #ffffff;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 0.75rem;
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+}
+
+.territorial-node:hover {
+  border-color: rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }

@@ -10,7 +10,7 @@ final class AdminNotifier
     /**
      * @param array<int, int> $excludeUserIds
      */
-    public function notify(string $title, string $message, string $type = 'STATUS_CHANGE', array $excludeUserIds = []): void
+    public function notify(string $title, string $message, string $type = 'STATUS_CHANGE', array $excludeUserIds = [], ?int $incidentId = null): void
     {
         $adminUserIds = $this->adminUserIds($excludeUserIds);
         if ($adminUserIds === []) {
@@ -36,6 +36,7 @@ final class AdminNotifier
             array_map(
                 fn (int $userId): array => [
                     'user_id' => $userId,
+                    'incident_id' => $incidentId,
                     'title' => $title,
                     'message' => $message,
                     'type' => $type,
