@@ -1,8 +1,8 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=20';
-import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
-import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
+import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=21';
+import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21';
 
 /**
  * ============================================================
@@ -160,11 +160,22 @@ function isSessionExpired() {
   const expiresAt = new Date(localStorage.getItem(AUTH_KEYS.expiresAt) || '').getTime();
   return Number.isFinite(expiresAt) && expiresAt <= Date.now();
 }
+function clearSessionScopedCache() {
+  Object.keys(sessionStorage)
+    .filter((key) => key.startsWith('SGI_API_CACHE_') || key === 'SGI_notifications_cache' || key === window.SGINavigationStore?.NAV_STATE_KEY)
+    .forEach((key) => sessionStorage.removeItem(key));
+
+  window.SGIGApi?.clearApiCache?.();
+  if (window.SGINavigationStore) {
+    window.SGINavigationStore.authorizedMenuItems = null;
+  }
+}
 function clearSession() {
   localStorage.removeItem(AUTH_KEYS.token);
   localStorage.removeItem(AUTH_KEYS.user);
   localStorage.removeItem(AUTH_KEYS.expiresAt);
   localStorage.removeItem(AUTH_KEYS.lastActivityAt);
+  clearSessionScopedCache();
 }
 function getLoginPath() {
   return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
@@ -207,7 +218,7 @@ function updateSessionUser(user) {
   return user;
 }
 async function refreshSessionUserOrRedirect() {
-  const response = await requestBackend('/me');
+  const response = await requestBackend('/me', { noCache: true });
   if (!response?.user) {
     clearSession();
     redirectToLogin();

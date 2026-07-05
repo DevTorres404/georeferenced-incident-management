@@ -52,6 +52,9 @@ Completa manualmente estas variables antes de levantar contenedores:
 - `REVERB_HOST`, `REVERB_PORT`, `REVERB_SCHEME`: dominio, puerto y esquema usados por el cliente WebSocket.
 - `MAIL_*`: credenciales SMTP reales.
 - `FIREBASE_CREDENTIALS`: ruta dentro del contenedor. Por defecto: `/var/www/html/storage/app/firebase/firebase_credentials.json`.
+- `TRUSTED_PROXIES`: proxies de confianza para que Laravel interprete correctamente los headers `X-Forwarded-*`.
+  Usa `*` si solo hay un proxy interno Docker. Si hay un proxy externo (Nginx, Caddy, Cloudflare),
+  restringe al rango de la red interna de Docker: `172.16.0.0/12`.
 
 No subas `.env` ni credenciales reales al repositorio.
 
@@ -85,6 +88,14 @@ Tambien puedes usar:
 ```sh
 sh scripts/deploy.sh
 ```
+
+El script valida precondiciones antes de desplegar:
+- Que el `.env` exista.
+- Que `APP_KEY` no este vacio.
+- Que `APP_DEBUG` sea `false`.
+- Que `DB_PASSWORD` tenga un valor distinto al placeholder.
+
+Si alguna condicion falla, el script aborta con un mensaje claro.
 
 En Linux puedes hacerlo ejecutable:
 

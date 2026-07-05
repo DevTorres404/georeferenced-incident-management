@@ -1,12 +1,10 @@
 services:
   frontend:
-    image: nginx:1.27-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sgi-frontend:prod
     container_name: sgig-frontend
     ports:
-      - "5500:80"
-    volumes:
-      - ./:/usr/share/nginx/html:ro
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "${FRONTEND_HTTP_BIND:-127.0.0.1}:${FRONTEND_HTTP_PORT:-8080}:80"
     restart: unless-stopped

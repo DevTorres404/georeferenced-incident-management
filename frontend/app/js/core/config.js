@@ -1,12 +1,22 @@
 'use strict';
 
-export const API_URL = window.SGIG_API_URL || window.SGI_API_URL || `${window.location.origin}/api`;
+const runtimeConfig = window.SGI_RUNTIME_CONFIG || {};
+
+function cleanUrl(value, fallback) {
+  const url = typeof value === 'string' && value.trim() !== '' ? value : fallback;
+  return url.replace(/\/+$/, '');
+}
+
+export const API_URL = cleanUrl(
+  runtimeConfig.apiUrl || window.SGIG_API_URL || window.SGI_API_URL,
+  'https://api.labtorres.me/api',
+);
 export const API_CACHE_TTL_MS = 30000;
 export const APP_NAME = 'SGI';
-export const REVERB_APP_KEY = window.SGI_REVERB_APP_KEY || 'local-gic-key';
-export const REVERB_HOST = window.SGI_REVERB_HOST || window.location.hostname || 'localhost';
-export const REVERB_PORT = Number(window.SGI_REVERB_PORT || 8080);
-export const REVERB_SCHEME = window.SGI_REVERB_SCHEME || 'http';
+export const REVERB_APP_KEY = runtimeConfig.reverbAppKey || window.SGI_REVERB_APP_KEY || '';
+export const REVERB_HOST = runtimeConfig.reverbHost || window.SGI_REVERB_HOST || 'api.labtorres.me';
+export const REVERB_PORT = Number(runtimeConfig.reverbPort || window.SGI_REVERB_PORT || 443);
+export const REVERB_SCHEME = runtimeConfig.reverbScheme || window.SGI_REVERB_SCHEME || 'https';
 export const MAP_DEFAULT_CENTER = window.SGI_MAP_DEFAULT_CENTER || [-78.4678, -1.8312];
 export const MAP_DEFAULT_ZOOM = Number(window.SGI_MAP_DEFAULT_ZOOM || 6);
 export const MAP_STYLE_URL = window.SGI_MAP_STYLE_URL || 'https://tiles.openfreemap.org/styles/liberty';
