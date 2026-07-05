@@ -39,6 +39,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:6,1');
     Route::post('/auth/profile', [AuthController::class, 'completeProfile']);
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::get('/navigation/menu', [AccessControlController::class, 'navigation']);
     
     Route::post('/auth/2fa/enable', [TwoFactorAuthController::class, 'enable']);
     Route::post('/auth/2fa/disable', [TwoFactorAuthController::class, 'disable']);
@@ -76,7 +77,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         });
 
         Route::get('/incidents/map', [IncidentController::class, 'map'])
-            ->middleware('permission:incidents.view');
+            ->middleware('permission:incidents.map');
         Route::get('/incidents/assignment-operators', [IncidentController::class, 'assignmentOperators'])
             ->middleware('permission:incidents.assign');
         Route::apiResource('/incidents', IncidentController::class)
@@ -88,10 +89,12 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/incidents/{incident}/state', [IncidentController::class, 'changeState'])
             ->middleware('permission:incidents.edit');
 
-        Route::get('/notifications', [NotificationController::class, 'index']);
-        Route::get('/notifications/unread/count', [NotificationController::class, 'unreadCount']);
-        Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
-        Route::patch('/notifications/{notificacion}/read', [NotificationController::class, 'markAsRead']);
+        Route::middleware('permission:notifications.view')->group(function () {
+            Route::get('/notifications', [NotificationController::class, 'index']);
+            Route::get('/notifications/unread/count', [NotificationController::class, 'unreadCount']);
+            Route::patch('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+            Route::patch('/notifications/{notificacion}/read', [NotificationController::class, 'markAsRead']);
+        });
 
         Route::apiResource('/users', UserController::class)
             ->parameters(['users' => 'user'])
@@ -106,6 +109,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         });
 
         Route::prefix('admin/operations')->group(function () {
+            Route::get('zones/geojson', [OperationalStructureController::class, 'zonesGeoJson'])
+                ->middleware('permission:operations.view');
             Route::get('zones', [OperationalStructureController::class, 'zones'])
                 ->middleware('permission:operations.view');
             Route::get('supervisors', [OperationalStructureController::class, 'supervisors'])

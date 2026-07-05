@@ -30,6 +30,25 @@ final class OperationalStructureController extends ApiController
         ]);
     }
 
+    public function zonesGeoJson(): JsonResponse
+    {
+        $path = database_path('seeders/data/ecuador-operational-provinces.geojson');
+
+        abort_unless(is_file($path), 404, 'No se encontro el GeoJSON provincial.');
+
+        $contents = (string) file_get_contents($path);
+        $contents = preg_replace('/^\xEF\xBB\xBF/', '', $contents) ?: $contents;
+        $payload = json_decode($contents, true);
+
+        abort_unless(
+            is_array($payload) && isset($payload['features']) && is_array($payload['features']),
+            500,
+            'El GeoJSON provincial no tiene un formato valido.'
+        );
+
+        return response()->json($payload);
+    }
+
     public function supervisors(): JsonResponse
     {
         return response()->json([

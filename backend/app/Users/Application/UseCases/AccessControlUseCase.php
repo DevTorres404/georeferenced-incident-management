@@ -26,4 +26,12 @@ final class AccessControlUseCase
     {
         return $this->accessControlRepository->syncRolePermissions($roleId, $permissionCodes);
     }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function navigationForUser(int $userId): array
+    {
+        return $this->accessControlRepository->navigationForUser($userId);
+    }
 }

@@ -26,6 +26,13 @@ class AccessControlController extends ApiController
         ]);
     }
 
+    public function navigation(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->accessControlUseCase->navigationForUser((int) $request->user()->id),
+        ]);
+    }
+
     public function syncRolePermissions(Request $request, int $role): JsonResponse
     {
         $data = $request->validate([

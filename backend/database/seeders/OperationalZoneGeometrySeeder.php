@@ -9,7 +9,7 @@ use RuntimeException;
 
 class OperationalZoneGeometrySeeder extends Seeder
 {
-    private const GEOJSON_PATH = '../frontend/app/data/ecuador-operational-provinces.geojson';
+    private const GEOJSON_PATH = 'database/seeders/data/ecuador-operational-provinces.geojson';
 
     public function run(): void
     {

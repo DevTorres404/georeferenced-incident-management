@@ -3,9 +3,11 @@
 namespace App\Users\Infrastructure\Persistence\Repositories;
 
 use App\Auth\Infrastructure\Persistence\Models\Permission;
+use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
+use Illuminate\Support\Collection;
 
 final class EloquentAccessControlRepository implements AccessControlRepositoryInterface
 {
@@ -40,6 +42,7 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
                 ->groupBy('module')
                 ->map(fn ($items) => $items->values()->all())
                 ->all(),
+            'navigation_items' => $this->navigationOverview(),
             'users' => $users,
         ];
     }
@@ -52,6 +55,32 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
         $role->permissions()->sync($permissionIds);
 
         return $this->mapRole($role->fresh('permissions'));
+    }
+
+    public function navigationForUser(int $userId): array
+    {
+        $user = User::with('roles.permissions')->findOrFail($userId);
+        $permissionCodes = $user->roles
+            ->flatMap(fn (Role $role) => $role->permissions)
+            ->pluck('code')
+            ->filter()
+            ->unique()
+            ->values();
+
+        return NavigationItem::query()
+            ->whereNull('parent_id')
+            ->where('active', true)
+            ->with(['children' => fn ($query) => $query
+                ->where('active', true)
+                ->orderBy('sort_order')
+                ->orderBy('label')])
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get()
+            ->map(fn (NavigationItem $item) => $this->mapNavigationItem($item, $permissionCodes))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function mapRole(Role $role): array
@@ -94,6 +123,79 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
                     'code' => $role->code,
                     'name' => $role->name,
                 ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function mapNavigationItem(NavigationItem $item, Collection $permissionCodes): ?array
+    {
+        if (! $this->canAccessNavigationItem($item, $permissionCodes)) {
+            return null;
+        }
+
+        $childItems = $item->relationLoaded('children') ? $item->children : collect();
+        $children = $childItems
+            ->map(fn (NavigationItem $child) => $this->mapNavigationItem($child, $permissionCodes))
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($childItems->isNotEmpty() && $children === []) {
+            return null;
+        }
+
+        return [
+            'id' => $item->code,
+            'code' => $item->code,
+            'label' => $item->label,
+            'icon' => $item->icon,
+            'route' => $item->route,
+            'permission' => $item->permission_code,
+            'sort_order' => (int) $item->sort_order,
+            'children' => $children,
+        ];
+    }
+
+    private function canAccessNavigationItem(NavigationItem $item, Collection $permissionCodes): bool
+    {
+        if ($item->permission_code === null || $item->permission_code === '') {
+            return true;
+        }
+
+        return $permissionCodes->contains($item->permission_code);
+    }
+
+    private function navigationOverview(): array
+    {
+        return NavigationItem::query()
+            ->whereNull('parent_id')
+            ->with(['children' => fn ($query) => $query
+                ->orderBy('sort_order')
+                ->orderBy('label')])
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get()
+            ->map(fn (NavigationItem $item) => $this->mapNavigationOverviewItem($item))
+            ->values()
+            ->all();
+    }
+
+    private function mapNavigationOverviewItem(NavigationItem $item): array
+    {
+        $childItems = $item->relationLoaded('children') ? $item->children : collect();
+
+        return [
+            'id' => (int) $item->id,
+            'code' => $item->code,
+            'label' => $item->label,
+            'icon' => $item->icon,
+            'route' => $item->route,
+            'permission' => $item->permission_code,
+            'sort_order' => (int) $item->sort_order,
+            'active' => (bool) $item->active,
+            'children' => $childItems
+                ->map(fn (NavigationItem $child) => $this->mapNavigationOverviewItem($child))
                 ->values()
                 ->all(),
         ];
