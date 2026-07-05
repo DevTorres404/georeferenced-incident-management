@@ -12,6 +12,20 @@ class ApiError extends Error {
 
 const pendingControllers = new Map();
 
+function getCacheScope(token) {
+  return token ? `auth_${String(token).slice(-12)}` : 'anon';
+}
+
+function getCacheKey(path, token) {
+  return `SGI_API_CACHE_${getCacheScope(token)}_${path}`;
+}
+
+function clearApiCache() {
+  Object.keys(sessionStorage)
+    .filter((key) => key.startsWith('SGI_API_CACHE_') || key === 'SGI_notifications_cache')
+    .forEach((key) => sessionStorage.removeItem(key));
+}
+
 async function requestRaw(path, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const token = localStorage.getItem(window.SGIGSession?.STORAGE_KEYS?.token || 'auth_token');
@@ -25,7 +39,7 @@ async function requestRaw(path, options = {}) {
   };
 
   // 1. Caché para peticiones GET (TTL de 30 segundos)
-  const cacheKey = `SGI_API_CACHE_${path}`;
+  const cacheKey = getCacheKey(path, token);
   if (method === 'GET' && !options.noCache) {
     const cachedStr = sessionStorage.getItem(cacheKey);
     if (cachedStr) {
@@ -127,9 +141,10 @@ const api = {
   request,
   requestRaw,
   requestBackend,
+  clearApiCache,
   extractErrorMessage,
 };
 
 window.SGIGApi = api;
 
-export { API_URL, ApiError, extractErrorMessage, request, requestBackend, requestRaw };
+export { API_URL, ApiError, clearApiCache, extractErrorMessage, request, requestBackend, requestRaw };

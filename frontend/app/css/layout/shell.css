@@ -274,10 +274,11 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar {
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-link {
-  width: 4.4rem;
+  width: 4.1rem;
   min-height: 42px;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 6px;
   padding: 0 !important;
   display: flex;
   align-items: center;
@@ -286,8 +287,9 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-l
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-icon {
   margin: 0 !important;
-  width: auto !important;
+  width: 1.45rem !important;
   min-width: 0 !important;
+  text-align: center;
   font-size: 1.05rem;
 }
 
@@ -297,28 +299,38 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
   padding-left: 0;
 }
 
-body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item:not(.has-treeview) {
-  display: none !important;
-}
-
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item.has-treeview:not(.menu-open) {
-  display: none !important;
+  display: block !important;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item.has-treeview > .nav-link {
-  display: none !important;
+  display: flex !important;
+}
+
+body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item.has-treeview > .nav-link.active {
+  background: rgba(14, 165, 233, 0.18) !important;
+  box-shadow: none;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item.has-treeview.menu-open > .nav-treeview {
   display: block;
+  margin-top: -2px;
+  margin-bottom: 8px;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link {
-  width: 4.4rem;
+  width: 3.55rem;
+  min-height: 36px;
   margin-left: auto;
   margin-right: auto;
+  margin-bottom: 5px;
   border-left: 0;
   border-radius: 8px;
+  background: rgba(15, 23, 42, 0.28) !important;
+}
+
+body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link .nav-icon {
+  font-size: 0.98rem;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link.active {

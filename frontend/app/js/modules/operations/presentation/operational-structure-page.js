@@ -9,10 +9,11 @@ import {
   listOperationalZones,
   listOperationalSupervisors,
   listOperationalOperators,
+  getOperationalZonesGeoJson,
   updateOperationalOperatorProfile,
   assignOperationalZoneSupervisor,
   replaceOperationalZoneOperator,
-} from '../application/operational-structure-service.js?v=3';
+} from '../application/operational-structure-service.js?v=4';
 
 const ZONE_COLOR_BY_CODE = {
   Z1: '#0f766e',
@@ -25,7 +26,6 @@ const ZONE_COLOR_BY_CODE = {
   Z8: '#14b8a6',
 };
 
-const GEOJSON_URL = '../data/ecuador-operational-provinces.geojson';
 const MAIN_SOURCE_ID = 'operational-zones-source';
 const state = {
   zones: [],
@@ -676,8 +676,7 @@ async function submitOperatorProfileForm(event) {
 }
 
 async function buildZoneGeoJson(zones) {
-  const response = await fetch(GEOJSON_URL, { cache: 'no-store' });
-  const baseGeoJson = await response.json();
+  const baseGeoJson = await getOperationalZonesGeoJson();
   const lookup = buildProvinceZoneLookup(zones);
 
   const features = (baseGeoJson.features || []).map((feature, index) => {

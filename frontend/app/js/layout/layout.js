@@ -1,4 +1,5 @@
-import { buildSidebarHtml } from './sidebar.js?v=23';
+import { buildSidebarHtml } from './sidebar.js?v=24';
+import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=20';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
@@ -11,65 +12,11 @@ import { subscribeToUserNotifications } from '../modules/notifications/applicati
  */
 window.SGINavigationStore = {
   NAV_STATE_KEY: 'SGI_nav_state',
-  menuItems: [
-    {
-      id: 'workspace',
-      label: 'Centro operativo',
-      icon: 'fa-th-large',
-      children: [
-        { id: 'dashboard', label: 'Panel principal', icon: 'fa-tachometer-alt', href: 'dashboard.html', permission: 'dashboard.view' },
-        { id: 'reports', label: 'Reportes y estadisticas', icon: 'fa-chart-bar', href: 'reports.html', permission: 'reportes.ver' },
-        { id: 'notifications', label: 'Notificaciones', icon: 'fa-bell', href: 'notifications.html', permission: 'dashboard.view' },
-      ],
-    },
-    {
-      id: 'incident-hub',
-      label: 'Gestion de incidencias',
-      icon: 'fa-exclamation-circle',
-      children: [
-        { id: 'incidents', label: 'Listado general', icon: 'fa-list-alt', href: 'incidents.html', permission: 'incidents.view' },
-        { id: 'assignment-management', label: 'Gestion de asignaciones', icon: 'fa-tasks', href: 'assignment-management.html', permission: 'incidents.assign' },
-        { id: 'incident-map', label: 'Mapa de incidencias', icon: 'fa-map-marked-alt', href: 'incident-map.html', permission: 'incidents.view' },
-        { id: 'incident-create', label: 'Nueva incidencia', icon: 'fa-plus-circle', href: 'incident-create.html', permission: 'incidents.create' },
-      ],
-    },
-    {
-      id: 'territorial-ops',
-      label: 'Cobertura nacional',
-      icon: 'fa-network-wired',
-      children: [
-        { id: 'operational-structure', label: 'Operacion nacional', icon: 'fa-draw-polygon', href: 'operational-structure.html', permission: 'operations.view' },
-      ],
-    },
-    {
-      id: 'admin-tools',
-      label: 'Administracion',
-      icon: 'fa-shield-alt',
-      children: [
-        { id: 'role-permissions', label: 'Roles y permisos', icon: 'fa-user-shield', href: 'role-permissions.html', permission: 'users.manage_roles' },
-        { id: 'user-roles', label: 'Usuarios y roles', icon: 'fa-user-tag', href: 'user-roles.html', permission: 'users.manage_roles' },
-        { id: 'audit-logs', label: 'Auditoria', icon: 'fa-clipboard-list', href: 'audit-logs.html', permission: 'audit.view' },
-      ],
-    },
-  ],
-  pagePermissions: {
-    about: 'about.view',
-    profile: 'profile.view',
-    'incident-detail': 'incidents.detail',
-    dashboard: 'dashboard.view',
-    incidents: 'incidents.view',
-    'incident-map': 'incidents.view',
-    'incident-create': 'incidents.create',
-    'assignment-management': 'incidents.assign',
-    'operational-structure': 'operations.view',
-    'role-permissions': 'users.manage_roles',
-    'user-roles': 'users.manage_roles',
-    reports: 'reportes.ver',
-    notifications: 'dashboard.view',
-    'audit-logs': 'audit.view',
-  },
+  menuItems: NAV_ITEMS,
+  pageAccess: PAGE_ACCESS,
+  authorizedMenuItems: null,
   getAuthorizedMenu: function () {
-    return filterAuthorizedMenuItems(this.menuItems);
+    return this.authorizedMenuItems || filterAuthorizedMenuItems(this.menuItems);
   },
   startNavigation: function (href) {
     sessionStorage.setItem(this.NAV_STATE_KEY, JSON.stringify({ inProgress: true, target: href, timestamp: Date.now() }));
@@ -117,27 +64,20 @@ function readSessionUser() {
  * Verifica si el usuario en sesión tiene el permiso indicado.
  */
 function hasPermission(code) {
+  const expected = normalizePermissionCode(code);
   const user = readSessionUser();
-  if (!user) return false;
-  // 1. El administrador tiene acceso a todas las pantallas
-  if (Array.isArray(user.roles)) {
-    for (const role of user.roles) {
-      if (normalizeCode(role) === 'ADMIN') {
-        return true;
-      }
-    }
-  }
-  // 2. Verificar permisos a nivel de usuario (estructura de la API)
+  if (!user || !expected) return false;
+  // 1. Verificar permisos a nivel de usuario (estructura de la API)
   if (Array.isArray(user.permissions)) {
-    if (user.permissions.some(p => normalizeCode(p) === code)) {
+    if (user.permissions.some(p => normalizePermissionCode(p) === expected)) {
       return true;
     }
   }
-  // 3. Fallback (por si los permisos vienen anidados en los roles)
+  // 2. Fallback (por si los permisos vienen anidados en los roles)
   if (Array.isArray(user.roles)) {
     for (const role of user.roles) {
       if (Array.isArray(role.permissions)) {
-        if (role.permissions.some(p => normalizeCode(p) === code)) {
+        if (role.permissions.some(p => normalizePermissionCode(p) === expected)) {
           return true;
         }
       }
@@ -145,14 +85,19 @@ function hasPermission(code) {
   }
   return false;
 }
-function hasRole(roleCode) {
-  const user = readSessionUser();
+function hasRole(roleCode, sessionUser = readSessionUser()) {
+  const user = sessionUser;
   if (!user || !Array.isArray(user.roles)) return false;
-  return user.roles.some((role) => normalizeCode(role) === roleCode);
+  const expected = normalizeRoleCode(roleCode);
+  return user.roles.some((role) => normalizeRoleCode(role) === expected);
 }
-function normalizeCode(value) {
-  if (typeof value === 'string') return value;
-  return value?.codigo || value?.code || '';
+function normalizeRoleCode(value) {
+  const raw = typeof value === 'string' ? value : value?.codigo || value?.code || value?.name || value?.nombre || '';
+  return String(raw || '').trim().toUpperCase();
+}
+function normalizePermissionCode(value) {
+  const raw = typeof value === 'string' ? value : value?.codigo || value?.code || '';
+  return String(raw || '').trim().toLowerCase();
 }
 function formatRoleLabel(role) {
   if (typeof role === 'string') return role;
@@ -166,24 +111,13 @@ function getAvailableMenus() {
   return flattenMenuItems(window.SGINavigationStore.getAuthorizedMenu());
 }
 function getPagePermission(activeId) {
-  return window.SGINavigationStore.pagePermissions?.[activeId] || null;
+  return window.SGINavigationStore.pageAccess?.[activeId]?.permission || null;
 }
 function getDefaultPageForSession() {
   // Orden de candidatos: se retorna la primera página que el usuario puede ver.
   // Si ningún permiso coincide, se retorna null para mostrar acceso denegado.
-  const candidates = [
-    ['dashboard.view', 'dashboard.html'],
-    ['incidents.create', 'incident-create.html'],
-    ['incidents.view', 'incidents.html'],
-    ['reportes.ver', 'reports.html'],
-    ['operations.view', 'operational-structure.html'],
-    ['users.manage_roles', 'role-permissions.html'],
-    ['audit.view', 'audit-logs.html'],
-  ];
-  const match = candidates.find(([permission]) => hasPermission(permission));
-  if (match) return match[1];
-
-  return null;
+  const firstMenu = getAvailableMenus().find((item) => item.route || item.href);
+  return firstMenu?.route || firstMenu?.href || null;
 }
 function escapeHtml(value) {
   return String(value ?? '')
@@ -266,6 +200,54 @@ async function requestBackend(path, options = {}) {
   } catch {
     return null;
   }
+}
+function updateSessionUser(user) {
+  if (!user) return null;
+  localStorage.setItem(AUTH_KEYS.user, JSON.stringify(user));
+  return user;
+}
+async function refreshSessionUserOrRedirect() {
+  const response = await requestBackend('/me');
+  if (!response?.user) {
+    clearSession();
+    redirectToLogin();
+    return null;
+  }
+
+  return updateSessionUser(response.user);
+}
+function normalizeNavigationItems(items = []) {
+  return items
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      id: item.id || item.code,
+      code: item.code || item.id,
+      label: item.label,
+      icon: item.icon,
+      route: item.route || item.href || null,
+      href: item.href || item.route || null,
+      permission: item.permission || item.permission_code || null,
+      children: Array.isArray(item.children) ? normalizeNavigationItems(item.children) : [],
+    }))
+    .filter((item) => item.id && item.label);
+}
+async function loadAuthorizedNavigation() {
+  const fallbackMenu = filterAuthorizedMenuItems(window.SGINavigationStore.menuItems);
+
+  try {
+    const response = await requestBackend('/navigation/menu', { noCache: true });
+    const items = normalizeNavigationItems(Array.isArray(response?.data) ? response.data : []);
+
+    if (items.length) {
+      window.SGINavigationStore.authorizedMenuItems = items;
+      return items;
+    }
+  } catch {
+    // Si el endpoint aun no esta migrado, mantenemos la navegacion local filtrada.
+  }
+
+  window.SGINavigationStore.authorizedMenuItems = fallbackMenu;
+  return fallbackMenu;
 }
 async function mutateBackend(path, options = {}) {
   const result = await requestBackend(path, options);
@@ -601,32 +583,34 @@ window.mutateBackend = mutateBackend;
 
 
 async function renderLayout(activeId = '') {
-  const user = ensureSessionOrRedirect();
+  let user = ensureSessionOrRedirect();
   if (!user) return;
 
-  if (hasRole('ADMIN') && !user.two_factor_enabled) {
+  user = await refreshSessionUserOrRedirect();
+  if (!user) return;
+
+  if (hasRole(ROLES.ADMIN, user) && !user.two_factor_enabled) {
     redirectToLogin();
     return;
   }
 
-  // Ruteo de Accesos por Permisos
-  const menuItems = window.SGINavigationStore.getAuthorizedMenu();
-  const currentItem = flattenMenuItems(window.SGINavigationStore.menuItems).find(i => i.id === activeId);
+  // Ruteo de accesos por rol y permiso.
+  const menuItems = await loadAuthorizedNavigation();
+  const currentItem = flattenMenuItems(menuItems).find(i => i.id === activeId)
+    || flattenMenuItems(window.SGINavigationStore.menuItems).find(i => i.id === activeId);
   if (activeId === 'territorial-units') {
     window.location.href = 'operational-structure.html';
     return;
   }
-  const requiredPermission = currentItem?.permission || getPagePermission(activeId);
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    if (!hasRole('ADMIN')) {
-      const defaultPage = getDefaultPageForSession();
-      if (!defaultPage) {
-        showLayoutMessage('No tienes una pantalla disponible para tu rol.', 'danger');
-        return;
-      }
-      window.location.href = defaultPage;
+  const pageAccess = currentItem || window.SGINavigationStore.pageAccess?.[activeId] || null;
+  if (pageAccess && !canAccessItem(pageAccess)) {
+    const defaultPage = getDefaultPageForSession();
+    if (!defaultPage) {
+      showLayoutMessage('No tienes una pantalla disponible para tu rol.', 'danger');
       return;
     }
+    window.location.href = defaultPage;
+    return;
   }
   // Navbar
   const userFirstName = user.nombre || user.first_name || 'Usuario';
@@ -641,7 +625,7 @@ async function renderLayout(activeId = '') {
     initial: userInitial,
     email: userEmail,
     role: userRole,
-    showProfileLink: hasPermission('profile.view'),
+    showProfileLink: canAccessItem(window.SGINavigationStore.pageAccess?.profile || {}),
   });
   const navEl = document.getElementById('mainNavbar');
   if (navEl) navEl.innerHTML = navbarHtml;
@@ -650,12 +634,12 @@ async function renderLayout(activeId = '') {
   const sidebarEl = document.getElementById('mainSidebar');
   if (sidebarEl) {
     sidebarEl.innerHTML = sidebarHtml;
-    
+
     // Interceptor de navegación para prevenir múltiples clics y recargas redundantes
-    sidebarEl.addEventListener('click', function(e) {
+    sidebarEl.addEventListener('click', function (e) {
       const link = e.target.closest('a.nav-link');
       if (!link) return;
-      
+
       const navItem = link.closest('.nav-item.has-treeview');
       const href = link.getAttribute('href');
       if (!href || href.startsWith('javascript:')) return;
@@ -686,22 +670,22 @@ async function renderLayout(activeId = '') {
       }
 
       e.preventDefault();
-      
+
       // Evitar recargar la misma página si ya estamos en ella
       const currentPath = window.location.pathname.split('/').pop();
       if (href === currentPath) {
         return;
       }
-      
+
       // Evitar múltiples clics si ya se está navegando
       if (window.SGINavigationStore && window.SGINavigationStore.isNavigationInProgress()) {
         return;
       }
-      
+
       if (window.SGINavigationStore) {
         window.SGINavigationStore.startNavigation(href);
       }
-      
+
       // Mostrar el loader global antes de que el navegador cambie de página
       const loader = document.getElementById('pageLoader');
       if (loader) {
@@ -709,19 +693,19 @@ async function renderLayout(activeId = '') {
         loader.classList.remove('d-none');
         loader.style.display = 'flex';
       }
-      
+
       // Ejecutar la navegación
       window.location.href = href;
     });
   }
   // Bind events
   document.getElementById('btnLogout')?.addEventListener('click', logoutManually);
-  
+
   // Interceptar clics en el logo de la aplicación
   document.querySelectorAll('.brand-link').forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      
+
       if (window.SGINavigationStore && window.SGINavigationStore.isNavigationInProgress()) {
         return;
       }
@@ -731,25 +715,25 @@ async function renderLayout(activeId = '') {
       if (!availableMenus || availableMenus.length === 0) {
         return;
       }
-      
-      const targetHref = availableMenus[0].href;
-      
+
+      const targetHref = availableMenus[0].route || availableMenus[0].href;
+
       // Si ya estamos en esa página, no hacer nada
       if (window.location.pathname.endsWith(targetHref)) {
         return;
       }
-      
+
       if (window.SGINavigationStore) {
         window.SGINavigationStore.startNavigation(targetHref);
       }
-      
+
       const loader = document.getElementById('pageLoader');
       if (loader) {
         loader.removeAttribute('hidden');
         loader.classList.remove('d-none');
         loader.style.display = 'flex';
       }
-      
+
       window.location.href = targetHref;
     });
   });
@@ -771,16 +755,21 @@ window.renderLayout = renderLayout;
 
 function filterAuthorizedMenuItems(items = []) {
   return items.reduce((result, item) => {
+    const hasChildren = Array.isArray(item.children) && item.children.length > 0;
     const children = Array.isArray(item.children) ? filterAuthorizedMenuItems(item.children) : [];
-    const canViewItem = !item.permission || hasPermission(item.permission);
+    const canViewItem = canAccessItem(item);
+    const hasRoute = Boolean(item.route || item.href);
 
-    if (children.length) {
-      result.push({ ...item, children });
+    if (hasChildren) {
+      if (canViewItem && children.length) {
+        result.push({ ...item, children });
+      }
       return result;
     }
 
-    if (canViewItem) {
-      result.push({ ...item });
+    if (hasRoute && canViewItem) {
+      result.push({ ...item, children });
+      return result;
     }
 
     return result;
@@ -790,6 +779,13 @@ function filterAuthorizedMenuItems(items = []) {
 function flattenMenuItems(items = []) {
   return items.flatMap((item) => {
     const children = Array.isArray(item.children) ? flattenMenuItems(item.children) : [];
-    return item.href ? [{ ...item, children: undefined }, ...children] : children;
+    return (item.route || item.href) ? [{ ...item, children: undefined }, ...children] : children;
   });
+}
+
+function canAccessItem(item = {}) {
+  const user = readSessionUser();
+  if (!user) return false;
+
+  return !item.permission || hasPermission(item.permission);
 }

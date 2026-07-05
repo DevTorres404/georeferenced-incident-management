@@ -34,9 +34,9 @@ function renderMenuItem(item, activeId) {
     linkClasses.push('active');
   }
 
-  const href = hasChildren ? '#' : item.href;
+  const href = hasChildren ? '#' : item.route || item.href;
   return `
-    <li class="${itemClasses.join(' ')}">
+    <li class="${itemClasses.join(' ')}" data-nav-id="${escapeHtml(item.id || '')}">
       <a
         href="${escapeHtml(href || '#')}"
         class="${linkClasses.join(' ')}"
