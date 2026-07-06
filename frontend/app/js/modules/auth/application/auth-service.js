@@ -18,7 +18,8 @@ async function getFirebaseAuth() {
       return {
         auth,
         provider,
-        signInWithPopup: authModule.signInWithPopup,
+        signInWithRedirect: authModule.signInWithRedirect,
+        getRedirectResult: authModule.getRedirectResult,
       };
     });
   }
@@ -205,24 +206,41 @@ function openGoogleFlowChannel(flowId, onUpdate) {
 }
 
 async function registerWithGoogle({ intent = 'register', onStatus } = {}) {
-  const { signInWithPopup, provider, auth } = await getFirebaseAuth();
-  const result = await signInWithPopup(auth, provider);
-  const idToken = await result.user.getIdToken();
-
+  // Guardar el intent para procesarlo cuando vuelva de Google
+  sessionStorage.setItem('sgig_google_intent', intent);
+  
+  const { signInWithRedirect, provider, auth } = await getFirebaseAuth();
+  
   if (typeof onStatus === 'function') {
     onStatus({
       status: 'processing',
-      message: 'Verificando tus datos con Google...',
+      message: 'Redirigiendo a Google...',
     });
   }
 
-  return submitGoogleToken(idToken, intent);
+  // Redirigir a Google (la pagina se recargara)
+  await signInWithRedirect(auth, provider);
+}
+
+async function checkGoogleRedirectResult() {
+  const { getRedirectResult, auth } = await getFirebaseAuth();
+  const result = await getRedirectResult(auth);
+  
+  if (result && result.user) {
+    const idToken = await result.user.getIdToken();
+    const intent = sessionStorage.getItem('sgig_google_intent') || 'login';
+    sessionStorage.removeItem('sgig_google_intent');
+    return submitGoogleToken(idToken, intent);
+  }
+  
+  return null;
 }
 
 const authService = {
   loginWithEmail,
   registerLocal,
   registerWithGoogle,
+  checkGoogleRedirectResult,
   completeProfile,
   restoreSession,
   logout,
@@ -240,6 +258,7 @@ export {
   logout,
   registerLocal,
   registerWithGoogle,
+  checkGoogleRedirectResult,
   restoreSession,
   verifyTwoFactorLogin,
   enableTwoFactor,
