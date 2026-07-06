@@ -275,75 +275,6 @@ endpoints:
   -
     custom: []
     httpMethods:
-      - GET
-    uri: 'api/auth/email/verify/{id}/{hash}'
-    metadata:
-      custom: []
-      groupName: Autenticación
-      groupDescription: |-
-
-        APIs para manejar el registro, inicio y cierre de sesión de usuarios.
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Verificar correo electrónico.'
-      description: 'Ruta para validar el hash enviado por correo electrónico.'
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'El ID del usuario.'
-        required: true
-        example: 1
-        type: integer
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-      hash:
-        custom: []
-        name: hash
-        description: 'El hash de verificación enviado al correo.'
-        required: true
-        example: a1b2c3d4e5
-        type: string
-        enumValues: []
-        exampleWasSpecified: true
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: 1
-      hash: a1b2c3d4e5
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 403
-        content: |-
-          {
-              "message": "Invalid signature."
-          }
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
       - POST
     uri: api/logout
     metadata:
@@ -370,52 +301,6 @@ endpoints:
     cleanBodyParameters: []
     fileParameters: []
     responses: []
-    responseFields: []
-    auth:
-      - headers
-      - Authorization
-      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: api/me
-    metadata:
-      custom: []
-      groupName: Autenticación
-      groupDescription: |-
-
-        APIs para manejar el registro, inicio y cierre de sesión de usuarios.
-      subgroup: ''
-      subgroupDescription: ''
-      title: 'Obtener perfil del usuario actual.'
-      description: 'Devuelve la información del usuario autenticado actualmente.'
-      authenticated: true
-      deprecated: false
-    headers:
-      Authorization: 'Bearer {YOUR_AUTH_KEY}'
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"message":"No autenticado."}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          access-control-allow-origin: '*'
-        description: null
     responseFields: []
     auth:
       - headers
@@ -500,6 +385,79 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       username: marianop
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer 6g43cv8PD1aE5beadkZfhV6'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: api/auth/profile
+    metadata:
+      custom: []
+      groupName: Autenticación
+      groupDescription: |-
+
+        APIs para manejar el registro, inicio y cierre de sesión de usuarios.
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {YOUR_AUTH_KEY}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      first_name:
+        custom: []
+        name: first_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      last_name:
+        custom: []
+        name: last_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      username:
+        custom: []
+        name: username
+        description: 'Must match the regex /^\S+$/u. Must be at least 3 characters. Must not be greater than 50 characters.'
+        required: true
+        example: g
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      first_name: b
+      last_name: 'n'
+      username: g
     fileParameters: []
     responses: []
     responseFields: []

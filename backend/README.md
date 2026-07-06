@@ -82,3 +82,7 @@ composer test
 - Los tests de incidencias deben respetar permisos y roles reales del backend.
 - Si una prueba toca datos geoespaciales, debe ejecutarse contra PostgreSQL/PostGIS, no SQLite.
 - No usar credenciales reales de Firebase ni valores de `.env` productivos en pruebas.
+
+## Despliegue en Producción
+
+Para instrucciones detalladas sobre cómo preparar y levantar el backend en un entorno de producción (VPS o servidor usando Docker Compose), por favor consulta la guía oficial de despliegue en [DEPLOY.md](./DEPLOY.md).
