@@ -38,14 +38,8 @@ RUN apt-get update \
         zip \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && curl -o /usr/local/bin/php-fpm-healthcheck \
-        https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \
-    && chmod +x /usr/local/bin/php-fpm-healthcheck \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
-
-# Habilitar status endpoint de PHP-FPM para el healthcheck
-RUN echo 'pm.status_path = /status' >> /usr/local/etc/php-fpm.d/www.conf
 
 RUN groupmod -o -g "${WWWGROUP}" www-data \
     && usermod -o -u "${WWWUSER}" -g www-data www-data
@@ -71,9 +65,6 @@ RUN composer dump-autoload --optimize \
     && mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwX storage bootstrap/cache
-
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-    CMD php-fpm-healthcheck || exit 1
 
 USER www-data
 

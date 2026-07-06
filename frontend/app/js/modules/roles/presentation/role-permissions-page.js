@@ -52,19 +52,15 @@ function renderRoles(state) {
   container.innerHTML = state.roles.map((role) => {
     const activeClass = role.code === state.selectedRoleCode ? 'active' : '';
     const permissionCount = role.permissions?.length || 0;
-    const icon = getRoleIcon(role.code);
 
     return `
       <button type="button" class="list-group-item list-group-item-action role-permission-item ${activeClass}" data-role-code="${escapeHtml(role.code)}">
-        <div class="d-flex align-items-center gap-3">
-          <span class="rp-role-icon" aria-hidden="true"><i class="fas ${escapeHtml(icon)}"></i></span>
-          <div class="flex-grow-1 min-width-0">
-            <div class="d-flex align-items-center justify-content-between">
-              <span class="rp-role-name">${escapeHtml(role.name)}</span>
-              <span class="badge ml-2">${permissionCount}</span>
-            </div>
+        <div class="d-flex align-items-start justify-content-between">
+          <div>
+            <strong>${escapeHtml(role.name)}</strong>
             <small class="d-block">${escapeHtml(getRoleDescription(role.code))}</small>
           </div>
+          <span class="badge badge-light">${permissionCount}</span>
         </div>
       </button>`;
   }).join('');
@@ -101,12 +97,9 @@ function renderPermissions(state) {
       ${modules.length ? modules.map(([module, permissions]) => `
     <div class="permission-module mb-3">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="d-flex align-items-center">
-          <span class="rp-module-icon" aria-hidden="true"><i class="fas ${escapeHtml(getModuleIcon(module))}"></i></span>
-          <div>
-            <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(formatModuleLabel(module))}</h4>
-            <small class="text-muted">${permissions.length} permiso${permissions.length === 1 ? '' : 's'} en este módulo</small>
-          </div>
+        <div>
+          <h4 class="h6 text-uppercase text-muted mb-0">${escapeHtml(formatModuleLabel(module))}</h4>
+          <small class="text-muted">${permissions.length} permiso${permissions.length === 1 ? '' : 's'} en este modulo</small>
         </div>
         <button type="button" class="btn btn-xs btn-outline-secondary js-toggle-module" data-module="${escapeHtml(module)}">
           <i class="fas fa-check-double mr-1"></i>Seleccionar todo
@@ -337,35 +330,6 @@ function formatModuleLabel(module) {
   };
   const key = String(module || '').toLowerCase();
   return labels[key] || humanizeCode(module);
-}
-
-function getModuleIcon(module) {
-  const icons = {
-    about: 'fa-info-circle',
-    dashboard: 'fa-tachometer-alt',
-    incidents: 'fa-exclamation-triangle',
-    comments: 'fa-comments',
-    profile: 'fa-user-circle',
-    users: 'fa-users',
-    operations: 'fa-hard-hat',
-    catalogs: 'fa-tags',
-    territorial_units: 'fa-map-marked-alt',
-    reportes: 'fa-chart-bar',
-    configuracion: 'fa-cog',
-    audit: 'fa-history',
-  };
-  const key = String(module || '').toLowerCase();
-  return icons[key] || 'fa-puzzle-piece';
-}
-
-function getRoleIcon(code) {
-  const icons = {
-    ADMIN: 'fa-user-shield',
-    SUPERVISOR: 'fa-user-tie',
-    OPERADOR: 'fa-hard-hat',
-    CIUDADANO: 'fa-user',
-  };
-  return icons[String(code || '').toUpperCase()] || 'fa-user-circle';
 }
 
 function formatPermissionLabel(permission) {
