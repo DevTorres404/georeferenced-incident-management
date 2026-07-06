@@ -1,4 +1,4 @@
-import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, checkGoogleRedirectResult, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=16';
+import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=16';
 import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=15';
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
@@ -78,26 +78,6 @@ function initAuthPage() {
     }
 
     showVerificationNotice();
-
-    try {
-      const redirectData = await checkGoogleRedirectResult();
-      if (redirectData) {
-        if (redirectData.requires_2fa) {
-          tempTwoFactorToken = redirectData.two_factor_token;
-          switchView('two-factor');
-          if (el.twoFactorCodeInput) {
-            el.twoFactorCodeInput.value = '';
-            el.twoFactorCodeInput.focus();
-          }
-          showAlert(el.twoFactorAlert, 'Verifica el codigo de tu aplicacion autenticadora para continuar.', 'info');
-          return;
-        }
-        routeAfterAuth(redirectData.user || redirectData);
-        return;
-      }
-    } catch (error) {
-      showAlert(el.loginAlert, error.message || 'No se pudo completar la operación con Google.', 'danger');
-    }
 
     const sessionUser = await restoreSession();
     if (sessionUser) {
