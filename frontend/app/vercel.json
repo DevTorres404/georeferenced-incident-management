@@ -1,4 +1,41 @@
 {
-    "cleanUrls": true,
-    "trailingSlash": false
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/html/about.html", "destination": "/acerca-de", "permanent": true },
+    { "source": "/html/assignment-management.html", "destination": "/asignaciones", "permanent": true },
+    { "source": "/html/audit-logs.html", "destination": "/auditoria", "permanent": true },
+    { "source": "/html/dashboard.html", "destination": "/dashboard", "permanent": true },
+    { "source": "/html/incident-create.html", "destination": "/incidencias/crear", "permanent": true },
+    { "source": "/html/incident-detail.html", "destination": "/incidencias/detalle", "permanent": true },
+    { "source": "/html/incident-map.html", "destination": "/mapa", "permanent": true },
+    { "source": "/html/incidents.html", "destination": "/incidencias", "permanent": true },
+    { "source": "/html/notifications.html", "destination": "/notificaciones", "permanent": true },
+    { "source": "/html/operational-structure.html", "destination": "/estructura-operativa", "permanent": true },
+    { "source": "/html/profile.html", "destination": "/perfil", "permanent": true },
+    { "source": "/html/register.html", "destination": "/registro", "permanent": true },
+    { "source": "/html/reports.html", "destination": "/reportes", "permanent": true },
+    { "source": "/html/role-permissions.html", "destination": "/permisos", "permanent": true },
+    { "source": "/html/territorial-units.html", "destination": "/unidades-territoriales", "permanent": true },
+    { "source": "/html/user-roles.html", "destination": "/usuarios", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/acerca-de", "destination": "/html/about.html" },
+    { "source": "/asignaciones", "destination": "/html/assignment-management.html" },
+    { "source": "/auditoria", "destination": "/html/audit-logs.html" },
+    { "source": "/dashboard", "destination": "/html/dashboard.html" },
+    { "source": "/incidencias/crear", "destination": "/html/incident-create.html" },
+    { "source": "/incidencias/detalle", "destination": "/html/incident-detail.html" },
+    { "source": "/mapa", "destination": "/html/incident-map.html" },
+    { "source": "/incidencias", "destination": "/html/incidents.html" },
+    { "source": "/notificaciones", "destination": "/html/notifications.html" },
+    { "source": "/estructura-operativa", "destination": "/html/operational-structure.html" },
+    { "source": "/perfil", "destination": "/html/profile.html" },
+    { "source": "/registro", "destination": "/html/register.html" },
+    { "source": "/reportes", "destination": "/html/reports.html" },
+    { "source": "/permisos", "destination": "/html/role-permissions.html" },
+    { "source": "/unidades-territoriales", "destination": "/html/territorial-units.html" },
+    { "source": "/usuarios", "destination": "/html/user-roles.html" }
+  ]
 }

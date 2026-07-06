@@ -43,6 +43,7 @@ function initAuthPage() {
     googleLoginBtn: document.getElementById('google-login-btn'),
     togglePasswordBtn: document.getElementById('toggle-password-btn'),
     toggleRegisterPasswordBtn: document.getElementById('toggle-register-password-btn'),
+    toggleRegisterPasswordConfirmBtn: document.getElementById('toggle-register-password-confirm-btn'),
     passwordInput: document.getElementById('password'),
     registerPasswordInput: document.getElementById('register-password'),
     loginEmailInput: document.getElementById('email'),
@@ -110,10 +111,14 @@ function initAuthPage() {
       el.toggleRegisterPasswordBtn.addEventListener('click', () => togglePasswordVisibility(el.registerPasswordInput, el.toggleRegisterPasswordBtn));
     }
     
+    if (el.toggleRegisterPasswordConfirmBtn && el.registerPasswordConfirmInput) {
+      el.toggleRegisterPasswordConfirmBtn.addEventListener('click', () => togglePasswordVisibility(el.registerPasswordConfirmInput, el.toggleRegisterPasswordConfirmBtn));
+    }
+    
     if (el.dashboardLink) {
       el.dashboardLink.addEventListener('click', () => {
         if (!busy) {
-          window.location.href = getAppPath('dashboard.html');
+          window.location.href = getAppPath('/dashboard');
         }
       });
     }
@@ -302,16 +307,16 @@ function initAuthPage() {
   }
 
   function getAppPath(page) {
-    return window.location.pathname.includes('/html/') ? page : `html/${page}`;
+    return page;
   }
 
   function getPostAuthPath(user) {
     const roles = Array.isArray(user?.roles) ? user.roles.map(normalizeCode) : [];
     if (roles.includes('CIUDADANO')) {
-      return getAppPath('incident-create.html');
+      return getAppPath('/incidencias/crear');
     }
 
-    return getAppPath('dashboard.html');
+    return getAppPath('/dashboard');
   }
 
   function normalizeCode(value) {

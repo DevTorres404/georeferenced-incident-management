@@ -44,7 +44,7 @@ function initProfilePage() {
 
   const user = readSessionUser();
   if (!user) {
-    window.location.href = '../index.html';
+    window.location.href = '/';
     return;
   }
 
