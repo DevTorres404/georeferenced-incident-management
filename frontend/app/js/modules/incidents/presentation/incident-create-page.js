@@ -520,7 +520,7 @@ async function handleSubmit(event) {
 
     showSuccessAlert(response?.message || 'Incidencia registrada con exito.');
     window.setTimeout(() => {
-      window.location.href = `/incidencias/detalle?id=${encodeURIComponent(incident.id)}`;
+      window.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`;
     }, 1000);
   } catch (error) {
     handleBackendErrors(error, document.getElementById('formNuevaIncidencia'));

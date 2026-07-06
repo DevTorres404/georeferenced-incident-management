@@ -7,7 +7,7 @@ export function buildTopbarHtml(user) {
   const email = escapeHtml(user.email || '');
   const role = escapeHtml(user.role || 'Sin rol asignado');
   const profileLink = user.showProfileLink === false ? '' : `
-          <a href="/perfil" class="dropdown-item rounded px-3 py-2 text-dark">
+          <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
             <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
           </a>`;
 

@@ -219,7 +219,7 @@ function buildPopupHtml(point) {
         <dt>Prioridad</dt><dd>${escapeHtml(formatLabel(point.priority?.name || '-'))}</dd>
         <dt>Ubicacion</dt><dd>${escapeHtml(point.address || point.city?.name || '-')}</dd>
       </dl>
-      <a class="btn btn-sm btn-primary btn-block" href="/incidencias/detalle">
+      <a class="btn btn-sm btn-primary btn-block" href="incident-detail.html?id=${encodeURIComponent(point.id)}">
         Ver detalle
       </a>
     </div>`;

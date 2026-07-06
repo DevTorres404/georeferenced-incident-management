@@ -118,7 +118,7 @@ function createNotificationElement(notification) {
           await mutateBackend(`/notifications/${notification.id}/read`, { method: 'PATCH' });
         } catch { /* silent */ }
       }
-      window.location.href = `/incidencias/detalle?id=${incidentId}`;
+      window.location.href = `incident-detail.html?id=${incidentId}`;
     });
   }
 

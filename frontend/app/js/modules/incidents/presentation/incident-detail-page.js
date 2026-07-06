@@ -88,7 +88,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
     <div class="row mb-3">
       <div class="col-12 d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
         <div>
-          <a href="/incidencias" class="btn btn-sm btn-outline-secondary mr-2">
+          <a href="incidents.html" class="btn btn-sm btn-outline-secondary mr-2">
             <i class="fas fa-arrow-left mr-1"></i>Volver
           </a>
           <span class="badge badge-dark mr-1" style="font-size:0.95rem;padding:6px 10px;">${escapeHtml(incident.code || `#${incident.id}`)}</span>
@@ -105,7 +105,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
               <i class="fas fa-exchange-alt mr-1"></i>Cambiar Estado
             </button>
           ` : ''}
-          <a href="/incidencias/crear" class="btn btn-sm btn-primary">
+          <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
           </a>
         </div>
@@ -795,7 +795,7 @@ function renderError(container, message) {
   container.innerHTML = `
     <div class="alert alert-danger">
       <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
-      <a href="/incidencias" class="btn btn-sm btn-outline-danger ml-3">Volver</a>
+      <a href="incidents.html" class="btn btn-sm btn-outline-danger ml-3">Volver</a>
     </div>`;
 }
 

@@ -242,7 +242,7 @@ function renderTable(state) {
         <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
         <td>${assignmentChips}</td>
         <td class="text-right assignment-row-actions">
-          <a href="/incidencias/detalle" class="btn btn-sm btn-outline-secondary mr-1" title="Ver detalle">
+          <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-secondary mr-1" title="Ver detalle">
             <i class="fas fa-eye"></i>
           </a>
           <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}">
