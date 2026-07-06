@@ -1,8 +1,14 @@
 'use strict';
 
+const IS_LOCAL =
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1';
+
 export const API_URL =
   window.SGI_API_URL ||
-  'https://api.labtorres.me/api';
+  (IS_LOCAL
+    ? 'http://127.0.0.1:8000/api'
+    : 'https://api.labtorres.me/api');
 
 export const API_CACHE_TTL_MS = 30000;
 
@@ -14,14 +20,14 @@ export const REVERB_APP_KEY =
 
 export const REVERB_HOST =
   window.SGI_REVERB_HOST ||
-  'api.labtorres.me';
+  (IS_LOCAL ? '127.0.0.1' : 'api.labtorres.me');
 
 export const REVERB_PORT =
-  Number(window.SGI_REVERB_PORT || 443);
+  Number(window.SGI_REVERB_PORT || (IS_LOCAL ? 8080 : 443));
 
 export const REVERB_SCHEME =
   window.SGI_REVERB_SCHEME ||
-  'https';
+  (IS_LOCAL ? 'http' : 'https');
 
 export const MAP_DEFAULT_CENTER =
   window.SGI_MAP_DEFAULT_CENTER || [-78.4678, -1.8312];
