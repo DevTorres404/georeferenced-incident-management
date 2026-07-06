@@ -43,6 +43,7 @@ function initAuthPage() {
     googleLoginBtn: document.getElementById('google-login-btn'),
     togglePasswordBtn: document.getElementById('toggle-password-btn'),
     toggleRegisterPasswordBtn: document.getElementById('toggle-register-password-btn'),
+    toggleRegisterPasswordConfirmBtn: document.getElementById('toggle-register-password-confirm-btn'),
     passwordInput: document.getElementById('password'),
     registerPasswordInput: document.getElementById('register-password'),
     loginEmailInput: document.getElementById('email'),
@@ -108,6 +109,10 @@ function initAuthPage() {
     }
     if (el.toggleRegisterPasswordBtn && el.registerPasswordInput) {
       el.toggleRegisterPasswordBtn.addEventListener('click', () => togglePasswordVisibility(el.registerPasswordInput, el.toggleRegisterPasswordBtn));
+    }
+    
+    if (el.toggleRegisterPasswordConfirmBtn && el.registerPasswordConfirmInput) {
+      el.toggleRegisterPasswordConfirmBtn.addEventListener('click', () => togglePasswordVisibility(el.registerPasswordConfirmInput, el.toggleRegisterPasswordConfirmBtn));
     }
     
     if (el.dashboardLink) {
