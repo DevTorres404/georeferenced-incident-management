@@ -167,7 +167,7 @@ function clearSession() {
   localStorage.removeItem(AUTH_KEYS.lastActivityAt);
 }
 function getLoginPath() {
-  return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+  return '/';
 }
 function redirectToLogin() {
   window.location.href = getLoginPath();
@@ -452,7 +452,7 @@ function renderBetterNavbarNotifications(count, notifications) {
             </div>`;
         }
         if (incidentId) {
-          window.location.href = `incident-detail.html?id=${incidentId}`;
+          window.location.href = `/incidencias/detalle?id=${incidentId}`;
         }
       } catch {
         showLayoutMessage('No se pudo marcar la notificacion como leida.', 'danger');
@@ -599,7 +599,7 @@ async function renderLayout(activeId = '') {
   const currentItem = flattenMenuItems(menuItems).find(i => i.id === activeId)
     || flattenMenuItems(window.SGINavigationStore.menuItems).find(i => i.id === activeId);
   if (activeId === 'territorial-units') {
-    window.location.href = 'operational-structure.html';
+    window.location.href = '/estructura-operativa';
     return;
   }
   const pageAccess = currentItem || window.SGINavigationStore.pageAccess?.[activeId] || null;

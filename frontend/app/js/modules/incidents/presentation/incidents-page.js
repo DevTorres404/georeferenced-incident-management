@@ -154,7 +154,7 @@ function renderTable(state) {
         <td class="text-truncate text-muted" style="max-width:260px;" title="${escapeHtml(territoryName)}"><i class="fas fa-map-marker-alt mr-1 text-primary" style="opacity:0.6;"></i>${escapeHtml(territoryName)}</td>
         <td><span class="text-muted">${escapeHtml(formatShortDate(incident.created_at))}</span></td>
         <td class="text-center" style="white-space:nowrap;">
-          <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-primary shadow-sm mr-1" title="Ver detalle completo" style="border-radius:0.4rem;">
+          <a href="/incidencias/detalle" class="btn btn-sm btn-outline-primary shadow-sm mr-1" title="Ver detalle completo" style="border-radius:0.4rem;">
             <i class="fas fa-external-link-alt"></i>
           </a>
           <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" title="Eliminar" data-id="${incident.id}" data-code="${code}" style="border-radius:0.4rem;">
@@ -183,7 +183,7 @@ function renderTable(state) {
             <i class="fas fa-folder-open text-muted mb-3" style="font-size: 3.5rem; opacity: 0.5;"></i>
             <h4 class="text-main font-weight-bold">No hay incidencias disponibles</h4>
             <p class="text-muted">Cuando se creen incidencias, aparecerán aquí con su estado, prioridad y fecha.</p>
-            <a href="incident-create.html" class="btn btn-primary mt-2">
+            <a href="/incidencias/crear" class="btn btn-primary mt-2">
               <i class="fas fa-plus mr-1"></i>Crear nueva incidencia
             </a>
           </div>

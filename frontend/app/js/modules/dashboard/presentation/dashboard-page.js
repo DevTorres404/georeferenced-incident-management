@@ -72,7 +72,7 @@ function renderKPIs(kpis) {
   ];
 
   grid.innerHTML = items.map((item) => `
-    <a href="incidents.html" class="dash-kpi-card" data-accent="${item.accent}">
+    <a href="/incidencias" class="dash-kpi-card" data-accent="${item.accent}">
       <div class="dash-kpi-content">
         <span class="dash-kpi-label">${escapeHtml(item.label)}</span>
         <span class="dash-kpi-number">${Number(item.value || 0)}</span>
@@ -195,7 +195,7 @@ function renderRecentIncidents(incidents) {
         <td><span class="badge ${getStateBadgeClass(state)}">${escapeHtml(state)}</span></td>
         <td style="white-space:nowrap;">${escapeHtml(formatShortDate(incident.created_at))}</td>
         <td>
-          <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-outline-primary" title="Ver detalle">
+          <a href="/incidencias/detalle" class="btn btn-xs btn-outline-primary" title="Ver detalle">
             <i class="fas fa-eye"></i>
           </a>
         </td>
