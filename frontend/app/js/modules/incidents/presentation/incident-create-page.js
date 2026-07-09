@@ -835,7 +835,11 @@ function selectedTerritorialLabel(selectId, manualLevel) {
 }
 
 function getSelectedTerritorialUnitId() {
-  const value = $('#fTerritorialSector')?.value || $('#fTerritorialParish')?.value || null;
+  const value = $('#fTerritorialSector')?.value
+    || $('#fTerritorialParish')?.value
+    || $('#fTerritorialCanton')?.value
+    || $('#fTerritorialProvince')?.value
+    || null;
 
   return value ? Number(value) : null;
 }

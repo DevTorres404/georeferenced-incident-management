@@ -509,6 +509,47 @@ class IncidentsTest extends TestCase
         ]);
     }
 
+    public function test_partial_priority_update_preserves_incident_location_classification_and_reference(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-partial-update@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-partial-update@incidencias.local');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $territorialUnitId = $this->territorialUnitId();
+        $priority = Priority::where('name', 'Alta')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Canal obstruido',
+                'description' => 'El canal esta acumulando agua junto a viviendas.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $territorialUnitId,
+                'address_reference' => 'Frente a la cancha del barrio',
+                'latitude' => -2.1709,
+                'longitude' => -79.9224,
+            ])->assertCreated()
+            ->json('data.id');
+
+        $this->actingAsUser($admin['user'])
+            ->putJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priority->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.priority.id', $priority->id);
+
+        $incident = Incident::findOrFail($incidentId);
+
+        $this->assertSame($subcategory->id, (int) $incident->subcategory_id);
+        $this->assertSame($territorialUnitId, (int) $incident->territorial_unit_id);
+        $this->assertSame('Frente a la cancha del barrio', $incident->address_reference);
+        $this->assertSame('-2.17090000', (string) $incident->latitude);
+        $this->assertSame('-79.92240000', (string) $incident->longitude);
+    }
+
     public function test_operator_alert_command_notifies_unreviewed_and_near_due_incidents(): void
     {
         $this->seedCoreData();
@@ -1022,7 +1063,6 @@ public function test_supervisor_alert_command_notifies_control_and_summary_event
         return 0;
     }
 }
-
 
 
 

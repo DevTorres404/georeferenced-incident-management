@@ -364,44 +364,44 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         $previousPriorityId = $incident->priority_id;
         $updateData = [];
 
-        if ($data->title !== null) {
+        if ($data->has('title')) {
             $updateData['title'] = $data->title;
         }
 
-        if ($data->description !== null) {
+        if ($data->has('description')) {
             $updateData['description'] = $data->description;
         }
 
-        if ($data->categoryId !== null) {
+        if ($data->has('categoryId')) {
             $updateData['category_id'] = $data->categoryId;
         }
 
-        if ($data->priorityId !== null) {
+        if ($data->has('priorityId')) {
             $updateData['priority_id'] = $data->priorityId;
         }
 
-        if (property_exists($data, 'territorialUnitId')) {
+        if ($data->has('territorialUnitId')) {
             $updateData['territorial_unit_id'] = $data->territorialUnitId;
         }
 
-        if (property_exists($data, 'subcategoryId')) {
+        if ($data->has('subcategoryId')) {
             $updateData['subcategory_id'] = $data->subcategoryId;
         }
 
-        if (property_exists($data, 'address')) {
+        if ($data->has('address')) {
             $updateData['address'] = $data->address;
             $updateData['address_reference'] = $data->address;
         }
 
-        if (property_exists($data, 'latitude')) {
+        if ($data->has('latitude')) {
             $updateData['latitude'] = $data->latitude;
         }
 
-        if (property_exists($data, 'longitude')) {
+        if ($data->has('longitude')) {
             $updateData['longitude'] = $data->longitude;
         }
 
-        if (property_exists($data, 'resolutionDate')) {
+        if ($data->has('resolutionDate')) {
             $updateData['resolution_date'] = $data->resolutionDate;
         }
 
@@ -409,7 +409,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             $incident->update($updateData);
         }
 
-        if ($data->priorityId !== null && (int) $previousPriorityId !== $data->priorityId) {
+        if ($data->has('priorityId') && $data->priorityId !== null && (int) $previousPriorityId !== $data->priorityId) {
             $priorityName = Priority::find($data->priorityId)?->name ?? 'actualizada';
             $message = "La prioridad de la incidencia {$incident->code} cambio a {$priorityName}.";
 

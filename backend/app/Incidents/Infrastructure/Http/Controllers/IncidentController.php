@@ -272,6 +272,8 @@ class IncidentController extends ApiController
             $this->validationMessages()
         );
 
+        $presentFields = $this->presentUpdateFields($request);
+
         $dto = new UpdateIncidentInputData(
             title: $data['title'] ?? null,
             description: $data['description'] ?? null,
@@ -282,7 +284,8 @@ class IncidentController extends ApiController
             latitude: $data['latitude'] ?? null,
             longitude: $data['longitude'] ?? null,
             territorialUnitId: $data['territorial_unit_id'] ?? null,
-            resolutionDate: $data['resolution_date'] ?? null
+            resolutionDate: $data['resolution_date'] ?? null,
+            presentFields: $presentFields
         );
 
         try {
@@ -519,6 +522,7 @@ class IncidentController extends ApiController
     private function rules(bool $partial = false, bool $allowPriority = true): array
     {
         $required = $partial ? 'sometimes' : 'required';
+        $nullable = $partial ? ['sometimes', 'nullable'] : ['nullable'];
         $priorityRules = $allowPriority
             ? [$partial ? 'sometimes' : 'nullable', 'nullable', 'integer', Rule::exists(Priority::class, 'id')]
             : ['prohibited'];
@@ -527,16 +531,46 @@ class IncidentController extends ApiController
             'title' => [$required, 'string', 'max:200'],
             'description' => [$required, 'string'],
             'category_id' => [$required, 'integer', Rule::exists(Category::class, 'id')],
-            'subcategory_id' => ['nullable', 'integer', Rule::exists(Subcategory::class, 'id')],
+            'subcategory_id' => [...$nullable, 'integer', Rule::exists(Subcategory::class, 'id')],
             'priority_id' => $priorityRules,
             'state_id' => ['prohibited'],
-            'territorial_unit_id' => ['nullable', 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
-            'address' => ['nullable', 'string', 'max:500'],
-            'address_reference' => ['nullable', 'string', 'max:500'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
-            'resolution_date' => ['nullable', 'date'],
+            'territorial_unit_id' => [...$nullable, 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
+            'address' => [...$nullable, 'string', 'max:500'],
+            'address_reference' => [...$nullable, 'string', 'max:500'],
+            'latitude' => [...$nullable, 'numeric', 'between:-90,90'],
+            'longitude' => [...$nullable, 'numeric', 'between:-180,180'],
+            'resolution_date' => [...$nullable, 'date'],
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function presentUpdateFields(Request $request): array
+    {
+        $fieldMap = [
+            'title' => 'title',
+            'description' => 'description',
+            'category_id' => 'categoryId',
+            'priority_id' => 'priorityId',
+            'subcategory_id' => 'subcategoryId',
+            'address' => 'address',
+            'address_reference' => 'address',
+            'latitude' => 'latitude',
+            'longitude' => 'longitude',
+            'territorial_unit_id' => 'territorialUnitId',
+            'resolution_date' => 'resolutionDate',
+        ];
+
+        $presentFields = [];
+
+        foreach ($fieldMap as $requestField => $dtoField) {
+            if ($request->exists($requestField) && ! in_array($dtoField, $presentFields, true)) {
+                $presentFields[] = $dtoField;
+            }
+        }
+
+        return $presentFields;
     }
 
     private function validationMessages(): array
