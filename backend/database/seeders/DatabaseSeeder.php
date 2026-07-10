@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
                 'last_name' => 'Sistema',
                 'password' => 'password', // Se hashea automáticamente por el cast 'hashed'
                 'is_active'   => true,
+                'email_verified_at' => now(),
             ]
         );
 

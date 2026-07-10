@@ -55,6 +55,13 @@ final class GoogleRegistrationUseCase
             throw AuthException::googleEmailNotVerified();
         }
 
+        // Check if the user is deactivated (soft deleted)
+        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $email)->first();
+        if ($trashedUser) {
+            $this->registrarIntentoGoogle($email, false, 'cuenta_desactivada', $input);
+            throw AuthException::accountInactive();
+        }
+
         $existingIdentity = $this->userRepository->findIdentityByProvider('google', $firebaseUid);
         $user = $existingIdentity?->userId
             ? $this->userRepository->loadProfile($existingIdentity->userId)

@@ -45,13 +45,11 @@ final class RegisterUserUseCase
         );
 
         $verification = $this->sendVerificationEmailSafely($user->id, $user->email);
-        $session = $this->sessionManager->createForUser($user->id, 'local-registration-token');
-        $profile = $this->userRepository->loadProfile($user->id) ?? $user;
 
         return new AuthActionResultData(
-            message: 'Registro completado correctamente.',
-            user: $profile,
-            session: $session,
+            message: 'Cuenta creada. Revisa tu correo para verificar tu cuenta antes de iniciar sesion.',
+            user: null,
+            session: null,
             verificationSent: $verification['sent'],
             verificationError: $verification['error']
         );

@@ -128,6 +128,59 @@ function bindActions(state) {
           btn.disabled = false;
           btn.innerHTML = '<i class="fas fa-check"></i>';
         }
+      } else if (e.target.closest('.btn-deactivate-user')) {
+        const btn = e.target.closest('.btn-deactivate-user');
+        const userId = btn.dataset.userId;
+        
+        // Show the bootstrap modal instead of browser confirm
+        document.getElementById('btnConfirmDeactivate').dataset.userId = userId;
+        $('#modalDeactivateUser').modal('show');
+        
+      }
+    });
+  }
+
+  // Handle actual deactivation from the modal
+  const btnConfirmDeactivate = document.getElementById('btnConfirmDeactivate');
+  if (btnConfirmDeactivate) {
+    btnConfirmDeactivate.addEventListener('click', async (e) => {
+      const userId = e.target.closest('button').dataset.userId;
+      if (!userId) return;
+
+      const btn = e.target.closest('button');
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Desactivando...';
+      
+      try {
+        if (typeof window.mutateBackend === 'function') {
+          await window.mutateBackend(`/users/${userId}`, { method: 'DELETE' });
+        } else {
+          const response = await fetch(`/api/users/${userId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+              'Accept': 'application/json'
+            }
+          });
+          if (!response.ok) throw new Error('Error al desactivar el usuario');
+        }
+        
+        $('#modalDeactivateUser').modal('hide');
+        
+        if (window.showGlobalAlert) {
+          window.showGlobalAlert('Usuario desactivado exitosamente', 'success');
+        }
+        
+        // Remover usuario del estado
+        state.users = state.users.filter(u => u.id != userId);
+        applyFilters(state, { keepPage: true });
+      } catch (error) {
+        handleBackendErrors(error, null, document.getElementById('access-alert'));
+        $('#modalDeactivateUser').modal('hide');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
       }
     });
   }
@@ -220,9 +273,12 @@ function renderUsersTable(users, roles) {
             ${roleOptions}
           </select>
         </td>
-        <td class="text-center">
-          <button type="button" class="btn btn-sm btn-success btn-assign-role" data-user-id="${user.id}" title="Aplicar Rol">
+        <td class="text-center text-nowrap">
+          <button type="button" class="btn btn-sm btn-success btn-assign-role mb-1" data-user-id="${user.id}" title="Aplicar Rol">
             <i class="fas fa-check"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user mb-1 ml-1" data-user-id="${user.id}" title="Desactivar/Eliminar usuario">
+            <i class="fas fa-trash-alt"></i>
           </button>
         </td>
       </tr>

@@ -13,12 +13,10 @@
   <link rel="preconnect" href="https://swgi-d956f.firebaseapp.com" crossorigin>
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js" crossorigin>
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=fallback"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=fallback" rel="stylesheet">
   <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="/dist/css/adminlte.min.css">
   <link rel="stylesheet" href="/css/app.css?v=26">
-  <link rel="stylesheet" href="/css/auth.css?v=17">
   <style>
     /* Mejoras visuales de login/registro */
     .custom-input {
@@ -35,21 +33,40 @@
       box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.2);
     }
 
-    .custom-input-group .input-group-append .btn {
+    .custom-input-group .input-group-append .btn,
+    .custom-input-group .input-group-prepend .input-group-text {
       border-radius: 0 12px 12px 0 !important;
       border: 1px solid #ced4da;
-      border-left: none;
       background: transparent;
       color: #6c757d;
+      transition: all 0.2s ease;
     }
 
-    .custom-input-group .custom-input {
+    .custom-input-group .input-group-prepend .input-group-text {
+      border-radius: 12px 0 0 12px !important;
       border-right: none;
+    }
+
+    .custom-input-group .input-group-append .btn {
+      border-left: none;
+    }
+
+    .custom-input-group .custom-input.border-left-0 {
+      border-radius: 0 12px 12px 0 !important;
+    }
+
+    .custom-input-group .custom-input.border-right-0 {
       border-radius: 12px 0 0 12px !important;
     }
 
-    .custom-input-group .custom-input:focus+.input-group-append .btn {
+    .custom-input-group .custom-input.border-left-0.border-right-0 {
+      border-radius: 0 !important;
+    }
+
+    .custom-input-group:focus-within .input-group-text,
+    .custom-input-group:focus-within .btn {
       border-color: #3498db;
+      color: #3498db;
     }
 
     .btn-primary-gradient {
@@ -68,6 +85,15 @@
       transform: translateY(-1px);
       box-shadow: 0 6px 16px rgba(52, 152, 219, 0.35);
       color: #fff;
+    }
+
+    .btn-primary-gradient:disabled, .btn-primary-gradient.disabled {
+      background: #bdc3c7;
+      color: #ffffff;
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+      opacity: 0.8;
     }
 
     .btn-google-custom {
@@ -89,9 +115,10 @@
 
     .login-wrapper {
       max-width: 480px;
-      border-radius: 20px;
-      border: 1px solid #f0f2f5;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.06);
+      border-radius: 24px;
+      border: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+      background: #ffffff;
     }
 
     .auth-bg-overlay {
@@ -100,77 +127,100 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(135deg, rgba(15, 32, 49, 0.92) 0%, rgba(33, 89, 138, 0.85) 100%);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 58, 138, 0.9) 100%);
+      backdrop-filter: blur(3px);
       z-index: 1;
     }
 
-    .auth-hero {
-      position: relative;
-    }
-
-    .auth-hero>* {
-      position: relative;
-      z-index: 2;
+    @media (max-width: 576px) {
+      .login-wrapper {
+        width: calc(100% - 32px) !important;
+        max-width: none !important;
+        padding: 2rem 1.5rem !important;
+        border-radius: 20px !important;
+      }
     }
   </style>
+  <link rel="stylesheet" href="/css/auth.css?v=17">
 </head>
 
-<body class="auth-page bg-light">
+<body class="auth-page bg-light auth-register-mode">
   <main class="container-fluid p-0">
     <div class="row min-vh-100 no-gutters auth-layout">
-      <!-- PANEL IZQUIERDO -->
-      <section class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white">
-        <div class="auth-bg-overlay"></div>
-        <div class="auth-hero-content w-100 px-4">
-          <h1 class="font-weight-bolder text-white mb-0"
-            style="font-size: 4.5rem; text-shadow: 0 10px 30px rgba(0,0,0,0.5); line-height: 1.05; letter-spacing: -2px;">
-            Sistema de<br>Gestión de<br><span style="color: #3498db;">Incidencias</span>
-          </h1>
-        </div>
-      </section>
 
-      <!-- PANEL DERECHO -->
-      <section class="col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5">
-        <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100">
+    <section id="vanta-waves-hero" class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white position-relative" aria-labelledby="auth-system-title" style="background-color: #060a12; overflow: hidden;">
+      <div class="auth-bg-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.2); z-index: 1;"></div>
+      
+      <div class="auth-hero-content w-100 px-4 position-relative" style="z-index: 2;">
+        <h1 id="auth-system-title" class="text-white mb-0" style="font-size: 4rem; line-height: 1.1; font-weight: 300; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+          Sistema de<br>Gestión de<br>
+          <span style="font-weight: 800; color: var(--auth-primary);">Incidencias</span>
+        </h1>
+      </div>
+    </section>
 
+    <!-- Contenedor Tarjeta Registro -->
+    <section class="auth-form-panel col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5 position-relative overflow-hidden">
+      <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100 mx-auto position-relative" style="z-index: 2;">
           <div class="auth-card-heading mb-4 text-center">
-            <div class="d-flex align-items-center justify-content-center mb-3">
-              <img src="/img/SGI_LOGO.png" alt="SGI Logo" style="height: 48px; width: auto; margin-right: 12px;">
-              <h2 class="h4 mb-0 text-dark font-weight-bold" style="letter-spacing: -0.3px;">Crear tu cuenta</h2>
+            <div class="d-flex flex-column align-items-center justify-content-center mb-3">
+              <img src="/img/SGI_LOGO.png" alt="SGI Logo" style="height: 52px; width: auto; margin-bottom: 16px;">
+              <h2 class="h3 mb-0 text-dark font-weight-bold" style="letter-spacing: -0.5px;">Crear tu cuenta</h2>
             </div>
-            <p class="text-muted mb-0" style="font-size: 0.95rem;">Únete a SGI para comenzar</p>
+            <p class="text-muted mb-0" style="font-size: 1rem;">Completa tus datos para registrarte.</p>
           </div>
-
+          
           <div id="register-view" class="auth-view">
             <div id="register-alert" class="alert d-none" role="alert"></div>
             <form id="register-form" novalidate>
               <div class="form-row">
                 <div class="form-group col-md-6 mb-3">
                   <label for="register-name" class="small text-muted font-weight-bold">Nombre</label>
-                  <input type="text" class="form-control custom-input" id="register-name" placeholder="Tu nombre"
-                    required autocomplete="given-name">
+                  <div class="input-group custom-input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    </div>
+                    <input type="text" class="form-control custom-input border-left-0" id="register-name" name="first_name" placeholder="Tu nombre" required autocomplete="given-name">
+                  </div>
                 </div>
                 <div class="form-group col-md-6 mb-3">
                   <label for="register-lastname" class="small text-muted font-weight-bold">Apellido</label>
-                  <input type="text" class="form-control custom-input" id="register-lastname" placeholder="Tu apellido"
-                    required autocomplete="family-name">
+                  <div class="input-group custom-input-group">
+                    <div class="input-group-prepend">
+                      <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    </div>
+                    <input type="text" class="form-control custom-input border-left-0" id="register-lastname" name="last_name" placeholder="Tu apellido" required autocomplete="family-name">
+                  </div>
                 </div>
               </div>
+              
               <div class="form-group mb-3">
                 <label for="register-username" class="small text-muted font-weight-bold">Nombre de usuario</label>
-                <input type="text" class="form-control custom-input" id="register-username"
-                  placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" autocomplete="username">
+                <div class="input-group custom-input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-at"></i></span>
+                  </div>
+                  <input type="text" class="form-control custom-input border-left-0" id="register-username" name="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" autocomplete="username">
+                </div>
               </div>
+              
               <div class="form-group mb-3">
                 <label for="register-email" class="small text-muted font-weight-bold">Correo electrónico</label>
-                <input type="email" class="form-control custom-input" id="register-email"
-                  placeholder="usuario@institucion.edu.ec" required autocomplete="email">
+                <div class="input-group custom-input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                  </div>
+                  <input type="email" class="form-control custom-input border-left-0" id="register-email" name="email" placeholder="usuario@institución.edu.ec" required autocomplete="email">
+                </div>
               </div>
+              
               <div class="form-group mb-3">
                 <label for="register-password" class="small text-muted font-weight-bold">Contraseña</label>
                 <div class="input-group custom-input-group">
-                  <input type="password" class="form-control custom-input" id="register-password" placeholder="••••••••"
-                    required minlength="8" autocomplete="new-password">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                  </div>
+                  <input type="password" class="form-control custom-input border-left-0 border-right-0" id="register-password" placeholder="••••••••" required minlength="8" autocomplete="new-password">
                   <div class="input-group-append">
                     <button type="button" class="btn" id="toggle-register-password-btn" aria-label="Mostrar contraseña">
                       <i class="fas fa-eye"></i>
@@ -178,50 +228,42 @@
                   </div>
                 </div>
               </div>
+              
               <div class="form-group mb-4">
-                <label for="register-password-confirm" class="small text-muted font-weight-bold">Confirmar
-                  contraseña</label>
+                <label for="register-password-confirm" class="small text-muted font-weight-bold">Confirmar contraseña</label>
                 <div class="input-group custom-input-group">
-                  <input type="password" class="form-control custom-input" id="register-password-confirm"
-                    placeholder="••••••••" required minlength="8" autocomplete="new-password">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                  </div>
+                  <input type="password" class="form-control custom-input border-left-0 border-right-0" id="register-password-confirm" placeholder="••••••••" required minlength="8" autocomplete="new-password">
                   <div class="input-group-append">
-                    <button type="button" class="btn" id="toggle-register-password-confirm-btn"
-                      aria-label="Mostrar contraseña">
+                    <button type="button" class="btn" id="toggle-register-password-confirm-btn" aria-label="Mostrar contraseña">
                       <i class="fas fa-eye"></i>
                     </button>
                   </div>
                 </div>
               </div>
-
-              <button type="submit"
-                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4"
-                id="register-submit-btn">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status"
-                  aria-hidden="true"></span>
+              
+              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4 py-2" id="register-submit-btn" style="font-size: 1.05rem;">
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status" aria-hidden="true"></span>
                 <i class="fas fa-user-plus mr-2"></i>
                 <span id="register-btn-text">Crear cuenta</span>
               </button>
             </form>
-
+            
             <div class="auth-divider mb-4 position-relative text-center">
               <hr style="border-top: 1px solid #e0e0e0;">
-              <span class="position-absolute px-3 bg-white text-muted small"
-                style="top: -10px; left: 50%; transform: translateX(-50%);">o</span>
+              <span class="position-absolute px-3 bg-white text-muted small" style="top: -10px; left: 50%; transform: translateX(-50%);">o</span>
             </div>
-
-            <button type="button" id="google-register-btn"
-              class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2"
-                style="width: 20px; height: 20px;">
+            
+            <button type="button" id="google-register-btn" class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2" style="width: 20px; height: 20px;">
               <span>Registrarse con Google</span>
             </button>
-
-            <div class="text-center mt-4">
-              <a href="/index.html" class="auth-link text-decoration-none font-weight-500" style="color: #3498db;">¿Ya
-                tienes cuenta? Inicia sesión aquí</a>
-            </div>
+            
+            <div class="text-center mt-4"><a href="#login" id="open-login-btn" class="auth-link text-decoration-none font-weight-500" style="color: var(--auth-primary);">&iquest;Ya tienes cuenta? Inicia sesi&oacute;n aqu&iacute;</a></div>
           </div>
-
+          
           <div id="profile-view" class="auth-view d-none">
             <div id="profile-alert" class="alert d-none" role="alert"></div>
             <div class="mb-4 text-center">
@@ -232,34 +274,47 @@
             <form id="profile-form" novalidate>
               <div class="form-group mb-4">
                 <label for="username" class="small text-muted font-weight-bold">Nombre de usuario</label>
-                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido"
-                  required minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
+                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
               </div>
-              <button type="submit"
-                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center"
-                id="profile-submit-btn">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="profile-spinner" role="status"
-                  aria-hidden="true"></span>
+              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center" id="profile-submit-btn">
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="profile-spinner" role="status" aria-hidden="true"></span>
                 <i class="fas fa-check-circle mr-2"></i>
                 <span id="profile-btn-text">Guardar y Entrar</span>
               </button>
             </form>
           </div>
-
-        </div>
-
-        <div class="text-center position-absolute w-100" style="bottom: 20px; left: 0;">
-          <p class="small text-muted mb-0 d-flex align-items-center justify-content-center">
-            <i class="fas fa-lock mr-2" style="font-size: 0.8rem;"></i> Acceso seguro para usuarios autorizados del
-            sistema.
-          </p>
-        </div>
-      </section>
+          
+      </div>
+    </section>
     </div>
   </main>
-
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      if (typeof VANTA !== 'undefined') {
+        if (document.getElementById('vanta-waves-hero')) {
+          VANTA.WAVES({
+            el: "#vanta-waves-hero",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x0f2f56,
+            shininess: 35.00,
+            waveHeight: 15.00,
+            waveSpeed: 0.80,
+            zoom: 0.75
+          });
+        }
+      }
+    });
+  </script>
   <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
   <script type="module" src="/js/modules/auth/presentation/auth-page.js?v=23"></script>
 </body>
-
 </html>

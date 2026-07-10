@@ -18,7 +18,7 @@ const NAV_ITEMS = [
       },
       {
         id: 'reports',
-        label: 'Reportes y estadisticas',
+        label: 'Reportes y estadísticas',
         icon: 'fa-chart-bar',
         route: 'reports.html',
         permission: 'reportes.ver',
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'incident-hub',
-    label: 'Gestion de incidencias',
+    label: 'Gestión de incidencias',
     icon: 'fa-exclamation-circle',
     permission: 'incidents.view',
     children: [
@@ -47,7 +47,7 @@ const NAV_ITEMS = [
       },
       {
         id: 'assignment-management',
-        label: 'Gestion de asignaciones',
+        label: 'Gestión de asignaciones',
         icon: 'fa-tasks',
         route: 'assignment-management.html',
         permission: 'incidents.assign',
@@ -76,7 +76,7 @@ const NAV_ITEMS = [
     children: [
       {
         id: 'operational-structure',
-        label: 'Operacion nacional',
+        label: 'Operación nacional',
         icon: 'fa-draw-polygon',
         route: 'operational-structure.html',
         permission: 'operations.view',
@@ -85,7 +85,7 @@ const NAV_ITEMS = [
   },
   {
     id: 'admin-tools',
-    label: 'Administracion',
+    label: 'Administración',
     icon: 'fa-shield-alt',
     permission: 'users.manage_roles',
     children: [
@@ -105,7 +105,7 @@ const NAV_ITEMS = [
       },
       {
         id: 'audit-logs',
-        label: 'Auditoria',
+        label: 'Auditoría',
         icon: 'fa-clipboard-list',
         route: 'audit-logs.html',
         permission: 'audit.view',

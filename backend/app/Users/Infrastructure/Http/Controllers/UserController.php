@@ -81,12 +81,16 @@ class UserController extends ApiController
             return $this->forbid();
         }
 
+        if ($request->has('username')) {
+            $request->merge(['username' => strtolower($request->username)]);
+        }
+
         $data = $request->validate([
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
             'first_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['nullable', 'string', 'max:100'],
-            'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^\S+$/u', Rule::unique(User::class, 'username')],
+            'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9_.-]+$/i', Rule::unique(User::class, 'username')],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')],
             'password' => ['required', 'string', 'min:8'],
             'telefono' => ['nullable', 'string', 'max:20'],
@@ -166,12 +170,16 @@ class UserController extends ApiController
             return $this->forbid();
         }
 
+        if ($request->has('username')) {
+            $request->merge(['username' => strtolower($request->username)]);
+        }
+
         $data = $request->validate([
             'nombre' => ['sometimes', 'nullable', 'string', 'max:100'],
             'apellido' => ['sometimes', 'nullable', 'string', 'max:100'],
             'first_name' => ['sometimes', 'nullable', 'string', 'max:100'],
             'last_name' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^\S+$/u', Rule::unique(User::class, 'username')->ignore($user->id)],
+            'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9_.-]+$/i', Rule::unique(User::class, 'username')->ignore($user->id)],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user->id)],
             'password' => ['sometimes', 'string', 'min:8'],
             'telefono' => ['sometimes', 'nullable', 'string', 'max:20'],

@@ -1,193 +1,160 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Gestion de Asignaciones</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
-  <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-  <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="/css/app.css?v=54">
-  <link rel="stylesheet" href="/css/pages/assignment-management.css?v=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGI | Gestión de Asignaciones</title>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="/css/app.css?v=54">
+    <link rel="stylesheet" href="/css/pages/assignment-management.css?v=1">
 </head>
+
 <body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
-  <div id="alertaGlobal" role="alert"></div>
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
-
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
-      <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
-      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
-    </a>
-    <div id="mainSidebar"></div>
-  </aside>
-
-  <div class="content-wrapper">
-    <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-      <div class="loader-orbit" aria-hidden="true">
-        <i class="fas fa-user-check"></i>
-      </div>
-    </div>
-
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-8">
-            <h1 class="m-0">
-              <i class="fas fa-tasks text-primary mr-2"></i>Gestion de Asignaciones
-            </h1>
-            <p class="text-muted mb-0 mt-1" id="assignmentSubtitle">Supervisa y distribuye incidencias entre responsables principales y apoyos.</p>
-          </div>
-          <div class="col-sm-4 d-flex justify-content-sm-end align-items-center mt-3 mt-sm-0">
-            <a href="incidents.html" class="btn btn-outline-secondary btn-sm">
-              <i class="fas fa-list mr-1"></i>Volver al listado
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Zona asignada (solo supervisores) -->
-    <div class="content" id="zoneBannerWrapper" style="display:none;">
-      <div class="container-fluid">
-        <div class="assignment-zone-banner" id="zoneBanner">
-          <div class="assignment-zone-banner-icon">
-            <i class="fas fa-map-marker-alt"></i>
-          </div>
-          <div class="assignment-zone-banner-body">
-            <span class="assignment-zone-banner-label">Zona operativa a tu cargo</span>
-            <span class="assignment-zone-banner-name" id="zoneBannerName"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="content">
-      <div class="container-fluid">
-        <div class="assignment-kpis mb-4" id="assignmentKpis"></div>
-
-        <div class="card shadow-sm border-0 mb-4">
-          <div class="card-body">
-            <div class="form-row">
-              <div class="form-group col-md-3">
-                <label for="filterSearch">Codigo o titulo</label>
-                <input id="filterSearch" type="search" class="form-control" placeholder="INC-2026, semaforo...">
-              </div>
-              <div class="form-group col-md-2">
-                <label for="filterPriority">Prioridad</label>
-                <select id="filterPriority" class="form-control">
-                  <option value="">Todas</option>
-                </select>
-              </div>
-              <div class="form-group col-md-2">
-                <label for="filterState">Estado</label>
-                <select id="filterState" class="form-control">
-                  <option value="">Todos</option>
-                </select>
-              </div>
-              <div class="form-group col-md-2">
-                <label for="filterCategory">Categoria</label>
-                <select id="filterCategory" class="form-control">
-                  <option value="">Todas</option>
-                </select>
-              </div>
-              <div class="form-group col-md-3" id="territoryFilterGroup">
-                <label for="filterTerritory">Zona operativa</label>
-                <select id="filterTerritory" class="form-control">
-                  <option value="">Todos</option>
-                </select>
-              </div>
+    <div class="wrapper">
+        <div id="alertaGlobal" role="alert"></div>
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+        <aside class="main-sidebar sidebar-dark-primary elevation-4"> <a href="dashboard.html"
+                class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;"> <img
+                    src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+                    style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+                <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span> </a>
+            <div id="mainSidebar"></div>
+        </aside>
+        <div class="content-wrapper">
+            <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+                <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-user-check"></i> </div>
             </div>
-            <div class="form-row align-items-end">
-              <div class="form-group col-md-3 mb-md-0">
-                <label for="filterOperator">Operador</label>
-                <select id="filterOperator" class="form-control">
-                  <option value="">Todos</option>
-                </select>
-              </div>
-              <div class="col-md-9 d-flex justify-content-md-end mt-3 mt-md-0">
-                <button id="btnResetFilters" type="button" class="btn btn-light border">
-                  <i class="fas fa-undo mr-1"></i>Limpiar filtros
-                </button>
-              </div>
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-8">
+                            <h1 class="m-0"> <i class="fas fa-tasks text-primary mr-2"></i>Gestión de Asignaciones </h1>
+                            <p class="text-muted mb-0 mt-1" id="assignmentSubtitle">Supervisa y distribuye incidencias
+                                entre responsables principales y apoyos.</p>
+                        </div>
+                        <div class="col-sm-4 d-flex justify-content-sm-end align-items-center mt-3 mt-sm-0"> <a
+                                href="incidents.html" class="btn btn-outline-secondary btn-sm"> <i
+                                    class="fas fa-list mr-1"></i>Volver al listado </a> </div>
+                    </div>
+                </div>
+            </div> <!-- Zona asignada (solo supervisores) -->
+            <div class="content" id="zoneBannerWrapper" style="display:none;">
+                <div class="container-fluid">
+                    <div class="assignment-zone-banner" id="zoneBanner">
+                        <div class="assignment-zone-banner-icon"> <i class="fas fa-map-marker-alt"></i> </div>
+                        <div class="assignment-zone-banner-body"> <span class="assignment-zone-banner-label">Zona
+                                operativa a tu cargo</span> <span class="assignment-zone-banner-name"
+                                id="zoneBannerName"></span> </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-
-        <div class="card shadow-sm border-0">
-          <div class="card-header bg-white border-0 pb-0">
-            <h3 class="card-title font-weight-bold">
-              <i class="fas fa-clipboard-list mr-2"></i>Incidencias por asignar o reasignar
-            </h3>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Codigo</th>
-                    <th>Titulo</th>
-                    <th>Prioridad</th>
-                    <th>Estado</th>
-                    <th>Zona</th>
-                    <th>Territorio</th>
-                    <th>Fecha</th>
-                    <th>Operadores</th>
-                    <th class="text-right">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="assignmentTableBody"></tbody>
-              </table>
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="assignment-kpis mb-4" id="assignmentKpis"></div>
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-body">
+                            <div class="form-row">
+                                <div class="form-group col-md-3"> <label for="filterSearch">Código o título</label>
+                                    <input id="filterSearch" type="search" class="form-control"
+                                        placeholder="INC-2026, semaforo...">
+                                </div>
+                                <div class="form-group col-md-2"> <label for="filterPriority">Prioridad</label> <select
+                                        id="filterPriority" class="form-control">
+                                        <option value="">Todas</option>
+                                    </select> </div>
+                                <div class="form-group col-md-2"> <label for="filterState">Estado</label> <select
+                                        id="filterState" class="form-control">
+                                        <option value="">Todos</option>
+                                    </select> </div>
+                                <div class="form-group col-md-2"> <label for="filterCategory">Categoría</label> <select
+                                        id="filterCategory" class="form-control">
+                                        <option value="">Todas</option>
+                                    </select> </div>
+                                <div class="form-group col-md-3" id="territoryFilterGroup"> <label
+                                        for="filterTerritory">Zona operativa</label> <select id="filterTerritory"
+                                        class="form-control">
+                                        <option value="">Todos</option>
+                                    </select> </div>
+                            </div>
+                            <div class="form-row align-items-end">
+                                <div class="form-group col-md-3 mb-md-0"> <label for="filterOperator">Operador</label>
+                                    <select id="filterOperator" class="form-control">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-9 d-flex justify-content-md-end mt-3 mt-md-0"> <button
+                                        id="btnResetFilters" type="button" class="btn btn-light border"> <i
+                                            class="fas fa-undo mr-1"></i>Limpiar filtros </button> </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white border-0 pb-0">
+                            <h3 class="card-title font-weight-bold"> <i
+                                    class="fas fa-clipboard-list mr-2"></i>Incidencias por asignar o reasignar </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Código</th>
+                                            <th>Título</th>
+                                            <th>Prioridad</th>
+                                            <th>Estado</th>
+                                            <th>Zona</th>
+                                            <th>Territorio</th>
+                                            <th>Fecha</th>
+                                            <th>Operadores</th>
+                                            <th class="text-right">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assignmentTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
+        <footer class="main-footer text-sm"> <strong>Sistema de Gesti�n de Incidencias Georreferenciadas (SGI)</strong>
+        </footer>
+        <aside class="control-sidebar control-sidebar-dark"></aside>
     </div>
-  </div>
-
-  <footer class="main-footer text-sm">
-    <strong>Sistema de Gestion de Incidencias Georreferenciadas (SGI)</strong>
-  </footer>
-  <aside class="control-sidebar control-sidebar-dark"></aside>
-</div>
-
-<div class="modal fade" id="assignmentModal" tabindex="-1" role="dialog" aria-labelledby="assignmentModalLabel" aria-modal="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="assignmentModalLabel">Asignar operadores</h5>
-        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <div class="assignment-modal-summary mb-3" id="assignmentModalSummary"></div>
-        <div class="form-group">
-          <label for="primaryOperatorSelect">Operador principal</label>
-          <select id="primaryOperatorSelect" class="form-control"></select>
+    <div class="modal fade" id="assignmentModal" tabindex="-1" role="dialog" aria-labelledby="assignmentModalLabel"
+        aria-modal="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="assignmentModalLabel">Asignar operadores</h5> <button type="button"
+                        class="close text-white" data-dismiss="modal" aria-label="Cerrar"> <span
+                            aria-hidden="true">&times;</span> </button>
+                </div>
+                <div class="modal-body">
+                    <div class="assignment-modal-summary mb-3" id="assignmentModalSummary"></div>
+                    <div class="form-group"> <label for="primaryOperatorSelect">Operador principal</label> <select
+                            id="primaryOperatorSelect" class="form-control"></select> </div>
+                    <div class="form-group mb-0"> <label>Operadores de apoyo</label>
+                        <div id="supportOperatorsList" class="support-operators-list"></div>
+                    </div>
+                </div>
+                <div class="modal-footer"> <button type="button" class="btn btn-light border"
+                        data-dismiss="modal">Cerrar</button> <button type="button" class="btn btn-primary"
+                        id="btnSaveAssignment"> <i class="fas fa-save mr-1"></i>Guardar asignación </button> </div>
+            </div>
         </div>
-        <div class="form-group mb-0">
-          <label>Operadores de apoyo</label>
-          <div id="supportOperatorsList" class="support-operators-list"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light border" data-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-primary" id="btnSaveAssignment">
-          <i class="fas fa-save mr-1"></i>Guardar asignacion
-        </button>
-      </div>
     </div>
-  </div>
-</div>
-
-<script src="/plugins/jquery/jquery.min.js"></script>
-<script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-<script src="/dist/js/adminlte.min.js"></script>
-  <script type="module" src="/js/layout/layout.js?v=35"></script>
-<script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=1"></script>
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script type="module" src="/js/layout/layout.js?v=35"></script>
+    <script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=1"></script>
 </body>
+
 </html>

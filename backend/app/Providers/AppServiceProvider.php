@@ -5,9 +5,11 @@ namespace App\Providers;
 use App\Auth\Infrastructure\Persistence\Models\PersonalAccessToken;
 use App\Auth\Domain\Repositories\UserRepositoryInterface;
 use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
+use App\Auth\Domain\Repositories\PasswordResetCodeRepositoryInterface;
 use App\Auth\Domain\Services\GoogleTokenVerifierInterface;
 use App\Auth\Infrastructure\Repositories\EloquentUserRepository;
 use App\Auth\Infrastructure\Repositories\EloquentLoginAttemptRepository;
+use App\Auth\Infrastructure\Repositories\EloquentPasswordResetCodeRepository;
 use App\Auth\Infrastructure\Services\FirebaseGoogleTokenVerifier;
 use App\Audit\Domain\Repositories\AuditRepositoryInterface;
 use App\Audit\Infrastructure\Persistence\Repositories\EloquentAuditRepository;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
         $this->app->bind(LoginAttemptRepositoryInterface::class, EloquentLoginAttemptRepository::class);
+        $this->app->bind(PasswordResetCodeRepositoryInterface::class, EloquentPasswordResetCodeRepository::class);
         $this->app->bind(GoogleTokenVerifierInterface::class, FirebaseGoogleTokenVerifier::class);
         $this->app->bind(CatalogRepositoryInterface::class, EloquentCatalogRepository::class);
         $this->app->bind(AuditRepositoryInterface::class, EloquentAuditRepository::class);
@@ -79,6 +82,14 @@ class AppServiceProvider extends ServiceProvider
             return [
                 Limit::perHour(3)->by($request->ip())->response($this->rateLimitResponse()),
                 Limit::perHour(3)->by($email ?: $request->ip())->response($this->rateLimitResponse()),
+            ];
+        });
+
+        RateLimiter::for('password.recovery', function (Request $request) {
+            $email = strtolower((string) $request->input('email'));
+            return [
+                Limit::perMinute(30)->by($request->ip())->response($this->rateLimitResponse()),
+                Limit::perMinute(3)->by(($email ?: 'unknown').'|'.$request->ip())->response($this->rateLimitResponse()),
             ];
         });
 

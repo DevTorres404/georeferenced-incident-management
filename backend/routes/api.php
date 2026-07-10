@@ -17,10 +17,15 @@ use Illuminate\Support\Facades\Route;
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
 Route::post('/auth/google', [AuthController::class, 'google']);
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password.recovery');
+Route::post('/auth/password/verify-code', [AuthController::class, 'verifyPasswordResetCode'])->middleware('throttle:password.recovery');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password.recovery');
 Route::post('/auth/2fa/verify-login', [TwoFactorAuthController::class, 'verifyLogin'])->middleware('throttle:login');
 Route::get('/auth/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
     ->middleware('signed')
     ->name('verification.verify');
+Route::post('/auth/email/resend-verification', [AuthController::class, 'resendVerificationEmailPublic'])
+    ->middleware('throttle:6,1');
 
 Route::prefix('catalogs')->middleware('throttle:catalogs.public')->group(function () {
     Route::get('/', [CatalogController::class, 'index']);
@@ -39,6 +44,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:6,1');
     Route::post('/auth/profile', [AuthController::class, 'completeProfile']);
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::patch('/auth/password', [AuthController::class, 'changePassword']);
     Route::get('/navigation/menu', [AccessControlController::class, 'navigation']);
     
     Route::post('/auth/2fa/enable', [TwoFactorAuthController::class, 'enable']);

@@ -65,9 +65,15 @@ final class OperationalStructureSeeder extends Seeder
                     $zoneNumber = $index + 1;
                     $zoneSuffix = strtolower(substr($data['zone_code'], 1));
 
+                    $firstNames = ['Luis', 'Carlos', 'Maria', 'Rosa', 'Jose', 'Jorge', 'Manuel', 'Carmen', 'Ana', 'Pedro', 'Raul', 'Pablo', 'Fernando', 'Diego', 'Andres', 'Patricia', 'Daniela', 'Andrea', 'Laura', 'Sofia'];
+                    $lastNames = ['Zambrano', 'Castro', 'Mendoza', 'Garcia', 'Vera', 'Delgado', 'Sanchez', 'Macias', 'Rodriguez', 'Cedeno', 'Lopez', 'Torres', 'Chavez', 'Ortiz', 'Flores', 'Alvarado', 'Fernandez', 'Morales', 'Gomez', 'Suarez'];
+                    
+                    $firstName = $firstNames[array_rand($firstNames)];
+                    $lastName = $lastNames[array_rand($lastNames)];
+
                     $operator = $this->user([
-                        'first_name' => "Operador{$position}",
-                        'last_name' => "Zona{$zoneNumber}",
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
                         'email' => sprintf('operador.z%s.%02d@incidents.local', $zoneSuffix, $position),
                         'username' => sprintf('operador.z%s.%02d', $zoneSuffix, $position),
                         'phone' => sprintf('0992%03d%03d', $zoneNumber, $position),
@@ -99,6 +105,7 @@ final class OperationalStructureSeeder extends Seeder
                 'last_name' => 'General',
                 'password' => 'password',
                 'is_active' => true,
+                'email_verified_at' => now(),
             ]
         );
     }

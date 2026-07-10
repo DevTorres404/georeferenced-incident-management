@@ -71,7 +71,7 @@ function resetFilters() {
 }
 
 async function loadAuditLogs() {
-  showPageLoading('Cargando auditoria', 'Consultando registros...');
+  showPageLoading('Cargando auditoría', 'Consultando registros...');
   hideAlert();
 
   try {
@@ -92,7 +92,7 @@ async function loadAuditLogs() {
     renderAuditLogs([]);
     renderSummary({ currentPage: 1, total: 0, lastPage: 1, perPage: state.perPage });
     renderPagination({ currentPage: 1, total: 0, lastPage: 1, perPage: state.perPage });
-    showAlert(error.message || 'No se pudieron cargar los logs de auditoria.', 'danger');
+    showAlert(error.message || 'No se pudieron cargar los logs de auditoría.', 'danger');
   } finally {
     hidePageLoading();
   }
@@ -106,7 +106,7 @@ function renderAuditLogs(logs) {
     tbody.innerHTML = `
       <tr>
         <td colspan="6" class="text-center text-muted py-4">
-          <i class="fas fa-search d-block mb-2"></i>No se encontraron logs de auditoria.
+          <i class="fas fa-search d-block mb-2"></i>No se encontraron logs de auditoría.
         </td>
       </tr>`;
     return;
@@ -150,7 +150,7 @@ function renderChanges(log) {
     <details class="audit-log-details">
       <summary>Ver detalle</summary>
       ${oldText ? `<span class="audit-log-json-label">Antes</span><pre>${escapeHtml(oldText)}</pre>` : ''}
-      ${newText ? `<span class="audit-log-json-label">Despues</span><pre>${escapeHtml(newText)}</pre>` : ''}
+      ${newText ? `<span class="audit-log-json-label">Después</span><pre>${escapeHtml(newText)}</pre>` : ''}
     </details>`;
 }
 

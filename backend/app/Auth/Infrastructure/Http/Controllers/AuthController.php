@@ -2,12 +2,17 @@
 
 namespace App\Auth\Infrastructure\Http\Controllers;
 
+use App\Auth\Application\DTOs\ChangePasswordInputData;
 use App\Auth\Application\DTOs\CompleteProfileInputData;
+use App\Auth\Application\DTOs\ForgotPasswordInputData;
 use App\Auth\Application\DTOs\GoogleAuthInputData;
 use App\Auth\Application\DTOs\LoginInputData;
 use App\Auth\Application\DTOs\RegisterUserInputData;
+use App\Auth\Application\DTOs\ResetPasswordWithCodeInputData;
 use App\Auth\Application\DTOs\UpdateOwnProfileInputData;
+use App\Auth\Application\DTOs\VerifyPasswordResetCodeInputData;
 use App\Auth\Application\DTOs\VerifyEmailInputData;
+use App\Auth\Application\UseCases\ChangeOwnPasswordUseCase;
 use App\Auth\Application\UseCases\CompleteProfileUseCase;
 use App\Auth\Application\UseCases\GetAuthenticatedUserUseCase;
 use App\Auth\Application\UseCases\GoogleRegistrationUseCase;
@@ -15,7 +20,10 @@ use App\Auth\Application\UseCases\LoginUseCase;
 use App\Auth\Application\UseCases\LogoutUseCase;
 use App\Auth\Application\UseCases\RegisterUserUseCase;
 use App\Auth\Application\UseCases\ResendVerificationEmailUseCase;
+use App\Auth\Application\UseCases\RequestPasswordResetCodeUseCase;
+use App\Auth\Application\UseCases\ResetPasswordWithCodeUseCase;
 use App\Auth\Application\UseCases\UpdateOwnProfileUseCase;
+use App\Auth\Application\UseCases\VerifyPasswordResetCodeUseCase;
 use App\Auth\Application\UseCases\VerifyEmailUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
@@ -40,6 +48,10 @@ class AuthController extends Controller
         private ResendVerificationEmailUseCase $resendVerificationEmailUseCase,
         private CompleteProfileUseCase $completeProfileUseCase,
         private UpdateOwnProfileUseCase $updateOwnProfileUseCase,
+        private ChangeOwnPasswordUseCase $changeOwnPasswordUseCase,
+        private RequestPasswordResetCodeUseCase $requestPasswordResetCodeUseCase,
+        private VerifyPasswordResetCodeUseCase $verifyPasswordResetCodeUseCase,
+        private ResetPasswordWithCodeUseCase $resetPasswordWithCodeUseCase,
         private VerifyEmailUseCase $verifyEmailUseCase,
         private GoogleRegistrationUseCase $googleRegistrationUseCase,
         private AdminNotifier $adminNotifier
@@ -62,6 +74,13 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $credentials['email'])->first();
+        if ($trashedUser) {
+            return response()->json([
+                'message' => 'Esta cuenta ha sido desactivada por un administrador.',
+            ], 403);
+        }
+
         try {
             return response()->json(
                 $this->loginUseCase->execute(
@@ -75,9 +94,15 @@ class AuthController extends Controller
                 200
             );
         } catch (AuthException $e) {
-            return response()->json([
+            $payload = [
                 'message' => $e->getMessage(),
-            ], $e->getCode());
+            ];
+
+            if ($e->getMessage() === 'Debes verificar tu correo electronico antes de iniciar sesion.') {
+                $payload['error_code'] = 'EMAIL_NOT_VERIFIED';
+            }
+
+            return response()->json($payload, $e->getCode());
         }
     }
 
@@ -97,6 +122,39 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
+        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $request->email)->first();
+        if ($trashedUser) {
+            return response()->json([
+                'message' => 'Esta cuenta y correo han sido desactivados.',
+                'errors' => [
+                    'email' => ['Esta cuenta y correo han sido desactivados.']
+                ]
+            ], 422);
+        }
+
+        $existingUser = \App\Auth\Infrastructure\Persistence\Models\User::where('email', $request->email)->first();
+        if ($existingUser) {
+            $hasGoogleIdentity = \App\Auth\Infrastructure\Persistence\Models\UserIdentity::where('user_id', $existingUser->id)
+                ->where('provider', 'google')
+                ->exists();
+
+            if ($hasGoogleIdentity) {
+                return response()->json([
+                    'message' => 'Este correo ya esta registrado con Google. Inicia sesion con Google o usa otro correo.',
+                    'errors' => [
+                        'email' => ['Este correo ya esta registrado con Google. Inicia sesion con Google o usa otro correo.']
+                    ]
+                ], 409);
+            }
+
+            return response()->json([
+                'message' => 'Este correo ya esta registrado. Inicia sesion o recupera tu contrasena.',
+                'errors' => [
+                    'email' => ['Este correo ya esta registrado. Inicia sesion o recupera tu contrasena.']
+                ]
+            ], 422);
+        }
+
         $data = $request->validate([
             'first_name' => ['nullable', 'string', 'max:100'],
             'last_name' => ['nullable', 'string', 'max:100'],
@@ -110,7 +168,7 @@ class AuthController extends Controller
                 'regex:/^\S+$/u',
                 Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username'),
             ],
-            'email' => ['required', 'email', 'max:255', Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'email')],
+            'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone' => ['nullable', 'string', 'max:20'],
         ], $this->validationMessages());
@@ -215,6 +273,75 @@ class AuthController extends Controller
      *
      * @authenticated
      */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ], $this->validationMessages());
+
+        $this->requestPasswordResetCodeUseCase->execute(
+            new ForgotPasswordInputData(
+                email: $data['email']
+            )
+        );
+
+        return response()->json([
+            'message' => 'Si el correo esta registrado, recibiras un codigo de recuperacion.',
+        ]);
+    }
+
+    public function verifyPasswordResetCode(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'digits:6'],
+        ], $this->validationMessages());
+
+        try {
+            $this->verifyPasswordResetCodeUseCase->execute(
+                new VerifyPasswordResetCodeInputData(
+                    email: $data['email'],
+                    code: $data['code']
+                )
+            );
+        } catch (AuthException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
+
+        return response()->json([
+            'message' => 'Codigo verificado correctamente.',
+        ]);
+    }
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'code' => ['required', 'string', 'digits:6'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], $this->validationMessages());
+
+        try {
+            $this->resetPasswordWithCodeUseCase->execute(
+                new ResetPasswordWithCodeInputData(
+                    email: $data['email'],
+                    code: $data['code'],
+                    password: $data['password']
+                )
+            );
+        } catch (AuthException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
+
+        return response()->json([
+            'message' => 'Contrasena restablecida correctamente.',
+        ]);
+    }
+
     public function logout(Request $request): JsonResponse
     {
         $tokenId = $request->user()->currentAccessToken()?->id;
@@ -281,6 +408,53 @@ class AuthController extends Controller
     }
 
     /**
+     * Reenviar correo de verificación (público).
+     *
+     * Permite reenviar el enlace de verificación sin estar autenticado.
+     *
+     * @unauthenticated
+     * @bodyParam email string required El correo electrónico del usuario. Example: usuario@example.com
+     */
+    public function resendVerificationEmailPublic(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = \App\Auth\Infrastructure\Persistence\Models\User::where('email', $data['email'])->first();
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'Si el correo esta registrado, recibiras un enlace de verificacion.',
+            ]);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Este correo ya fue verificado.',
+            ]);
+        }
+
+        if (! $user->is_active) {
+            return response()->json([
+                'message' => 'La cuenta esta desactivada. Contacta al administrador.',
+            ], 403);
+        }
+
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'No se pudo enviar el correo de verificacion.',
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Correo de verificacion enviado.',
+        ]);
+    }
+
+    /**
      * Completar perfil (Google).
      *
      * Permite establecer el nombre de usuario luego de registrarse mediante Google.
@@ -296,7 +470,7 @@ class AuthController extends Controller
                 'string',
                 'min:3',
                 'max:50',
-                'regex:/^\S+$/u',
+                'regex:/^[a-z0-9_.-]+$/i',
                 Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
             ],
         ], $this->validationMessages());
@@ -320,15 +494,19 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request): JsonResponse
     {
+        if ($request->has('username')) {
+            $request->merge(['username' => strtolower($request->username)]);
+        }
+
         $data = $request->validate([
-            'first_name' => ['required', 'string', 'max:100'],
-            'last_name' => ['required', 'string', 'max:100'],
+            'first_name' => ['sometimes', 'required', 'string', 'max:100'],
+            'last_name' => ['sometimes', 'required', 'string', 'max:100'],
             'username' => [
                 'required',
                 'string',
                 'min:3',
                 'max:50',
-                'regex:/^\S+$/u',
+                'regex:/^[a-z0-9_.-]+$/i',
                 Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
             ],
         ], $this->validationMessages());
@@ -338,8 +516,8 @@ class AuthController extends Controller
                 $this->updateOwnProfileUseCase->execute(
                     new UpdateOwnProfileInputData(
                         userId: (int) $request->user()->id,
-                        firstName: $data['first_name'],
-                        lastName: $data['last_name'],
+                        firstName: $data['first_name'] ?? $request->user()->nombre ?? $request->user()->first_name ?? '',
+                        lastName: $data['last_name'] ?? $request->user()->apellido ?? $request->user()->last_name ?? '',
                         username: $data['username']
                     )
                 ),
@@ -361,6 +539,43 @@ class AuthController extends Controller
      * @urlParam id int required El ID del usuario. Example: 1
      * @urlParam hash string required El hash de verificación enviado al correo. Example: a1b2c3d4e5
      */
+    /**
+     * Cambiar contrasena del usuario autenticado.
+     *
+     * Valida la contrasena actual antes de guardar un nuevo hash.
+     *
+     * @authenticated
+     * @bodyParam current_password string required Contrasena actual del usuario. Example: password123
+     * @bodyParam password string required Nueva contrasena, minimo 8 caracteres. Example: new-password123
+     * @bodyParam password_confirmation string required Confirmacion de la nueva contrasena. Example: new-password123
+     */
+    public function changePassword(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], $this->validationMessages());
+
+        try {
+            $this->changeOwnPasswordUseCase->execute(
+                new ChangePasswordInputData(
+                    userId: (int) $request->user()->id,
+                    currentTokenId: $request->user()->currentAccessToken()?->id,
+                    currentPassword: $data['current_password'],
+                    newPassword: $data['password']
+                )
+            );
+        } catch (AuthException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
+
+        return response()->json([
+            'message' => 'Contrasena actualizada correctamente.',
+        ]);
+    }
+
     public function verifyEmail(Request $request, int $id, string $hash): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         try {
@@ -403,6 +618,9 @@ class AuthController extends Controller
             'password.required' => 'Ingresa una contrasena.',
             'password.min' => 'La contrasena debe tener al menos 8 caracteres.',
             'password.confirmed' => 'La confirmacion de la contrasena no coincide.',
+            'current_password.required' => 'Ingresa tu contrasena actual.',
+            'code.required' => 'Ingresa el codigo de recuperacion.',
+            'code.digits' => 'El codigo de recuperacion debe tener 6 digitos.',
         ];
     }
 }

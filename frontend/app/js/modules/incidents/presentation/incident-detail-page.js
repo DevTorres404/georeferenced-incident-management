@@ -76,7 +76,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
   const categoryName = formatCatalogLabel(incident.category?.name || '-');
   const subcategoryName = formatCatalogLabel(incident.subcategory?.name || '-');
   const territoryName = territoryLabel(incident);
-  const addressText = incident.address || incident.address_reference || 'Ubicacion registrada sin direccion textual.';
+  const addressText = incident.address || incident.address_reference || 'Ubicación registrada sin dirección textual.';
   const comments = Array.isArray(incident.comments) ? incident.comments : [];
   const history = Array.isArray(incident.history) ? incident.history : [];
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
@@ -116,16 +116,16 @@ function renderIncidentDetail(container, incident, states, priorities) {
       <div class="col-lg-8">
         <div class="card card-outline card-primary">
           <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Informacion General</h3>
+            <h3 class="card-title"><i class="fas fa-info-circle mr-2"></i>Información General</h3>
           </div>
           <div class="card-body">
-            <h4 class="font-weight-bold mb-3">${escapeHtml(incident.title || 'Sin titulo')}</h4>
+            <h4 class="font-weight-bold mb-3">${escapeHtml(incident.title || 'Sin título')}</h4>
             <div class="row">
               <div class="col-sm-6">
-                <p class="detalle-label">Categoria</p>
+                <p class="detalle-label">Categoría</p>
                 <p>${escapeHtml(categoryName)}</p>
 
-                <p class="detalle-label">Subcategoria</p>
+                <p class="detalle-label">Subcategoría</p>
                 <p>${escapeHtml(subcategoryName)}</p>
 
                 <p class="detalle-label">Prioridad</p>
@@ -135,18 +135,18 @@ function renderIncidentDetail(container, incident, states, priorities) {
                 <p><span class="badge ${getStateBadgeClass(stateName)} px-2 py-1">${escapeHtml(stateName)}</span></p>
               </div>
               <div class="col-sm-6">
-                <p class="detalle-label">Codigo</p>
+                <p class="detalle-label">Código</p>
                 <p>${escapeHtml(incident.code || `#${incident.id}`)}</p>
 
                 <p class="detalle-label">Fecha de registro</p>
                 <p><i class="fas fa-calendar mr-1 text-muted"></i>${escapeHtml(formatShortDate(incident.created_at))}</p>
 
-                <p class="detalle-label">Fecha de resolucion</p>
+                <p class="detalle-label">Fecha de resolución</p>
                 <p><i class="fas fa-calendar-check mr-1 text-muted"></i>${escapeHtml(formatShortDate(incident.resolution_date))}</p>
               </div>
             </div>
             <hr>
-            <p class="detalle-label">Descripcion completa</p>
+            <p class="detalle-label">Descripción completa</p>
             <p class="text-justify">${escapeHtml(incident.description || '-')}</p>
           </div>
         </div>
@@ -184,7 +184,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
               <i class="fas fa-map-pin"></i>
               <strong>${hasValidCoordinates ? 'Cargando mapa...' : 'No hay coordenadas para mostrar'}</strong>
               <code class="mt-1">${escapeHtml(incident.latitude || '-')}, ${escapeHtml(incident.longitude || '-')}</code>
-              <small class="text-center mt-2">${escapeHtml(incident.address || 'Ubicacion registrada sin direccion textual.')}</small>
+              <small class="text-center mt-2">${escapeHtml(incident.address || 'Ubicación registrada sin dirección textual.')}</small>
             </div>
           </div>
         </div>
@@ -269,7 +269,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
 
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Estadisticas</h3>
+            <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Estadísticas</h3>
           </div>
           <div class="card-body">
             <div class="info-box bg-light mb-2">
@@ -332,7 +332,7 @@ function renderIncidentMap(incident) {
       <div class="map-empty-state">
         <i class="fas fa-exclamation-triangle"></i>
         <strong>No se pudo cargar el visor del mapa</strong>
-        <small>La ubicacion queda registrada en sus coordenadas.</small>
+        <small>La ubicación queda registrada en sus coordenadas.</small>
       </div>`;
     return;
   }
@@ -680,7 +680,7 @@ function bindStateChangeForm(incident) {
 
 function renderComments(comments) {
   if (!comments.length) {
-    return '<p class="text-muted text-center py-3"><i class="fas fa-comment-slash mr-2"></i>Sin comentarios aun.</p>';
+    return '<p class="text-muted text-center py-3"><i class="fas fa-comment-slash mr-2"></i>Sin comentarios aún.</p>';
   }
 
   return comments.map((comment) => {

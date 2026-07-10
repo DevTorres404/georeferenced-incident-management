@@ -11,6 +11,21 @@ class AuthException extends Exception
         return new self('Las credenciales proporcionadas son incorrectas.', 401);
     }
 
+    public static function invalidCurrentPassword(): self
+    {
+        return new self('La contrasena actual no coincide.', 422);
+    }
+
+    public static function passwordUnchanged(): self
+    {
+        return new self('La nueva contrasena no puede ser igual a la actual.', 422);
+    }
+
+    public static function invalidPasswordResetCode(): self
+    {
+        return new self('El codigo de recuperacion es invalido o expiro.', 422);
+    }
+
     public static function inactiveUser(): self
     {
         return new self('El usuario está inactivo. Contacte al administrador.', 403);
@@ -38,7 +53,7 @@ class AuthException extends Exception
 
     public static function accountInactive(): self
     {
-        return new self('La cuenta está desactivada.', 403);
+        return new self('La cuenta esta desactivada. Contacta al administrador.', 403);
     }
 
     public static function googleAlreadyLinked(): self
@@ -48,7 +63,7 @@ class AuthException extends Exception
 
     public static function emailMustBeVerified(): self
     {
-        return new self('Debes verificar tu correo antes de continuar.', 403);
+        return new self('Debes verificar tu correo electronico antes de iniciar sesion.', 403);
     }
 
     public static function invalidVerificationLink(): self

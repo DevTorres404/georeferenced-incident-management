@@ -147,7 +147,7 @@ function renderRoleOverview(role, selectedPermissions, navigationPreview, naviga
       <div class="role-permission-heading">
         <span class="text-uppercase small font-weight-bold">Rol seleccionado</span>
         <h2>${escapeHtml(role.name)}</h2>
-        <p>${escapeHtml(getRoleDescription(role.code))}. Los permisos marcados definen acciones del backend y tambien que pantallas aparecen en el menu.</p>
+        <p>${escapeHtml(getRoleDescription(role.code))}. Los permisos marcados definen acciones del backend y también qué pantallas aparecen en el menú.</p>
       </div>
       <div class="role-permission-stats">
         <div>
@@ -307,7 +307,7 @@ function renderNavigationBadges(entries = []) {
   return `
     <div class="permission-navigation-impact">
       ${entries.map((entry) => `
-        <span class="badge badge-info mr-1 mb-1" title="${escapeAttr(entry.route || 'Grupo de navegacion')}">
+        <span class="badge badge-info mr-1 mb-1" title="${escapeAttr(entry.route || 'Grupo de navegación')}">
           <i class="fas fa-compass mr-1"></i>${escapeHtml(entry.label)}
         </span>`).join('')}
     </div>`;
@@ -315,7 +315,7 @@ function renderNavigationBadges(entries = []) {
 
 function formatModuleLabel(module) {
   const labels = {
-    about: 'Informacion',
+    about: 'Información',
     dashboard: 'Panel principal',
     incidents: 'Incidencias',
     comments: 'Comentarios',
@@ -325,7 +325,7 @@ function formatModuleLabel(module) {
     catalogs: 'Catalogos',
     territorial_units: 'Territorio',
     reportes: 'Reportes',
-    configuracion: 'Configuracion',
+    configuracion: 'Configuración',
     audit: 'Auditoria',
   };
   const key = String(module || '').toLowerCase();
@@ -340,7 +340,7 @@ function getRoleDescription(code) {
   const descriptions = {
     ADMIN: 'Administracion completa',
     SUPERVISOR: 'Supervision y coordinacion',
-    OPERADOR: 'Atencion operativa',
+    OPERADOR: 'Atención operativa',
     CIUDADANO: 'Registro y seguimiento',
   };
   return descriptions[String(code || '').toUpperCase()] || 'Rol del sistema';
@@ -369,7 +369,7 @@ async function saveRolePermissions(state) {
   const permissions = [...document.querySelectorAll('.permission-checkbox:checked')]
     .map((checkbox) => checkbox.value);
 
-  showPageLoading('Guardando permisos', 'Actualizando configuracion del rol...');
+  showPageLoading('Guardando permisos', 'Actualizando configuración del rol...');
 
   try {
     const response = await updateRolePermissions(role.id, permissions);

@@ -1,422 +1,289 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Acerca del Sistema</title>
-  <meta name="description" content="Información sobre el Sistema Web de Gestión de Incidencias Georreferenciadas">
-
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
-  <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-  <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="/css/app.css?v=34">
-
-  <style>
-    /* Hero banner */
-    .hero-about {
-      background: linear-gradient(135deg, #001f3f 0%, #003d7a 60%, #0056b3 100%);
-      border-radius: 12px;
-      padding: 48px 40px;
-      color: #fff;
-      margin-bottom: 28px;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero-about::before {
-      content: '\f5a0';
-      font-family: 'Font Awesome 5 Free';
-      font-weight: 900;
-      position: absolute;
-      right: 40px; top: 50%; transform: translateY(-50%);
-      font-size: 10rem;
-      opacity: 0.08;
-      color: #fff;
-    }
-    .hero-about h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
-    .hero-about p  { font-size: 1.05rem; opacity: 0.85; max-width: 600px; }
-
-    /* Feature list */
-    .feature-item {
-      display: flex; gap: 16px; align-items: flex-start;
-      padding: 14px 0; border-bottom: 1px solid #f0f0f0;
-    }
-    .feature-item:last-child { border-bottom: none; }
-    .feature-icon {
-      width: 42px; height: 42px; border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; font-size: 1.1rem; color: #fff;
-    }
-    .feature-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; }
-    .feature-desc  { font-size: 0.83rem; color: #6c757d; margin: 0; }
-
-    /* Team card */
-    .team-avatar {
-      width: 70px; height: 70px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.8rem; font-weight: 700; color: #fff;
-      margin: 0 auto 12px;
-    }
-    /* Timeline de versiones */
-    .version-item {
-      border-left: 3px solid #007bff;
-      padding: 4px 0 12px 20px;
-      position: relative;
-      margin-bottom: 4px;
-    }
-    .version-item::before {
-      content: '';
-      width: 12px; height: 12px;
-      background: #007bff; border-radius: 50%;
-      position: absolute; left: -7px; top: 6px;
-    }
-    .version-item.latest { border-left-color: #28a745; }
-    .version-item.latest::before { background: #28a745; }
-    .version-badge {
-      font-size: 0.75rem; padding: 2px 8px;
-      border-radius: 20px; margin-left: 8px;
-    }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGI | Acerca del Sistema</title>
+    <meta name="description" content="Información sobre el Sistema Web de Gestión de Incidencias Georreferenciadas">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="/css/app.css?v=34">
 </head>
+
 <body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
-
-  <div id="alertaGlobal" role="alert"></div>
-
-  <!-- Navbar -->
-  <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
-
-  <!-- Sidebar -->
-  <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;">
-      <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image" style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
-      <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
-    </a>
-    <div id="mainSidebar"></div>
-  </aside>
-
-  <!-- Contenido -->
-  <div class="content-wrapper">
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">
-              <i class="fas fa-info-circle text-primary mr-2"></i>Acerca del Sistema
-            </h1>
-          </div>
-          <div class="col-sm-6 d-none d-sm-block">
-            <!-- Breadcrumbs removidos -->
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="content">
-      <div class="container-fluid">
-
-        <!-- ===== HERO ===== -->
-        <div class="hero-about">
-          <h2>
-            <i class="fas fa-map-marked-alt mr-3"></i>SGI
-          </h2>
-          <h4 class="font-weight-light mb-3">Sistema Web de Gestión de Incidencias Georreferenciadas</h4>
-          <p>
-            Plataforma académica para el registro, seguimiento y resolución de incidencias
-            ciudadanas con soporte de georreferenciación. Desarrollada íntegramente con
-            tecnologías frontend modernas sobre la plantilla AdminLTE 3.
-          </p>
-          <div class="mt-4 d-flex flex-wrap" style="gap:10px;">
-            <span class="badge badge-light px-3 py-2" style="font-size:0.85rem;">
-              <i class="fas fa-code-branch mr-1"></i>Versión 1.0.0
-            </span>
-            <span class="badge badge-light px-3 py-2" style="font-size:0.85rem;">
-              <i class="fas fa-graduation-cap mr-1"></i>Proyecto Académico
-            </span>
-            <span class="badge badge-light px-3 py-2" style="font-size:0.85rem;">
-              <i class="fas fa-calendar mr-1"></i>2026
-            </span>
-          </div>
-        </div>
-
-        <!-- ===== FILA 1: Descripción + Tecnologías ===== -->
-        <div class="row">
-
-          <!-- Descripción del sistema: ancho completo ahora que no hay Stack -->
-          <div class="col-12">
-            <div class="card shadow-sm border-0 rounded-3 h-100 mb-4">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-bullseye mr-2"></i>Objetivo del Sistema
-                </h3>
-              </div>
-              <div class="card-body">
-                <p>
-                  El <strong>SGI</strong> tiene como objetivo principal proporcionar a ciudadanos
-                  y administradores municipales una herramienta eficiente para:
-                </p>
-
-                <!-- Características principales -->
-                <div class="feature-item">
-                  <div class="feature-icon" style="background:#007bff;">
-                    <i class="fas fa-map-pin"></i>
-                  </div>
-                  <div>
-                    <div class="feature-title">Georreferenciación de Incidencias</div>
-                    <p class="feature-desc">
-                      Registro de coordenadas (latitud/longitud) para localizar con precisión
-                      cada incidencia en el mapa geográfico.
-                    </p>
-                  </div>
+    <div class="wrapper">
+        <div id="alertaGlobal" role="alert"></div> <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav> <!-- Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4"> <a href="dashboard.html"
+                class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;"> <img
+                    src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+                    style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+                <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span> </a>
+            <div id="mainSidebar"></div>
+        </aside> <!-- Contenido -->
+        <div class="content-wrapper">
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0"> <i class="fas fa-info-circle text-primary mr-2"></i>Acerca del Sistema
+                            </h1>
+                        </div>
+                        <div class="col-sm-6 d-none d-sm-block"> <!-- Breadcrumbs removidos --> </div>
+                    </div>
                 </div>
-
-                <div class="feature-item">
-                  <div class="feature-icon" style="background:#28a745;">
-                    <i class="fas fa-tasks"></i>
-                  </div>
-                  <div>
-                    <div class="feature-title">Gestión Integral de Incidencias</div>
-                    <p class="feature-desc">
-                      Seguimiento completo del ciclo de vida: registro, asignación, seguimiento
-                      en tiempo real y cierre con historial de cambios.
-                    </p>
-                  </div>
-                </div>
-
-                <div class="feature-item">
-                  <div class="feature-icon" style="background:#17a2b8;">
-                    <i class="fas fa-chart-line"></i>
-                  </div>
-                  <div>
-                    <div class="feature-title">Reportes y Estadísticas</div>
-                    <p class="feature-desc">
-                      Métricas de gestión con gráficos interactivos: tipos, prioridades, estados,
-                      tasas de resolución y tendencias mensuales.
-                    </p>
-                  </div>
-                </div>
-
-                <div class="feature-item">
-                  <div class="feature-icon" style="background:#fd7e14;">
-                    <i class="fas fa-shield-alt"></i>
-                  </div>
-                  <div>
-                    <div class="feature-title">Validaciones Robustas</div>
-                    <p class="feature-desc">
-                      Validación de formularios completa: campos obligatorios, longitud mínima,
-                      formato de email, rangos numéricos (lat/lon) y listas de selección.
-                    </p>
-                  </div>
-                </div>
-
-                <div class="feature-item">
-                  <div class="feature-icon" style="background:#6f42c1;">
-                    <i class="fas fa-mobile-alt"></i>
-                  </div>
-                  <div>
-                    <div class="feature-title">Diseño Responsivo</div>
-                    <p class="feature-desc">
-                      Interfaz adaptada a dispositivos móviles, tablets y escritorio gracias
-                      a Bootstrap 4 y AdminLTE 3.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
             </div>
-          </div>
-
-        <!-- ===== FILA 2: Módulos + Versiones ===== -->
-        <div class="row">
-
-          <!-- Módulos del sistema -->
-          <div class="col-lg-5">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-sitemap mr-2"></i>Módulos del Sistema
-                </h3>
-              </div>
-              <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                  <thead class="thead-light">
-                    <tr>
-                      <th>Módulo</th>
-                      <th class="text-center">Estado</th>
-                      <th>Descripción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><i class="fas fa-tachometer-alt mr-2 text-primary"></i><strong>Panel principal</strong></td>
-                      <td class="text-center"><span class="badge badge-resuelta">Completo</span></td>
-                      <td class="text-muted small">KPIs, gráficos, últimas incidencias</td>
-                    </tr>
-                    <tr>
-                      <td><i class="fas fa-list-alt mr-2 text-info"></i><strong>Gestión</strong></td>
-                      <td class="text-center"><span class="badge badge-resuelta">Completo</span></td>
-                      <td class="text-muted small">DataTable, filtros, modales</td>
-                    </tr>
-                    <tr>
-                      <td><i class="fas fa-plus-circle mr-2 text-success"></i><strong>Nueva Incidencia</strong></td>
-                      <td class="text-center"><span class="badge badge-resuelta">Completo</span></td>
-                      <td class="text-muted small">Form multi-paso + validaciones</td>
-                    </tr>
-                    <tr>
-                      <td><i class="fas fa-file-alt mr-2 text-warning"></i><strong>Detalle</strong></td>
-                      <td class="text-center"><span class="badge badge-resuelta">Completo</span></td>
-                      <td class="text-muted small">Timeline, comentarios, estado</td>
-                    </tr>
-                    <tr>
-                      <td><i class="fas fa-chart-bar mr-2 text-danger"></i><strong>Reportes</strong></td>
-                      <td class="text-center"><span class="badge badge-resuelta">Completo</span></td>
-                      <td class="text-muted small">4 gráficos + rankings + tabla</td>
-                    </tr>
-                    <tr>
-                      <td><i class="fas fa-map mr-2 text-secondary"></i><strong>Mapa Interactivo</strong></td>
-                      <td class="text-center"><span class="badge badge-proceso">Pendiente</span></td>
-                      <td class="text-muted small">Integración MapLibre GL JS</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Historial de versiones -->
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-history mr-2"></i>Historial de Versiones
-                </h3>
-              </div>
-              <div class="card-body">
-                <div class="version-item latest">
-                  <strong>v1.0.0</strong>
-                  <span class="badge bg-success text-white version-badge">Actual</span>
-                  <div class="text-muted small mt-1">Junio 2026</div>
-                  <ul class="text-muted small mt-1 mb-0">
-                    <li>5 módulos completos</li>
-                    <li>8 incidencias de prueba</li>
-                    <li>Validaciones completas</li>
-                    <li>4 gráficos Chart.js</li>
-                  </ul>
-                </div>
-                <div class="version-item">
-                  <strong>v0.2.0</strong>
-                  <div class="text-muted small mt-1">Mayo 2026</div>
-                  <ul class="text-muted small mt-1 mb-0">
-                    <li>Panel principal inicial</li>
-                    <li>Gestión básica</li>
-                  </ul>
-                </div>
-                <div class="version-item">
-                  <strong>v0.1.0</strong>
-                  <div class="text-muted small mt-1">Abril 2026</div>
-                  <ul class="text-muted small mt-1 mb-0">
-                    <li>Estructura base</li>
-                    <li>Layout AdminLTE</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Equipo -->
-          <div class="col-lg-3">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">
-                  <i class="fas fa-users mr-2"></i>Equipo de Desarrollo
-                </h3>
-              </div>
-              <div class="card-body text-center">
-
-                <div class="mb-4">
-                  <div class="team-avatar" style="background:linear-gradient(135deg,#007bff,#00c6ff);">
-                    AD
-                  </div>
-                  <div class="font-weight-bold">Admin SGI</div>
-                  <small class="text-muted">Desarrollador Frontend</small>
-                  <div class="mt-2">
-                    <span class="badge badge-primary">HTML/CSS</span>
-                    <span class="badge badge-warning">JS</span>
-                    <span class="badge badge-info">Bootstrap</span>
-                  </div>
-                </div>
-
-                <hr>
-
-                <div class="text-left">
-                  <p class="text-muted small mb-2">
-                    <i class="fas fa-university mr-2 text-primary"></i>
-                    <strong>Institución:</strong> Universidad Académica
-                  </p>
-                  <p class="text-muted small mb-2">
-                    <i class="fas fa-book mr-2 text-success"></i>
-                    <strong>Curso:</strong> Desarrollo Web Frontend
-                  </p>
-                  <p class="text-muted small mb-0">
-                    <i class="fas fa-calendar mr-2 text-warning"></i>
-                    <strong>Ciclo:</strong> 2026-I
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ===== FILA 3: Licencia y contacto ===== -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card bg-gradient-dark text-white">
-              <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between" style="gap:16px;">
-                <div>
-                  <i class="fas fa-shield-alt mr-2"></i>
-                  <strong>Proyecto Académico — Sin fines comerciales</strong>
-                  <span class="ml-3 text-white-50 small">
-                    Desarrollado sobre AdminLTE 3 (MIT License) · Bootstrap 4 · Chart.js · jQuery
-                  </span>
-                </div>
-                <div class="d-flex" style="gap:10px;">
-                  <a href="dashboard.html" class="btn btn-sm btn-outline-light">
-                    <i class="fas fa-home mr-1"></i>Ir al Panel principal
-                  </a>
-                  <a href="incident-create.html" class="btn btn-sm btn-light">
-                    <i class="fas fa-plus mr-1"></i>Nueva Incidencia
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /.container-fluid -->
-    </div><!-- /.content -->
-  </div><!-- /.content-wrapper -->
-
-    <footer class="main-footer text-sm">
-    <div class="float-right d-none d-sm-inline">
-      Versión 1.0.0
-    </div>
-    <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
-  </footer>
-  <aside class="control-sidebar control-sidebar-dark"></aside>
-</div>
-
-<!-- Scripts -->
-<script src="/plugins/jquery/jquery.min.js"></script>
-<script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-<script src="/dist/js/adminlte.min.js"></script>
-  <script type="module" src="/js/layout/layout.js?v=35"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  renderLayout('about');
-});
-</script>
+            <div class="content">
+                <div class="container-fluid"> <!-- ===== HERO ===== -->
+                    <div class="hero-about">
+                        <h2> <i class="fas fa-map-marked-alt mr-3"></i>SGI </h2>
+                        <h4 class="font-weight-light mb-3">Sistema Web de Gestión de Incidencias Georreferenciadas</h4>
+                        <p> Plataforma académica para el registro, seguimiento y resolución de incidencias ciudadanas
+                            con soporte de georreferenciación. Desarrollada íntegramente con tecnologías frontend
+                            modernas sobre la plantilla AdminLTE 3. </p>
+                        <div class="mt-4 d-flex flex-wrap" style="gap:10px;"> <span class="badge badge-light px-3 py-2"
+                                style="font-size:0.85rem;"> <i class="fas fa-code-branch mr-1"></i>Versión 1.0.0 </span>
+                            <span class="badge badge-light px-3 py-2" style="font-size:0.85rem;"> <i
+                                    class="fas fa-graduation-cap mr-1"></i>Proyecto Académico </span> <span
+                                class="badge badge-light px-3 py-2" style="font-size:0.85rem;"> <i
+                                    class="fas fa-calendar mr-1"></i>2026 </span>
+                        </div>
+                    </div> <!-- ===== FILA 1: Descripción + Tecnologías ===== -->
+                    <div class="row"> <!-- Descripción del sistema: ancho completo ahora que no hay Stack -->
+                        <div class="col-12">
+                            <div class="card shadow-sm border-0 rounded-3 h-100 mb-4">
+                                <div class="card-header">
+                                    <h3 class="card-title"> <i class="fas fa-bullseye mr-2"></i>Objetivo del Sistema
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <p> El <strong>SGI</strong> tiene como objetivo principal proporcionar a ciudadanos
+                                        y administradores municipales una herramienta eficiente para: </p>
+                                    <!-- Características principales -->
+                                    <div class="feature-item">
+                                        <div class="feature-icon" style="background:#007bff;"> <i
+                                                class="fas fa-map-pin"></i> </div>
+                                        <div>
+                                            <div class="feature-title">Georreferenciación de Incidencias</div>
+                                            <p class="feature-desc"> Registro de coordenadas (latitud/longitud) para
+                                                localizar con precisión cada incidencia en el mapa geográfico. </p>
+                                        </div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon" style="background:#28a745;"> <i
+                                                class="fas fa-tasks"></i> </div>
+                                        <div>
+                                            <div class="feature-title">Gestión Integral de Incidencias</div>
+                                            <p class="feature-desc"> Seguimiento completo del ciclo de vida: registro,
+                                                asignación, seguimiento en tiempo real y cierre con historial de
+                                                cambios. </p>
+                                        </div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon" style="background:#17a2b8;"> <i
+                                                class="fas fa-chart-line"></i> </div>
+                                        <div>
+                                            <div class="feature-title">Reportes y Estadísticas</div>
+                                            <p class="feature-desc"> Métricas de gestión con gráficos interactivos:
+                                                tipos, prioridades, estados, tasas de resolución y tendencias mensuales.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon" style="background:#fd7e14;"> <i
+                                                class="fas fa-shield-alt"></i> </div>
+                                        <div>
+                                            <div class="feature-title">Validaciones Robustas</div>
+                                            <p class="feature-desc"> Validación de formularios completa: campos
+                                                obligatorios, longitud mínima, formato de email, rangos numéricos
+                                                (lat/lon) y listas de selección. </p>
+                                        </div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon" style="background:#6f42c1;"> <i
+                                                class="fas fa-mobile-alt"></i> </div>
+                                        <div>
+                                            <div class="feature-title">Diseño Responsivo</div>
+                                            <p class="feature-desc"> Interfaz adaptada a dispositivos móviles, tablets y
+                                                escritorio gracias a Bootstrap 4 y AdminLTE 3. </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- ===== FILA 2: Módulos + Versiones ===== -->
+                        <div class="row"> <!-- Módulos del sistema -->
+                            <div class="col-lg-5">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title"> <i class="fas fa-sitemap mr-2"></i>Módulos del Sistema
+                                        </h3>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Módulo</th>
+                                                    <th class="text-center">Estado</th>
+                                                    <th>Descripción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><i class="fas fa-tachometer-alt mr-2 text-primary"></i><strong>Panel
+                                                            principal</strong></td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">KPIs, gráficos, últimas incidencias
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i
+                                                            class="fas fa-list-alt mr-2 text-info"></i><strong>Gestión</strong>
+                                                    </td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">DataTable, filtros, modales</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class="fas fa-plus-circle mr-2 text-success"></i><strong>Nueva
+                                                            Incidencia</strong></td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">Form multi-paso + validaciones</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i
+                                                            class="fas fa-file-alt mr-2 text-warning"></i><strong>Detalle</strong>
+                                                    </td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">Timeline, comentarios, estado</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i
+                                                            class="fas fa-chart-bar mr-2 text-danger"></i><strong>Reportes</strong>
+                                                    </td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">4 gráficos + rankings + tabla</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><i class="fas fa-map mr-2 text-secondary"></i><strong>Mapa
+                                                            Interactivo</strong></td>
+                                                    <td class="text-center"><span
+                                                            class="badge badge-proceso">Pendiente</span></td>
+                                                    <td class="text-muted small">Integración MapLibre GL JS</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div> <!-- Historial de versiones -->
+                            <div class="col-lg-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title"> <i class="fas fa-history mr-2"></i>Historial de
+                                            Versiones </h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="version-item latest"> <strong>v1.0.0</strong> <span
+                                                class="badge bg-success text-white version-badge">Actual</span>
+                                            <div class="text-muted small mt-1">Junio 2026</div>
+                                            <ul class="text-muted small mt-1 mb-0">
+                                                <li>5 módulos completos</li>
+                                                <li>8 incidencias de prueba</li>
+                                                <li>Validaciones completas</li>
+                                                <li>4 gráficos Chart.js</li>
+                                            </ul>
+                                        </div>
+                                        <div class="version-item"> <strong>v0.2.0</strong>
+                                            <div class="text-muted small mt-1">Mayo 2026</div>
+                                            <ul class="text-muted small mt-1 mb-0">
+                                                <li>Panel principal inicial</li>
+                                                <li>Gestión básica</li>
+                                            </ul>
+                                        </div>
+                                        <div class="version-item"> <strong>v0.1.0</strong>
+                                            <div class="text-muted small mt-1">Abril 2026</div>
+                                            <ul class="text-muted small mt-1 mb-0">
+                                                <li>Estructura base</li>
+                                                <li>Layout AdminLTE</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- Equipo -->
+                            <div class="col-lg-3">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title"> <i class="fas fa-users mr-2"></i>Equipo de Desarrollo
+                                        </h3>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div class="mb-4">
+                                            <div class="team-avatar"
+                                                style="background:linear-gradient(135deg,#007bff,#00c6ff);"> AD </div>
+                                            <div class="font-weight-bold">Admin SGI</div> <small
+                                                class="text-muted">Desarrollador Frontend</small>
+                                            <div class="mt-2"> <span class="badge badge-primary">HTML/CSS</span> <span
+                                                    class="badge badge-warning">JS</span> <span
+                                                    class="badge badge-info">Bootstrap</span> </div>
+                                        </div>
+                                        <hr>
+                                        <div class="text-left">
+                                            <p class="text-muted small mb-2"> <i
+                                                    class="fas fa-university mr-2 text-primary"></i>
+                                                <strong>Institución:</strong> Universidad Académica
+                                            </p>
+                                            <p class="text-muted small mb-2"> <i
+                                                    class="fas fa-book mr-2 text-success"></i> <strong>Curso:</strong>
+                                                Desarrollo Web Frontend </p>
+                                            <p class="text-muted small mb-0"> <i
+                                                    class="fas fa-calendar mr-2 text-warning"></i>
+                                                <strong>Ciclo:</strong> 2026-I
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- ===== FILA 3: Licencia y contacto ===== -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card bg-gradient-dark text-white">
+                                    <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between"
+                                        style="gap:16px;">
+                                        <div> <i class="fas fa-shield-alt mr-2"></i> <strong>Proyecto Académico — Sin
+                                                fines comerciales</strong> <span class="ml-3 text-white-50 small">
+                                                Desarrollado sobre AdminLTE 3 (MIT License) · Bootstrap 4 · Chart.js ·
+                                                jQuery </span> </div>
+                                        <div class="d-flex" style="gap:10px;"> <a href="dashboard.html"
+                                                class="btn btn-sm btn-outline-light"> <i class="fas fa-home mr-1"></i>Ir
+                                                al Panel principal </a> <a href="incident-create.html"
+                                                class="btn btn-sm btn-light"> <i class="fas fa-plus mr-1"></i>Nueva
+                                                Incidencia </a> </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /.container-fluid -->
+                </div><!-- /.content -->
+            </div><!-- /.content-wrapper -->
+            <footer class="main-footer text-sm">
+                <div class="float-right d-none d-sm-inline"> Versión 1.0.0 </div> <strong>Sistema de Gestión de
+                    Incidencias Georreferenciadas (SGI)</strong>
+            </footer>
+            <aside class="control-sidebar control-sidebar-dark"></aside>
+        </div><!-- Scripts -->
+        <script src="/plugins/jquery/jquery.min.js"></script>
+        <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+        <script src="/dist/js/adminlte.min.js"></script>
+        <script type="module" src="/js/layout/layout.js?v=35"></script>
+        <script>document.addEventListener('DOMContentLoaded', () => { renderLayout('about'); });</script>
 </body>
+
 </html>

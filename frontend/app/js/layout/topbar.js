@@ -51,7 +51,7 @@ export function buildTopbarHtml(user) {
           <div class="dropdown-divider my-2"></div>
           ${profileLink}
           <a href="#" id="btnLogout" class="dropdown-item rounded px-3 py-2 text-danger">
-            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesion
+            <i class="fas fa-sign-out-alt mr-2"></i> Cerrar sesión
           </a>
         </div>
       </li>

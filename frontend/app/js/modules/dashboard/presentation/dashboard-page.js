@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', initDashboardPage);
 async function initDashboardPage() {
   window.renderLayout?.('dashboard');
 
-  showPageLoading('Cargando panel', 'Consultando metricas...');
+  showPageLoading('Cargando panel', 'Consultando métricas...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
   try {
@@ -51,7 +51,7 @@ async function initDashboardPage() {
     renderRecentIncidents(metrics.recentIncidents || []);
     renderCharts(metrics);
   } catch (error) {
-    showErrorAlert(error.message || 'No se pudieron cargar las metricas del panel.');
+    showErrorAlert(error.message || 'No se pudieron cargar las métricas del panel.');
   } finally {
     window.clearTimeout(loadingFallback);
     hidePageLoading();
@@ -149,7 +149,7 @@ function renderInfoCards(metrics) {
       <div class="dash-info-body">
         <span class="dash-info-label">Tipo mas frecuente</span>
         <span class="dash-info-value">${topCategory ? escapeHtml(formatCatalogLabel(topCategory[0])) : 'Sin datos'}</span>
-        <span class="dash-info-caption">${topCategory ? `${topCategory[1]} incidencias` : 'No hay categorias registradas'}</span>
+        <span class="dash-info-caption">${topCategory ? `${topCategory[1]} incidencias` : 'No hay categorías registradas'}</span>
       </div>
     </div>
 
@@ -158,7 +158,7 @@ function renderInfoCards(metrics) {
         <i class="fas fa-clock"></i>
       </div>
       <div class="dash-info-body">
-        <span class="dash-info-label">Tiempo promedio de resolucion</span>
+        <span class="dash-info-label">Tiempo promedio de resolución</span>
         <span class="dash-info-value">${avgDays.toFixed(1)} dias</span>
         <span class="dash-info-caption">En incidencias resueltas</span>
       </div>
@@ -189,7 +189,7 @@ function renderRecentIncidents(incidents) {
     return `
       <tr>
         <td><span class="dash-table-code">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
-        <td class="dash-table-title" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin titulo')}</td>
+        <td class="dash-table-title" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin título')}</td>
         <td>${escapeHtml(category)}</td>
         <td><span class="badge ${getPriorityBadgeClass(priority)}">${escapeHtml(priority)}</span></td>
         <td><span class="badge ${getStateBadgeClass(state)}">${escapeHtml(state)}</span></td>

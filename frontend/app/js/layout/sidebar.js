@@ -3,7 +3,7 @@ import { escapeHtml } from '../shared/sanitizer.js?v=20';
 export function buildSidebarHtml(menuItems, activeId) {
   return `
     <div class="sidebar">
-      <div class="sgi-sidebar-section-label">Navegacion</div>
+      <div class="sgi-sidebar-section-label">Navegación</div>
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" role="menu" data-accordion="false">
           ${menuItems.map((item) => renderMenuItem(item, activeId)).join('')}

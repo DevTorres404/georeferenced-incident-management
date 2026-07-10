@@ -2,239 +2,168 @@
 <html lang="es">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Panel principal - Sistema de Gestión de Incidencias Georreferenciadas</title>
-  <meta name="description" content="Panel principal del Sistema Web de Gestión de Incidencias Georreferenciadas">
-
-  <!-- Google Font -->
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
-  <!-- AdminLTE -->
-  <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-  <!-- OverlayScrollbars -->
-  <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-  <!-- Estilos propios del sistema -->
-  <link rel="stylesheet" href="/css/app.css?v=34">
-  <link rel="stylesheet" href="/css/pages/dashboard.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGI | Panel principal - Sistema de Gestión de Incidencias Georreferenciadas</title>
+    <meta name="description" content="Panel principal del Sistema Web de Gestión de Incidencias Georreferenciadas">
+    <!-- Google Font -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css"> <!-- AdminLTE -->
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css"> <!-- OverlayScrollbars -->
+    <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <!-- Estilos propios del sistema -->
+    <link rel="stylesheet" href="/css/app.css?v=34">
+    <link rel="stylesheet" href="/css/pages/dashboard.css">
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
-  <div class="wrapper">
-
-    <!-- ===== ALERTA GLOBAL FLOTANTE ===== -->
-    <div id="alertaGlobal" role="alert"></div>
-
-    <!-- ===== NAVBAR ===== -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
-
-    <!-- ===== SIDEBAR ===== -->
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
-      <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center"
-        style="padding: 10px 15px;">
-        <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
-          style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
-        <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
-      </a>
-      <div id="mainSidebar"></div>
-    </aside>
-
-    <!-- ===== CONTENIDO PRINCIPAL ===== -->
-    <div class="content-wrapper">
-      <!-- Pantalla de carga -->
-      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-        <div class="loader-orbit" aria-hidden="true">
-          <i class="fas fa-map-marker-alt"></i>
-        </div>
-      </div>
-
-      <!-- Encabezado -->
-      <div class="content-header">
-        <div class="container-fluid">
-          <div class="row mb-2">
-            <div class="col-sm-6">
-              <h1 class="m-0">
-                <i class="fas fa-tachometer-alt text-primary mr-2"></i>Panel principal
-              </h1>
-              <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Resumen general del estado y distribución de
-                incidencias.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contenido -->
-      <div class="content">
-        <div class="container-fluid">
-
-          <!-- ===== KPIs ===== -->
-          <div class="dash-kpi-grid" id="kpiRow">
-            <!-- Renderizados por JS -->
-          </div>
-
-          <!-- ===== FILA 2: Charts + Prioridad ===== -->
-          <div class="row mt-4">
-
-            <!-- Gráfico de Tipos -->
-            <div class="col-lg-5 col-md-12">
-              <div class="dash-chart-card mb-4">
-                <div class="dash-chart-header">
-                  <h3><i class="fas fa-chart-pie"></i>Incidencias por Tipo</h3>
-                  <button type="button" class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                </div>
-                <div class="dash-chart-body">
-                  <canvas id="graficoPorTipo" style="max-height:280px;"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <!-- Gráfico de Estado -->
-            <div class="col-lg-4 col-md-6">
-              <div class="dash-chart-card mb-4">
-                <div class="dash-chart-header">
-                  <h3><i class="fas fa-chart-bar"></i>Por Estado</h3>
-                  <button type="button" class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                </div>
-                <div class="dash-chart-body">
-                  <canvas id="graficoPorEstado" style="max-height:280px;"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <!-- Prioridad -->
-            <div class="col-lg-3 col-md-6">
-              <div class="dash-chart-card mb-4">
-                <div class="dash-chart-header">
-                  <h3><i class="fas fa-exclamation-triangle"></i>Por Prioridad</h3>
-                  <button type="button" class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                </div>
-                <div class="dash-chart-body" id="barrasPrioridad">
-                  <!-- Barras de progreso por JS -->
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ===== FILA 3: Tendencia + Info ===== -->
-          <div class="row">
-
-            <!-- Tendencia mensual -->
-            <div class="col-lg-8">
-              <div class="dash-chart-card mb-4">
-                <div class="dash-chart-header">
-                  <h3><i class="fas fa-chart-line"></i>Tendencia Mensual</h3>
-                  <button type="button" class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                </div>
-                <div class="dash-chart-body">
-                  <canvas id="graficoTendencia" style="max-height:260px;"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <!-- Info Cards -->
-            <div class="col-lg-4">
-              <div class="dash-info-stack" id="infoStack">
-                <!-- Renderizadas por JS -->
-              </div>
-            </div>
-          </div>
-
-          <!-- ===== FILA 4: Tabla + Mapa ===== -->
-          <div class="row">
-
-            <!-- Tabla ultimas incidencias -->
-            <div class="col-lg-8">
-              <div class="dash-table-card mb-4">
-                <div class="dash-table-header">
-                  <h3><i class="fas fa-list"></i>Últimas Incidencias</h3>
-                  <a href="incidents.html" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-arrow-right mr-1"></i>Ver todas
-                  </a>
-                </div>
-                <div class="dash-table-wrap">
-                  <table class="dash-table" id="tablaUltimas">
-                    <thead>
-                      <tr>
-                        <th>Código</th>
-                        <th>Título</th>
-                        <th>Tipo</th>
-                        <th>Prioridad</th>
-                        <th>Estado</th>
-                        <th>Fecha</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody id="tablaUltimasBody">
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Mapa -->
-            <div class="col-lg-4">
-              <div class="dash-map-card mb-4">
-                <div class="dash-map-header">
-                  <h3><i class="fas fa-map-marked-alt"></i>Distribución Geográfica</h3>
-                </div>
-                <div class="dash-map-body">
-                  <div class="dash-map-placeholder">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <strong>Mapa Georreferenciado</strong>
-                    <small>Integrado con MapLibre GL JS<br>y OpenFreeMap</small>
-                    <div class="dash-map-legend">
-                      <span class="dash-map-legend-item">
-                        <span class="dash-map-legend-dot" style="background:#6c757d;"></span>Pendiente
-                      </span>
-                      <span class="dash-map-legend-item">
-                        <span class="dash-map-legend-dot" style="background:#0ea5e9;"></span>En Proceso
-                      </span>
-                      <span class="dash-map-legend-item">
-                        <span class="dash-map-legend-dot" style="background:#28a745;"></span>Resuelta
-                      </span>
+    <div class="wrapper"> <!-- ===== ALERTA GLOBAL FLOTANTE ===== -->
+        <div id="alertaGlobal" role="alert"></div> <!-- ===== NAVBAR ===== -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4"> <a href="dashboard.html"
+                class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;"> <img
+                    src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+                    style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+                <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span> </a>
+            <div id="mainSidebar"></div>
+        </aside> <!-- ===== CONTENIDO PRINCIPAL ===== -->
+        <div class="content-wrapper"> <!-- Pantalla de carga -->
+            <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+                <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i> </div>
+            </div> <!-- Encabezado -->
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0"> <i class="fas fa-tachometer-alt text-primary mr-2"></i>Panel principal
+                            </h1>
+                            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Resumen general del estado y
+                                distribución de incidencias.</p>
+                        </div>
                     </div>
-                  </div>
                 </div>
-              </div>
-            </div>
-
-          </div>
-
-        </div><!-- /.container-fluid -->
-      </div><!-- /.content -->
-    </div><!-- /.content-wrapper -->
-
-    <!-- ===== FOOTER ===== -->
-    <footer class="main-footer text-sm">
-      <div class="float-right d-none d-sm-inline">
-        Versión 1.0.0
-      </div>
-      <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
-    </footer>
-
-    <!-- ===== CONTROL SIDEBAR ===== -->
-    <aside class="control-sidebar control-sidebar-dark"></aside>
-
-  </div><!-- /.wrapper -->
-
-  <!-- ===== SCRIPTS ===== -->
-  <script src="/plugins/jquery/jquery.min.js"></script>
-  <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-  <script src="/plugins/chart.js/Chart.min.js"></script>
-  <script src="/dist/js/adminlte.min.js"></script>
-  <script type="module" src="/js/layout/layout.js?v=35"></script>
-  <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=21"></script>
+            </div> <!-- Contenido -->
+            <div class="content">
+                <div class="container-fluid"> <!-- ===== KPIs ===== -->
+                    <div class="dash-kpi-grid" id="kpiRow"> <!-- Renderizados por JS --> </div>
+                    <!-- ===== FILA 2: Charts + Prioridad ===== -->
+                    <div class="row mt-4"> <!-- Gráfico de Tipos -->
+                        <div class="col-lg-5 col-md-12">
+                            <div class="dash-chart-card mb-4">
+                                <div class="dash-chart-header">
+                                    <h3><i class="fas fa-chart-pie"></i>Incidencias por Tipo</h3> <button type="button"
+                                        class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i> </button>
+                                </div>
+                                <div class="dash-chart-body"> <canvas id="graficoPorTipo"
+                                        style="max-height:280px;"></canvas> </div>
+                            </div>
+                        </div> <!-- Gráfico de Estado -->
+                        <div class="col-lg-4 col-md-6">
+                            <div class="dash-chart-card mb-4">
+                                <div class="dash-chart-header">
+                                    <h3><i class="fas fa-chart-bar"></i>Por Estado</h3> <button type="button"
+                                        class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i> </button>
+                                </div>
+                                <div class="dash-chart-body"> <canvas id="graficoPorEstado"
+                                        style="max-height:280px;"></canvas> </div>
+                            </div>
+                        </div> <!-- Prioridad -->
+                        <div class="col-lg-3 col-md-6">
+                            <div class="dash-chart-card mb-4">
+                                <div class="dash-chart-header">
+                                    <h3><i class="fas fa-exclamation-triangle"></i>Por Prioridad</h3> <button
+                                        type="button" class="btn btn-sm btn-outline-secondary border-0"
+                                        data-card-widget="collapse"> <i class="fas fa-minus"></i> </button>
+                                </div>
+                                <div class="dash-chart-body" id="barrasPrioridad"> <!-- Barras de progreso por JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- ===== FILA 3: Tendencia + Info ===== -->
+                    <div class="row"> <!-- Tendencia mensual -->
+                        <div class="col-lg-8">
+                            <div class="dash-chart-card mb-4">
+                                <div class="dash-chart-header">
+                                    <h3><i class="fas fa-chart-line"></i>Tendencia Mensual</h3> <button type="button"
+                                        class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i> </button>
+                                </div>
+                                <div class="dash-chart-body"> <canvas id="graficoTendencia"
+                                        style="max-height:260px;"></canvas> </div>
+                            </div>
+                        </div> <!-- Info Cards -->
+                        <div class="col-lg-4">
+                            <div class="dash-info-stack" id="infoStack"> <!-- Renderizadas por JS --> </div>
+                        </div>
+                    </div> <!-- ===== FILA 4: Tabla + Mapa ===== -->
+                    <div class="row"> <!-- Tabla ultimas incidencias -->
+                        <div class="col-lg-8">
+                            <div class="dash-table-card mb-4">
+                                <div class="dash-table-header">
+                                    <h3><i class="fas fa-list"></i>Últimas Incidencias</h3> <a href="incidents.html"
+                                        class="btn btn-sm btn-outline-primary"> <i
+                                            class="fas fa-arrow-right mr-1"></i>Ver todas </a>
+                                </div>
+                                <div class="dash-table-wrap">
+                                    <table class="dash-table" id="tablaUltimas">
+                                        <thead>
+                                            <tr>
+                                                <th>Código</th>
+                                                <th>Título</th>
+                                                <th>Tipo</th>
+                                                <th>Prioridad</th>
+                                                <th>Estado</th>
+                                                <th>Fecha</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tablaUltimasBody"> </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div> <!-- Mapa -->
+                        <div class="col-lg-4">
+                            <div class="dash-map-card mb-4">
+                                <div class="dash-map-header">
+                                    <h3><i class="fas fa-map-marked-alt"></i>Distribución Geográfica</h3>
+                                </div>
+                                <div class="dash-map-body">
+                                    <div class="dash-map-placeholder"> <i class="fas fa-map-marked-alt"></i>
+                                        <strong>Mapa Georreferenciado</strong> <small>Integrado con MapLibre GL JS<br>y
+                                            OpenFreeMap</small>
+                                        <div class="dash-map-legend"> <span class="dash-map-legend-item"> <span
+                                                    class="dash-map-legend-dot"
+                                                    style="background:#6c757d;"></span>Pendiente </span> <span
+                                                class="dash-map-legend-item"> <span class="dash-map-legend-dot"
+                                                    style="background:#0ea5e9;"></span>En Proceso </span> <span
+                                                class="dash-map-legend-item"> <span class="dash-map-legend-dot"
+                                                    style="background:#28a745;"></span>Resuelta </span> </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /.container-fluid -->
+            </div><!-- /.content -->
+        </div><!-- /.content-wrapper --> <!-- ===== FOOTER ===== -->
+        <footer class="main-footer text-sm">
+            <div class="float-right d-none d-sm-inline"> Versión 1.0.0 </div> <strong>Sistema de Gestión de Incidencias
+                Georreferenciadas (SGI)</strong>
+        </footer> <!-- ===== CONTROL SIDEBAR ===== -->
+        <aside class="control-sidebar control-sidebar-dark"></aside>
+    </div><!-- /.wrapper --> <!-- ===== SCRIPTS ===== -->
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="/plugins/chart.js/Chart.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script type="module" src="/js/layout/layout.js?v=35"></script>
+    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=21"></script>
 </body>
 
 </html>

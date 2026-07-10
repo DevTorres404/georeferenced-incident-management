@@ -27,14 +27,37 @@ function normalizeCode(value) {
   return value?.codigo || value?.code || '';
 }
 
-function formatRoleLabel(role) {
-  if (typeof role === 'string') return role;
-  return role?.name || role?.nombre || role?.codigo || role?.code || '';
-}
-
 function hasRole(roleCode, user) {
   if (!user || !Array.isArray(user.roles)) return false;
   return user.roles.some((role) => normalizeCode(role) === roleCode);
+}
+
+function hasGoogleIdentity(user) {
+  if (!user || !Array.isArray(user.identities)) return false;
+  return user.identities.some((id) => id?.provider === 'google');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
+  } catch { return '-'; }
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '-';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '-';
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    if (isToday) {
+      return 'Hoy ' + d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch { return '-'; }
 }
 
 function initProfilePage() {
@@ -50,7 +73,8 @@ function initProfilePage() {
 
   renderUserData(user);
   renderSecurityData(user);
-  renderRolesData(user);
+  initEditProfile(user);
+  initChangePassword();
 
   const loader = document.getElementById('pageLoader');
   if (loader) {
@@ -61,102 +85,297 @@ function initProfilePage() {
 }
 
 function renderUserData(user) {
-  const firstName = user.nombre || user.first_name || '';
+  const firstName = user.nombre || user.first_name || user.name || '';
   const lastName = user.apellido || user.last_name || '';
+  const username = user.username || '';
   const email = user.email || '';
-  const initial = firstName ? firstName.charAt(0).toUpperCase() : 'U';
+  const isActive = user.is_active !== false;
+
+  const displayFirst = firstName || username;
+  const initial = displayFirst ? displayFirst.charAt(0).toUpperCase() : 'U';
 
   const avatarEl = document.getElementById('profileAvatar');
   if (avatarEl) avatarEl.textContent = initial;
 
   const fullNameEl = document.getElementById('profileFullName');
-  if (fullNameEl) fullNameEl.textContent = `${firstName} ${lastName}`.trim() || 'Usuario SGI';
+  if (fullNameEl) fullNameEl.textContent = `${firstName} ${lastName}`.trim() || username || 'Usuario SGI';
 
   const emailEl = document.getElementById('profileEmail');
   if (emailEl) emailEl.textContent = email;
 
-  const firstNameEl = document.getElementById('profileFirstName');
-  if (firstNameEl) firstNameEl.textContent = firstName || '-';
+  const usernameEl = document.getElementById('profileUsername');
+  if (usernameEl) usernameEl.textContent = username || '-';
 
-  const lastNameEl = document.getElementById('profileLastName');
-  if (lastNameEl) lastNameEl.textContent = lastName || '-';
+  const statusEl = document.getElementById('profileStatus');
+  if (statusEl) {
+    statusEl.textContent = isActive ? 'Activo' : 'Inactivo';
+    statusEl.className = `profile-status-badge ${isActive ? 'active' : 'inactive'}`;
+  }
+
+  const memberSinceEl = document.getElementById('profileMemberSince');
+  if (memberSinceEl) memberSinceEl.textContent = formatDate(user.created_at || user.createdAt);
+
+  const lastLoginEl = document.getElementById('profileLastLogin');
+  if (lastLoginEl) lastLoginEl.textContent = formatDateTime(user.last_login || user.lastLogin);
+}
+
+function initEditProfile(user) {
+  const btnEdit = document.getElementById('btnEditProfile');
+  const modalEdit = document.getElementById('modalEditProfile');
+  const formEdit = document.getElementById('formEditProfile');
+
+  if (!btnEdit || !modalEdit || !formEdit) return;
+
+  btnEdit.addEventListener('click', () => {
+    const editUsername = document.getElementById('editUsername');
+    editUsername.value = user.username || '';
+
+    editUsername.addEventListener('input', function() {
+      this.value = this.value.toLowerCase();
+    });
+
+    document.getElementById('editProfileAlert').classList.add('d-none');
+
+    $(modalEdit).modal('show');
+  });
+
+  formEdit.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btnSave = document.getElementById('btnSaveProfile');
+    const alertBox = document.getElementById('editProfileAlert');
+    const username = document.getElementById('editUsername').value.trim();
+
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+    alertBox.classList.add('d-none');
+
+    try {
+      const response = await requestBackend('/auth/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({ username })
+      });
+
+      const updatedUser = { ...user, username };
+      localStorage.setItem(AUTH_KEYS.user, JSON.stringify(updatedUser));
+
+      $(modalEdit).modal('hide');
+
+      if (window.showGlobalAlert) {
+        window.showGlobalAlert('Perfil actualizado exitosamente', 'success');
+      }
+
+      renderUserData(updatedUser);
+      if (typeof window.renderLayout === 'function') {
+        window.renderLayout();
+      }
+    } catch (error) {
+      alertBox.textContent = error.message || 'Error al actualizar el perfil';
+      alertBox.classList.remove('d-none');
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar Cambios';
+    }
+  });
+}
+
+function initChangePassword() {
+  const btnOpen = document.getElementById('btnOpenChangePassword');
+  const modal = document.getElementById('modalChangePassword');
+  const form = document.getElementById('formChangePassword');
+
+  if (!btnOpen || !modal || !form) return;
+
+  const user = readSessionUser();
+  if (hasGoogleIdentity(user)) return;
+
+  btnOpen.addEventListener('click', () => {
+    form.reset();
+    clearChangePasswordAlert();
+    clearPasswordFieldErrors(form);
+    $(modal).modal('show');
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearChangePasswordAlert();
+    clearPasswordFieldErrors(form);
+
+    const currentPassword = document.getElementById('currentPassword')?.value || '';
+    const newPassword = document.getElementById('newPassword')?.value || '';
+    const confirmation = document.getElementById('newPasswordConfirm')?.value || '';
+
+    if (!currentPassword || !newPassword || !confirmation) {
+      showChangePasswordAlert('Completa todos los campos obligatorios.');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordFieldError('newPassword', 'La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+
+    if (newPassword === currentPassword) {
+      setPasswordFieldError('newPassword', 'La nueva contraseña no puede ser igual a la actual.');
+      return;
+    }
+
+    if (newPassword !== confirmation) {
+      setPasswordFieldError('newPasswordConfirm', 'La confirmación de la contraseña no coincide.');
+      return;
+    }
+
+    const btnSave = document.getElementById('btnSavePassword');
+    btnSave.disabled = true;
+    btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+
+    try {
+      await requestBackend('/auth/password', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          current_password: currentPassword,
+          password: newPassword,
+          password_confirmation: confirmation,
+        }),
+      });
+
+      $(modal).modal('hide');
+      form.reset();
+
+      if (window.showGlobalAlert) {
+        window.showGlobalAlert('Contraseña actualizada correctamente.', 'success');
+      }
+    } catch (error) {
+      if (error?.status === 401) {
+        localStorage.removeItem('user_data');
+        localStorage.setItem('sgig_flash_message', 'Tu contraseña fue actualizada. Vuelve a iniciar sesión.');
+        window.location.href = '../index.html';
+        return;
+      }
+      showChangePasswordAlert(error.message || 'No se pudo cambiar la contraseña.');
+      renderPasswordBackendErrors(error, form);
+    } finally {
+      btnSave.disabled = false;
+      btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar Contraseña';
+    }
+  });
+}
+
+function clearPasswordFieldErrors(form) {
+  form.querySelectorAll('.is-invalid').forEach((input) => input.classList.remove('is-invalid'));
+  form.querySelectorAll('.invalid-feedback.backend-error').forEach((feedback) => feedback.remove());
+}
+
+function setPasswordFieldError(inputId, message) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  input.classList.add('is-invalid');
+  let feedback = input.parentElement?.querySelector('.invalid-feedback.backend-error');
+  if (!feedback) {
+    feedback = document.createElement('div');
+    feedback.className = 'invalid-feedback backend-error';
+    input.parentElement?.appendChild(feedback);
+  }
+  feedback.textContent = message;
+  feedback.style.display = 'block';
+}
+
+function renderPasswordBackendErrors(error, form) {
+  if (error?.status !== 422 || !error.errors) return;
+
+  Object.entries(error.errors).forEach(([field, messages]) => {
+    const input = form.querySelector(`[name="${field}"]`);
+    if (input && Array.isArray(messages) && messages[0]) {
+      setPasswordFieldError(input.id, messages[0]);
+    }
+  });
+}
+
+function showChangePasswordAlert(message) {
+  const alertBox = document.getElementById('changePasswordAlert');
+  if (!alertBox) return;
+
+  alertBox.textContent = message;
+  alertBox.classList.remove('d-none');
+}
+
+function clearChangePasswordAlert() {
+  const alertBox = document.getElementById('changePasswordAlert');
+  if (!alertBox) return;
+
+  alertBox.textContent = '';
+  alertBox.classList.add('d-none');
 }
 
 function renderSecurityData(user) {
   const container = document.getElementById('securityContainer');
   if (!container) return;
 
+  const isGoogleUser = hasGoogleIdentity(user);
   const has2FA = user.two_factor_enabled;
   const isCiudadano = hasRole('CIUDADANO', user);
 
+  container.innerHTML = `
+    <div class="security-grid">
+      <!-- 2FA -->
+      <div class="security-item d-flex flex-column">
+        <div class="security-item-header">
+          <div class="security-item-icon blue"><i class="fas fa-shield-alt"></i></div>
+          <h5 class="security-item-title">Autenticación en 2 Pasos</h5>
+        </div>
+        <p class="security-item-desc">Añade una capa extra de seguridad con un código temporal desde tu dispositivo.</p>
+        <div class="security-item-action mt-auto" id="tfaContainer">
+          ${has2FA
+            ? `<div class="d-flex align-items-center justify-content-between">
+                 <span><span class="status-dot on"></span><strong class="text-success">Activado</strong></span>
+                 ${isCiudadano
+                   ? `<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>`
+                   : ''}
+               </div>`
+            : `<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>
+               <div id="tfaStep2" class="d-none mt-3">
+                 <p class="text-sm text-muted mb-2">Escanea este código QR con tu aplicación autenticadora:</p>
+                 <div id="qrcode-container" class="d-inline-block bg-white p-2 border rounded shadow-sm"></div>
+                 <div class="mt-3">
+                   <label class="text-sm">Ingresa el código generado:</label>
+                   <input type="text" id="tfaCodeInput" class="form-control text-center mx-auto" style="max-width: 180px; font-size: 1.1rem; letter-spacing: 0.2em;" maxlength="6" placeholder="000000">
+                 </div>
+                 <button type="button" class="btn btn-success btn-sm mt-3" id="btnConfirm2fa">Verificar y activar</button>
+               </div>
+               <div id="tfaAlert" class="mt-2"></div>`
+          }
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="security-item d-flex flex-column">
+        <div class="security-item-header">
+          <div class="security-item-icon teal"><i class="fas fa-key"></i></div>
+          <h5 class="security-item-title">Contraseña</h5>
+        </div>
+        ${isGoogleUser
+          ? `<p class="security-item-desc">Iniciaste sesión con Google, no necesitas contraseña.</p>`
+          : `<p class="security-item-desc">Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+             <div class="security-item-action mt-auto">
+               <button type="button" class="btn btn-outline-primary btn-sm" id="btnOpenChangePassword">
+                 <i class="fas fa-redo-alt mr-1"></i>Cambiar contraseña
+               </button>
+             </div>`
+        }
+      </div>
+    </div>
+  `;
+
   if (has2FA) {
-    container.innerHTML = `
-      <div class="alert alert-success py-2 d-inline-block shadow-sm">
-        <i class="fas fa-shield-alt mr-2"></i>Autenticacion en 2 pasos activa
-      </div>
-      <div class="mt-2">
-        ${isCiudadano ? `<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar 2FA</button>` : ''}
-      </div>
-    `;
     const btnDisable2fa = document.getElementById('btnDisable2fa');
     if (btnDisable2fa) btnDisable2fa.addEventListener('click', disableTwoFactor);
-    return;
+  } else {
+    const btnSetup2fa = document.getElementById('btnSetup2fa');
+    const btnConfirm2fa = document.getElementById('btnConfirm2fa');
+    if (btnSetup2fa) btnSetup2fa.addEventListener('click', initSetup2FA);
+    if (btnConfirm2fa) btnConfirm2fa.addEventListener('click', confirmSetup2FA);
   }
-
-  container.innerHTML = `
-    <p class="text-muted text-sm">Protege tu cuenta con verificacion de dos pasos usando Google Authenticator u otra app similar.</p>
-    <div id="tfaStep1">
-      <button type="button" class="btn btn-primary btn-sm shadow-sm" id="btnSetup2fa">
-        <i class="fas fa-qrcode mr-2"></i>Configurar 2FA
-      </button>
-    </div>
-    <div id="tfaStep2" class="d-none mt-3">
-      <p class="text-sm text-muted mb-2">Escanea este codigo QR con tu aplicacion autenticadora:</p>
-      <div id="qrcode-container" class="d-inline-block bg-white p-2 border rounded shadow-sm"></div>
-      <div class="mt-3">
-        <label class="text-sm">Ingresa el codigo generado:</label>
-        <input type="text" id="tfaCodeInput" class="form-control text-center mx-auto" style="max-width: 200px; font-size: 1.25rem; letter-spacing: 0.2em;" maxlength="6" placeholder="000000">
-      </div>
-      <button type="button" class="btn btn-success btn-sm shadow-sm mt-3" id="btnConfirm2fa">Verificar y activar</button>
-    </div>
-    <div id="tfaAlert" class="mt-3 text-left"></div>
-  `;
-
-  const btnSetup2fa = document.getElementById('btnSetup2fa');
-  const btnConfirm2fa = document.getElementById('btnConfirm2fa');
-  if (btnSetup2fa) btnSetup2fa.addEventListener('click', initSetup2FA);
-  if (btnConfirm2fa) btnConfirm2fa.addEventListener('click', confirmSetup2FA);
-}
-
-function renderRolesData(user) {
-  const container = document.getElementById('rolesListContainer');
-  if (!container) return;
-
-  if (!Array.isArray(user.roles) || user.roles.length === 0) {
-    container.innerHTML = '<span class="text-muted">Sin rol asignado</span>';
-    return;
-  }
-
-  container.innerHTML = `
-    <ul class="list-group list-group-flush mb-0">
-      ${user.roles.map(role => {
-        const label = escapeHtml(formatRoleLabel(role));
-        const code = escapeHtml(normalizeCode(role));
-        const isCiudadano = code === 'CIUDADANO';
-        return `
-          <li class="list-group-item px-0 border-0 bg-transparent">
-            <div class="d-flex align-items-center">
-              <i class="fas ${isCiudadano ? 'fa-user' : 'fa-user-shield'} text-${isCiudadano ? 'info' : 'primary'} mr-3 fa-lg"></i>
-              <div>
-                <h6 class="mb-0 font-weight-bold">${label}</h6>
-                <small class="text-muted">Nivel de acceso: ${code}</small>
-              </div>
-            </div>
-          </li>
-        `;
-      }).join('<hr class="my-1">')}
-    </ul>
-  `;
 }
 
 async function initSetup2FA() {
@@ -177,14 +396,17 @@ async function initSetup2FA() {
       qrLibraryReady = false;
     }
 
-    document.getElementById('tfaStep1')?.classList.add('d-none');
-    document.getElementById('tfaStep2')?.classList.remove('d-none');
+    const step2 = document.getElementById('tfaStep2');
+    if (step2) {
+      btn.style.display = 'none';
+      step2.classList.remove('d-none');
+    }
 
     const qrContainer = document.getElementById('qrcode-container');
     renderTwoFactorSetup(qrContainer, data.qr_url, data.secret, qrLibraryReady);
 
     if (!qrLibraryReady) {
-      setTwoFactorAlert('No se pudo generar el codigo QR. Ingresa la clave manual en tu aplicacion autenticadora.', 'warning');
+      setTwoFactorAlert('No se pudo generar el código QR. Ingresa la clave manual en tu aplicación autenticadora.', 'warning');
     }
   } catch (error) {
     setTwoFactorAlert(error.message || 'Error al generar QR.', 'danger');
@@ -209,8 +431,8 @@ function renderTwoFactorSetup(container, qrUrl, secret, qrLibraryReady) {
 
     new window.QRCode(qrBox, {
       text: qrUrl,
-      width: 180,
-      height: 180
+      width: 160,
+      height: 160
     });
   }
 
@@ -245,7 +467,7 @@ function ensureQrCodeLibrary() {
     script.async = true;
     script.dataset.sgigQrcode = 'true';
     script.onload = resolve;
-    script.onerror = () => reject(new Error('No se pudo cargar el generador de codigo QR.'));
+    script.onerror = () => reject(new Error('No se pudo cargar el generador de código QR.'));
     document.head.appendChild(script);
   });
 }
@@ -256,7 +478,7 @@ async function confirmSetup2FA() {
   const code = input?.value.trim() || '';
 
   if (!/^[0-9]{6}$/.test(code)) {
-    setTwoFactorAlert('El codigo debe tener 6 digitos.', 'warning');
+    setTwoFactorAlert('El código debe tener 6 dígitos.', 'warning');
     return;
   }
 
@@ -271,7 +493,7 @@ async function confirmSetup2FA() {
       body: JSON.stringify({ code })
     });
 
-    setTwoFactorAlert('Autenticacion activada con exito.', 'success');
+    setTwoFactorAlert('Autenticación activada con éxito.', 'success');
 
     const user = readSessionUser();
     if (user) {
@@ -283,7 +505,7 @@ async function confirmSetup2FA() {
       window.location.reload();
     }, 1500);
   } catch (error) {
-    setTwoFactorAlert(error.message || 'Codigo invalido.', 'danger');
+    setTwoFactorAlert(error.message || 'Código inválido.', 'danger');
     btn.disabled = false;
     btn.innerHTML = 'Verificar y activar';
   }
@@ -305,7 +527,7 @@ async function disableTwoFactor() {
     }
 
     if (window.showGlobalAlert) {
-      window.showGlobalAlert('Autenticacion en 2 pasos desactivada.', 'success');
+      window.showGlobalAlert('Autenticación en 2 pasos desactivada.', 'success');
     }
 
     setTimeout(() => {
@@ -326,5 +548,5 @@ function setTwoFactorAlert(message, type = 'danger') {
   const alert = document.getElementById('tfaAlert');
   if (!alert) return;
 
-  alert.innerHTML = `<div class="alert alert-${type} py-2 text-sm">${escapeHtml(message)}</div>`;
+  alert.innerHTML = `<div class="alert alert-${type} py-2 text-sm mb-0">${escapeHtml(message)}</div>`;
 }

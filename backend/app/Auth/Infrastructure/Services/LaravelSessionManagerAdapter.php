@@ -28,6 +28,15 @@ final class LaravelSessionManagerAdapter implements SessionManagerPort
         PersonalAccessToken::findOrFail($tokenId)->delete();
     }
 
+    public function revokeOtherTokens(int $userId, ?int $exceptTokenId = null): void
+    {
+        PersonalAccessToken::query()
+            ->where('tokenable_type', User::class)
+            ->where('tokenable_id', $userId)
+            ->when($exceptTokenId !== null, fn ($query) => $query->whereKeyNot($exceptTokenId))
+            ->delete();
+    }
+
     public function createTwoFactorToken(int $userId): string
     {
         $token = \Illuminate\Support\Str::random(64);

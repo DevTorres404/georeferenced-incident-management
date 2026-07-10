@@ -7,10 +7,11 @@
 @import url("./pages/dashboard.css?v=1");
 @import url("./pages/incidents.css?v=2");
 @import url("./pages/incident-detail.css?v=4");
-@import url("./pages/incident-create.css?v=2");
+@import url("./pages/incident-create.css?v=3");
 @import url("./pages/map.css?v=5");
 @import url("./pages/assignment-management.css?v=2");
 @import url("./pages/notifications-history.css?v=1");
 @import url("./pages/operational-structure.css?v=12");
 @import url("./pages/reports.css?v=2");
 @import url("./pages/territorial-units.css?v=2");
+@import url("./pages/about.css?v=1");

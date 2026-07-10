@@ -29,7 +29,7 @@ class VerifyEmailNotification extends Notification
         );
 
         return (new MailMessage)
-            ->subject('Verifica tu correo en GIC')
+            ->subject('Verifica tu correo en SGI')
             ->line('Haz clic en el boton de abajo para verificar tu correo y activar tu cuenta.')
             ->action('Verificar correo', $verificationUrl)
             ->line('Si no creaste esta cuenta, puedes ignorar este mensaje.');

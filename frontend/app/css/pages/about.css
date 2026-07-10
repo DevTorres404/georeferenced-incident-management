@@ -1,0 +1,63 @@
+/* Hero banner */
+.hero-about {
+  background: linear-gradient(135deg, var(--color-sidebar-bg, #071827) 0%, var(--color-sidebar-bg-soft, #0f2740) 60%, var(--color-primary-dark, #0369a1) 100%);
+  border-radius: 12px;
+  padding: 48px 40px;
+  color: #fff;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-about::before {
+  content: '\f5a0';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  position: absolute;
+  right: 40px; top: 50%; transform: translateY(-50%);
+  font-size: 10rem;
+  opacity: 0.08;
+  color: #fff;
+}
+.hero-about h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+.hero-about p  { font-size: 1.05rem; opacity: 0.85; max-width: 600px; }
+
+/* Feature list */
+.feature-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+.feature-item:last-child { border-bottom: none; }
+.feature-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 1.1rem; color: #fff;
+}
+.feature-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; color: var(--color-text-main, #0f172a); }
+.feature-desc  { font-size: 0.83rem; color: var(--color-text-muted, #64748b); margin: 0; }
+
+/* Team card */
+.team-avatar {
+  width: 70px; height: 70px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; font-weight: 700; color: #fff;
+  margin: 0 auto 12px;
+}
+/* Timeline de versiones */
+.version-item {
+  border-left: 3px solid var(--color-primary, #0ea5e9);
+  padding: 4px 0 12px 20px;
+  position: relative;
+  margin-bottom: 4px;
+}
+.version-item::before {
+  content: '';
+  width: 12px; height: 12px;
+  background: var(--color-primary, #0ea5e9); border-radius: 50%;
+  position: absolute; left: -7px; top: 6px;
+}
+.version-item.latest { border-left-color: var(--color-baja, #28a745); }
+.version-item.latest::before { background: var(--color-baja, #28a745); }
+.version-badge {
+  font-size: 0.75rem; padding: 2px 8px;
+  border-radius: 20px; margin-left: 8px;
+}

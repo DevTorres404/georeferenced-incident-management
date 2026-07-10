@@ -1,4 +1,15 @@
-import { completeProfile, loginWithEmail, registerLocal, registerWithGoogle, restoreSession, verifyTwoFactorLogin } from '../application/auth-service.js?v=16';
+import {
+  completeProfile,
+  loginWithEmail,
+  registerLocal,
+  registerWithGoogle,
+  requestPasswordResetCode,
+  resetPasswordWithCode,
+  restoreSession,
+  verifyPasswordResetCode,
+  verifyTwoFactorLogin,
+  resendVerificationEmail
+} from '../application/auth-service.js?v=17';
 import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=15';
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
@@ -11,40 +22,63 @@ function initAuthPage() {
       profileView: document.getElementById('profile-view'),
       twoFactorView: document.getElementById('two-factor-view'),
       setupTwoFactorView: document.getElementById('setup-2fa-view'),
+    forgotPasswordView: document.getElementById('forgot-password-view'),
     loginForm: document.getElementById('login-form'),
     registerForm: document.getElementById('register-form'),
     profileForm: document.getElementById('profile-form'),
     twoFactorForm: document.getElementById('two-factor-form'),
     setupTwoFactorForm: document.getElementById('setup-2fa-form'),
+    forgotPasswordForm: document.getElementById('forgot-password-form'),
+    resetCodeForm: document.getElementById('reset-code-form'),
+    resetPasswordForm: document.getElementById('reset-password-form'),
     loginAlert: document.getElementById('login-alert'),
     registerAlert: document.getElementById('register-alert'),
     profileAlert: document.getElementById('profile-alert'),
     twoFactorAlert: document.getElementById('two-factor-alert'),
     setupTwoFactorAlert: document.getElementById('setup-2fa-alert'),
+    forgotPasswordAlert: document.getElementById('forgot-password-alert'),
     loginSpinner: document.getElementById('login-spinner'),
     registerSpinner: document.getElementById('register-spinner'),
     profileSpinner: document.getElementById('profile-spinner'),
     twoFactorSpinner: document.getElementById('two-factor-spinner'),
     setupTwoFactorSpinner: document.getElementById('setup-2fa-spinner'),
+    forgotPasswordSpinner: document.getElementById('forgot-password-spinner'),
+    resetCodeSpinner: document.getElementById('reset-code-spinner'),
+    resetPasswordSpinner: document.getElementById('reset-password-spinner'),
     loginBtnText: document.getElementById('login-btn-text'),
     registerBtnText: document.getElementById('register-btn-text'),
     profileBtnText: document.getElementById('profile-btn-text'),
     twoFactorBtnText: document.getElementById('two-factor-btn-text'),
     setupTwoFactorBtnText: document.getElementById('setup-2fa-btn-text'),
+    forgotPasswordBtnText: document.getElementById('forgot-password-btn-text'),
+    resetCodeBtnText: document.getElementById('reset-code-btn-text'),
+    resetPasswordBtnText: document.getElementById('reset-password-btn-text'),
     loginSubmitBtn: document.getElementById('login-submit-btn'),
     registerSubmitBtn: document.getElementById('register-submit-btn'),
     profileSubmitBtn: document.getElementById('profile-submit-btn'),
     twoFactorSubmitBtn: document.getElementById('two-factor-submit-btn'),
     setupTwoFactorSubmitBtn: document.getElementById('setup-2fa-submit-btn'),
+    forgotPasswordSubmitBtn: document.getElementById('forgot-password-submit-btn'),
+    resetCodeSubmitBtn: document.getElementById('reset-code-submit-btn'),
+    resetPasswordSubmitBtn: document.getElementById('reset-password-submit-btn'),
       openRegisterBtn: document.getElementById('open-register-btn'),
       openLoginBtn: document.getElementById('open-login-btn'),
       backToLoginBtn: document.getElementById('back-to-login-btn'),
+    openForgotPasswordBtn: document.getElementById('open-forgot-password-btn'),
+    backToLoginFromResetBtn: document.getElementById('back-to-login-from-reset-btn'),
+    backToLoginFromResetBtn2: document.getElementById('back-to-login-from-reset-btn2'),
+    backToLoginFromResetBtn3: document.getElementById('back-to-login-from-reset-btn3'),
+    resendResetCodeBtn: document.getElementById('resend-reset-code-btn'),
     googleRegisterBtn: document.getElementById('google-register-btn'),
     googleLoginBtn: document.getElementById('google-login-btn'),
     togglePasswordBtn: document.getElementById('toggle-password-btn'),
     toggleRegisterPasswordBtn: document.getElementById('toggle-register-password-btn'),
     toggleRegisterPasswordConfirmBtn: document.getElementById('toggle-register-password-confirm-btn'),
     passwordInput: document.getElementById('password'),
+    forgotEmailInput: document.getElementById('forgot-email'),
+    resetCodeInput: document.getElementById('reset-code'),
+    resetPasswordInput: document.getElementById('reset-password'),
+    resetPasswordConfirmInput: document.getElementById('reset-password-confirm'),
     registerPasswordInput: document.getElementById('register-password'),
     loginEmailInput: document.getElementById('email'),
     registerNameInput: document.getElementById('register-name'),
@@ -61,6 +95,8 @@ function initAuthPage() {
 
   let busy = false;
   let tempTwoFactorToken = null;
+  let recoveryEmail = '';
+  let recoveryCode = '';
 
   bindEvents();
   setupValidationListeners(el.loginForm);
@@ -68,6 +104,9 @@ function initAuthPage() {
   setupValidationListeners(el.profileForm);
   setupValidationListeners(el.twoFactorForm);
   setupValidationListeners(el.setupTwoFactorForm);
+  setupValidationListeners(el.forgotPasswordForm);
+  setupValidationListeners(el.resetCodeForm);
+  setupValidationListeners(el.resetPasswordForm);
   
   bootstrap();
 
@@ -77,6 +116,7 @@ function initAuthPage() {
       return;
     }
 
+    showFlashMessage();
     showVerificationNotice();
 
     const sessionUser = await restoreSession();
@@ -91,10 +131,27 @@ function initAuthPage() {
     if (el.profileForm) el.profileForm.addEventListener('submit', handleProfileSubmit);
     if (el.twoFactorForm) el.twoFactorForm.addEventListener('submit', handleTwoFactorSubmit);
     if (el.setupTwoFactorForm) el.setupTwoFactorForm.addEventListener('submit', handleSetupTwoFactorSubmit);
+    if (el.forgotPasswordForm) el.forgotPasswordForm.addEventListener('submit', handleForgotPasswordSubmit);
+    if (el.resetCodeForm) el.resetCodeForm.addEventListener('submit', handleResetCodeSubmit);
+    if (el.resetPasswordForm) el.resetPasswordForm.addEventListener('submit', handleResetPasswordSubmit);
     
-    if (el.openLoginBtn) el.openLoginBtn.addEventListener('click', () => switchView('login'));
-    if (el.openRegisterBtn) el.openRegisterBtn.addEventListener('click', () => switchView('register'));
+    if (el.openLoginBtn) el.openLoginBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      switchView('login');
+    });
+    if (el.openRegisterBtn) el.openRegisterBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      switchView('register');
+    });
     if (el.backToLoginBtn) el.backToLoginBtn.addEventListener('click', () => switchView('login'));
+    if (el.openForgotPasswordBtn) el.openForgotPasswordBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      beginPasswordRecovery();
+    });
+    if (el.backToLoginFromResetBtn) el.backToLoginFromResetBtn.addEventListener('click', cancelPasswordRecovery);
+    if (el.backToLoginFromResetBtn2) el.backToLoginFromResetBtn2.addEventListener('click', cancelPasswordRecovery);
+    if (el.backToLoginFromResetBtn3) el.backToLoginFromResetBtn3.addEventListener('click', cancelPasswordRecovery);
+    if (el.resendResetCodeBtn) el.resendResetCodeBtn.addEventListener('click', resendPasswordResetCode);
     const backToLoginFrom2FaBtn = document.getElementById('back-to-login-from-2fa-btn');
     if (backToLoginFrom2FaBtn) backToLoginFrom2FaBtn.addEventListener('click', () => {
       tempTwoFactorToken = null;
@@ -122,13 +179,55 @@ function initAuthPage() {
         }
       });
     }
+
+  }
+
+  function showFlashMessage() {
+    const message = localStorage.getItem('sgig_flash_message');
+    if (!message) return;
+
+    showAlert(el.loginAlert, message, 'success');
+    localStorage.removeItem('sgig_flash_message');
+  }
+
+  function showLoginEmailNotVerified(alertEl, email) {
+    if (!alertEl) return;
+    alertEl.className = 'alert alert-warning py-3 mb-3 text-start small';
+    alertEl.innerHTML = '';
+    alertEl.classList.remove('d-none');
+
+    const msg = document.createElement('p');
+    msg.className = 'mb-2';
+    msg.textContent = 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.';
+    alertEl.appendChild(msg);
+
+    if (email) {
+      const resendBtn = document.createElement('button');
+      resendBtn.type = 'button';
+      resendBtn.className = 'btn btn-sm btn-outline-primary mt-1';
+      resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo de verificación';
+      resendBtn.addEventListener('click', async () => {
+        resendBtn.disabled = true;
+        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enviando...';
+        try {
+          await resendVerificationEmail(email);
+          showAlert(alertEl, 'Correo de verificación reenviado. Revisa tu bandeja de entrada.', 'success');
+        } catch (e) {
+          showAlert(alertEl, e.message || 'No se pudo reenviar el correo.', 'danger');
+        } finally {
+          resendBtn.disabled = false;
+          resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo de verificación';
+        }
+      });
+      alertEl.appendChild(resendBtn);
+    }
   }
 
   function showVerificationNotice() {
     const params = new URLSearchParams(window.location.search);
     if (params.get('verified') !== '1') return;
 
-    showAlert(el.loginAlert, 'Correo verificado. Ya puedes ingresar al sistema.', 'success');
+    showAlert(el.loginAlert, 'Correo verificado correctamente. Ya puedes iniciar sesion.', 'success');
     window.history.replaceState({}, document.title, window.location.pathname);
   }
 
@@ -158,6 +257,10 @@ function initAuthPage() {
 
       routeAfterAuth(data.user);
     } catch (error) {
+      if (error?.status === 403 && (error?.data?.error_code === 'EMAIL_NOT_VERIFIED' || error?.message?.includes('verificar tu correo'))) {
+        showLoginEmailNotVerified(el.loginAlert, el.loginEmailInput?.value?.trim() || '');
+        return;
+      }
       handleBackendErrors(error, el.loginForm, el.loginAlert);
     } finally {
       setLoading('login', false);
@@ -192,6 +295,142 @@ function initAuthPage() {
     }
   }
 
+  function beginPasswordRecovery() {
+    recoveryEmail = el.loginEmailInput?.value?.trim() || '';
+    recoveryCode = '';
+    if (el.forgotEmailInput) el.forgotEmailInput.value = recoveryEmail;
+    if (el.resetCodeInput) el.resetCodeInput.value = '';
+    if (el.resetPasswordInput) el.resetPasswordInput.value = '';
+    if (el.resetPasswordConfirmInput) el.resetPasswordConfirmInput.value = '';
+    hideAlert(el.forgotPasswordAlert);
+    showRecoveryStep('request');
+    switchView('forgot-password');
+    el.forgotEmailInput?.focus();
+  }
+
+  function cancelPasswordRecovery() {
+    recoveryEmail = '';
+    recoveryCode = '';
+    if (el.forgotEmailInput) el.forgotEmailInput.value = '';
+    if (el.resetCodeInput) el.resetCodeInput.value = '';
+    if (el.resetPasswordInput) el.resetPasswordInput.value = '';
+    if (el.resetPasswordConfirmInput) el.resetPasswordConfirmInput.value = '';
+    hideAlert(el.forgotPasswordAlert);
+    showRecoveryStep('request');
+    switchView('login');
+  }
+
+  async function handleForgotPasswordSubmit(event) {
+    event.preventDefault();
+    if (!validateFormFrontend(el.forgotPasswordForm)) return;
+
+    setLoading('forgotPassword', true);
+    hideAlert(el.forgotPasswordAlert);
+
+    try {
+      recoveryEmail = el.forgotEmailInput.value.trim();
+      const response = await requestPasswordResetCode(recoveryEmail);
+      showAlert(
+        el.forgotPasswordAlert,
+        response?.message || 'Si el correo esta registrado, recibiras un codigo de recuperacion.',
+        'success'
+      );
+      showRecoveryStep('code');
+      el.resetCodeInput?.focus();
+    } catch (error) {
+      handleBackendErrors(error, el.forgotPasswordForm, el.forgotPasswordAlert);
+    } finally {
+      setLoading('forgotPassword', false);
+    }
+  }
+
+  async function resendPasswordResetCode() {
+    if (!recoveryEmail) {
+      showRecoveryStep('request');
+      el.forgotEmailInput?.focus();
+      return;
+    }
+
+    if (el.resendResetCodeBtn) el.resendResetCodeBtn.disabled = true;
+    hideAlert(el.forgotPasswordAlert);
+
+    try {
+      const response = await requestPasswordResetCode(recoveryEmail);
+      if (el.resetCodeInput) el.resetCodeInput.value = '';
+      recoveryCode = '';
+      showAlert(
+        el.forgotPasswordAlert,
+        response?.message || 'Si el correo está registrado, recibirás un código de recuperación.',
+        'success'
+      );
+      showRecoveryStep('code');
+      el.resetCodeInput?.focus();
+    } catch (error) {
+      handleBackendErrors(error, el.resetCodeForm, el.forgotPasswordAlert);
+    } finally {
+      if (el.resendResetCodeBtn) el.resendResetCodeBtn.disabled = false;
+    }
+  }
+
+  async function handleResetCodeSubmit(event) {
+    event.preventDefault();
+    if (!validateFormFrontend(el.resetCodeForm)) return;
+
+    setLoading('resetCode', true);
+    hideAlert(el.forgotPasswordAlert);
+
+    try {
+      recoveryCode = el.resetCodeInput.value.trim();
+      await verifyPasswordResetCode(recoveryEmail, recoveryCode);
+      showAlert(el.forgotPasswordAlert, 'Código verificado. Ingresa tu nueva contraseña.', 'success');
+      showRecoveryStep('password');
+      el.resetPasswordInput?.focus();
+    } catch (error) {
+      handleBackendErrors(error, el.resetCodeForm, el.forgotPasswordAlert);
+      if (el.resetCodeInput) {
+        el.resetCodeInput.value = '';
+        el.resetCodeInput.focus();
+      }
+    } finally {
+      setLoading('resetCode', false);
+    }
+  }
+
+  async function handleResetPasswordSubmit(event) {
+    event.preventDefault();
+    if (!validateFormFrontend(el.resetPasswordForm)) return;
+
+    if (el.resetPasswordInput.value !== el.resetPasswordConfirmInput.value) {
+      setFieldError(el.resetPasswordConfirmInput, 'Las contraseñas no coinciden.');
+      return;
+    }
+
+    setLoading('resetPassword', true);
+    hideAlert(el.forgotPasswordAlert);
+
+    try {
+      await resetPasswordWithCode(
+        recoveryEmail,
+        recoveryCode,
+        el.resetPasswordInput.value,
+        el.resetPasswordConfirmInput.value
+      );
+
+      recoveryCode = '';
+      showAlert(el.loginAlert, 'Contraseña restablecida. Ya puedes iniciar sesión con tu nueva contraseña.', 'success');
+      switchView('login');
+      if (el.loginEmailInput && recoveryEmail) el.loginEmailInput.value = recoveryEmail;
+      if (el.passwordInput) {
+        el.passwordInput.value = '';
+        el.passwordInput.focus();
+      }
+    } catch (error) {
+      handleBackendErrors(error, el.resetPasswordForm, el.forgotPasswordAlert);
+    } finally {
+      setLoading('resetPassword', false);
+    }
+  }
+
   async function handleRegisterSubmit(event) {
     event.preventDefault();
     if (!validateFormFrontend(el.registerForm)) {
@@ -215,16 +454,62 @@ function initAuthPage() {
         password_confirmation: el.registerPasswordConfirmInput.value,
       });
 
-      routeAfterAuth(data.user, {
-        verificationMessage: data.verification_sent
-          ? 'Te enviamos un correo para verificar tu cuenta.'
-          : data.verification_error,
-      });
+      const registeredEmail = el.registerEmailInput.value.trim();
+      el.registerForm.reset();
+      showRegisterSuccess(el.registerAlert, registeredEmail, data.verification_sent, data.verification_error);
     } catch (error) {
       handleBackendErrors(error, el.registerForm, el.registerAlert);
     } finally {
       setLoading('register', false);
     }
+  }
+
+  function showRegisterSuccess(alertEl, email, verificationSent, verificationError) {
+    alertEl.className = 'alert alert-success py-3 mb-3 text-start small';
+    alertEl.innerHTML = '';
+    alertEl.classList.remove('d-none');
+
+    const msg = document.createElement('p');
+    msg.className = 'mb-2 fw-bold';
+    msg.textContent = 'Cuenta creada exitosamente.';
+    alertEl.appendChild(msg);
+
+    const detail = document.createElement('p');
+    detail.className = 'mb-2';
+    detail.textContent = 'Te enviamos un correo de verificación. Revisa tu bandeja de entrada y verifica tu cuenta antes de iniciar sesión.';
+    alertEl.appendChild(detail);
+
+    if (!verificationSent && verificationError) {
+      const err = document.createElement('p');
+      err.className = 'mb-2 text-warning';
+      err.textContent = verificationError;
+      alertEl.appendChild(err);
+    }
+
+    const resendBtn = document.createElement('button');
+    resendBtn.type = 'button';
+    resendBtn.className = 'btn btn-sm btn-outline-primary mr-2 mb-1';
+    resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo';
+    resendBtn.addEventListener('click', async () => {
+      resendBtn.disabled = true;
+      resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enviando...';
+      try {
+        await resendVerificationEmail(email);
+        showAlert(alertEl, 'Correo de verificación reenviado.', 'success');
+      } catch (e) {
+        showAlert(alertEl, e.message || 'No se pudo reenviar el correo.', 'danger');
+      } finally {
+        resendBtn.disabled = false;
+        resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo';
+      }
+    });
+    alertEl.appendChild(resendBtn);
+
+    const loginLink = document.createElement('a');
+    loginLink.href = '/index.html';
+    loginLink.className = 'btn btn-sm btn-primary-gradient ml-1 mb-1';
+    loginLink.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i> Ir a iniciar sesión';
+    alertEl.appendChild(loginLink);
   }
 
   async function handleGoogleAuth(event, intent) {
@@ -252,7 +537,7 @@ function initAuthPage() {
           el.twoFactorCodeInput.value = '';
           el.twoFactorCodeInput.focus();
         }
-        showAlert(el.twoFactorAlert, 'Verifica el codigo de tu aplicacion autenticadora para continuar.', 'info');
+        showAlert(el.twoFactorAlert, 'Verifica el código de tu aplicación autenticadora para continuar.', 'info');
         return;
       }
 
@@ -357,18 +642,32 @@ function initAuthPage() {
     window.location.href = getPostAuthPath(user);
   }
 
+  function showRecoveryStep(step) {
+    el.forgotPasswordForm?.classList.toggle('d-none', step !== 'request');
+    el.resetCodeForm?.classList.toggle('d-none', step !== 'code');
+    el.resetPasswordForm?.classList.toggle('d-none', step !== 'password');
+  }
+
   function switchView(viewName) {
+    const isAuthMode = viewName === 'login' || viewName === 'register';
+    if (isAuthMode) {
+      document.body.classList.remove('auth-login-mode', 'auth-register-mode');
+      document.body.classList.add(`auth-${viewName}-mode`);
+    }
+
     if (el.loginView) el.loginView.classList.toggle('d-none', viewName !== 'login');
     if (el.registerView) el.registerView.classList.toggle('d-none', viewName !== 'register');
     if (el.profileView) el.profileView.classList.toggle('d-none', viewName !== 'profile');
     if (el.twoFactorView) el.twoFactorView.classList.toggle('d-none', viewName !== 'two-factor');
     if (el.setupTwoFactorView) el.setupTwoFactorView.classList.toggle('d-none', viewName !== 'setup-2fa');
+    if (el.forgotPasswordView) el.forgotPasswordView.classList.toggle('d-none', viewName !== 'forgot-password');
 
     if (viewName !== 'login' && el.loginAlert) hideAlert(el.loginAlert);
     if (viewName !== 'register' && el.registerAlert) hideAlert(el.registerAlert);
     if (viewName !== 'profile' && el.profileAlert) hideAlert(el.profileAlert);
     if (viewName !== 'two-factor' && el.twoFactorAlert) hideAlert(el.twoFactorAlert);
     if (viewName !== 'setup-2fa' && el.setupTwoFactorAlert) hideAlert(el.setupTwoFactorAlert);
+    if (viewName !== 'forgot-password' && el.forgotPasswordAlert) hideAlert(el.forgotPasswordAlert);
   }
 
   function setLoading(scope, isLoading) {
@@ -404,6 +703,24 @@ function initAuthPage() {
         spinner: el.setupTwoFactorSpinner,
         text: el.setupTwoFactorBtnText,
         label: 'Verificar y Continuar',
+      },
+      forgotPassword: {
+        button: el.forgotPasswordSubmitBtn,
+        spinner: el.forgotPasswordSpinner,
+        text: el.forgotPasswordBtnText,
+        label: 'Enviar código',
+      },
+      resetCode: {
+        button: el.resetCodeSubmitBtn,
+        spinner: el.resetCodeSpinner,
+        text: el.resetCodeBtnText,
+        label: 'Verificar código',
+      },
+      resetPassword: {
+        button: el.resetPasswordSubmitBtn,
+        spinner: el.resetPasswordSpinner,
+        text: el.resetPasswordBtnText,
+        label: 'Cambiar contraseña',
       },
     }[scope];
 
@@ -450,14 +767,14 @@ function initAuthPage() {
       if (!qrLibraryReady) {
         showAlert(
           el.setupTwoFactorAlert,
-          'No se pudo generar el codigo QR. Ingresa la clave manual en tu aplicacion autenticadora.',
+          'No se pudo generar el código QR. Ingresa la clave manual en tu aplicación autenticadora.',
           'warning'
         );
       }
 
       el.setupTwoFactorForm.classList.remove('d-none');
     } catch (e) {
-      showAlert(el.setupTwoFactorAlert, e.message || 'No se pudo inicializar la autenticacion en dos pasos.', 'danger');
+      showAlert(el.setupTwoFactorAlert, e.message || 'No se pudo inicializar la autenticación en dos pasos.', 'danger');
     }
   }
 
@@ -477,7 +794,7 @@ function initAuthPage() {
       script.async = true;
       script.dataset.sgiQrcode = 'true';
       script.onload = resolve;
-      script.onerror = () => reject(new Error('No se pudo cargar el generador de codigo QR.'));
+      script.onerror = () => reject(new Error('No se pudo cargar el generador de código QR.'));
       document.head.appendChild(script);
     });
   }

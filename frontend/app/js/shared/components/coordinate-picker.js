@@ -144,7 +144,7 @@ async function reverseGeocode(latitude, longitude) {
   });
 
   if (!response.ok) {
-    throw new Error('No se pudo obtener la direccion aproximada.');
+    throw new Error('No se pudo obtener la dirección aproximada.');
   }
 
   return response.json();

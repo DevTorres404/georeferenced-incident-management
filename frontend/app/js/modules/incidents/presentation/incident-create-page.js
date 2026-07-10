@@ -441,7 +441,7 @@ function renderEvidencePreviews() {
   if (evidenceFiles.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'evidence-empty';
-    empty.textContent = 'Aun no has cargado fotografias.';
+    empty.textContent = 'Aún no has cargado fotografías.';
     container.appendChild(empty);
     return;
   }
@@ -488,7 +488,7 @@ async function handleSubmit(event) {
   if (!validateReview()) {
     currentStepIndex = STEPS.indexOf('review');
     renderStep();
-    showFormAlert('Confirma la informacion antes de registrar la incidencia.', 'warning');
+    showFormAlert('Confirma la información antes de registrar la incidencia.', 'warning');
     return;
   }
 
@@ -518,7 +518,7 @@ async function handleSubmit(event) {
       evidenceFiles.map((item) => uploadIncidentAttachment(incident.id, item.file))
     );
 
-    showSuccessAlert(response?.message || 'Incidencia registrada con exito.');
+    showSuccessAlert(response?.message || 'Incidencia registrada con éxito.');
     window.setTimeout(() => {
       window.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`;
     }, 1000);
@@ -570,19 +570,19 @@ function validateEvidence() {
 
 function validateDetails() {
   let valid = true;
-  valid = validateText('fTitulo', 5, 'Ingresa un titulo de al menos 5 caracteres.') && valid;
-  valid = validateTextMax('fTitulo', 120, 'El titulo no debe superar 120 caracteres.') && valid;
+  valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
+  valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
   valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
   valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
   valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
-  valid = validateTextMax('fDescripcion', 1000, 'La descripcion no debe superar 1000 caracteres.') && valid;
+  valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
   valid = validateEmail('fCorreo') && valid;
   return valid;
 }
 
 function validateReview() {
   if (!$('#fConfirmacion')?.checked) {
-    setFieldError('fConfirmacion', 'Confirma la informacion antes de registrar.');
+    setFieldError('fConfirmacion', 'Confirma la información antes de registrar.');
     return false;
   }
   clearFieldError('fConfirmacion');
@@ -690,8 +690,8 @@ function renderSummary() {
   if (!container) return;
 
   container.replaceChildren(
-    createReviewSection('Ubicacion', [
-      ['Direccion', $('#fDireccion')?.value || 'No especificada'],
+    createReviewSection('Ubicación', [
+      ['Dirección', $('#fDireccion')?.value || 'No especificada'],
       ['Referencia', $('#fReferencia')?.value || 'No especificada'],
       ['Territorio', selectedTerritorialPath()],
       ['Coordenadas', formatCoordinates()],
@@ -699,12 +699,12 @@ function renderSummary() {
     createReviewSection('Evidencia fotografica', [
       ['Fotos cargadas', `${evidenceFiles.length} foto(s)`],
     ]),
-    createReviewSection('Informacion general', [
-      ['Titulo', $('#fTitulo')?.value],
+    createReviewSection('Información general', [
+      ['Título', $('#fTitulo')?.value],
       ['Tipo', selectedText('fTipo')],
       ['Subtipo', selectedText('fSubtipo')],
       ['Correo de contacto', $('#fCorreo')?.value],
-      ['Descripcion', $('#fDescripcion')?.value],
+      ['Descripción', $('#fDescripcion')?.value],
     ]),
   );
 }
@@ -742,15 +742,15 @@ function updateLocationSummary() {
   const hasCoordinates = lat && lng;
   const hasTerritory = territory !== 'No especificada';
 
-  setText('#selectedLocationText', address || (hasCoordinates ? 'Punto seleccionado en el mapa' : 'Sin ubicacion seleccionada'));
-  setText('#selectedTerritoryText', hasTerritory ? territory : (hasCoordinates ? 'Se detectara automaticamente al registrar' : 'Selecciona una provincia o pick en el mapa.'));
+  setText('#selectedLocationText', address || (hasCoordinates ? 'Punto seleccionado en el mapa' : 'Sin ubicación seleccionada'));
+  setText('#selectedTerritoryText', hasTerritory ? territory : (hasCoordinates ? 'Se detectará automáticamente al registrar' : 'Selecciona una provincia o pick en el mapa.'));
   setText('#selectedLatitude', lat || '-');
   setText('#selectedLongitude', lng || '-');
 
   const badge = $('#locationStatusBadge');
   if (badge) {
     if (hasCoordinates && hasTerritory) {
-      badge.textContent = 'Ubicacion completa';
+      badge.textContent = 'Ubicación completa';
       badge.className = 'badge badge-success px-3 py-2';
     } else if (hasCoordinates) {
       badge.textContent = 'Zona se detectara automaticamente';

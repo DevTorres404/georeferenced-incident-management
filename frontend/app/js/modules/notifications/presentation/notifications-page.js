@@ -91,7 +91,7 @@ function createNotificationElement(notification) {
       <i class="fas ${iconClass}"></i>
     </div>
     <div class="notif-history-body">
-      <span class="notif-history-title">${escapeHtml(notification.title || 'Notificacion')}</span>
+      <span class="notif-history-title">${escapeHtml(notification.title || 'Notificación')}</span>
       <span class="notif-history-message">${escapeHtml(notification.message || '')}</span>
       <div class="notif-history-meta">
         <span class="notif-history-time"><i class="far fa-clock mr-1"></i>${escapeHtml(time)}</span>
@@ -118,7 +118,7 @@ function createNotificationElement(notification) {
           await mutateBackend(`/notifications/${notification.id}/read`, { method: 'PATCH' });
         } catch { /* silent */ }
       }
-      window.location.href = `incident-detail.html?id=${incidentId}`;
+      window.location.href = `/html/incident-detail.html?id=${incidentId}`;
     });
   }
 
@@ -137,9 +137,9 @@ function createNotificationElement(notification) {
           status.className = 'notif-history-status status-read';
           status.innerHTML = '<i class="fas fa-circle"></i>Leida';
         }
-        showGlobalAlert('Notificacion marcada como leida.', 'success');
+        showGlobalAlert('Notificación marcada como leída.', 'success');
       } catch {
-        showGlobalAlert('No se pudo marcar la notificacion.', 'danger');
+        showGlobalAlert('No se pudo marcar la notificación.', 'danger');
       }
     });
   }

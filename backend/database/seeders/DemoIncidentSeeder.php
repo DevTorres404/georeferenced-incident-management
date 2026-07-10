@@ -8,6 +8,9 @@ use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -214,9 +217,9 @@ class DemoIncidentSeeder extends Seeder
 
     private function resetDetails(int $incidentId): void
     {
-        DB::table('core.incident_comments')->where('incident_id', $incidentId)->delete();
-        DB::table('core.incident_states')->where('incident_id', $incidentId)->delete();
-        DB::table('core.incident_assignments')->where('incident_id', $incidentId)->delete();
+        IncidentComment::where('incident_id', $incidentId)->delete();
+        IncidentState::where('incident_id', $incidentId)->delete();
+        IncidentAssignment::where('incident_id', $incidentId)->delete();
     }
 
     private function seedStateHistory(Incident $incident, State $finalState, User $reporter, Carbon $createdAt): void
@@ -238,7 +241,7 @@ class DemoIncidentSeeder extends Seeder
                 ? $reporter
                 : $this->user(in_array($stateName, ['EN_PROGRESO', 'RESUELTA'], true) ? 'operador1@incidents.local' : 'supervisor@incidents.local');
 
-            DB::table('core.incident_states')->insert([
+            IncidentState::create([
                 'incident_id' => $incident->id,
                 'previous_state_id' => $previousStateId,
                 'new_state_id' => $newState->id,
@@ -259,30 +262,23 @@ class DemoIncidentSeeder extends Seeder
 
         $assignmentDate = $data['created_at']->copy()->addHours(12);
 
-        DB::table('core.incident_assignments')->insert([
+        IncidentAssignment::create([
             'incident_id' => $incident->id,
             'user_id' => $data['assignee']->id,
             'assigned_by_id' => $data['assigned_by']->id,
+            'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
+            'active' => empty($data['close_assignment']),
             'assignment_date' => $assignmentDate,
-            'unassignment_date' => null,
+            'unassignment_date' => !empty($data['close_assignment']) ? ($data['resolution_date'] ?? Carbon::now()) : null,
             'created_at' => $assignmentDate,
-            'updated_at' => $assignmentDate,
+            'updated_at' => !empty($data['close_assignment']) ? Carbon::now() : $assignmentDate,
         ]);
-
-        if (!empty($data['close_assignment'])) {
-            DB::table('core.incident_assignments')
-                ->where('incident_id', $incident->id)
-                ->update([
-                    'unassignment_date' => $data['resolution_date'] ?? Carbon::now(),
-                    'updated_at' => Carbon::now(),
-                ]);
-        }
     }
 
     private function seedComments(Incident $incident, array $comments): void
     {
         foreach ($comments as $index => $comment) {
-            DB::table('core.incident_comments')->insert([
+            IncidentComment::create([
                 'incident_id' => $incident->id,
                 'user_id' => $this->user($comment['author'])->id,
                 'comment' => $comment['comment'],

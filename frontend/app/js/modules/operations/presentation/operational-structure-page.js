@@ -56,7 +56,7 @@ async function initOperationalStructurePage() {
 }
 
 async function refreshPageData() {
-  showPageLoading('Cargando operacion nacional', 'Consultando zonas, supervisores y operadores...');
+  showPageLoading('Cargando operación nacional', 'Consultando zonas, supervisores y operadores...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
   try {
@@ -599,7 +599,7 @@ function openZoneManagersModal(zoneId) {
 
   const zoneOperators = operatorsForZone(zoneId);
   const supervisorName = fullName(zone.supervisor) || 'Sin supervisor asignado';
-  const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignacion';
+    const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignación';
   const provinceNames = (zone.provinces_covered || []).map((province) => province.name).filter(Boolean);
   const provinceSummary = buildProvinceSummary(provinceNames);
 
@@ -981,7 +981,7 @@ function updateTeamManagementTab(zone) {
 
   if (supContainer && supSelect && btnSup) {
     const supervisorName = fullName(zone.supervisor) || 'Sin supervisor asignado';
-    const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignacion';
+  const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignación';
 
     supContainer.innerHTML = `
       <div class="ops-user-block bg-white p-3 border rounded shadow-sm">

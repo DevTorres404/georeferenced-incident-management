@@ -129,7 +129,7 @@ export function handleBackendErrors(error, formElement, alertContainer = null) {
   // Si no es un ApiError o no tiene status, asumimos que es un error crudo
   const status = error.status || 500;
   
-  if (status === 422 && error.errors && typeof error.errors === 'object') {
+  if ((status === 422 || status === 409) && error.errors && typeof error.errors === 'object') {
     let focusSet = false;
 
     for (const [field, messages] of Object.entries(error.errors)) {

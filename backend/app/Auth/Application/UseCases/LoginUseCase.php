@@ -60,6 +60,18 @@ final class LoginUseCase
             throw AuthException::inactiveUser();
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            $this->attemptRepository->logAttempt(
+                $input->email,
+                $user->id,
+                false,
+                'Email no verificado',
+                $input->ip,
+                $input->userAgent
+            );
+            throw AuthException::emailMustBeVerified();
+        }
+
         $this->userRepository->updateLastAccess($user->id);
         $this->userRepository->syncIdentity(
             $user->id,

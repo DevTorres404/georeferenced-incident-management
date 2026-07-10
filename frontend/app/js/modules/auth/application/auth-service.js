@@ -63,13 +63,55 @@ async function disableTwoFactor() {
   return await request('/auth/2fa/disable', { method: 'POST' });
 }
 
+async function requestPasswordResetCode(email) {
+  return request('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+async function verifyPasswordResetCode(email, code) {
+  return request('/auth/password/verify-code', {
+    method: 'POST',
+    body: JSON.stringify({ email, code }),
+  });
+}
+
+async function resetPasswordWithCode(email, code, password, passwordConfirmation) {
+  return request('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      code,
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
+  });
+}
+
+async function changeOwnPassword(currentPassword, password, passwordConfirmation) {
+  return request('/auth/password', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      current_password: currentPassword,
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
+  });
+}
+
 async function registerLocal(payload) {
-  const data = await request('/register', {
+  return request('/register', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
+}
 
-  return persistSessionWithFreshUser(data);
+async function resendVerificationEmail(email) {
+  return request('/auth/email/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
 }
 
 async function submitGoogleToken(idToken, intent) {
@@ -230,6 +272,11 @@ const authService = {
   enableTwoFactor,
   confirmTwoFactor,
   disableTwoFactor,
+  requestPasswordResetCode,
+  verifyPasswordResetCode,
+  resetPasswordWithCode,
+  changeOwnPassword,
+  resendVerificationEmail,
 };
 
 window.SGIGAuthService = authService;
@@ -245,4 +292,9 @@ export {
   enableTwoFactor,
   confirmTwoFactor,
   disableTwoFactor,
+  requestPasswordResetCode,
+  verifyPasswordResetCode,
+  resetPasswordWithCode,
+  changeOwnPassword,
+  resendVerificationEmail,
 };

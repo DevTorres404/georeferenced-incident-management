@@ -19,4 +19,9 @@ final class LaravelPasswordHasherAdapter implements PasswordHasherPort
 
         return $this->hasher->check($plainValue, $hashedValue);
     }
+
+    public function make(string $plainValue): string
+    {
+        return $this->hasher->make($plainValue);
+    }
 }

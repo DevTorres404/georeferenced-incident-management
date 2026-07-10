@@ -224,7 +224,7 @@ function buildAnalytics(incidents, totalUniverse) {
     const dueDate = parseDate(incident.due_date || incident.dueDate);
     const stateCode = normalizeState(incident.state?.name);
     const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin prioridad');
-    const categoryName = formatCatalogLabel(incident.category?.name || incident.subcategory?.name || 'Sin categoria');
+    const categoryName = formatCatalogLabel(incident.category?.name || incident.subcategory?.name || 'Sin categoría');
     const cityName = territoryTail(incident.territorial_unit?.full_path || incident.territorialUnit?.full_path || incident.territorial_unit?.name || incident.territorialUnit?.name || incident.address_reference || incident.address || 'Sin territorio');
 
     countsByPriority[priorityName] = Number(countsByPriority[priorityName] || 0) + 1;
@@ -369,8 +369,8 @@ function renderKpis(analytics) {
     { num: analytics.total, label: 'Incidencias', sub: 'Bajo el filtro actual', icon: 'fa-clipboard-list', variant: 'kpi-total' },
     { num: analytics.active, label: 'Activas', sub: 'Carga operativa actual', icon: 'fa-bolt', variant: 'kpi-pending' },
     { num: analytics.critical, label: 'Criticas', sub: 'Requieren seguimiento', icon: 'fa-radiation-alt', variant: 'kpi-progress' },
-    { num: `${analytics.resolutionRate}%`, label: 'Resolucion', sub: 'Cierre efectivo', icon: 'fa-check-double', variant: 'kpi-resolved' },
-    { num: `${analytics.averageResolutionDays.toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolucion media', icon: 'fa-stopwatch', variant: 'kpi-time' },
+    { num: `${analytics.resolutionRate}%`, label: 'Resolución', sub: 'Cierre efectivo', icon: 'fa-check-double', variant: 'kpi-resolved' },
+    { num: `${analytics.averageResolutionDays.toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolución media', icon: 'fa-stopwatch', variant: 'kpi-time' },
     { num: analytics.overdue, label: 'Vencidas', sub: 'Fuera de plazo', icon: 'fa-hourglass-end', variant: 'kpi-rate' },
   ];
 
@@ -397,7 +397,7 @@ function renderInsights(analytics, filters) {
         <div class="reports-brief-content">
           <span class="reports-brief-label">Sin resultados</span>
           <strong class="reports-brief-value">0 incidencias</strong>
-          <small class="reports-brief-meta">Ajusta el rango, categoria o estado para ampliar el analisis.</small>
+          <small class="reports-brief-meta">Ajusta el rango, categoría o estado para ampliar el análisis.</small>
         </div>
       </article>
     `;
@@ -414,14 +414,14 @@ function renderInsights(analytics, filters) {
 
   const insightCards = [
     {
-      title: 'Cobertura del analisis',
+      title: 'Cobertura del análisis',
       value: `${coverage}%`,
       meta: analytics.totalUniverse > 0 ? `${analytics.total} de ${analytics.totalUniverse} incidencias visibles` : `${analytics.total} incidencias visibles`,
       icon: 'fa-layer-group',
     },
     {
       title: 'Mayor concentracion',
-      value: dominantCategory?.label || 'Sin categoria',
+      value: dominantCategory?.label || 'Sin categoría',
       meta: dominantCategory ? `${dominantCategory.count} registros` : 'Sin datos suficientes',
       icon: 'fa-folder-open',
     },
@@ -482,7 +482,7 @@ function safeRenderChart(callback) {
   try {
     callback();
   } catch (error) {
-    console.warn('[SGI] No se pudo renderizar un grafico de reportes.', error);
+    console.warn('[SGI] No se pudo renderizar un gráfico de reportes.', error);
   }
 }
 
@@ -558,7 +558,7 @@ function renderResolutionRateChart(trend) {
   if (!canvas) return;
 
   if (!trend.months.length) {
-    renderEmptyCanvas(canvas, 'Sin tasa de resolucion para el filtro actual');
+    renderEmptyCanvas(canvas, 'Sin tasa de resolución para el filtro actual');
     return;
   }
 
@@ -575,7 +575,7 @@ function renderResolutionRateChart(trend) {
     data: {
       labels: trend.months,
       datasets: [{
-        label: 'Tasa de resolucion (%)',
+        label: 'Tasa de resolución (%)',
         data: rates,
         borderColor: CHART_COLORS.success,
         backgroundColor: gradient,
@@ -613,7 +613,7 @@ function renderAverageTimeChart(categoryAverageResolution) {
     .slice(0, 5);
 
   if (!entries.length) {
-    renderEmptyCanvas(canvas, 'Sin tiempos de resolucion disponibles');
+    renderEmptyCanvas(canvas, 'Sin tiempos de resolución disponibles');
     return;
   }
 
@@ -682,7 +682,7 @@ function renderCategoryRanking(counts, total) {
 
   const entries = Object.entries(counts).sort((left, right) => Number(right[1]) - Number(left[1]));
   if (!entries.length) {
-    container.innerHTML = '<p class="text-muted text-center py-3 mb-0">Sin categorias registradas.</p>';
+    container.innerHTML = '<p class="text-muted text-center py-3 mb-0">Sin categorías registradas.</p>';
     return;
   }
 
@@ -716,7 +716,7 @@ function renderEfficiency(analytics) {
   if (!container) return;
 
   const indicators = [
-    { label: 'Tasa de resolucion', value: `${analytics.resolutionRate}%`, icon: 'fa-percentage', iconClass: 'icon-success' },
+    { label: 'Tasa de resolución', value: `${analytics.resolutionRate}%`, icon: 'fa-percentage', iconClass: 'icon-success' },
     { label: 'Tiempo promedio', value: `${analytics.averageResolutionDays.toFixed(1)}d`, icon: 'fa-stopwatch', iconClass: 'icon-warning' },
     { label: 'Activas', value: analytics.active, icon: 'fa-exclamation-triangle', iconClass: 'icon-danger' },
     { label: 'Ingreso 7 dias', value: analytics.recentSevenDays, icon: 'fa-wave-square', iconClass: 'icon-info' },
@@ -776,20 +776,20 @@ function renderAppliedFilterFeedback(filters, total) {
   const activeFilters = [
     filters.startDate ? `desde ${filters.startDate}` : '',
     filters.endDate ? `hasta ${filters.endDate}` : '',
-    filters.category ? `categoria ${formatCatalogLabel(filters.category)}` : '',
+    filters.category ? `categoría ${formatCatalogLabel(filters.category)}` : '',
     filters.state ? `estado ${formatCatalogLabel(filters.state)}` : '',
   ].filter(Boolean);
 
   alertDiv.className = 'alert alert-info alert-dismissible';
   alertDiv.innerHTML = '<button type="button" class="close" data-dismiss="alert">&times;</button>'
-    + `<i class="fas fa-filter mr-2"></i>Analisis actualizado con ${total} incidencias${activeFilters.length ? ` (${escapeHtml(activeFilters.join(', '))})` : ''}.`;
+    + `<i class="fas fa-filter mr-2"></i>Análisis actualizado con ${total} incidencias${activeFilters.length ? ` (${escapeHtml(activeFilters.join(', '))})` : ''}.`;
   alertDiv.classList.remove('d-none');
   window.setTimeout(() => alertDiv.classList.add('d-none'), 2500);
 }
 
 function exportFilteredIncidentsCsv() {
   const rows = [
-    ['Codigo', 'Titulo', 'Categoria', 'Prioridad', 'Estado', 'Zona', 'Territorio', 'Fecha', 'Fecha resolucion'],
+    ['Código', 'Título', 'Categoría', 'Prioridad', 'Estado', 'Zona', 'Territorio', 'Fecha', 'Fecha resolución'],
     ...state.filteredIncidents.map((incident) => [
       incident.code || `#${incident.id}`,
       incident.title || '',

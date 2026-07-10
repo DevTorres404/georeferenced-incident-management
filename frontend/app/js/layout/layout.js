@@ -10,6 +10,16 @@ import { subscribeToUserNotifications } from '../modules/notifications/applicati
  * Inyectado dinámicamente para mantener DRY
  * ============================================================
  */
+window.SGIDomUtils = {
+  delegateEvent(parent, selector, eventType, handler) {
+    parent.addEventListener(eventType, function (e) {
+      const target = e.target.closest(selector);
+      if (target && parent.contains(target)) {
+        handler.call(target, e, target);
+      }
+    });
+  }
+};
 window.SGINavigationStore = {
   NAV_STATE_KEY: 'SGI_nav_state',
   menuItems: NAV_ITEMS,
@@ -243,7 +253,7 @@ async function loadAuthorizedNavigation() {
       return items;
     }
   } catch {
-    // Si el endpoint aun no esta migrado, mantenemos la navegacion local filtrada.
+    // Si el endpoint aún no está migrado, mantenemos la navegación local filtrada.
   }
 
   window.SGINavigationStore.authorizedMenuItems = fallbackMenu;
@@ -364,7 +374,7 @@ function startRealtimeNotifications(user) {
       window.showGlobalAlert(notification.title, 'info');
     }
   }).catch(() => {
-    // Si el WebSocket no esta disponible, la API REST sigue funcionando como respaldo.
+    // Si el WebSocket no está disponible, la API REST sigue funcionando como respaldo.
   });
 }
 
@@ -411,7 +421,7 @@ function renderBetterNavbarNotifications(count, notifications) {
           <i class="fas ${iconClass}"></i>
         </div>
         <div class="sgi-notif-body">
-          <span class="sgi-notif-title">${escapeHtml(notification.title || 'Notificacion')}</span>
+          <span class="sgi-notif-title">${escapeHtml(notification.title || 'Notificación')}</span>
           <span class="sgi-notif-message">${escapeHtml(notification.message || '')}</span>
         </div>
         <span class="sgi-notif-time">${escapeHtml(time)}</span>
@@ -452,10 +462,12 @@ function renderBetterNavbarNotifications(count, notifications) {
             </div>`;
         }
         if (incidentId) {
-          window.location.href = `incident-detail.html?id=${incidentId}`;
+          window.location.href = `/html/incident-detail.html?id=${incidentId}`;
         }
       } catch {
-        showLayoutMessage('No se pudo marcar la notificacion como leida.', 'danger');
+        if (window.showGlobalAlert) {
+          window.showGlobalAlert('No se pudo marcar la notificación como leída.', 'danger');
+        }
       }
     });
   }
@@ -524,10 +536,10 @@ function showGlobalAlert(message, type = 'success', title = '') {
   };
 
   const titles = {
-    success: 'Operacion exitosa',
+    success: 'Operación exitosa',
     danger: 'Error',
-    warning: 'Atencion',
-    info: 'Notificacion',
+    warning: 'Atención',
+    info: 'Notificación',
   };
 
   const toast = document.createElement('div');
@@ -537,7 +549,7 @@ function showGlobalAlert(message, type = 'success', title = '') {
       <i class="fas ${icons[type] || 'fa-info-circle'}"></i>
     </div>
     <div class="sgi-toast-body">
-      <span class="sgi-toast-title">${escapeHtml(title || titles[type] || 'Notificacion')}</span>
+      <span class="sgi-toast-title">${escapeHtml(title || titles[type] || 'Notificación')}</span>
       <span class="sgi-toast-message">${escapeHtml(message)}</span>
     </div>
     <button type="button" class="sgi-toast-close" aria-label="Cerrar">
@@ -613,7 +625,7 @@ async function renderLayout(activeId = '') {
     return;
   }
   // Navbar
-  const userFirstName = user.nombre || user.first_name || 'Usuario';
+  const userFirstName = user.nombre || user.first_name || user.name || user.username || 'Usuario';
   const userLastName = user.apellido || user.last_name || '';
   const userFullName = `${userFirstName} ${userLastName}`.trim();
   const userInitial = escapeHtml(userFirstName).charAt(0).toUpperCase();
@@ -738,12 +750,31 @@ async function renderLayout(activeId = '') {
     });
   });
 
-  document.getElementById('btnMarkAllRead')?.addEventListener('click', async () => {
-    try {
-      await mutateBackend('/notifications/mark-all-read', { method: 'PATCH' });
-      await loadNavbarNotifications(true);
-    } catch { }
-  });
+  if (window.SGIDomUtils?.delegateEvent) {
+    window.SGIDomUtils.delegateEvent(document.body, '#btnMarkAllRead', 'click', async (e) => {
+      e.preventDefault();
+      try {
+        await mutateBackend('/notifications/mark-all-read', { method: 'PATCH' });
+        await loadNavbarNotifications(true);
+        if (window.showGlobalAlert) {
+          window.showGlobalAlert('Todas las notificaciones han sido marcadas como leídas.', 'success');
+        }
+      } catch { 
+        if (window.showGlobalAlert) {
+          window.showGlobalAlert('No se pudieron marcar las notificaciones.', 'danger');
+        }
+      }
+    });
+  } else {
+    document.getElementById('btnMarkAllRead')?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try {
+        await mutateBackend('/notifications/mark-all-read', { method: 'PATCH' });
+        await loadNavbarNotifications(true);
+      } catch { }
+    });
+  }
+  
   startInactivityWatcher();
   loadNavbarNotifications(true);
   startRealtimeNotifications(user);

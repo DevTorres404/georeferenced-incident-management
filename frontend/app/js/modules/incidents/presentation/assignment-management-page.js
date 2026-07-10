@@ -48,7 +48,7 @@ async function initAssignmentManagementPage() {
     renderKpis(state.filteredIncidents, state.operators);
     renderTable(state);
   } catch (error) {
-    renderError(error?.message || 'No se pudo cargar la gestion de asignaciones.');
+    renderError(error?.message || 'No se pudo cargar la gestión de asignaciones.');
   } finally {
     hidePageLoading();
   }
@@ -226,13 +226,13 @@ function renderTable(state) {
           const roleLabel = assignment.assignment_role === 'support' ? 'Apoyo' : 'Principal';
           return `<span class="${roleClass}">${escapeHtml(assignment.full_name || `#${assignment.user_id}`)} · ${roleLabel}</span>`;
         }).join('')
-      : '<span class="text-muted">Sin asignacion</span>';
+      : '<span class="text-muted">Sin asignación</span>';
 
     return `
       <tr>
         <td class="font-weight-bold">${escapeHtml(incident.code || `#${incident.id}`)}</td>
         <td>
-          <div class="font-weight-bold text-dark">${escapeHtml(incident.title || 'Sin titulo')}</div>
+          <div class="font-weight-bold text-dark">${escapeHtml(incident.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
         <td><span class="badge ${getPriorityBadgeClass(incident.priority?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
@@ -254,7 +254,7 @@ function renderTable(state) {
 }
 
 async function openAssignmentModal(state, incidentId) {
-  showPageLoading('Cargando incidencia', 'Preparando operadores para la asignacion...');
+  showPageLoading('Cargando incidencia', 'Preparando operadores para la asignación...');
 
   try {
     const response = await getIncident(incidentId);
@@ -324,7 +324,7 @@ async function submitAssignment(state) {
     .map((checkbox) => Number(checkbox.value))
     .filter((userId) => userId && userId !== primaryUserId);
 
-  showPageLoading('Guardando asignacion', 'Aplicando responsables principales y apoyos...');
+  showPageLoading('Guardando asignación', 'Aplicando responsables principales y apoyos...');
 
   try {
     await assignIncidentOperators(state.selectedIncident.id, {
@@ -336,9 +336,9 @@ async function submitAssignment(state) {
     state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
     applyFilters(state);
     window.jQuery?.('#assignmentModal').modal('hide');
-    showGlobalAlert('Asignacion actualizada correctamente.', 'success');
+    showGlobalAlert('Asignación actualizada correctamente.', 'success');
   } catch (error) {
-    showGlobalAlert(error?.message || 'No se pudo guardar la asignacion.', 'danger');
+    showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger');
   } finally {
     hidePageLoading();
   }

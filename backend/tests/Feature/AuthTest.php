@@ -3,8 +3,13 @@
 namespace Tests\Feature;
 
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
+use App\Auth\Infrastructure\Notifications\PasswordChangedNotification;
+use App\Auth\Infrastructure\Notifications\PasswordResetCodeNotification;
+use App\Auth\Infrastructure\Notifications\PasswordResetCompletedNotification;
+use App\Auth\Infrastructure\Persistence\Models\PasswordResetToken;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Auth\Infrastructure\Persistence\Models\UserIdentity;
+use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Notification;
@@ -69,23 +74,13 @@ class AuthTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonStructure([
                 'message',
-                'access_token',
-                'token_type',
-                'expires_at',
-                'expires_in',
                 'verification_sent',
-                'user' => [
-                    'id',
-                    'nombre',
-                    'apellido',
-                    'email',
-                    'username',
-                ],
             ]);
 
         $user = User::where('email', 'registro-local@incidencias.local')->firstOrFail();
 
         $this->assertNull($user->email_verified_at);
+        $this->assertCount(0, $user->tokens);
         $this->assertDatabaseHas('auth.user_identities', [
             'user_id' => $user->id,
             'provider' => 'local',
@@ -404,5 +399,437 @@ class AuthTest extends TestCase
             ->getJson('/api/me');
 
         $meResponse->assertStatus(401);
+    }
+
+    public function test_authenticated_user_can_change_password_with_valid_data(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'change-password@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+
+        $currentToken = $user->createToken('current-token')->plainTextToken;
+        $otherToken = $user->createToken('other-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$currentToken)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-actual',
+                'password' => 'password-nueva',
+                'password_confirmation' => 'password-nueva',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Contrasena actualizada correctamente.',
+            ]);
+
+        Notification::assertSentTo($user->fresh(), PasswordChangedNotification::class);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
+        $this->assertFalse(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+
+        $this->withHeader('Authorization', 'Bearer '.$currentToken)
+            ->getJson('/api/me')
+            ->assertOk();
+
+        \Illuminate\Support\Facades\Auth::forgetGuards();
+
+        $this->withHeader('Authorization', 'Bearer '.$otherToken)
+            ->getJson('/api/me')
+            ->assertUnauthorized();
+
+        $this->assertTrue(
+            AuditLog::query()
+                ->where('auditable_type', User::class)
+                ->where('auditable_id', $user->id)
+                ->where('event', 'updated')
+                ->exists()
+        );
+    }
+
+    public function test_unauthenticated_user_cannot_change_password(): void
+    {
+        $response = $this->patchJson('/api/auth/password', [
+            'current_password' => 'password-actual',
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_change_password_fails_if_current_password_is_incorrect(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'password' => 'password-actual',
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-incorrecta',
+                'password' => 'password-nueva',
+                'password_confirmation' => 'password-nueva',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'La contrasena actual no coincide.',
+            ]);
+
+        Notification::assertNothingSent();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+    }
+
+    public function test_change_password_fails_if_new_password_is_not_confirmed(): void
+    {
+        $user = User::factory()->create([
+            'password' => 'password-actual',
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-actual',
+                'password' => 'password-nueva',
+                'password_confirmation' => 'otra-password',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['password']);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+    }
+
+    public function test_change_password_fails_if_new_password_is_same_as_current(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'password' => 'password-actual',
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-actual',
+                'password' => 'password-actual',
+                'password_confirmation' => 'password-actual',
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'La nueva contrasena no puede ser igual a la actual.',
+            ]);
+
+        Notification::assertNothingSent();
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+    }
+
+    public function test_old_password_no_longer_allows_login_after_password_change(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'old-password-login@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-actual',
+                'password' => 'password-nueva',
+                'password_confirmation' => 'password-nueva',
+            ])
+            ->assertOk();
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'password-actual',
+        ])->assertStatus(401);
+    }
+
+    public function test_new_password_allows_login_after_password_change(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'new-password-login@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->patchJson('/api/auth/password', [
+                'current_password' => 'password-actual',
+                'password' => 'password-nueva',
+                'password_confirmation' => 'password-nueva',
+            ])
+            ->assertOk();
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'password-nueva',
+        ])->assertOk();
+    }
+
+    public function test_user_can_request_password_reset_code_with_valid_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'forgot-valid@incidencias.local',
+        ]);
+
+        $response = $this->postJson('/api/auth/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'message' => 'Si el correo esta registrado, recibiras un codigo de recuperacion.',
+            ]);
+
+        Notification::assertSentTo($user, PasswordResetCodeNotification::class);
+        $this->assertDatabaseHas('auth.password_reset_tokens', [
+            'email' => $user->email,
+            'attempts' => 0,
+            'used_at' => null,
+        ]);
+        $this->assertNotSame(
+            '000000',
+            (string) PasswordResetToken::query()->where('email', $user->email)->value('token')
+        );
+    }
+
+    public function test_forgot_password_response_does_not_reveal_if_email_exists(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'existing-generic@incidencias.local',
+        ]);
+
+        $existing = $this->postJson('/api/auth/forgot-password', [
+            'email' => $user->email,
+        ]);
+
+        $missing = $this->postJson('/api/auth/forgot-password', [
+            'email' => 'missing-generic@incidencias.local',
+        ]);
+
+        $existing->assertOk();
+        $missing->assertOk();
+        $this->assertSame($existing->json('message'), $missing->json('message'));
+        Notification::assertSentTo($user, PasswordResetCodeNotification::class);
+    }
+
+    public function test_correct_password_reset_code_allows_password_change(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-correct@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+
+        $this->postJson('/api/auth/password/verify-code', [
+            'email' => $user->email,
+            'code' => $code,
+        ])->assertOk();
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertOk()
+            ->assertJson([
+                'message' => 'Contrasena restablecida correctamente.',
+            ]);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
+        Notification::assertSentTo($user, PasswordResetCompletedNotification::class);
+    }
+
+    public function test_incorrect_password_reset_code_does_not_allow_password_change(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-incorrect@incidencias.local',
+            'password' => 'password-actual',
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+        $wrongCode = $code === '123456' ? '654321' : '123456';
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $wrongCode,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertStatus(422)
+            ->assertJson([
+                'message' => 'El codigo de recuperacion es invalido o expiro.',
+            ]);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertSame(1, (int) PasswordResetToken::query()->where('email', $user->email)->value('attempts'));
+    }
+
+    public function test_expired_password_reset_code_does_not_allow_password_change(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-expired@incidencias.local',
+            'password' => 'password-actual',
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+
+        PasswordResetToken::query()
+            ->where('email', $user->email)
+            ->update(['expires_at' => now()->subMinute()]);
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertStatus(422);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+    }
+
+    public function test_used_password_reset_code_cannot_be_reused(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-used@incidencias.local',
+            'password' => 'password-actual',
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertOk();
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'otra-password',
+            'password_confirmation' => 'otra-password',
+        ])->assertStatus(422);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
+    }
+
+    public function test_old_password_no_longer_allows_login_after_password_reset(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-old-login@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertOk();
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'password-actual',
+        ])->assertStatus(401);
+    }
+
+    public function test_new_password_allows_login_after_password_reset(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-new-login@incidencias.local',
+            'password' => 'password-actual',
+            'is_active' => true,
+        ]);
+        $code = $this->requestPasswordResetCode($user);
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertOk();
+
+        $this->postJson('/api/login', [
+            'email' => $user->email,
+            'password' => 'password-nueva',
+        ])->assertOk();
+    }
+
+    public function test_previous_tokens_are_revoked_after_password_reset(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create([
+            'email' => 'reset-revoke-tokens@incidencias.local',
+            'password' => 'password-actual',
+        ]);
+        $token = $user->createToken('existing-token')->plainTextToken;
+        $code = $this->requestPasswordResetCode($user);
+
+        $this->postJson('/api/auth/reset-password', [
+            'email' => $user->email,
+            'code' => $code,
+            'password' => 'password-nueva',
+            'password_confirmation' => 'password-nueva',
+        ])->assertOk();
+
+        \Illuminate\Support\Facades\Auth::forgetGuards();
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/me')
+            ->assertUnauthorized();
+    }
+
+    private function requestPasswordResetCode(User $user): string
+    {
+        $code = null;
+
+        $this->postJson('/api/auth/forgot-password', [
+            'email' => $user->email,
+        ])->assertOk();
+
+        Notification::assertSentTo(
+            $user,
+            PasswordResetCodeNotification::class,
+            function (PasswordResetCodeNotification $notification) use (&$code): bool {
+                $code = $notification->code;
+                return preg_match('/^\d{6}$/', $code) === 1;
+            }
+        );
+
+        $this->assertIsString($code);
+
+        return $code;
     }
 }

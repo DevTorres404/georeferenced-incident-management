@@ -2,113 +2,79 @@
 <html lang="es">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SGI | Historial de Notificaciones</title>
-  <meta name="description" content="Historial completo de notificaciones del Sistema de Gestion de Incidencias">
-
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
-  <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-  <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-  <link rel="stylesheet" href="/css/app.css?v=50">
-  <link rel="stylesheet" href="/css/pages/notifications-history.css?v=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SGI | Historial de Notificaciones</title>
+    <meta name="description" content="Historial completo de notificaciones del Sistema de Gestión de Incidencias">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="/css/app.css?v=50">
+    <link rel="stylesheet" href="/css/pages/notifications-history.css?v=1">
 </head>
 
 <body class="hold-transition sidebar-mini layout-fixed">
-  <div class="wrapper">
-    <div id="alertaGlobal" role="alert"></div>
-
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
-
-    <aside class="main-sidebar sidebar-dark-primary elevation-4">
-      <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center"
-        style="padding: 10px 15px;">
-        <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
-          style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
-        <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
-      </a>
-      <div id="mainSidebar"></div>
-    </aside>
-
-    <div class="content-wrapper notif-history-wrapper">
-      <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-        <div class="loader-orbit" aria-hidden="true">
-          <i class="fas fa-map-marker-alt"></i>
-        </div>
-      </div>
-
-      <div class="content-header notif-history-header">
-        <div class="container-fluid">
-          <div class="row align-items-center">
-            <div class="col">
-              <h1 class="m-0">
-                <i class="fas fa-bell text-primary mr-2"></i>Historial de Notificaciones
-              </h1>
-              <p class="text-muted mb-0 mt-1" style="font-size:0.88rem;">Consulta todas tus notificaciones
-                anteriores, incluyendo las ya leidas.</p>
+    <div class="wrapper">
+        <div id="alertaGlobal" role="alert"></div>
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+        <aside class="main-sidebar sidebar-dark-primary elevation-4"> <a href="dashboard.html"
+                class="brand-link bg-transparent border-0 d-flex align-items-center" style="padding: 10px 15px;"> <img
+                    src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+                    style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+                <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span> </a>
+            <div id="mainSidebar"></div>
+        </aside>
+        <div class="content-wrapper notif-history-wrapper">
+            <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+                <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i> </div>
             </div>
-            <div class="col-auto d-none d-md-block">
-              <button type="button" class="btn btn-sm btn-outline-primary" id="btnMarkAllHistory">
-                <i class="fas fa-check-double mr-1"></i>Marcar todas como leidas
-              </button>
+            <div class="content-header notif-history-header">
+                <div class="container-fluid">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h1 class="m-0"> <i class="fas fa-bell text-primary mr-2"></i>Historial de Notificaciones
+                            </h1>
+                            <p class="text-muted mb-0 mt-1" style="font-size:0.88rem;">Consulta todas tus notificaciones
+                                anteriores, incluyendo las ya leidas.</p>
+                        </div>
+                        <div class="col-auto d-none d-md-block"> <button type="button"
+                                class="btn btn-sm btn-outline-primary" id="btnMarkAllHistory"> <i
+                                    class="fas fa-check-double mr-1"></i>Marcar todas como leidas </button> </div>
+                    </div>
+                </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="content">
-        <div class="container-fluid">
-
-          <!-- Filtros -->
-          <div class="notif-history-filters mb-3">
-            <button type="button" class="notif-filter-btn active" data-filter="all">
-              <i class="fas fa-list mr-1"></i>Todas
-            </button>
-            <button type="button" class="notif-filter-btn" data-filter="unread">
-              <i class="fas fa-circle mr-1"></i>No leidas
-            </button>
-            <button type="button" class="notif-filter-btn" data-filter="read">
-              <i class="fas fa-check mr-1"></i>Leidas
-            </button>
-          </div>
-
-          <!-- Lista de notificaciones -->
-          <div class="notif-history-list" id="notifHistoryList">
-            <div class="notif-history-empty" id="notifHistoryEmpty" style="display:none;">
-              <i class="far fa-bell-slash"></i>
-              <span>Sin notificaciones para mostrar</span>
+            <div class="content">
+                <div class="container-fluid"> <!-- Filtros -->
+                    <div class="notif-history-filters mb-3"> <button type="button" class="notif-filter-btn active"
+                            data-filter="all"> <i class="fas fa-list mr-1"></i>Todas </button> <button type="button"
+                            class="notif-filter-btn" data-filter="unread"> <i class="fas fa-circle mr-1"></i>No leidas
+                        </button> <button type="button" class="notif-filter-btn" data-filter="read"> <i
+                                class="fas fa-check mr-1"></i>Leidas </button> </div> <!-- Lista de notificaciones -->
+                    <div class="notif-history-list" id="notifHistoryList">
+                        <div class="notif-history-empty" id="notifHistoryEmpty" style="display:none;"> <i
+                                class="far fa-bell-slash"></i> <span>Sin notificaciones para mostrar</span> </div>
+                    </div> <!-- Paginación -->
+                    <div class="notif-history-pagination" id="notifHistoryPagination" style="display:none;"> <button
+                            type="button" class="notif-page-btn" id="btnPrevPage" disabled> <i
+                                class="fas fa-chevron-left"></i> </button> <span class="notif-page-info"
+                            id="notifPageInfo">Pagina 1</span> <button type="button" class="notif-page-btn"
+                            id="btnNextPage" disabled> <i class="fas fa-chevron-right"></i> </button> </div>
+                </div>
             </div>
-          </div>
-
-          <!-- Paginacion -->
-          <div class="notif-history-pagination" id="notifHistoryPagination" style="display:none;">
-            <button type="button" class="notif-page-btn" id="btnPrevPage" disabled>
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <span class="notif-page-info" id="notifPageInfo">Pagina 1</span>
-            <button type="button" class="notif-page-btn" id="btnNextPage" disabled>
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </div>
-
         </div>
-      </div>
+        <footer class="main-footer text-sm">
+            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gesti�n de Incidencias
+                Georreferenciadas (SGI)</strong>
+        </footer>
     </div>
-
-    <footer class="main-footer text-sm">
-      <div class="float-right d-none d-sm-inline">Version 1.0.0</div>
-      <strong>Sistema de Gestion de Incidencias Georreferenciadas (SGI)</strong>
-    </footer>
-  </div>
-
-  <script src="/plugins/jquery/jquery.min.js"></script>
-  <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-  <script src="/dist/js/adminlte.min.js"></script>
-  <script type="module" src="/js/layout/layout.js?v=35"></script>
-  <script type="module" src="/js/modules/notifications/presentation/notifications-page.js?v=1"></script>
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script type="module" src="/js/layout/layout.js?v=35"></script>
+    <script type="module" src="/js/modules/notifications/presentation/notifications-page.js?v=1"></script>
 </body>
 
 </html>

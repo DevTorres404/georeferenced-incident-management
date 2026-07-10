@@ -74,7 +74,7 @@ async function loadCatalogFilters() {
   const catalogs = await getMapCatalogs();
   fillSelect('mapState', catalogs.states, 'Todos los estados');
   fillSelect('mapPriority', catalogs.priorities, 'Todas las prioridades');
-  fillSelect('mapCategory', catalogs.categories, 'Todas las categorias');
+  fillSelect('mapCategory', catalogs.categories, 'Todas las categorías');
 }
 
 function fillSelect(id, items, placeholder) {
@@ -187,14 +187,14 @@ function renderList() {
       <div class="d-flex align-items-start justify-content-between">
         <div>
           <strong>${escapeHtml(point.code || `#${point.id}`)}</strong>
-          <div class="text-main">${escapeHtml(point.title || 'Sin titulo')}</div>
-          <small class="text-muted">${escapeHtml(point.address || point.city?.name || 'Sin direccion registrada')}</small>
+          <div class="text-main">${escapeHtml(point.title || 'Sin título')}</div>
+          <small class="text-muted">${escapeHtml(point.address || point.city?.name || 'Sin dirección registrada')}</small>
         </div>
         <span class="badge ${getPriorityBadgeClass(point.priority?.name)}">${escapeHtml(formatLabel(point.priority?.name || '-'))}</span>
       </div>
       <div class="mt-2">
         <span class="badge badge-light">${escapeHtml(formatLabel(point.state?.name || 'Sin estado'))}</span>
-        <span class="badge badge-light">${escapeHtml(formatLabel(point.category?.name || 'Sin categoria'))}</span>
+        <span class="badge badge-light">${escapeHtml(formatLabel(point.category?.name || 'Sin categoría'))}</span>
       </div>
     </button>
   `).join('');
@@ -213,11 +213,11 @@ function buildPopupHtml(point) {
   return `
     <div class="incident-map-popup">
       <strong>${escapeHtml(point.code || `#${point.id}`)}</strong>
-      <p>${escapeHtml(point.title || 'Sin titulo')}</p>
+      <p>${escapeHtml(point.title || 'Sin título')}</p>
       <dl>
         <dt>Estado</dt><dd>${escapeHtml(formatLabel(point.state?.name || '-'))}</dd>
         <dt>Prioridad</dt><dd>${escapeHtml(formatLabel(point.priority?.name || '-'))}</dd>
-        <dt>Ubicacion</dt><dd>${escapeHtml(point.address || point.city?.name || '-')}</dd>
+        <dt>Ubicación</dt><dd>${escapeHtml(point.address || point.city?.name || '-')}</dd>
       </dl>
       <a class="btn btn-sm btn-primary btn-block" href="incident-detail.html?id=${encodeURIComponent(point.id)}">
         Ver detalle

@@ -330,7 +330,7 @@
   }
 }
 
-/* AdminLTE deja el titulo lateral visible al colapsar; se oculta para no deformar la barra. */
+/* AdminLTE deja el título lateral visible al colapsar; se oculta para no deformar la barra. */
 body.sidebar-collapse .sgi-sidebar-section-label {
   display: none;
 }

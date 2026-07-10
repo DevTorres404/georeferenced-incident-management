@@ -20,6 +20,10 @@ final class VerifyEmailUseCase
             throw AuthException::userNotFound();
         }
 
+        if (! $user->isActive) {
+            throw AuthException::accountInactive();
+        }
+
         if (! hash_equals($input->hash, $user->emailVerificationHash())) {
             throw AuthException::invalidVerificationLink();
         }

@@ -267,3 +267,13 @@
     flex-direction: column;
   }
 }
+
+/* Timeline y detalles (migrados de inline) */
+.timeline-item .timeline-badge { top: 0; }
+.comentario-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 1rem; color: #fff; flex-shrink: 0;
+}
+.estado-badge-grande { font-size: 1rem; padding: 6px 14px; }
+.detalle-label { font-size: 0.78rem; color: var(--color-text-muted, #6c757d); text-transform: uppercase; letter-spacing: .05em; }

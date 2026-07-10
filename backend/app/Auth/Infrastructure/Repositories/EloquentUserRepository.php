@@ -141,6 +141,13 @@ final class EloquentUserRepository implements UserRepositoryInterface
         return $this->userMapper->fromModel($user->fresh());
     }
 
+    public function updatePasswordHash(int $userId, string $passwordHash): void
+    {
+        User::findOrFail($userId)->forceFill([
+            'password' => $passwordHash,
+        ])->save();
+    }
+
     public function updateLastAccess(int $userId, ?string $lastAccessAt = null): void
     {
         User::query()

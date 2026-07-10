@@ -10,6 +10,8 @@ interface SessionManagerPort
 
     public function revokeByTokenId(int $tokenId): void;
 
+    public function revokeOtherTokens(int $userId, ?int $exceptTokenId = null): void;
+
     public function createTwoFactorToken(int $userId): string;
 
     public function getUserIdFromTwoFactorToken(string $token): ?int;
