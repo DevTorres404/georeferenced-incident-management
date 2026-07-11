@@ -1,11 +1,13 @@
 <?php
 
-use Illuminate\Foundation\Application;
+use App\Http\Middleware\EnsureTwoFactorEnabledIfAdmin;
+use App\Shared\Infrastructure\Http\Middleware\EnsureUserHasPermission;
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Http\Exceptions\ThrottleRequestsException;
-use Illuminate\Http\Exceptions\InvalidSignatureException;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\InvalidSignatureException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,9 +22,17 @@ return Application::configure(basePath: dirname(__DIR__))
         ['middleware' => ['api', 'auth:sanctum']]
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
+
         $middleware->alias([
-            'permission' => \App\Shared\Infrastructure\Http\Middleware\EnsureUserHasPermission::class,
-            '2fa.admin' => \App\Http\Middleware\EnsureTwoFactorEnabledIfAdmin::class,
+            'permission' => EnsureUserHasPermission::class,
+            '2fa.admin' => EnsureTwoFactorEnabledIfAdmin::class,
         ]);
 
         $middleware->redirectGuestsTo(null);
@@ -42,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->is('api/*')) {
                 return response()->json([
                     'message' => 'Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.',
-                    'code' => 'RATE_LIMIT_EXCEEDED'
+                    'code' => 'RATE_LIMIT_EXCEEDED',
                 ], 429);
             }
         });
