@@ -58,9 +58,13 @@ export function clearFieldError(inputElementOrId) {
   if (!inputElement) return;
   inputElement.classList.remove('is-invalid');
   
-  const parent = inputElement.parentElement;
-  if (parent) {
-    const feedback = parent.querySelector('.invalid-feedback.backend-error');
+  let container = inputElement.parentElement;
+  if (container && container.classList.contains('input-group')) {
+    container = container.parentElement;
+  }
+
+  if (container) {
+    const feedback = container.querySelector('.invalid-feedback.backend-error');
     if (feedback) feedback.remove();
   }
 }
@@ -78,15 +82,19 @@ export function setFieldError(inputElementOrId, message) {
   if (!inputElement) return;
 
   inputElement.classList.add('is-invalid');
-  const parent = inputElement.parentElement;
+  
+  let container = inputElement.parentElement;
+  if (container && container.classList.contains('input-group')) {
+    container = container.parentElement;
+  }
 
-  if (parent) {
-    let feedback = parent.querySelector('.invalid-feedback.backend-error');
+  if (container) {
+    let feedback = container.querySelector('.invalid-feedback.backend-error');
     
     if (!feedback) {
       feedback = document.createElement('div');
       feedback.className = 'invalid-feedback backend-error';
-      parent.appendChild(feedback); 
+      container.appendChild(feedback); 
     }
     
     feedback.textContent = message;

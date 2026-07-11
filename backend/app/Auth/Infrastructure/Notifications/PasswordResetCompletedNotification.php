@@ -3,10 +3,11 @@
 namespace App\Auth\Infrastructure\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class PasswordResetCompletedNotification extends Notification
+class PasswordResetCompletedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -20,11 +21,18 @@ class PasswordResetCompletedNotification extends Notification
 
     public function toMail(mixed $notifiable): MailMessage
     {
-        return (new MailMessage())
-            ->subject('Tu contrasena fue restablecida')
-            ->greeting('Hola '.$notifiable->first_name)
-            ->line('La contrasena de tu cuenta SGI fue restablecida correctamente.')
-            ->line('Por seguridad, cerramos tus sesiones anteriores.')
-            ->line('Si no realizaste este cambio, contacta al administrador de inmediato.');
+        return (new MailMessage)
+            ->subject('SGI | Contraseña restablecida')
+            ->view('emails.sgi-email', [
+                'subject' => 'SGI | Contraseña restablecida',
+                'eyebrow' => 'Seguridad de la cuenta',
+                'title' => 'Contraseña restablecida',
+                'displayName' => $notifiable->first_name ?? 'Usuario',
+                'intro' => 'La contraseña de tu cuenta SGI fue restablecida correctamente.',
+                'lines' => [
+                    'Por seguridad, cerramos tus sesiones anteriores.',
+                ],
+                'notice' => 'Si no realizaste este cambio, contacta al administrador de inmediato.',
+            ]);
     }
 }

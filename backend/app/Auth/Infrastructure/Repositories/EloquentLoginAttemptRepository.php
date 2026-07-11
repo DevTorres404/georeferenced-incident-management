@@ -2,15 +2,14 @@
 
 namespace App\Auth\Infrastructure\Repositories;
 
-use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
 use App\Audit\Infrastructure\Persistence\Models\LoginAttempt;
+use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
+use App\Auth\Infrastructure\Jobs\LogSuccessfulLoginAttemptJob;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
 
 class EloquentLoginAttemptRepository implements LoginAttemptRepositoryInterface
 {
-    public function __construct(private AdminNotifier $adminNotifier)
-    {
-    }
+    public function __construct(private AdminNotifier $adminNotifier) {}
 
     /**
      * {@inheritdoc}
@@ -23,6 +22,17 @@ class EloquentLoginAttemptRepository implements LoginAttemptRepositoryInterface
         string $ip,
         ?string $userAgent
     ): void {
+        if ($successful && $userId !== null) {
+            LogSuccessfulLoginAttemptJob::dispatch(
+                email: $email,
+                userId: $userId,
+                ip: $ip,
+                userAgent: $userAgent
+            )->afterCommit();
+
+            return;
+        }
+
         LoginAttempt::create([
             'email' => $email,
             'user_id' => $userId,

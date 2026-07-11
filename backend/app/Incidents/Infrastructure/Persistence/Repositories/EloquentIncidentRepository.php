@@ -19,8 +19,10 @@ use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Domain\Entities\IncidentTransition;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Mappers\AssignmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\AttachmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\CommentMapper;
@@ -44,7 +46,6 @@ use App\Shared\Application\DTOs\StoredFileData;
 use App\Shared\Application\Results\PaginatedResult;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -81,8 +82,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         private AttachmentMapper $attachmentMapper,
         private AssignmentMapper $assignmentMapper,
         private NotificationMapper $notificationMapper
-    ) {
-    }
+    ) {}
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
@@ -273,42 +273,57 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 'comment' => 'Incidencia creada.',
             ]);
 
-            $this->createNotification(
-                userId: $userId,
-                title: 'Incidencia registrada',
-                message: "Tu incidencia {$incident->code} fue registrada correctamente.",
+            NotifyIncidentCreatedJob::dispatch((int) $incident->id, $userId)->afterCommit();
+
+            $incident->setRelation('state', $initialState);
+
+            return $this->incidentMapper->fromModel($incident);
+        });
+    }
+
+    public function notifyCreatedIncident(int $incidentId, int $reporterUserId): void
+    {
+        $incident = Incident::query()
+            ->with([
+                'category',
+                'priority',
+                'territorialUnit.'.TerritorialUnit::PARENT_CHAIN,
+            ])
+            ->findOrFail($incidentId);
+
+        $this->createNotification(
+            userId: $reporterUserId,
+            title: 'Incidencia registrada',
+            message: "Tu incidencia {$incident->code} fue registrada correctamente.",
+            type: 'STATUS_CHANGE',
+            incidentId: (int) $incident->id
+        );
+
+        $this->notifyZoneSupervisorsOrAdmins(
+            incident: $incident,
+            title: 'Nueva incidencia creada',
+            message: 'Nueva incidencia reportada en '.($incident->category?->name ?? 'una categoría registrada').'.',
+            type: 'STATUS_CHANGE'
+        );
+
+        if ($incident->priority_id !== null && (int) ($incident->priority?->level ?? 0) === 1) {
+            $sector = $incident->territorialUnit?->full_path ?: ($incident->address_reference ?: 'el sector reportado');
+            $this->notifyZoneSupervisorsForIncident(
+                incident: $incident,
+                title: 'Incidencia critica creada',
+                message: "Se reporto una incidencia critica en {$sector}.",
+                type: 'STATUS_CHANGE'
+            );
+        }
+
+        if ($incident->latitude === null || $incident->longitude === null) {
+            app(AdminNotifier::class)->notify(
+                title: 'Error de geolocalizacion',
+                message: "La incidencia {$incident->code} fue creada sin coordenadas validas.",
                 type: 'STATUS_CHANGE',
                 incidentId: (int) $incident->id
             );
-
-            $this->notifyZoneSupervisorsOrAdmins(
-                incident: $incident->load('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
-                title: 'Nueva incidencia creada',
-                message: 'Nueva incidencia reportada en '.$incident->category()->value('name').'.',
-                type: 'STATUS_CHANGE'
-            );
-
-            if ($incident->priority_id !== null && (int) $incident->priority()->value('level') === 1) {
-                $sector = $incident->territorialUnit?->full_path ?: ($incident->address_reference ?: 'el sector reportado');
-                $this->notifyZoneSupervisorsForIncident(
-                    incident: $incident,
-                    title: 'Incidencia critica creada',
-                    message: "Se reporto una incidencia critica en {$sector}.",
-                    type: 'STATUS_CHANGE'
-                );
-            }
-
-            if ($incident->latitude === null || $incident->longitude === null) {
-                app(AdminNotifier::class)->notify(
-                    title: 'Error de geolocalizacion',
-                    message: "La incidencia {$incident->code} fue creada sin coordenadas validas.",
-                    type: 'STATUS_CHANGE',
-                    incidentId: (int) $incident->id
-                );
-            }
-
-            return $this->incidentMapper->fromModel($incident->load(self::RELATIONS));
-        });
+        }
     }
 
     public function load(int $incidentId, bool $withHistory = true): \App\Incidents\Domain\Entities\Incident
@@ -348,7 +363,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         return $this->incidentDetailMapper->fromModel($incident);
     }
 
-    public function findTransition(int $fromStateId, int $toStateId): ?\App\Incidents\Domain\Entities\IncidentTransition
+    public function findTransition(int $fromStateId, int $toStateId): ?IncidentTransition
     {
         $transition = StateTransition::where('source_state_id', $fromStateId)
             ->where('target_state_id', $toStateId)
@@ -993,7 +1008,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         return match ($normalizedState) {
             'RECHAZADA' => [
                 'Incidencia rechazada',
-                trim("Tu incidencia {$incidentCode} fue rechazada." . ($comment ? " Motivo: {$comment}" : '')),
+                trim("Tu incidencia {$incidentCode} fue rechazada.".($comment ? " Motivo: {$comment}" : '')),
                 'STATUS_CHANGE',
             ],
             'RESUELTA' => [
@@ -1206,7 +1221,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
     }
 
     /**
-     * @param array<int, UserTerritory> $assignments
+     * @param  array<int, UserTerritory>  $assignments
      * @return array<int, int>
      */
     private function activeZoneIdsForTerritoryAssignments(array $assignments): array
@@ -1221,7 +1236,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
     }
 
     /**
-     * @param array<int, UserTerritory> $assignments
+     * @param  array<int, UserTerritory>  $assignments
      */
     private function firstOperationalZoneFromAssignments(array $assignments): ?TerritorialUnit
     {
@@ -1276,10 +1291,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
     private function generarCodigo(): string
     {
-        $prefix = 'INC-' . now()->format('Y') . '-';
+        $prefix = 'INC-'.now()->format('Y').'-';
 
         do {
-            $codigo = $prefix . Str::padLeft((string) random_int(1, 99999), 5, '0');
+            $codigo = $prefix.Str::padLeft((string) random_int(1, 99999), 5, '0');
         } while (Incident::where('code', $codigo)->exists());
 
         return $codigo;

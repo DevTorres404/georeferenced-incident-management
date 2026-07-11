@@ -10,8 +10,8 @@ use App\Auth\Application\DTOs\LoginInputData;
 use App\Auth\Application\DTOs\RegisterUserInputData;
 use App\Auth\Application\DTOs\ResetPasswordWithCodeInputData;
 use App\Auth\Application\DTOs\UpdateOwnProfileInputData;
-use App\Auth\Application\DTOs\VerifyPasswordResetCodeInputData;
 use App\Auth\Application\DTOs\VerifyEmailInputData;
+use App\Auth\Application\DTOs\VerifyPasswordResetCodeInputData;
 use App\Auth\Application\UseCases\ChangeOwnPasswordUseCase;
 use App\Auth\Application\UseCases\CompleteProfileUseCase;
 use App\Auth\Application\UseCases\GetAuthenticatedUserUseCase;
@@ -19,18 +19,20 @@ use App\Auth\Application\UseCases\GoogleRegistrationUseCase;
 use App\Auth\Application\UseCases\LoginUseCase;
 use App\Auth\Application\UseCases\LogoutUseCase;
 use App\Auth\Application\UseCases\RegisterUserUseCase;
-use App\Auth\Application\UseCases\ResendVerificationEmailUseCase;
 use App\Auth\Application\UseCases\RequestPasswordResetCodeUseCase;
+use App\Auth\Application\UseCases\ResendVerificationEmailUseCase;
 use App\Auth\Application\UseCases\ResetPasswordWithCodeUseCase;
 use App\Auth\Application\UseCases\UpdateOwnProfileUseCase;
-use App\Auth\Application\UseCases\VerifyPasswordResetCodeUseCase;
 use App\Auth\Application\UseCases\VerifyEmailUseCase;
+use App\Auth\Application\UseCases\VerifyPasswordResetCodeUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
-use App\Shared\Infrastructure\Notifications\AdminNotifier;
-use Illuminate\Routing\Controller;
+use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Jobs\NotifyAdminsJob;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
 
 /**
@@ -53,10 +55,8 @@ class AuthController extends Controller
         private VerifyPasswordResetCodeUseCase $verifyPasswordResetCodeUseCase,
         private ResetPasswordWithCodeUseCase $resetPasswordWithCodeUseCase,
         private VerifyEmailUseCase $verifyEmailUseCase,
-        private GoogleRegistrationUseCase $googleRegistrationUseCase,
-        private AdminNotifier $adminNotifier
-    ) {
-    }
+        private GoogleRegistrationUseCase $googleRegistrationUseCase
+    ) {}
 
     /**
      * Iniciar sesión.
@@ -64,6 +64,7 @@ class AuthController extends Controller
      * Autentica al usuario usando email y contraseña, y devuelve un token de acceso.
      *
      * @unauthenticated
+     *
      * @bodyParam email string required El correo electrónico del usuario. Example: admin@torres404.com
      * @bodyParam password string required La contraseña del usuario. Example: password
      */
@@ -74,8 +75,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $credentials['email'])->first();
-        if ($trashedUser) {
+        $trashedUserExists = User::onlyTrashed()->where('email', $credentials['email'])->exists();
+        if ($trashedUserExists) {
             return response()->json([
                 'message' => 'Esta cuenta ha sido desactivada por un administrador.',
             ], 403);
@@ -112,6 +113,7 @@ class AuthController extends Controller
      * Crea una nueva cuenta de usuario en el sistema.
      *
      * @unauthenticated
+     *
      * @bodyParam first_name string required El nombre del usuario. Example: Juan
      * @bodyParam last_name string required El apellido del usuario. Example: Perez
      * @bodyParam username string required El nombre de usuario único. Example: juanperez
@@ -122,36 +124,37 @@ class AuthController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
-        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $request->email)->first();
-        if ($trashedUser) {
+        $existingUser = User::withTrashed()
+            ->with('identities:id,user_id,provider')
+            ->where('email', $request->email)
+            ->first();
+
+        if ($existingUser?->trashed()) {
             return response()->json([
                 'message' => 'Esta cuenta y correo han sido desactivados.',
                 'errors' => [
-                    'email' => ['Esta cuenta y correo han sido desactivados.']
-                ]
+                    'email' => ['Esta cuenta y correo han sido desactivados.'],
+                ],
             ], 422);
         }
 
-        $existingUser = \App\Auth\Infrastructure\Persistence\Models\User::where('email', $request->email)->first();
         if ($existingUser) {
-            $hasGoogleIdentity = \App\Auth\Infrastructure\Persistence\Models\UserIdentity::where('user_id', $existingUser->id)
-                ->where('provider', 'google')
-                ->exists();
+            $hasGoogleIdentity = $existingUser->identities->contains('provider', 'google');
 
             if ($hasGoogleIdentity) {
                 return response()->json([
                     'message' => 'Este correo ya esta registrado con Google. Inicia sesion con Google o usa otro correo.',
                     'errors' => [
-                        'email' => ['Este correo ya esta registrado con Google. Inicia sesion con Google o usa otro correo.']
-                    ]
+                        'email' => ['Este correo ya esta registrado con Google. Inicia sesion con Google o usa otro correo.'],
+                    ],
                 ], 409);
             }
 
             return response()->json([
                 'message' => 'Este correo ya esta registrado. Inicia sesion o recupera tu contrasena.',
                 'errors' => [
-                    'email' => ['Este correo ya esta registrado. Inicia sesion o recupera tu contrasena.']
-                ]
+                    'email' => ['Este correo ya esta registrado. Inicia sesion o recupera tu contrasena.'],
+                ],
             ], 422);
         }
 
@@ -166,7 +169,7 @@ class AuthController extends Controller
                 'min:3',
                 'max:50',
                 'regex:/^\S+$/u',
-                Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username'),
+                Rule::unique(User::class, 'username'),
             ],
             'email' => ['required', 'email', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
@@ -197,11 +200,11 @@ class AuthController extends Controller
             )
         );
 
-        $this->adminNotifier->notify(
+        NotifyAdminsJob::dispatch(
             title: 'Usuario creado',
             message: 'Se registró un nuevo usuario en el sistema.',
             type: 'STATUS_CHANGE'
-        );
+        )->afterCommit();
 
         return response()->json($response, 201);
     }
@@ -212,6 +215,7 @@ class AuthController extends Controller
      * Permite autenticarse en el sistema utilizando un token de Google (Google Sign-In).
      *
      * @unauthenticated
+     *
      * @bodyParam id_token string required El token de identificación proporcionado por Google. Example: eyJhbGciOiJSUzI1NiIsImtp...
      * @bodyParam flow_id string ID de flujo para el registro en background. Example: 12345
      */
@@ -235,27 +239,27 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Estamos preparando tu acceso con Google.',
                 'flow_id' => $data['flow_id'],
-                'channel' => 'auth.google.' . $data['flow_id'],
+                'channel' => 'auth.google.'.$data['flow_id'],
                 'status' => 'queued',
             ], 202);
         }
 
         try {
             $response = $this->googleRegistrationUseCase->execute(
-                    new GoogleAuthInputData(
-                        intent: $data['intent'],
-                        idToken: $data['id_token'],
-                        ip: (string) ($request->ip() ?? '127.0.0.1'),
-                        userAgent: $request->userAgent()
-                    )
-                );
+                new GoogleAuthInputData(
+                    intent: $data['intent'],
+                    idToken: $data['id_token'],
+                    ip: (string) ($request->ip() ?? '127.0.0.1'),
+                    userAgent: $request->userAgent()
+                )
+            );
 
             if ($data['intent'] === 'register') {
-                $this->adminNotifier->notify(
+                NotifyAdminsJob::dispatch(
                     title: 'Usuario creado',
                     message: 'Se registró un nuevo usuario en el sistema.',
                     type: 'STATUS_CHANGE'
-                );
+                )->afterCommit();
             }
 
             return response()->json($response, 200);
@@ -413,6 +417,7 @@ class AuthController extends Controller
      * Permite reenviar el enlace de verificación sin estar autenticado.
      *
      * @unauthenticated
+     *
      * @bodyParam email string required El correo electrónico del usuario. Example: usuario@example.com
      */
     public function resendVerificationEmailPublic(Request $request): JsonResponse
@@ -421,7 +426,7 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $user = \App\Auth\Infrastructure\Persistence\Models\User::where('email', $data['email'])->first();
+        $user = User::where('email', $data['email'])->first();
 
         if (! $user) {
             return response()->json([
@@ -460,6 +465,7 @@ class AuthController extends Controller
      * Permite establecer el nombre de usuario luego de registrarse mediante Google.
      *
      * @authenticated
+     *
      * @bodyParam username string required El nombre de usuario único. Example: marianop
      */
     public function completeProfile(Request $request): JsonResponse
@@ -471,7 +477,7 @@ class AuthController extends Controller
                 'min:3',
                 'max:50',
                 'regex:/^[a-z0-9_.-]+$/i',
-                Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
+                Rule::unique(User::class, 'username')->ignore($request->user()->id),
             ],
         ], $this->validationMessages());
 
@@ -507,7 +513,7 @@ class AuthController extends Controller
                 'min:3',
                 'max:50',
                 'regex:/^[a-z0-9_.-]+$/i',
-                Rule::unique(\App\Auth\Infrastructure\Persistence\Models\User::class, 'username')->ignore($request->user()->id),
+                Rule::unique(User::class, 'username')->ignore($request->user()->id),
             ],
         ], $this->validationMessages());
 
@@ -536,6 +542,7 @@ class AuthController extends Controller
      * Ruta para validar el hash enviado por correo electrónico.
      *
      * @unauthenticated
+     *
      * @urlParam id int required El ID del usuario. Example: 1
      * @urlParam hash string required El hash de verificación enviado al correo. Example: a1b2c3d4e5
      */
@@ -545,6 +552,7 @@ class AuthController extends Controller
      * Valida la contrasena actual antes de guardar un nuevo hash.
      *
      * @authenticated
+     *
      * @bodyParam current_password string required Contrasena actual del usuario. Example: password123
      * @bodyParam password string required Nueva contrasena, minimo 8 caracteres. Example: new-password123
      * @bodyParam password_confirmation string required Confirmacion de la nueva contrasena. Example: new-password123
@@ -576,7 +584,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function verifyEmail(Request $request, int $id, string $hash): JsonResponse|\Illuminate\Http\RedirectResponse
+    public function verifyEmail(Request $request, int $id, string $hash): JsonResponse|RedirectResponse
     {
         try {
             $this->verifyEmailUseCase->execute(
@@ -592,7 +600,7 @@ class AuthController extends Controller
         }
 
         if (! $request->expectsJson()) {
-            return redirect()->away(rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/') . '/?verified=1');
+            return redirect()->away(rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/').'/?verified=1');
         }
 
         return response()->json([

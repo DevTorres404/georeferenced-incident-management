@@ -45,6 +45,17 @@ final class OperationalStructureSeeder extends Seeder
                 ['zone_code' => 'Z8', 'first_name' => 'Hector', 'last_name' => 'Jimpikit', 'email' => 'supervisor.amazonia.norte@incidents.local', 'username' => 'hector.jimpikit', 'phone' => '0991000008'],
             ];
 
+            $operatorNames = [
+                ['Jorge Luis', 'Cedeño'], ['Maria Fernanda', 'Saltos'], ['Kevin Andres', 'Moreira'], ['Genesis Paola', 'Villacres'], ['Bryan Alexander', 'Chonillo'],
+                ['Karla Melissa', 'Galarza'], ['Luis Fernando', 'Peñafiel'], ['Diana Carolina', 'Suarez'], ['Anthony Joel', 'Espinoza'], ['Josselyn Estefania', 'Velez'],
+                ['Jonathan David', 'Pincay'], ['Evelyn Johanna', 'Macias'], ['Christian Paul', 'Intriago'], ['Katherine Lisseth', 'Quijije'], ['Carlos Alberto', 'Ceballos'],
+                ['Jessica Maribel', 'Tisalema'], ['Darwin Patricio', 'Chango'], ['Silvia Elena', 'Toaquiza'], ['Victor Hugo', 'Lema'], ['Monica Alexandra', 'Pilaluisa'],
+                ['Juan Carlos', 'Vintimilla'], ['Pedro Pablo', 'Sarmiento'], ['Ana Lucia', 'Pesantez'], ['Diego Armando', 'Cardenas'], ['Maria Jose', 'Orellana'],
+                ['Byron Eduardo', 'Tanguila'], ['Nancy Patricia', 'Grefa'], ['Oscar Vladimir', 'Tapuy'], ['Rosa Elena', 'Cerda'], ['Wilson Javier', 'Alvarado'],
+                ['Roberto Carlos', 'Cruz'], ['Andrea Victoria', 'Cobos'], ['Julio Cesar', 'Mora'], ['Veronica Paulina', 'Salas'], ['Eduardo Josue', 'Vaca'],
+                ['Monica Rocio', 'Jumbo'], ['Luis Alfredo', 'Vargas'], ['Tatiana Elizabeth', 'Ruiz'], ['Miguel Angel', 'Narvaez'], ['Sandra Lorena', 'Yumbo'],
+            ];
+
             foreach ($supervisors as $index => $data) {
                 $zone = $zones[$data['zone_code']] ?? null;
 
@@ -65,11 +76,9 @@ final class OperationalStructureSeeder extends Seeder
                     $zoneNumber = $index + 1;
                     $zoneSuffix = strtolower(substr($data['zone_code'], 1));
 
-                    $firstNames = ['Luis', 'Carlos', 'Maria', 'Rosa', 'Jose', 'Jorge', 'Manuel', 'Carmen', 'Ana', 'Pedro', 'Raul', 'Pablo', 'Fernando', 'Diego', 'Andres', 'Patricia', 'Daniela', 'Andrea', 'Laura', 'Sofia'];
-                    $lastNames = ['Zambrano', 'Castro', 'Mendoza', 'Garcia', 'Vera', 'Delgado', 'Sanchez', 'Macias', 'Rodriguez', 'Cedeno', 'Lopez', 'Torres', 'Chavez', 'Ortiz', 'Flores', 'Alvarado', 'Fernandez', 'Morales', 'Gomez', 'Suarez'];
-                    
-                    $firstName = $firstNames[array_rand($firstNames)];
-                    $lastName = $lastNames[array_rand($lastNames)];
+                    $globalIndex = ($index * 5) + ($position - 1);
+                    $firstName = $operatorNames[$globalIndex][0];
+                    $lastName = $operatorNames[$globalIndex][1];
 
                     $operator = $this->user([
                         'first_name' => $firstName,
