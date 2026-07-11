@@ -139,7 +139,10 @@ function initEditProfile(user) {
 
   btnEdit.addEventListener('click', () => {
     const editUsername = document.getElementById('editUsername');
-    editUsername.value = user.username || '';
+    // Read the latest user data from localStorage to ensure we have the most up-to-date username
+    const currentUserData = localStorage.getItem(window.AUTH_KEYS?.user || 'user_data');
+    const currentUser = currentUserData ? JSON.parse(currentUserData) : user;
+    editUsername.value = currentUser.username || '';
 
     editUsername.addEventListener('input', function() {
       this.value = this.value.toLowerCase();
@@ -189,6 +192,21 @@ function initEditProfile(user) {
     }
   });
 }
+
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.sgi-pw-toggle');
+  if (!btn) return;
+  const input = btn.closest('.input-group')?.querySelector('input');
+  if (!input) return;
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+});
 
 function initChangePassword() {
   const btnOpen = document.getElementById('btnOpenChangePassword');
