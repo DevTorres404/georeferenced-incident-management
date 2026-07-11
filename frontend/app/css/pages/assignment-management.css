@@ -10,20 +10,20 @@
 
 .assignment-kpi {
   background: linear-gradient(135deg, #ffffff 0%, #f7fbff 100%);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(8, 32, 51, 0.08);
   border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   padding: 1rem 1.1rem;
   transition: all 0.2s ease;
 }
 
 .assignment-kpi:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 32px rgba(8, 32, 51, 0.08);
 }
 
 .assignment-kpi-label {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   display: block;
   font-size: 0.8rem;
   font-weight: 600;
@@ -33,15 +33,15 @@
 }
 
 .assignment-kpi strong {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.7rem;
   line-height: 1;
 }
 
 .assignment-chip {
-  background: #f0f9ff;
+  background: var(--sgi-primary-soft);
   border-radius: 999px;
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   display: inline-flex;
   font-size: 0.78rem;
   font-weight: 600;
@@ -50,8 +50,8 @@
 }
 
 .assignment-chip.assignment-chip-support {
-  background: #f8fafc;
-  color: var(--color-text-muted, #64748b);
+  background: var(--sgi-primary-soft);
+  color: var(--sgi-text-muted);
 }
 
 .assignment-row-actions .btn {
@@ -59,8 +59,8 @@
 }
 
 .assignment-modal-summary {
-  background: linear-gradient(160deg, #f0f9ff 0%, #f8fafc 100%);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, var(--sgi-primary-soft) 100%);
+  border: 1px solid rgba(8, 32, 51, 0.08);
   border-radius: 1rem;
   padding: 0.95rem 1rem;
 }
@@ -74,8 +74,8 @@
 
 .support-operator-item {
   align-items: flex-start;
-  background: var(--color-surface, #ffffff);
-  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--sgi-surface);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
   display: flex;
   gap: 0.75rem;
@@ -84,12 +84,12 @@
 }
 
 .support-operator-item:hover {
-  border-color: rgba(14, 165, 233, 0.3);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  border-color: rgba(20, 152, 212, 0.3);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.06);
 }
 
 .support-operator-item.disabled {
-  background: #f8fafc;
+  background: var(--sgi-primary-soft);
   opacity: 0.65;
 }
 
@@ -98,13 +98,13 @@
 }
 
 .support-operator-name {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   display: block;
   font-weight: 700;
 }
 
 .support-operator-caption {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   display: block;
   font-size: 0.82rem;
 }
@@ -121,11 +121,11 @@
   align-items: center;
   gap: 0.85rem;
   background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
-  border: 1px solid rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(20, 152, 212, 0.18);
   border-radius: 1rem;
   padding: 0.85rem 1.1rem;
   margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.08);
+  box-shadow: 0 4px 12px rgba(20, 152, 212, 0.08);
 }
 
 .assignment-zone-banner-icon {
@@ -133,13 +133,13 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover));
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 12px rgba(20, 152, 212, 0.3);
 }
 
 .assignment-zone-banner-body {
@@ -148,7 +148,7 @@
 }
 
 .assignment-zone-banner-label {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.75rem;
   font-weight: 500;
   text-transform: uppercase;
@@ -156,7 +156,7 @@
 }
 
 .assignment-zone-banner-name {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.05rem;
   font-weight: 700;
 }

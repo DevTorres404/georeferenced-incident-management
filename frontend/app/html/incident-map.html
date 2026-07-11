@@ -69,14 +69,15 @@
                                 </div>
                                 <div class="col-lg-3"> <label class="d-block">Alcance</label>
                                     <div class="d-flex flex-wrap align-items-center">
-                                        <div class="custom-control custom-checkbox mr-3"> <input type="checkbox"
+                                        <div class="custom-control custom-checkbox mr-3" id="mapMineScope"> <input type="checkbox"
                                                 class="custom-control-input" id="mapMine"> <label
                                                 class="custom-control-label" for="mapMine">Mis reportes</label> </div>
-                                        <div class="custom-control custom-checkbox"> <input type="checkbox"
+                                        <div class="custom-control custom-checkbox" id="mapAssignedScope"> <input type="checkbox"
                                                 class="custom-control-input" id="mapAssignedToMe"> <label
                                                 class="custom-control-label" for="mapAssignedToMe">Asignadas a
-                                                mi</label> </div>
+                                                mí</label> </div>
                                     </div>
+                                    <small class="form-text text-muted" id="mapScopeContext"></small>
                                     <div class="mt-2"> <button type="button" class="btn btn-primary btn-sm"
                                             id="btnMapFilters"> <i class="fas fa-filter mr-1"></i>Aplicar </button>
                                         <button type="button" class="btn btn-outline-secondary btn-sm"
@@ -118,8 +119,8 @@
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=35"></script>
-    <script type="module" src="/js/modules/map/presentation/incident-map-page.js?v=3"></script>
+    <script type="module" src="/js/layout/layout.js?v=37"></script>
+    <script type="module" src="/js/modules/map/presentation/incident-map-page.js?v=4"></script>
 </body>
 
 </html>

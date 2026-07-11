@@ -1,4 +1,4 @@
-import { request } from '../../../core/api-client.js?v=15';
+import { request } from '../../../core/api-client.js?v=21';
 
 async function listIncidents(filters = {}) {
   const params = new URLSearchParams();

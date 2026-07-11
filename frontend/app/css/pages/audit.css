@@ -25,16 +25,16 @@
 .audit-log-summary-item {
   min-height: 64px;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
-  background: linear-gradient(160deg, #f8fafc 0%, #f0f9ff 100%);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, var(--sgi-primary-soft) 100%);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.03);
   transition: all 0.2s ease;
 }
 
 .audit-log-summary-item:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 16px rgba(8, 32, 51, 0.06);
 }
 
 .audit-log-summary-item span,
@@ -43,7 +43,7 @@
 }
 
 .audit-log-summary-item span {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.2;
@@ -51,7 +51,7 @@
 
 .audit-log-summary-item strong {
   margin-top: 4px;
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.1rem;
   line-height: 1;
 }
@@ -62,7 +62,7 @@
 }
 
 .audit-log-table th {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.78rem;
   text-transform: uppercase;
 }
@@ -72,7 +72,7 @@
 }
 
 .audit-log-details summary {
-  color: var(--color-primary, #0ea5e9);
+  color: var(--sgi-primary);
   cursor: pointer;
   font-weight: 700;
 }
@@ -83,10 +83,10 @@
   margin: 6px 0 10px;
   padding: 10px;
   overflow: auto;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 0.75rem;
-  background: var(--color-text-main, #0f172a);
-  color: #e2e8f0;
+  background: var(--sgi-text);
+  color: var(--sgi-border);
   font-size: 0.78rem;
   white-space: pre-wrap;
 }
@@ -94,7 +94,7 @@
 .audit-log-json-label {
   display: inline-block;
   margin-top: 8px;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;

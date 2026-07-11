@@ -8,7 +8,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Notification;
 final class AdminNotifier
 {
     /**
-     * @param array<int, int> $excludeUserIds
+     * @param  array<int, int>  $excludeUserIds
      */
     public function notify(string $title, string $message, string $type = 'STATUS_CHANGE', array $excludeUserIds = [], ?int $incidentId = null): void
     {
@@ -30,28 +30,21 @@ final class AdminNotifier
             return;
         }
 
-        $timestamp = now();
-
-        Notification::query()->insert(
-            array_map(
-                fn (int $userId): array => [
-                    'user_id' => $userId,
-                    'incident_id' => $incidentId,
-                    'title' => $title,
-                    'message' => $message,
-                    'type' => $type,
-                    'is_read' => false,
-                    'read_at' => null,
-                    'created_at' => $timestamp,
-                    'updated_at' => $timestamp,
-                ],
-                $missingUserIds
-            )
-        );
+        foreach ($missingUserIds as $userId) {
+            Notification::create([
+                'user_id' => $userId,
+                'incident_id' => $incidentId,
+                'title' => $title,
+                'message' => $message,
+                'type' => $type,
+                'is_read' => false,
+                'read_at' => null,
+            ]);
+        }
     }
 
     /**
-     * @param array<int, int> $excludeUserIds
+     * @param  array<int, int>  $excludeUserIds
      * @return array<int, int>
      */
     private function adminUserIds(array $excludeUserIds = []): array

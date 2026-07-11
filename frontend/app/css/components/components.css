@@ -1,6 +1,6 @@
 /* ---- Navbar personalizada ---- */
 .navbar-dark-custom {
-  background-color: var(--color-header-bg) !important;
+  background-color: var(--sgi-navy-950) !important;
 }
 .navbar-dark-custom .nav-link,
 .navbar-dark-custom .brand-text {
@@ -47,7 +47,7 @@
 
 /* ---- Timeline de historial ---- */
 .timeline-item-custom {
-  border-left: 3px solid #0ea5e9;
+  border-left: 3px solid var(--sgi-primary);
   padding: 8px 12px 8px 20px;
   position: relative;
   margin-bottom: 16px;
@@ -56,7 +56,7 @@
   content: '';
   width: 12px;
   height: 12px;
-  background: #0ea5e9;
+  background: var(--sgi-primary);
   border-radius: 50%;
   position: absolute;
   left: -7px;
@@ -65,15 +65,15 @@
 
 /* ---- Mapa placeholder ---- */
 .map-placeholder {
-  background: linear-gradient(135deg, #e3eeff 0%, #cfe2ff 100%);
-  border: 2px dashed #90b4e8;
+  background: linear-gradient(135deg, var(--sgi-primary-soft) 0%, #d8ecf7 100%);
+  border: 2px dashed var(--sgi-border);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 280px;
-  color: #4a6fa5;
+  color: var(--sgi-navy-800);
 }
 .map-placeholder i {
   font-size: 3.5rem;
@@ -139,14 +139,14 @@
 
 /* ---- Comentarios ---- */
 .comentario-card {
-  border-left: 4px solid #007bff;
-  background: #f8f9fa;
+  border-left: 4px solid var(--sgi-primary);
+  background: var(--sgi-primary-soft);
   border-radius: 0 8px 8px 0;
   padding: 12px 16px;
   margin-bottom: 12px;
 }
 .comentario-card.propio {
-  border-left-color: #28a745;
+  border-left-color: var(--sgi-success);
 }
 
 /* ---- Indicador de carga global ---- */
@@ -169,8 +169,8 @@
   justify-content: center;
   pointer-events: auto;
   background:
-    linear-gradient(90deg, rgba(14,165,233,0.06), rgba(23,162,184,0.08), rgba(40,167,69,0.06)),
-    rgba(244, 246, 249, 0.92);
+    linear-gradient(90deg, rgba(20,152,212,0.06), rgba(23,162,184,0.08), rgba(40,167,69,0.06)),
+    var(--sgi-background);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
@@ -203,7 +203,7 @@
   justify-content: center;
 }
 .spinner-overlay .loader-orbit i {
-  color: #0ea5e9;
+  color: var(--sgi-primary);
   font-size: 1.05rem;
   z-index: 1;
 }
@@ -212,8 +212,8 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 3px solid rgba(14,165,233,0.14);
-  border-top-color: #0ea5e9;
+  border: 3px solid rgba(20,152,212,0.14);
+  border-top-color: var(--sgi-primary);
   border-right-color: #17a2b8;
   animation: sgigLoadingOrbit 0.85s linear infinite;
 }

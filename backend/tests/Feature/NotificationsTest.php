@@ -2,9 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Broadcasting\NotificationCreated;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
@@ -16,7 +20,7 @@ class NotificationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed([\Database\Seeders\RoleSeeder::class, \Database\Seeders\PermissionSeeder::class]);
+        $this->seed([RoleSeeder::class, PermissionSeeder::class]);
     }
 
     private function createAuthorizedUser(): User
@@ -24,12 +28,12 @@ class NotificationsTest extends TestCase
         $user = User::factory()->create([
             'two_factor_confirmed_at' => now(),
         ]);
-        
-        $role = \App\Auth\Infrastructure\Persistence\Models\Role::where('code', 'ADMIN')->first();
+
+        $role = Role::where('code', 'ADMIN')->first();
         if ($role) {
             $user->roles()->sync([$role->id]);
         }
-        
+
         return $user;
     }
 
@@ -50,10 +54,27 @@ class NotificationsTest extends TestCase
         Event::assertDispatched(NotificationCreated::class);
     }
 
+    public function test_admin_notifier_dispatches_realtime_event_for_each_recipient(): void
+    {
+        Event::fake([NotificationCreated::class]);
+        $admin = $this->createAuthorizedUser();
+
+        app(AdminNotifier::class)->notify(
+            title: 'Nueva incidencia',
+            message: 'Existe una incidencia que requiere revision.',
+        );
+
+        Event::assertDispatched(
+            NotificationCreated::class,
+            fn (NotificationCreated $event): bool => (int) $event->broadcastWith()['notification']['user_id'] === $admin->id
+                && $event->broadcastWith()['notification']['title'] === 'Nueva incidencia'
+        );
+    }
+
     public function test_user_can_fetch_notifications(): void
     {
         $user = $this->createAuthorizedUser();
-        
+
         Notification::create([
             'user_id' => $user->id,
             'title' => 'Test Notification 1',
@@ -80,7 +101,7 @@ class NotificationsTest extends TestCase
     public function test_user_can_filter_unread_notifications(): void
     {
         $user = $this->createAuthorizedUser();
-        
+
         Notification::create([
             'user_id' => $user->id,
             'title' => 'Test Notification 1',
@@ -107,7 +128,7 @@ class NotificationsTest extends TestCase
     public function test_user_can_get_unread_notifications_count(): void
     {
         $user = $this->createAuthorizedUser();
-        
+
         Notification::create([
             'user_id' => $user->id,
             'title' => 'Test Notification 1',
@@ -133,7 +154,7 @@ class NotificationsTest extends TestCase
     public function test_user_can_mark_notification_as_read(): void
     {
         $user = $this->createAuthorizedUser();
-        
+
         $notification = Notification::create([
             'user_id' => $user->id,
             'title' => 'Test Notification 1',
@@ -154,7 +175,7 @@ class NotificationsTest extends TestCase
     {
         $user1 = $this->createAuthorizedUser();
         $user2 = User::factory()->create();
-        
+
         $notification = Notification::create([
             'user_id' => $user2->id,
             'title' => 'Test Notification',
@@ -171,7 +192,7 @@ class NotificationsTest extends TestCase
     public function test_user_can_mark_all_notifications_as_read(): void
     {
         $user = $this->createAuthorizedUser();
-        
+
         Notification::create([
             'user_id' => $user->id,
             'title' => 'Test Notification 1',

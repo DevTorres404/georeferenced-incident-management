@@ -1,6 +1,6 @@
 /* Hero banner */
 .hero-about {
-  background: linear-gradient(135deg, var(--color-sidebar-bg, #071827) 0%, var(--color-sidebar-bg-soft, #0f2740) 60%, var(--color-primary-dark, #0369a1) 100%);
+  background: linear-gradient(135deg, var(--color-sidebar-bg, #071827) 0%, var(--color-sidebar-bg-soft, #0f2740) 60%, var(--sgi-primary-hover) 100%);
   border-radius: 12px;
   padding: 48px 40px;
   color: #fff;
@@ -24,7 +24,7 @@
 /* Feature list */
 .feature-item {
   display: flex; gap: 16px; align-items: flex-start;
-  padding: 14px 0; border-bottom: 1px solid var(--color-border, #e2e8f0);
+  padding: 14px 0; border-bottom: 1px solid var(--sgi-border);
 }
 .feature-item:last-child { border-bottom: none; }
 .feature-icon {
@@ -32,8 +32,8 @@
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; font-size: 1.1rem; color: #fff;
 }
-.feature-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; color: var(--color-text-main, #0f172a); }
-.feature-desc  { font-size: 0.83rem; color: var(--color-text-muted, #64748b); margin: 0; }
+.feature-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; color: var(--sgi-text); }
+.feature-desc  { font-size: 0.83rem; color: var(--sgi-text-muted); margin: 0; }
 
 /* Team card */
 .team-avatar {
@@ -44,7 +44,7 @@
 }
 /* Timeline de versiones */
 .version-item {
-  border-left: 3px solid var(--color-primary, #0ea5e9);
+  border-left: 3px solid var(--sgi-primary);
   padding: 4px 0 12px 20px;
   position: relative;
   margin-bottom: 4px;
@@ -52,7 +52,7 @@
 .version-item::before {
   content: '';
   width: 12px; height: 12px;
-  background: var(--color-primary, #0ea5e9); border-radius: 50%;
+  background: var(--sgi-primary); border-radius: 50%;
   position: absolute; left: -7px; top: 6px;
 }
 .version-item.latest { border-left-color: var(--color-baja, #28a745); }

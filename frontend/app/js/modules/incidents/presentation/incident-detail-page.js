@@ -7,6 +7,7 @@ import {
   updateIncident,
   uploadIncidentAttachment,
 } from '../application/incidents-service.js?v=15';
+import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=1';
 import {
   API_URL,
   MAP_BASE_STYLES,
@@ -23,6 +24,13 @@ import {
 } from './incidents-ui.js?v=14';
 
 document.addEventListener('DOMContentLoaded', initIncidentDetailPage);
+
+let commentSubscription = null;
+
+window.addEventListener('pagehide', () => {
+  commentSubscription?.cleanup?.();
+  commentSubscription = null;
+});
 
 async function initIncidentDetailPage() {
   if (typeof window.renderLayout === 'function') {
@@ -65,6 +73,7 @@ async function initIncidentDetailPage() {
       Array.isArray(statesResponse?.data) ? statesResponse.data : [],
       Array.isArray(prioritiesResponse?.data) ? prioritiesResponse.data : []
     );
+    startRealtimeComments(incident);
   } catch (error) {
     renderError(container, error.message || 'No se pudo cargar el detalle de la incidencia.');
   }
@@ -397,7 +406,16 @@ function hydrateStateModal(incident, states) {
   const select = document.getElementById('nuevoEstado');
   if (!select) return;
 
-  select.innerHTML = states.map((state) => `
+  const seen = new Set();
+  const filtered = [];
+  for (const state of states) {
+    const label = formatCatalogLabel(state.name);
+    if (seen.has(label)) continue;
+    seen.add(label);
+    filtered.push(state);
+  }
+
+  select.innerHTML = filtered.map((state) => `
     <option value="${state.id}" ${Number(state.id) === Number(incident.state_id) ? 'selected' : ''}>
       ${escapeHtml(formatCatalogLabel(state.name))}
     </option>`).join('');
@@ -436,11 +454,7 @@ function bindCommentForm(incident) {
         is_internal: false,
       });
 
-      const commentData = response?.data;
-      incident.comments = [...(incident.comments || []), commentData];
-      document.getElementById('listadoComentarios').innerHTML = renderComments(incident.comments);
-      setText('commentsCount', incident.comments.length);
-      setText('commentsMetric', incident.comments.length);
+      appendCommentIfMissing(incident, response?.data);
       input.value = '';
       showGlobalAlert('Comentario agregado correctamente.', 'success');
     } catch (error) {
@@ -454,6 +468,34 @@ function bindCommentForm(incident) {
       submit();
     }
   });
+}
+
+function startRealtimeComments(incident) {
+  subscribeToIncidentComments(
+    incident.id,
+    hasPermission('comments.internal'),
+    (comment) => appendCommentIfMissing(incident, comment)
+  ).then((subscription) => {
+    commentSubscription?.cleanup?.();
+    commentSubscription = subscription;
+  }).catch((error) => {
+    console.warn('[SGI] Comentarios en tiempo real no disponibles; se mantiene la API REST.', error);
+  });
+}
+
+function appendCommentIfMissing(incident, comment) {
+  if (!comment?.id) return false;
+
+  const comments = Array.isArray(incident.comments) ? incident.comments : [];
+  if (comments.some((item) => Number(item.id) === Number(comment.id))) return false;
+
+  incident.comments = [...comments, comment];
+  const list = document.getElementById('listadoComentarios');
+  if (list) list.innerHTML = renderComments(incident.comments);
+  setText('commentsCount', incident.comments.length);
+  setText('commentsMetric', incident.comments.length);
+
+  return true;
 }
 
 function bindAttachmentForm(incident) {

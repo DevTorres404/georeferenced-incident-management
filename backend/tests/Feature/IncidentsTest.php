@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
@@ -26,6 +27,7 @@ use Database\Seeders\TerritorialUnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -242,6 +244,7 @@ class IncidentsTest extends TestCase
 
     public function test_incident_lifecycle_generates_comments_state_changes_and_notifications(): void
     {
+        Event::fake([CommentCreated::class]);
         $this->seedCoreData();
 
         $citizen = $this->authenticateAs('CIUDADANO', 'citizen-flow@incidencias.local');
@@ -268,11 +271,36 @@ class IncidentsTest extends TestCase
             ])->assertCreated()
             ->assertJsonPath('data.comment', 'Ocurre desde anoche.');
 
+        Event::assertDispatched(
+            CommentCreated::class,
+            fn (CommentCreated $event): bool => $event->comment->incidentId === (int) $incidentId
+                && ! $event->comment->isInternal
+        );
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
             ])->assertCreated()
             ->assertJsonPath('data.current_assignee_user_id', $operator['user']->id);
+
+        $operatorDetail = $this->actingAsUser($operator['user'])
+            ->getJson("/api/incidents/{$incidentId}");
+
+        $operatorDetail->assertOk()
+            ->assertJsonPath('data.id', $incidentId)
+            ->assertJsonPath('data.comments.0.comment', 'Ocurre desde anoche.')
+            ->assertJsonStructure([
+                'data' => [
+                    'state',
+                    'category',
+                    'subcategory',
+                    'territorial_unit',
+                    'history',
+                    'comments',
+                    'attachments',
+                    'assignments',
+                ],
+            ]);
 
         $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
 

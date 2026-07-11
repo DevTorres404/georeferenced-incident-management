@@ -8,7 +8,7 @@
   width: 100%;
   overflow: hidden;
   border-radius: 1rem;
-  background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, #e0f2fe 100%);
 }
 
 .incident-map-list-card {
@@ -27,7 +27,7 @@
 }
 
 .incident-map-list .list-group-item:hover {
-  background-color: rgba(14, 165, 233, 0.04);
+  background-color: rgba(20, 152, 212, 0.04);
 }
 
 .incident-map-marker {
@@ -36,7 +36,7 @@
   height: 22px;
   border: 3px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.32);
+  box-shadow: 0 6px 18px rgba(8, 32, 51, 0.32);
   cursor: pointer;
   padding: 0;
   outline: 0;
@@ -58,7 +58,7 @@
 }
 
 .incident-map-marker.is-medium {
-  background: var(--color-proceso, #0ea5e9);
+  background: var(--color-proceso, var(--sgi-primary));
 }
 
 .incident-map-marker.is-low {
@@ -82,7 +82,7 @@
 }
 
 .incident-map-popup dt {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-weight: 600;
 }
 
@@ -99,12 +99,12 @@
   gap: 10px;
   padding: 24px;
   text-align: center;
-  color: var(--color-text-muted, #64748b);
-  background: linear-gradient(160deg, #f0f9ff 0%, #f8fafc 100%);
+  color: var(--sgi-text-muted);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, var(--sgi-primary-soft) 100%);
 }
 
 .map-empty-state i {
-  color: var(--color-primary, #0ea5e9);
+  color: var(--sgi-primary);
   font-size: 3rem;
 }
 
@@ -112,10 +112,10 @@
   position: relative;
   min-height: 320px;
   width: 100%;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
   overflow: hidden;
-  background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, #e0f2fe 100%);
 }
 
 .coordinate-picker-map-lg {
@@ -135,16 +135,16 @@
   gap: 4px;
   padding: 4px;
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 10px 24px rgba(8, 32, 51, 0.16);
 }
 
 .map-layer-switcher button {
   border: 0;
   border-radius: 0.5rem;
   background: transparent;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1;
@@ -153,14 +153,36 @@
 }
 
 .map-layer-switcher button:hover {
-  background: rgba(14, 165, 233, 0.1);
-  color: var(--color-primary, #0ea5e9);
+  background: rgba(20, 152, 212, 0.1);
+  color: var(--sgi-primary);
 }
 
 .map-layer-switcher button.is-active {
-  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover));
   color: #fff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 12px rgba(20, 152, 212, 0.3);
+}
+
+.maplibregl-ctrl-group {
+  border: 1px solid var(--sgi-border) !important;
+  border-radius: var(--sgi-radius-sm) !important;
+  box-shadow: 0 4px 16px rgba(8, 32, 51, 0.14) !important;
+  overflow: hidden;
+  background: var(--sgi-surface) !important;
+}
+.maplibregl-ctrl-group button {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 0 !important;
+  background: var(--sgi-surface) !important;
+  color: var(--sgi-text) !important;
+  transition: background 0.15s ease;
+}
+.maplibregl-ctrl-group button:hover {
+  background: var(--sgi-primary-soft) !important;
+}
+.maplibregl-ctrl-group button+button {
+  border-top: 1px solid var(--sgi-border);
 }
 
 @media (max-width: 767.98px) {

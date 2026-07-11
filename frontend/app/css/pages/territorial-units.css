@@ -27,7 +27,7 @@
   top: 18px;
   left: -12px;
   width: 10px;
-  border-top: 1px solid var(--color-border, #e2e8f0);
+  border-top: 1px solid var(--sgi-border);
 }
 
 .territorial-tree > ul > li::before {
@@ -40,14 +40,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 0.75rem;
-  background: var(--color-surface, #ffffff);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  background: var(--sgi-surface);
+  box-shadow: 0 2px 8px rgba(8, 32, 51, 0.03);
   transition: all 0.2s ease;
 }
 
 .territorial-node:hover {
-  border-color: rgba(14, 165, 233, 0.3);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  border-color: rgba(20, 152, 212, 0.3);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.06);
 }

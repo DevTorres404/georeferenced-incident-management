@@ -5,12 +5,13 @@ namespace App\Incidents\Infrastructure\Http\Controllers;
 use App\Incidents\Application\UseCases\GetDashboardMetricsUseCase;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class DashboardController extends ApiController
 {
-    public function metrics(GetDashboardMetricsUseCase $useCase): JsonResponse
+    public function metrics(Request $request, GetDashboardMetricsUseCase $useCase): JsonResponse
     {
-        $metrics = $useCase->execute();
+        $metrics = $useCase->execute((int) $request->user()->id);
 
         return response()->json([
             'status' => 'success',
@@ -22,7 +23,7 @@ class DashboardController extends ApiController
                 'monthlyTrend' => $metrics->monthlyTrend,
                 'topCities' => $metrics->topCities,
                 'averageResolutionDays' => $metrics->averageResolutionDays,
-            ]
+            ],
         ]);
     }
 }

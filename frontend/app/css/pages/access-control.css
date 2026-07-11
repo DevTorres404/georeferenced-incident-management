@@ -22,16 +22,16 @@
 .user-roles-summary-item {
   min-height: 68px;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
-  background: linear-gradient(160deg, #f8fafc 0%, #f0f9ff 100%);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, var(--sgi-primary-soft) 100%);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.03);
   transition: all 0.2s ease;
 }
 
 .user-roles-summary-item:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 16px rgba(8, 32, 51, 0.06);
 }
 
 .user-roles-summary-item span,
@@ -40,7 +40,7 @@
 }
 
 .user-roles-summary-item span {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.2;
@@ -48,14 +48,14 @@
 
 .user-roles-summary-item strong {
   margin-top: 4px;
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.35rem;
   line-height: 1;
 }
 
 .user-roles-card .card-header,
 .user-roles-card .card-footer {
-  border-color: var(--color-border, #e2e8f0);
+  border-color: var(--sgi-border);
 }
 
 .user-roles-card .table td,
@@ -76,10 +76,10 @@
 }
 
 .user-role-group-filter .btn.active {
-  background: linear-gradient(135deg, var(--color-primary, #0ea5e9), var(--color-primary-dark, #0369a1));
-  border-color: var(--color-primary, #0ea5e9);
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover));
+  border-color: var(--sgi-primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 12px rgba(20, 152, 212, 0.3);
 }
 
 @media (max-width: 575.98px) {
@@ -106,15 +106,15 @@
 
 .permission-module {
   padding: 1rem 1.25rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
-  background: var(--color-surface, #ffffff);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  background: var(--sgi-surface);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.03);
   transition: all 0.2s ease;
 }
 
 .permission-module:hover {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 16px rgba(8, 32, 51, 0.06);
 }
 
 .permission-module + .permission-module {
@@ -132,13 +132,13 @@
 }
 
 .role-permission-item.active {
-  border-left-color: var(--color-primary, #0ea5e9);
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.14), rgba(3, 105, 161, 0.08));
-  color: var(--color-text-main, #0f172a);
+  border-left-color: var(--sgi-primary);
+  background: linear-gradient(135deg, rgba(20, 152, 212, 0.14), rgba(3, 105, 161, 0.08));
+  color: var(--sgi-text);
 }
 
 .role-permission-item small {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
 }
 
 .role-permission-overview {
@@ -147,29 +147,29 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 1.1rem;
-  border: 1px solid rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(20, 152, 212, 0.18);
   border-radius: 1.2rem;
   background:
-    radial-gradient(circle at top left, rgba(14, 165, 233, 0.16), transparent 36%),
-    linear-gradient(135deg, #f8fafc 0%, #eef7ff 100%);
+    radial-gradient(circle at top left, rgba(20, 152, 212, 0.16), transparent 36%),
+    linear-gradient(135deg, var(--sgi-primary-soft) 0%, #eef7ff 100%);
 }
 
 .role-permission-heading span,
 .role-menu-preview-title {
-  color: var(--color-primary-dark, #0369a1);
+  color: var(--sgi-primary-hover);
   letter-spacing: 0.04em;
 }
 
 .role-permission-heading h2 {
   margin: 0.15rem 0 0.35rem;
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.45rem;
   font-weight: 800;
 }
 
 .role-permission-heading p {
   margin: 0;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   line-height: 1.45;
 }
 
@@ -191,14 +191,14 @@
 }
 
 .role-permission-stats span {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .role-permission-stats strong {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1.35rem;
   line-height: 1.1;
 }
@@ -234,12 +234,12 @@
 }
 
 .role-menu-preview-group strong {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
 }
 
 .role-menu-preview-group span {
   margin-top: 0.15rem;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.84rem;
 }
 
@@ -250,7 +250,7 @@
   gap: 0.8rem;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
   background: #ffffff;
 }
@@ -263,7 +263,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.85rem;
   font-weight: 700;
 }
@@ -272,7 +272,7 @@
   min-height: 118px;
   margin-bottom: 0.85rem;
   padding: 0.9rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 0.95rem;
   background: #ffffff;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -280,11 +280,11 @@
 
 .permission-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 18px rgba(8, 32, 51, 0.06);
 }
 
 .permission-card.is-enabled {
-  border-color: rgba(14, 165, 233, 0.38);
+  border-color: rgba(20, 152, 212, 0.38);
   background: linear-gradient(180deg, #ffffff 0%, rgba(240, 249, 255, 0.86) 100%);
 }
 
@@ -294,7 +294,7 @@
 }
 
 .permission-card .custom-control-label > span:first-child {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-weight: 800;
 }
 
@@ -308,8 +308,8 @@
 .permission-navigation-impact .badge {
   max-width: 100%;
   border-radius: 999px;
-  background: rgba(14, 165, 233, 0.12);
-  color: var(--color-primary-dark, #0369a1);
+  background: rgba(20, 152, 212, 0.12);
+  color: var(--sgi-primary-hover);
   font-weight: 700;
   white-space: normal;
   text-align: left;

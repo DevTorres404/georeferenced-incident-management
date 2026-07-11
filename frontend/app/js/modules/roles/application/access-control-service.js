@@ -1,4 +1,4 @@
-import { request } from '../../../core/api-client.js?v=14';
+import { request } from '../../../core/api-client.js?v=21';
 
 /**
  * Obtiene el listado de roles y la matriz de permisos
