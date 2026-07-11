@@ -1,8 +1,8 @@
 (function protectPageBeforeRender() {
   const AUTH_KEYS = ['auth_token', 'user_data', 'auth_expires_at', 'auth_last_activity_at'];
   const root = document.documentElement;
+  // Eliminado root.style.visibility = 'hidden' para evitar el pantallazo blanco
 
-  root.style.visibility = 'hidden';
 
   function loginPath() {
     return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
@@ -42,7 +42,7 @@
 
   window.SGIProtectedPageGuard = {
     reveal() {
-      root.style.visibility = '';
+
     },
     verifyOrRedirect,
   };

@@ -500,13 +500,11 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request): JsonResponse
     {
-        if ($request->has('username')) {
+        if ($request->has('username') && is_string($request->username)) {
             $request->merge(['username' => strtolower($request->username)]);
         }
 
         $data = $request->validate([
-            'first_name' => ['sometimes', 'required', 'string', 'max:100'],
-            'last_name' => ['sometimes', 'required', 'string', 'max:100'],
             'username' => [
                 'required',
                 'string',
@@ -522,8 +520,8 @@ class AuthController extends Controller
                 $this->updateOwnProfileUseCase->execute(
                     new UpdateOwnProfileInputData(
                         userId: (int) $request->user()->id,
-                        firstName: $data['first_name'] ?? $request->user()->nombre ?? $request->user()->first_name ?? '',
-                        lastName: $data['last_name'] ?? $request->user()->apellido ?? $request->user()->last_name ?? '',
+                        firstName: $request->user()->first_name ?? '',
+                        lastName: $request->user()->last_name ?? '',
                         username: $data['username']
                     )
                 ),

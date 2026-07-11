@@ -44,7 +44,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:6,1');
     Route::post('/auth/profile', [AuthController::class, 'completeProfile']);
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
-    Route::patch('/auth/password', [AuthController::class, 'changePassword']);
+    Route::match(['patch', 'post'], '/auth/password', [AuthController::class, 'changePassword']);
     Route::get('/navigation/menu', [AccessControlController::class, 'navigation']);
     
     Route::post('/auth/2fa/enable', [TwoFactorAuthController::class, 'enable']);
