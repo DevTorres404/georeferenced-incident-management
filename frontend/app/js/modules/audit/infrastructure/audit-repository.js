@@ -1,4 +1,4 @@
-import { request } from '../../../core/api-client.js?v=20';
+import { request } from '../../../core/api-client.js?v=21';
 
 async function fetchAuditLogs(filters = {}) {
   const params = new URLSearchParams();

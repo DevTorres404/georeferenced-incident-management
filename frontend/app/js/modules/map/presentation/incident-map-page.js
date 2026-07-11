@@ -1,4 +1,5 @@
 import { MAP_DEFAULT_CENTER, MAP_DEFAULT_ZOOM, MAP_STYLE_URL } from '../../../core/config.js?v=20';
+import { readUser } from '../../../core/auth-session.js?v=14';
 import { hideMainLoader, showMainLoader } from '../../../layout/loader.js?v=20';
 import { escapeHtml } from '../../../shared/sanitizer.js?v=20';
 import { getMapCatalogs, listIncidentMapPoints } from '../application/map-service.js?v=1';
@@ -7,6 +8,7 @@ const state = {
   map: null,
   markers: [],
   points: [],
+  currentUser: null,
 };
 
 document.addEventListener('DOMContentLoaded', initIncidentMapPage);
@@ -16,6 +18,8 @@ async function initIncidentMapPage() {
     window.renderLayout('incident-map');
   }
 
+  state.currentUser = readUser();
+  configureScopeControls();
   bindEvents();
   showMainLoader();
 
@@ -42,10 +46,7 @@ function bindEvents() {
       const element = document.getElementById(id);
       if (element) element.value = '';
     });
-    const mine = document.getElementById('mapMine');
-    const assigned = document.getElementById('mapAssignedToMe');
-    if (mine) mine.checked = false;
-    if (assigned) assigned.checked = false;
+    resetScopeControls();
     await refreshMap();
   });
 
@@ -54,6 +55,61 @@ function bindEvents() {
     if (!button) return;
     const point = state.points.find((item) => String(item.id) === String(button.dataset.incidentId));
     if (point) focusPoint(point);
+  });
+}
+
+function configureScopeControls() {
+  const mineWrapper = document.getElementById('mapMineScope');
+  const assignedWrapper = document.getElementById('mapAssignedScope');
+  const context = document.getElementById('mapScopeContext');
+  const mine = document.getElementById('mapMine');
+  const assigned = document.getElementById('mapAssignedToMe');
+  const isAdmin = userHasRole(state.currentUser, 'ADMIN');
+  const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR') && !isAdmin;
+  const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin && !isSupervisor;
+
+  if (mineWrapper) mineWrapper.style.display = isOperator ? 'none' : '';
+  if (assignedWrapper) assignedWrapper.style.display = isOperator ? '' : 'none';
+
+  if (mine) {
+    mine.disabled = !isAdmin && !isSupervisor;
+    mine.checked = !isAdmin && !isSupervisor && !isOperator;
+  }
+
+  if (assigned) {
+    assigned.disabled = isOperator;
+    assigned.checked = isOperator;
+  }
+
+  if (!context) return;
+  if (isSupervisor) {
+    context.textContent = 'Mostrando incidencias de tu zona operativa. Activa “Mis reportes” para reducir el alcance.';
+  } else if (isOperator) {
+    context.textContent = 'El mapa muestra únicamente las incidencias que tienes asignadas.';
+  } else if (isAdmin) {
+    context.textContent = 'Cobertura nacional. Puedes reducir la vista a tus reportes.';
+  } else {
+    context.textContent = 'El mapa muestra únicamente tus reportes.';
+  }
+}
+
+function resetScopeControls() {
+  const mine = document.getElementById('mapMine');
+  const assigned = document.getElementById('mapAssignedToMe');
+  const isAdmin = userHasRole(state.currentUser, 'ADMIN');
+  const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR') && !isAdmin;
+  const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin && !isSupervisor;
+
+  if (mine) mine.checked = !isAdmin && !isSupervisor && !isOperator;
+  if (assigned) assigned.checked = isOperator;
+}
+
+function userHasRole(user, roleCode) {
+  if (!user || !Array.isArray(user.roles)) return false;
+
+  return user.roles.some((role) => {
+    const code = typeof role === 'string' ? role : (role?.code || role?.codigo || '');
+    return String(code).trim().toUpperCase() === roleCode;
   });
 }
 

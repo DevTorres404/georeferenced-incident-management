@@ -22,6 +22,7 @@ use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\IncidentTransition;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Mappers\AssignmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\AttachmentMapper;
@@ -499,7 +500,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             );
         }
 
-        return $this->commentMapper->fromModel($comment);
+        $commentData = $this->commentMapper->fromModel($comment);
+        event(new CommentCreated($commentData));
+
+        return $commentData;
     }
 
     public function attachFile(int $incidentId, int $userId, StoredFileData $storedFileData): AttachmentData

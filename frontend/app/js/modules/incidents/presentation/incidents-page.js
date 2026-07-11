@@ -1,4 +1,5 @@
 import { deleteIncident, listIncidents } from '../application/incidents-service.js?v=14';
+import { readUser } from '../../../core/auth-session.js?v=14';
 import {
   countByState,
   escapeHtml,
@@ -19,15 +20,21 @@ async function initIncidentsPage() {
   }
 
   const state = {
+    currentUser: readUser(),
     incidents: [],
     filteredIncidents: [],
     pendingDeleteId: null,
     dataTable: null,
     activeStateFilter: 'todos',
-    activePriorityFilter: 'todas'
+    activePriorityFilter: 'todas',
+    activeScopeFilter: 'role',
+    canDeleteIncident: false,
   };
 
+  state.canDeleteIncident = userHasPermission(state.currentUser, 'incidents.delete');
   bindDeleteConfirmation(state);
+  configureScopeFilters(state);
+  configureRoleActions(state);
 
   showPageLoading('Cargando incidencias', 'Consultando base de datos...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
@@ -35,10 +42,8 @@ async function initIncidentsPage() {
   try {
     const response = await listIncidents({ per_page: 100 });
     state.incidents = Array.isArray(response?.data) ? response.data : [];
-    state.filteredIncidents = [...state.incidents];
-    renderCounters(state.incidents);
-    renderTable(state);
     bindFilters(state);
+    applyFilters(state);
   } catch (error) {
     renderErrorRow(error.message || 'No se pudieron cargar las incidencias.');
   } finally {
@@ -72,12 +77,122 @@ function bindFilters(state) {
 }
 
 function applyFilters(state) {
-  state.filteredIncidents = state.incidents.filter((incident) => {
+  const scopeIncidents = state.incidents.filter((incident) => matchesScopeFilter(incident, state));
+  state.filteredIncidents = scopeIncidents.filter((incident) => {
     const matchState = state.activeStateFilter === 'todos' || matchesStateFilter(incident, state.activeStateFilter);
     const matchPriority = state.activePriorityFilter === 'todas' || matchesPriorityFilter(incident, state.activePriorityFilter);
     return matchState && matchPriority;
   });
+  renderCounters(scopeIncidents);
   renderTable(state);
+}
+
+function configureScopeFilters(state) {
+  const container = document.getElementById('incidentScopeFilters');
+  const context = document.getElementById('incidentScopeContext');
+  if (!container) return;
+
+  const isAdmin = userHasRole(state.currentUser, 'ADMIN');
+  const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR') && !isAdmin;
+  const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin;
+  const options = isSupervisor
+    ? [
+        { value: 'role', label: 'Mi zona', icon: 'fa-map-marker-alt' },
+        { value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' },
+      ]
+    : isOperator
+      ? [{ value: 'assigned', label: 'Asignadas a mí', icon: 'fa-user-check' }]
+      : isAdmin
+        ? [
+            { value: 'role', label: 'Todas', icon: 'fa-globe-americas' },
+            { value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' },
+          ]
+        : [{ value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' }];
+
+  state.activeScopeFilter = options[0].value;
+  container.innerHTML = options.map((option, index) => `
+    <button type="button" class="btn btn-sm ${index === 0 ? 'btn-primary active' : 'btn-outline-primary'} incident-scope-btn"
+            data-scope="${option.value}">
+      <i class="fas ${option.icon} mr-1"></i>${option.label}
+    </button>`).join('');
+
+  container.querySelectorAll('.incident-scope-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      container.querySelectorAll('.incident-scope-btn').forEach((item) => {
+        item.classList.remove('active', 'btn-primary');
+        item.classList.add('btn-outline-primary');
+      });
+      button.classList.add('active', 'btn-primary');
+      button.classList.remove('btn-outline-primary');
+      state.activeScopeFilter = button.dataset.scope || 'role';
+      applyFilters(state);
+    });
+  });
+
+  if (!context) return;
+  if (isSupervisor) {
+    context.textContent = 'La vista operativa está limitada a tu zona asignada.';
+  } else if (isOperator) {
+    context.textContent = 'Solo puedes gestionar incidencias asignadas a ti.';
+  } else if (isAdmin) {
+    context.textContent = 'Vista administrativa nacional.';
+  } else {
+    context.textContent = 'Solo puedes consultar tus reportes.';
+  }
+}
+
+function matchesScopeFilter(incident, state) {
+  const userId = Number(state.currentUser?.id || state.currentUser?.user_id || 0);
+
+  if (state.activeScopeFilter === 'mine') {
+    return Number(incident.reporter_user_id) === userId;
+  }
+
+  if (state.activeScopeFilter === 'assigned') {
+    return Number(incident.assignee_user_id) === userId
+      || (Array.isArray(incident.assignments)
+        && incident.assignments.some((assignment) => Number(assignment.user_id) === userId));
+  }
+
+  return true;
+}
+
+function userHasRole(user, roleCode) {
+  if (!user || !Array.isArray(user.roles)) return false;
+
+  return user.roles.some((role) => {
+    const code = typeof role === 'string' ? role : (role?.code || role?.codigo || '');
+    return String(code).trim().toUpperCase() === roleCode;
+  });
+}
+
+function userHasPermission(user, permissionCode) {
+  if (!user) return false;
+  if (userHasRole(user, 'ADMIN')) return true;
+
+  const expected = String(permissionCode).trim().toUpperCase();
+  if (Array.isArray(user.permissions)) {
+    const hasDirectPermission = user.permissions.some((permission) => {
+      const code = typeof permission === 'string' ? permission : (permission?.code || permission?.codigo || '');
+      return String(code).trim().toUpperCase() === expected;
+    });
+    if (hasDirectPermission) return true;
+  }
+
+  return Array.isArray(user.roles) && user.roles.some((role) => (
+    Array.isArray(role?.permissions)
+      && role.permissions.some((permission) => {
+        const code = typeof permission === 'string' ? permission : (permission?.code || permission?.codigo || '');
+        return String(code).trim().toUpperCase() === expected;
+      })
+  ));
+}
+
+function configureRoleActions(state) {
+  const createButton = document.getElementById('btnCreateIncident');
+  if (createButton) {
+    createButton.style.display = userHasPermission(state.currentUser, 'incidents.create') ? '' : 'none';
+  }
 }
 
 function matchesPriorityFilter(incident, filter) {
@@ -157,9 +272,10 @@ function renderTable(state) {
           <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-primary shadow-sm mr-1" title="Ver detalle completo" style="border-radius:0.4rem;">
             <i class="fas fa-external-link-alt"></i>
           </a>
-          <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" title="Eliminar" data-id="${incident.id}" data-code="${code}" style="border-radius:0.4rem;">
-            <i class="fas fa-trash"></i>
-          </button>
+          ${state.canDeleteIncident ? `
+            <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" title="Eliminar" data-id="${incident.id}" data-code="${code}" style="border-radius:0.4rem;">
+              <i class="fas fa-trash"></i>
+            </button>` : ''}
         </td>
       </tr>`;
   }).join('');
@@ -232,9 +348,7 @@ function bindDeleteConfirmation(state) {
     try {
       await deleteIncident(state.pendingDeleteId);
       state.incidents = state.incidents.filter((incident) => String(incident.id) !== String(state.pendingDeleteId));
-      state.filteredIncidents = state.filteredIncidents.filter((incident) => String(incident.id) !== String(state.pendingDeleteId));
-      renderCounters(state.incidents);
-      renderTable(state);
+      applyFilters(state);
       window.jQuery?.('#modalEliminar').modal('hide');
       showGlobalAlert('Incidencia eliminada correctamente.', 'success');
     } catch (error) {

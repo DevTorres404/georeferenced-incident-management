@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Exceptions\InvalidSignatureException;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
@@ -44,5 +45,18 @@ return Application::configure(basePath: dirname(__DIR__))
                     'code' => 'RATE_LIMIT_EXCEEDED'
                 ], 429);
             }
+        });
+
+        $exceptions->render(function (InvalidSignatureException $exception, Request $request) {
+            $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/');
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'El enlace de verificación ha expirado o no es válido. Solicita un nuevo enlace.',
+                    'code' => 'INVALID_VERIFICATION_LINK',
+                ], 403);
+            }
+
+            return redirect()->away($frontendUrl.'/?verified=0&error=invalid_link');
         });
     })->create();

@@ -1,4 +1,4 @@
-import { requestBackend } from '../../../core/api-client.js?v=14';
+import { requestBackend } from '../../../core/api-client.js?v=21';
 
 document.addEventListener('DOMContentLoaded', initProfilePage);
 

@@ -54,8 +54,17 @@
                                 href="incident-map.html"
                                 class="btn btn-outline-primary btn-sm shadow-sm font-weight-bold"> <i
                                     class="fas fa-map-marked-alt mr-1"></i>Ver en Mapa </a> <a
-                                href="incident-create.html" class="btn btn-primary btn-sm shadow-sm font-weight-bold">
+                                href="incident-create.html" id="btnCreateIncident"
+                                class="btn btn-primary btn-sm shadow-sm font-weight-bold">
                                 <i class="fas fa-plus mr-1"></i>Nueva incidencia </a> </div>
+                        <div class="col-12 mb-3" id="incidentScopeSection">
+                            <h6 class="text-uppercase text-muted font-weight-bold mb-3"
+                                style="font-size:0.75rem; letter-spacing:0.05em;"><i
+                                    class="fas fa-crosshairs mr-1"></i>Alcance de la vista</h6>
+                            <div class="d-flex flex-wrap align-items-center" style="gap:10px;"
+                                id="incidentScopeFilters"></div>
+                            <small class="form-text text-muted mt-2" id="incidentScopeContext"></small>
+                        </div>
                         <!-- Grid de KPI Cards (Filtros) -->
                         <div class="col-12 mb-3">
                             <h6 class="text-uppercase text-muted font-weight-bold mb-3"
@@ -175,8 +184,8 @@
     <script src="/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=35"></script>
-    <script type="module" src="/js/modules/incidents/presentation/incidents-page.js?v=21"></script>
+    <script type="module" src="/js/layout/layout.js?v=37"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incidents-page.js?v=22"></script>
 </body>
 
 </html>

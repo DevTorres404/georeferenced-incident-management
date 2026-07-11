@@ -7,6 +7,7 @@ let currentFilter = 'all';
 let allNotifications = [];
 
 document.addEventListener('DOMContentLoaded', initNotificationsPage);
+window.addEventListener('sgi:notification-created', handleRealtimeNotification);
 
 async function initNotificationsPage() {
   window.renderLayout?.('notifications');
@@ -27,6 +28,16 @@ async function initNotificationsPage() {
   }
 }
 
+function handleRealtimeNotification(event) {
+  const notification = event?.detail;
+  if (!notification?.id) return;
+  if (allNotifications.some((item) => Number(item.id) === Number(notification.id))) return;
+
+  allNotifications.unshift(notification);
+  currentPage = 1;
+  renderList();
+}
+
 async function loadAllNotifications() {
   let page = 1;
   let hasMore = true;
@@ -40,6 +51,10 @@ async function loadAllNotifications() {
     page++;
     if (page > 20) break;
   }
+
+  allNotifications = allNotifications.filter((notification, index, items) => (
+    items.findIndex((item) => Number(item.id) === Number(notification.id)) === index
+  ));
 }
 
 function renderList() {
