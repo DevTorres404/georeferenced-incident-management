@@ -139,14 +139,9 @@ function initEditProfile(user) {
 
   btnEdit.addEventListener('click', () => {
     const editUsername = document.getElementById('editUsername');
-    // Read the latest user data from localStorage to ensure we have the most up-to-date username
-    const currentUserData = localStorage.getItem(window.AUTH_KEYS?.user || 'user_data');
+    const currentUserData = localStorage.getItem('user_data');
     const currentUser = currentUserData ? JSON.parse(currentUserData) : user;
     editUsername.value = currentUser.username || '';
-
-    editUsername.addEventListener('input', function() {
-      this.value = this.value.toLowerCase();
-    });
 
     document.getElementById('editProfileAlert').classList.add('d-none');
 
@@ -170,7 +165,7 @@ function initEditProfile(user) {
         body: JSON.stringify({ username })
       });
 
-      const updatedUser = { ...user, username };
+      const updatedUser = response?.user || { ...user, username };
       localStorage.setItem(AUTH_KEYS.user, JSON.stringify(updatedUser));
 
       $(modalEdit).modal('hide');
@@ -180,6 +175,9 @@ function initEditProfile(user) {
       }
 
       renderUserData(updatedUser);
+      if (window.SGIGApi?.clearApiCache) {
+        window.SGIGApi.clearApiCache();
+      }
       if (typeof window.renderLayout === 'function') {
         window.renderLayout();
       }
@@ -356,14 +354,14 @@ function renderSecurityData(user) {
         <p class="security-item-desc">Añade una capa extra de seguridad con un código temporal desde tu dispositivo.</p>
         <div class="security-item-action mt-auto" id="tfaContainer">
           ${has2FA
-            ? `<div class="d-flex align-items-center justify-content-between">
+      ? `<div class="d-flex align-items-center justify-content-between">
                  <span><span class="status-dot on"></span><strong class="text-success">Activado</strong></span>
                  ${isCiudadano
-                   ? `<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>`
-                   : ''}
+        ? `<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>`
+        : ''}
                </div>`
-            : `<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>`
-          }
+      : `<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>`
+    }
         </div>
       </div>
 
@@ -374,14 +372,14 @@ function renderSecurityData(user) {
           <h5 class="security-item-title">Contraseña</h5>
         </div>
         ${isGoogleUser
-          ? `<p class="security-item-desc">Iniciaste sesión con Google, no necesitas contraseña.</p>`
-          : `<p class="security-item-desc">Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
+      ? `<p class="security-item-desc">Iniciaste sesión con Google, no necesitas contraseña.</p>`
+      : `<p class="security-item-desc">Actualiza tu contraseña periódicamente para mantener tu cuenta segura.</p>
              <div class="security-item-action mt-auto">
                <button type="button" class="btn btn-outline-primary btn-sm" id="btnOpenChangePassword">
                  <i class="fas fa-redo-alt mr-1"></i>Cambiar contraseña
                </button>
              </div>`
-        }
+    }
       </div>
     </div>
   `;

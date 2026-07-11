@@ -215,7 +215,7 @@ function updateSessionUser(user) {
   return user;
 }
 async function refreshSessionUserOrRedirect() {
-  const response = await requestBackend('/me');
+  const response = await requestBackend('/me', { noCache: true });
   if (!response?.user) {
     clearSession();
     redirectToLogin();

@@ -1,6 +1,5 @@
-/* ---- Institucional SGI ---- */
 .main-sidebar.sidebar-dark-primary {
-  background-color: #0f172a !important;
+  background-color: var(--sgi-navy-950) !important;
 }
 .main-sidebar.sidebar-dark-primary .brand-link {
   border-bottom: 1px solid rgba(255,255,255,0.05) !important;
@@ -10,30 +9,28 @@
   border-right: 1px solid rgba(255,255,255,0.05);
 }
 .main-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
-  background-color: #0ea5e9 !important;
+  background-color: var(--sgi-primary) !important;
   color: #fff !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  box-shadow: var(--sgi-shadow-sm);
 }
 .main-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link:hover {
-  background-color: rgba(14, 165, 233, 0.1) !important;
+  background-color: rgba(20, 152, 212, 0.1) !important;
   color: #fff !important;
 }
 
 .main-header.navbar {
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  border-bottom: 1px solid var(--sgi-border);
+  box-shadow: var(--sgi-shadow-sm);
 }
 
 .brand-image.img-circle {
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+  background: linear-gradient(135deg, var(--sgi-primary), #38bdf8) !important;
 }
 
-/* User panel icon bg */
 .user-panel .image > div {
-  background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+  background: linear-gradient(135deg, var(--sgi-primary), #38bdf8) !important;
 }
 
-/* ---- Bootstrap Overrides ---- */
 .btn-primary { background-color: var(--color-primary); border-color: var(--color-primary); }
 .btn-primary:hover { background-color: var(--color-primary-dark); border-color: var(--color-primary-dark); }
 .text-primary { color: var(--color-primary) !important; }
@@ -45,43 +42,24 @@
 a { color: var(--color-primary); }
 a:hover { color: var(--color-primary-dark); }
 
-/* ============================================================
-   PREMIUM INSTITUTIONAL DESIGN OVERHAUL (BOOTSTRAP NATIVO)
-   ============================================================ */
-:root {
-  --color-primary: #0ea5e9;
-  --color-primary-dark: #0369a1;
-  --color-sidebar-bg: #071827;
-  --color-sidebar-bg-soft: #0f2740;
-  --color-sidebar-text: #cbd5e1;
-  --color-sidebar-active: #0ea5e9;
-  --color-background: #f4f7fb;
-  --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
-}
-
 body {
-  background-color: var(--color-background) !important;
-  color: var(--color-text-main);
+  background-color: var(--sgi-background) !important;
+  color: var(--sgi-text);
   font-family: 'Inter', sans-serif !important;
 }
 
 .content-header h1 {
   font-size: 1.4rem;
   font-weight: 800;
-  color: var(--color-text-main);
+  color: var(--sgi-text);
   margin: 0;
 }
 
-/* Utilidades básicas */
-.text-main { color: var(--color-text-main) !important; }
-.bg-surface { background-color: var(--color-surface) !important; }
+.text-main { color: var(--sgi-text) !important; }
+.bg-surface { background-color: var(--sgi-surface) !important; }
 
-/* Sidebar Oscuro Profesional */
 .sidebar-dark-primary {
-  background-color: var(--color-sidebar-bg) !important;
+  background-color: var(--sgi-navy-950) !important;
 }
 .sidebar-dark-primary .brand-link {
   border-bottom: 1px solid rgba(255,255,255,0.05) !important;
@@ -91,40 +69,37 @@ body {
   color: var(--color-sidebar-text) !important;
 }
 .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
-  background-color: var(--color-sidebar-active) !important;
+  background-color: var(--sgi-primary) !important;
   color: #ffffff !important;
   border-radius: 6px;
-  box-shadow: 0 4px 6px rgba(14, 165, 233, 0.25);
+  box-shadow: 0 4px 6px rgba(20, 152, 212, 0.25);
 }
 .sidebar-dark-primary .nav-sidebar .nav-item > .nav-link:not(.active):hover {
   background-color: rgba(255, 255, 255, 0.05) !important;
   color: #ffffff !important;
 }
 
-/* Botones (Override minimal de AdminLTE/Bootstrap) */
 .btn-primary {
-  background-color: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
+  background-color: var(--sgi-primary) !important;
+  border-color: var(--sgi-primary) !important;
   color: #fff !important;
 }
 .btn-primary:hover {
-  background-color: var(--color-primary-dark) !important;
-  border-color: var(--color-primary-dark) !important;
+  background-color: var(--sgi-primary-hover) !important;
+  border-color: var(--sgi-primary-hover) !important;
 }
 
-/* Tabla - Encabezado suave */
 .table thead th {
-  background-color: #f8fafc;
-  color: var(--color-text-muted);
+  background-color: var(--sgi-primary-soft);
+  color: var(--sgi-text-muted);
   font-weight: 600;
-  border-bottom: 2px solid var(--color-border) !important;
+  border-bottom: 2px solid var(--sgi-border) !important;
   border-top: none !important;
 }
 
-/* ---- Layout SGI: identidad, navegación y acciones rápidas ---- */
 .main-sidebar.sidebar-dark-primary,
 .sidebar-dark-primary {
-  background: var(--color-sidebar-bg) !important;
+  background: var(--sgi-navy-950) !important;
 }
 
 .main-sidebar .brand-link,
@@ -142,7 +117,7 @@ body {
   height: 38px !important;
   object-fit: contain;
   padding: 4px;
-  border-radius: 8px !important;
+  border-radius: var(--sgi-radius-sm) !important;
   background: #ffffff !important;
   opacity: 1 !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
@@ -158,7 +133,7 @@ body {
 
 .sgi-sidebar-section-label {
   padding: 18px 16px 6px;
-  color: #7dd3fc;
+  color: var(--sgi-accent);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -172,7 +147,7 @@ body {
 .sidebar-dark-primary .nav-sidebar .nav-link {
   min-height: 42px;
   margin-bottom: 4px;
-  border-radius: 8px;
+  border-radius: var(--sgi-radius-sm);
 }
 
 .sidebar-dark-primary .nav-sidebar .nav-link p {
@@ -180,8 +155,8 @@ body {
 }
 
 .sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)) !important;
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28);
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover)) !important;
+  box-shadow: 0 10px 22px rgba(20, 152, 212, 0.28);
 }
 
 .sidebar-dark-primary .nav-sidebar .nav-treeview {
@@ -200,11 +175,11 @@ body {
   padding-left: 1rem;
   color: rgba(203, 213, 225, 0.88) !important;
   border-left: 2px solid transparent;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--sgi-radius-sm) var(--sgi-radius-sm) 0;
 }
 
 .sidebar-dark-primary .nav-sidebar .nav-item.menu-open > .nav-link {
-  background: rgba(14, 165, 233, 0.12) !important;
+  background: rgba(20, 152, 212, 0.12) !important;
   color: #ffffff !important;
 }
 
@@ -221,9 +196,9 @@ body {
 }
 
 .sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link.active {
-  background: rgba(14, 165, 233, 0.18) !important;
+  background: rgba(20, 152, 212, 0.18) !important;
   color: #ffffff !important;
-  border-left-color: #38bdf8;
+  border-left-color: var(--sgi-accent);
   box-shadow: none;
 }
 
@@ -308,7 +283,7 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar > .nav-item.has-treeview > .nav-link.active {
-  background: rgba(14, 165, 233, 0.18) !important;
+  background: rgba(20, 152, 212, 0.18) !important;
   box-shadow: none;
 }
 
@@ -325,8 +300,8 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
   margin-right: auto;
   margin-bottom: 5px;
   border-left: 0;
-  border-radius: 8px;
-  background: rgba(15, 23, 42, 0.28) !important;
+  border-radius: var(--sgi-radius-sm);
+  background: rgba(8, 32, 51, 0.28) !important;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link .nav-icon {
@@ -334,9 +309,9 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link.active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)) !important;
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover)) !important;
   color: #ffffff !important;
-  box-shadow: 0 10px 22px rgba(14, 165, 233, 0.28);
+  box-shadow: 0 10px 22px rgba(20, 152, 212, 0.28);
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link.active .nav-icon {
@@ -344,17 +319,17 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link:not(.active):hover {
-  background: rgba(14, 165, 233, 0.14) !important;
+  background: rgba(20, 152, 212, 0.14) !important;
 }
 
 .main-header.navbar {
   min-height: 58px;
-  background: #ffffff !important;
-  border-bottom: 1px solid var(--color-border);
+  background: var(--sgi-surface) !important;
+  border-bottom: 1px solid var(--sgi-border);
 }
 
 .sgi-user-toggle {
-  color: var(--color-text-main) !important;
+  color: var(--sgi-text) !important;
 }
 
 .sgi-user-avatar-sm,
@@ -364,7 +339,7 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
   justify-content: center;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover));
   color: #ffffff;
   font-weight: 700;
 }
@@ -391,8 +366,8 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
   align-items: center;
   gap: 12px;
   padding: 8px;
-  border-radius: 8px;
-  background: #f8fafc;
+  border-radius: var(--sgi-radius-sm);
+  background: var(--sgi-primary-soft);
 }
 
 .sgi-user-dropdown-meta {
@@ -410,12 +385,11 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 
 .sgi-user-dropdown-meta h6 {
   margin: 0;
-  color: var(--color-text-main);
+  color: var(--sgi-text);
   font-size: 0.92rem;
   font-weight: 700;
 }
 
 .sgi-user-dropdown-meta small {
-  color: var(--color-text-muted);
+  color: var(--sgi-text-muted);
 }
-
