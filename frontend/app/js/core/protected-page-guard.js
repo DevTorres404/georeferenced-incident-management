@@ -42,7 +42,7 @@
 
   window.SGIProtectedPageGuard = {
     reveal() {
-
+      root.style.visibility = '';
     },
     verifyOrRedirect,
   };
