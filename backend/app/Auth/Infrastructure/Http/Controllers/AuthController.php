@@ -505,8 +505,6 @@ class AuthController extends Controller
         }
 
         $data = $request->validate([
-            'first_name' => ['sometimes', 'required', 'string', 'max:100'],
-            'last_name' => ['sometimes', 'required', 'string', 'max:100'],
             'username' => [
                 'required',
                 'string',
@@ -522,8 +520,8 @@ class AuthController extends Controller
                 $this->updateOwnProfileUseCase->execute(
                     new UpdateOwnProfileInputData(
                         userId: (int) $request->user()->id,
-                        firstName: $data['first_name'] ?? $request->user()->nombre ?? $request->user()->first_name ?? '',
-                        lastName: $data['last_name'] ?? $request->user()->apellido ?? $request->user()->last_name ?? '',
+                        firstName: $request->user()->first_name ?? '',
+                        lastName: $request->user()->last_name ?? '',
                         username: $data['username']
                     )
                 ),
