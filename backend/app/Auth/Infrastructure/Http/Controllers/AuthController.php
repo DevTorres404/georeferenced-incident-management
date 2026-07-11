@@ -500,7 +500,7 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request): JsonResponse
     {
-        if ($request->has('username')) {
+        if ($request->has('username') && is_string($request->username)) {
             $request->merge(['username' => strtolower($request->username)]);
         }
 
