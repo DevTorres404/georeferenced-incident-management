@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css"> <!-- AdminLTE -->
     <link rel="stylesheet" href="/dist/css/adminlte.min.css"> <!-- OverlayScrollbars -->
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
     <!-- Estilos propios del sistema -->
     <link rel="stylesheet" href="/css/app.css?v=34">
     <link rel="stylesheet" href="/css/pages/dashboard.css">
@@ -127,26 +128,35 @@
                                     </table>
                                 </div>
                             </div>
-                        </div> <!-- Mapa -->
+                        </div>                         <!-- Mapa -->
                         <div class="col-lg-4">
-                            <div class="dash-map-card mb-4">
+                            <a href="incident-map.html" class="dash-map-card mb-4 d-block text-decoration-none">
                                 <div class="dash-map-header">
                                     <h3><i class="fas fa-map-marked-alt"></i>Distribución Geográfica</h3>
+                                    <span class="dash-map-badge">
+                                        <i class="fas fa-external-link-alt mr-1"></i>Ir al mapa
+                                    </span>
                                 </div>
                                 <div class="dash-map-body">
-                                    <div class="dash-map-placeholder"> <i class="fas fa-map-marked-alt"></i>
-                                        <strong>Mapa Georreferenciado</strong> <small>Integrado con MapLibre GL JS<br>y
-                                            OpenFreeMap</small>
-                                        <div class="dash-map-legend"> <span class="dash-map-legend-item"> <span
-                                                    class="dash-map-legend-dot"
-                                                    style="background:#6c757d;"></span>Pendiente </span> <span
-                                                class="dash-map-legend-item"> <span class="dash-map-legend-dot"
-                                                    style="background:#0ea5e9;"></span>En Proceso </span> <span
-                                                class="dash-map-legend-item"> <span class="dash-map-legend-dot"
-                                                    style="background:#28a745;"></span>Resuelta </span> </div>
+                                    <div id="dashMapPreview" class="dash-map-preview"></div>
+                                    <div class="dash-map-row">
+                                        <div class="dash-map-figure">
+                                            <i class="fas fa-map-marked-alt"></i>
+                                        </div>
+                                        <div class="dash-map-meta">
+                                            <strong>Mapa Georreferenciado</strong>
+                                            <span>Explora todas las incidencias ubicadas en el mapa interactivo</span>
+                                        </div>
                                     </div>
+                                    <div class="dash-map-legend"> <span class="dash-map-legend-item"> <span
+                                                class="dash-map-legend-dot"
+                                                style="background:#6c757d;"></span>Pendiente </span> <span
+                                            class="dash-map-legend-item"> <span class="dash-map-legend-dot"
+                                                style="background:#0ea5e9;"></span>En Proceso </span> <span
+                                            class="dash-map-legend-item"> <span class="dash-map-legend-dot"
+                                                style="background:#28a745;"></span>Resuelta </span> </div>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 </div><!-- /.container-fluid -->
@@ -163,8 +173,37 @@
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/plugins/chart.js/Chart.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=35"></script>
-    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=21"></script>
+    <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+    <script type="module" src="/js/layout/layout.js?v=37"></script>
+    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=22"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var container = document.getElementById('dashMapPreview');
+        if (!container || typeof maplibregl === 'undefined') return;
+
+        try {
+          var previewMap = new maplibregl.Map({
+            container: 'dashMapPreview',
+            style: 'https://tiles.openfreemap.org/styles/liberty',
+            center: [-78.4678, -1.8312],
+            zoom: 5.5,
+            interactive: false,
+            attributionControl: false,
+            fadeDuration: 0,
+          });
+
+          previewMap.on('load', function () {
+            container.classList.add('dash-map-preview--loaded');
+          });
+
+          previewMap.on('error', function () {
+            container.classList.add('dash-map-preview--fallback');
+          });
+        } catch (e) {
+          container.classList.add('dash-map-preview--fallback');
+        }
+      });
+    </script>
 </body>
 
 </html>

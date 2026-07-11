@@ -2,12 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Auth\Infrastructure\Persistence\Models\Permission;
+use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\PrioritySeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\StateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class DashboardMetricsTest extends TestCase
@@ -50,7 +60,7 @@ class DashboardMetricsTest extends TestCase
                 'reported_by_id' => $admin['user']->id,
                 'latitude' => 0,
                 'longitude' => 0,
-                'resolution_date' => now()
+                'resolution_date' => now(),
             ]);
         }
 
@@ -67,22 +77,114 @@ class DashboardMetricsTest extends TestCase
                     'countsByState',
                     'monthlyTrend' => ['months', 'registered', 'resolved', 'pending'],
                     'topCities',
-                    'averageResolutionDays'
-                ]
+                    'averageResolutionDays',
+                ],
             ])
             ->assertJsonPath('data.kpis.total', 5)
             ->assertJsonPath('data.kpis.pending', 3)
             ->assertJsonPath('data.kpis.resolved', 2);
     }
 
+    public function test_supervisor_only_receives_metrics_from_assigned_zone(): void
+    {
+        $this->seedCoreData();
+        $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-dashboard@incidencias.local');
+
+        $country = TerritorialUnit::create([
+            'name' => 'Ecuador',
+            'type' => TerritorialUnit::TYPE_COUNTRY,
+            'code' => 'EC-TEST',
+            'is_active' => true,
+        ]);
+        $assignedZone = TerritorialUnit::create([
+            'name' => 'Zona asignada',
+            'type' => TerritorialUnit::TYPE_OPERATIONAL_ZONE,
+            'parent_id' => $country->id,
+            'code' => 'ZONE-A',
+            'is_active' => true,
+        ]);
+        $outsideZone = TerritorialUnit::create([
+            'name' => 'Zona externa',
+            'type' => TerritorialUnit::TYPE_OPERATIONAL_ZONE,
+            'parent_id' => $country->id,
+            'code' => 'ZONE-B',
+            'is_active' => true,
+        ]);
+        $assignedTerritory = TerritorialUnit::create([
+            'name' => 'Provincia asignada',
+            'type' => TerritorialUnit::TYPE_PROVINCE,
+            'parent_id' => $assignedZone->id,
+            'code' => 'PROV-A',
+            'is_active' => true,
+        ]);
+        $outsideTerritory = TerritorialUnit::create([
+            'name' => 'Provincia externa',
+            'type' => TerritorialUnit::TYPE_PROVINCE,
+            'parent_id' => $outsideZone->id,
+            'code' => 'PROV-B',
+            'is_active' => true,
+        ]);
+
+        UserTerritory::create([
+            'user_id' => $supervisor['user']->id,
+            'territorial_unit_id' => $assignedZone->id,
+            'assigned_by' => $supervisor['user']->id,
+            'assigned_at' => now(),
+            'is_active' => true,
+        ]);
+
+        $state = State::where('name', 'NUEVA')->firstOrFail();
+        $category = Category::firstOrFail();
+        $priority = Priority::firstOrFail();
+
+        foreach ([
+            ['code' => 'ZONE-A-1', 'territory_id' => $assignedTerritory->id],
+            ['code' => 'ZONE-A-2', 'territory_id' => $assignedTerritory->id],
+            ['code' => 'ZONE-B-1', 'territory_id' => $outsideTerritory->id],
+        ] as $incidentData) {
+            Incident::create([
+                'code' => $incidentData['code'],
+                'title' => $incidentData['code'],
+                'description' => 'Prueba de alcance territorial',
+                'state_id' => $state->id,
+                'category_id' => $category->id,
+                'priority_id' => $priority->id,
+                'territorial_unit_id' => $incidentData['territory_id'],
+                'reported_by_id' => $supervisor['user']->id,
+            ]);
+        }
+
+        $response = $this->actingAsUser($supervisor['user'])
+            ->getJson('/api/dashboard/metrics');
+
+        $response->assertOk()
+            ->assertJsonPath('data.kpis.total', 2)
+            ->assertJsonPath('data.kpis.pending', 2)
+            ->assertJsonCount(1, 'data.topCities');
+
+        $this->assertSame(2, array_sum($response->json('data.countsByCategory')));
+        $this->assertSame(2, array_sum($response->json('data.countsByPriority')));
+        $this->assertSame(2, array_sum($response->json('data.countsByState')));
+        $this->assertSame(2, array_sum($response->json('data.monthlyTrend.registered')));
+        $this->assertSame(2, array_sum(array_column($response->json('data.topCities'), 'count')));
+
+        $unassignedSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-without-zone@incidencias.local');
+        $this->actingAsUser($unassignedSupervisor['user'])
+            ->getJson('/api/dashboard/metrics')
+            ->assertOk()
+            ->assertJsonPath('data.kpis.total', 0)
+            ->assertJsonPath('data.countsByCategory', [])
+            ->assertJsonPath('data.topCities', []);
+    }
+
     private function seedCoreData(): void
     {
         $this->seed([
-            \Database\Seeders\RoleSeeder::class,
-            \Database\Seeders\PermissionSeeder::class,
-            \Database\Seeders\StateSeeder::class,
-            \Database\Seeders\PrioritySeeder::class,
-            \Database\Seeders\CategorySeeder::class,
+            RoleSeeder::class,
+            PermissionSeeder::class,
+            StateSeeder::class,
+            PrioritySeeder::class,
+            CategorySeeder::class,
         ]);
     }
 
@@ -92,9 +194,9 @@ class DashboardMetricsTest extends TestCase
             'email' => $email,
             'two_factor_confirmed_at' => now(),
         ]);
-        $role = \App\Auth\Infrastructure\Persistence\Models\Role::where('code', $roleCode)->firstOrFail();
+        $role = Role::where('code', $roleCode)->firstOrFail();
         $role->permissions()->syncWithoutDetaching(
-            \App\Auth\Infrastructure\Persistence\Models\Permission::pluck('id')->all()
+            Permission::pluck('id')->all()
         );
         $user->roles()->sync([$role->id]);
 
@@ -103,7 +205,8 @@ class DashboardMetricsTest extends TestCase
 
     private function actingAsUser(User $user): self
     {
-        \Laravel\Sanctum\Sanctum::actingAs($user->fresh(), ['*']);
+        Sanctum::actingAs($user->fresh(), ['*']);
+
         return $this;
     }
 }

@@ -2,16 +2,26 @@
 
 namespace App\Incidents\Infrastructure\Persistence\Repositories;
 
+use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInterface
 {
-    public function getKpis(): array
+    /** @var array<int, User|null> */
+    private array $usersById = [];
+
+    /** @var array<int, array<int, int>> */
+    private array $zoneIdsByUserId = [];
+
+    public function getKpis(int $userId): array
     {
-        $totals = Incident::selectRaw("
+        $totals = $this->visibleIncidentQuery($userId)->selectRaw("
             COUNT(*) as total,
             SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ('NUEVA', 'PENDIENTE')) THEN 1 ELSE 0 END) as pending,
             SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ('EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION')) THEN 1 ELSE 0 END) as progress,
@@ -26,9 +36,10 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         ];
     }
 
-    public function getCountsByCategory(): array
+    public function getCountsByCategory(int $userId): array
     {
-        $categories = Incident::join('core.categories', 'core.incidents.category_id', '=', 'core.categories.id')
+        $categories = $this->visibleIncidentQuery($userId)
+            ->join('core.categories', 'core.incidents.category_id', '=', 'core.categories.id')
             ->select('core.categories.name', DB::raw('COUNT(*) as count'))
             ->groupBy('core.categories.name')
             ->orderByDesc('count')
@@ -42,9 +53,10 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         return $result;
     }
 
-    public function getCountsByPriority(): array
+    public function getCountsByPriority(int $userId): array
     {
-        $priorities = Incident::join('core.priorities', 'core.incidents.priority_id', '=', 'core.priorities.id')
+        $priorities = $this->visibleIncidentQuery($userId)
+            ->join('core.priorities', 'core.incidents.priority_id', '=', 'core.priorities.id')
             ->select('core.priorities.name', DB::raw('COUNT(*) as count'))
             ->groupBy('core.priorities.name')
             ->get();
@@ -57,9 +69,10 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         return $result;
     }
 
-    public function getCountsByState(): array
+    public function getCountsByState(int $userId): array
     {
-        $states = Incident::join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
+        $states = $this->visibleIncidentQuery($userId)
+            ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
             ->select('core.states.name', DB::raw('COUNT(*) as count'))
             ->groupBy('core.states.name')
             ->get();
@@ -67,11 +80,15 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         $result = [];
         foreach ($states as $state) {
             $name = $state->name;
-            if (in_array($name, ['NUEVA', 'PENDIENTE'])) $name = 'Pendiente';
-            elseif (in_array($name, ['EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION'])) $name = 'En proceso';
-            elseif (in_array($name, ['RESUELTA', 'CERRADA'])) $name = 'Resuelta';
+            if (in_array($name, ['NUEVA', 'PENDIENTE'])) {
+                $name = 'Pendiente';
+            } elseif (in_array($name, ['EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION'])) {
+                $name = 'En proceso';
+            } elseif (in_array($name, ['RESUELTA', 'CERRADA'])) {
+                $name = 'Resuelta';
+            }
 
-            if (!isset($result[$name])) {
+            if (! isset($result[$name])) {
                 $result[$name] = 0;
             }
             $result[$name] += (int) $state->count;
@@ -80,10 +97,10 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         return $result;
     }
 
-    public function getMonthlyTrend(int $months = 6): array
+    public function getMonthlyTrend(int $userId, int $months = 6): array
     {
         $monthsData = [];
-        
+
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = Carbon::now()->startOfMonth()->subMonths($i);
             $key = $date->format('Y-m');
@@ -94,7 +111,8 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             ];
         }
 
-        $createdTrend = Incident::select(DB::raw("TO_CHAR(created_at, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
+        $createdTrend = $this->visibleIncidentQuery($userId)
+            ->select(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
             ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
             ->groupBy('month')
             ->get();
@@ -105,7 +123,8 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             }
         }
 
-        $resolvedTrend = Incident::select(DB::raw("TO_CHAR(resolution_date, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
+        $resolvedTrend = $this->visibleIncidentQuery($userId)
+            ->select(DB::raw("TO_CHAR(resolution_date, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
             ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
             ->whereIn('core.states.name', ['RESUELTA', 'CERRADA'])
             ->whereNotNull('resolution_date')
@@ -135,13 +154,14 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             'months' => $labels,
             'registered' => $registered,
             'resolved' => $resolved,
-            'pending' => $pending
+            'pending' => $pending,
         ];
     }
 
-    public function getTopCities(int $limit = 6): array
+    public function getTopCities(int $userId, int $limit = 6): array
     {
-        $territories = Incident::leftJoin('core.territorial_units as unit', 'core.incidents.territorial_unit_id', '=', 'unit.id')
+        $territories = $this->visibleIncidentQuery($userId)
+            ->leftJoin('core.territorial_units as unit', 'core.incidents.territorial_unit_id', '=', 'unit.id')
             ->leftJoin('core.territorial_units as parent', 'unit.parent_id', '=', 'parent.id')
             ->leftJoin('core.territorial_units as grandparent', 'parent.parent_id', '=', 'grandparent.id')
             ->leftJoin('core.territorial_units as greatgrandparent', 'grandparent.parent_id', '=', 'greatgrandparent.id')
@@ -161,7 +181,7 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             ->limit($limit)
             ->get();
 
-        $totalIncidents = Incident::count();
+        $totalIncidents = $this->visibleIncidentQuery($userId)->count();
         $result = [];
 
         foreach ($territories as $territory) {
@@ -175,23 +195,115 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
                 'pct' => $pct,
                 'pending' => (int) $territory->pending,
                 'progress' => (int) $territory->progress,
-                'resolved' => (int) $territory->resolved
+                'resolved' => (int) $territory->resolved,
             ];
         }
 
         return $result;
     }
 
-    public function getAverageResolutionDays(): float
+    public function getAverageResolutionDays(int $userId): float
     {
-        $avg = Incident::join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
+        $avg = $this->visibleIncidentQuery($userId)
+            ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
             ->whereIn('core.states.name', ['RESUELTA', 'CERRADA'])
             ->whereNotNull('resolution_date')
             ->whereNotNull('core.incidents.created_at')
-            ->selectRaw("AVG(EXTRACT(EPOCH FROM (resolution_date - core.incidents.created_at)) / 86400) as avg_days")
+            ->selectRaw('AVG(EXTRACT(EPOCH FROM (resolution_date - core.incidents.created_at)) / 86400) as avg_days')
             ->value('avg_days');
 
         return $avg ? (float) round($avg, 1) : 0.0;
+    }
+
+    private function visibleIncidentQuery(int $userId): Builder
+    {
+        $query = Incident::query();
+        if (! array_key_exists($userId, $this->usersById)) {
+            $this->usersById[$userId] = User::query()->with('roles')->find($userId);
+        }
+
+        $user = $this->usersById[$userId];
+
+        if (! $user) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($user->tieneRol('ADMIN')) {
+            return $query;
+        }
+
+        if ($user->tieneRol('SUPERVISOR')) {
+            $zoneIds = $this->activeZoneIdsForUser($userId);
+
+            if ($zoneIds === []) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('territorialUnit', function (Builder $territoryQuery) use ($zoneIds): void {
+                $this->applyZoneFilterToTerritoryQuery($territoryQuery, $zoneIds);
+            });
+        }
+
+        if ($user->tieneRol('OPERADOR')) {
+            return $query->whereHas('assignments', function (Builder $assignmentQuery) use ($userId): void {
+                $assignmentQuery->where('user_id', $userId)->where('active', true);
+            });
+        }
+
+        return $query->where('core.incidents.reported_by_id', $userId);
+    }
+
+    private function applyZoneFilterToTerritoryQuery(Builder $query, array $zoneIds): void
+    {
+        $query->where(function (Builder $territoryScope) use ($zoneIds): void {
+            $territoryScope->whereIn('id', $zoneIds)
+                ->orWhereIn('parent_id', $zoneIds)
+                ->orWhereHas('parent', fn (Builder $parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent', fn (Builder $parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent.parent', fn (Builder $parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds))
+                ->orWhereHas('parent.parent.parent.parent', fn (Builder $parentQuery) => $parentQuery->whereIn('parent_id', $zoneIds));
+        });
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function activeZoneIdsForUser(int $userId): array
+    {
+        if (array_key_exists($userId, $this->zoneIdsByUserId)) {
+            return $this->zoneIdsByUserId[$userId];
+        }
+
+        $zoneIds = UserTerritory::query()
+            ->with('territory.'.TerritorialUnit::PARENT_CHAIN)
+            ->active()
+            ->where('user_id', $userId)
+            ->get()
+            ->map(fn (UserTerritory $assignment): ?TerritorialUnit => $this->resolveOperationalZone($assignment->territory))
+            ->filter()
+            ->map(fn (TerritorialUnit $zone): int => (int) $zone->id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $this->zoneIdsByUserId[$userId] = $zoneIds;
+
+        return $zoneIds;
+    }
+
+    private function resolveOperationalZone(?TerritorialUnit $territory): ?TerritorialUnit
+    {
+        $current = $territory;
+
+        while ($current) {
+            if ($current->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                return $current;
+            }
+
+            $current = $current->parent;
+        }
+
+        return null;
     }
 
     private function territoryLabel(object $territory): string

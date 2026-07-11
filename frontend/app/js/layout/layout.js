@@ -1,7 +1,7 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=20';
-import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
+import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=21';
 import { clearSession as clearAuthSession } from '../core/auth-session.js?v=15';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
 
@@ -376,6 +376,9 @@ async function loadNavbarNotifications(forceRefresh = false) {
 
 function startRealtimeNotifications(user) {
   subscribeToUserNotifications(user, async (notification) => {
+    window.dispatchEvent(new CustomEvent('sgi:notification-created', {
+      detail: notification,
+    }));
     sessionStorage.removeItem('SGI_notifications_cache');
     await loadNavbarNotifications(true);
     if (notification?.title && window.showGlobalAlert) {

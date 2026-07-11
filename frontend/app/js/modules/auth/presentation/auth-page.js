@@ -216,10 +216,15 @@ function initAuthPage() {
 
   function showVerificationNotice() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('verified') !== '1') return;
-
-    showAlert(el.loginAlert, 'Correo verificado correctamente. Ya puedes iniciar sesion.', 'success');
-    window.history.replaceState({}, document.title, window.location.pathname);
+    if (params.get('verified') === '1') {
+      showAlert(el.loginAlert, 'Correo verificado correctamente. Ya puedes iniciar sesion.', 'success');
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    if (params.get('error') === 'invalid_link') {
+      showAlert(el.loginAlert, 'El enlace de verificación ha expirado o no es válido. Solicita un nuevo enlace en la pantalla de inicio de sesión.', 'danger');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }
 
   async function handleLoginSubmit(event) {

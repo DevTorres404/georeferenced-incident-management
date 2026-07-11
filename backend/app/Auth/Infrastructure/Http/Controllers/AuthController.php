@@ -584,6 +584,8 @@ class AuthController extends Controller
 
     public function verifyEmail(Request $request, int $id, string $hash): JsonResponse|RedirectResponse
     {
+        $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/');
+
         try {
             $this->verifyEmailUseCase->execute(
                 new VerifyEmailInputData(
@@ -592,13 +594,17 @@ class AuthController extends Controller
                 )
             );
         } catch (AuthException $e) {
+            if (! $request->expectsJson()) {
+                return redirect()->away($frontendUrl.'/?verified=0&error=invalid_link');
+            }
+
             return response()->json([
                 'message' => $e->getMessage(),
             ], $e->getCode());
         }
 
         if (! $request->expectsJson()) {
-            return redirect()->away(rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/').'/?verified=1');
+            return redirect()->away($frontendUrl.'/?verified=1');
         }
 
         return response()->json([
