@@ -12,10 +12,10 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
-  background: linear-gradient(160deg, #f0f9ff 0%, #f8fafc 100%);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, var(--sgi-primary-soft) 100%);
+  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.03);
 }
 
 .location-summary-band strong,
@@ -24,22 +24,22 @@
 }
 
 .location-summary-band strong {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1rem;
   font-weight: 700;
 }
 
 .location-summary-band small {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.85rem;
 }
 
 .coordinate-box {
   padding: 0.85rem 1rem;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 0.75rem;
-  background: var(--color-surface, #ffffff);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  background: var(--sgi-surface);
+  box-shadow: 0 2px 8px rgba(8, 32, 51, 0.03);
 }
 
 .coordinate-box span,
@@ -48,7 +48,7 @@
 }
 
 .coordinate-box span {
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -56,7 +56,7 @@
 }
 
 .coordinate-box code {
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 0.95rem;
   font-weight: 800;
 }
@@ -68,9 +68,9 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid var(--color-border, #e2e8f0);
+  border: 1px solid var(--sgi-border);
   border-radius: 1rem;
-  background: linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 100%);
+  background: linear-gradient(160deg, var(--sgi-primary-soft) 0%, #e0f2fe 100%);
 }
 
 .incident-detail-map .map-empty-state,
@@ -85,12 +85,12 @@
   display: grid;
   gap: 8px;
   justify-items: center;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
 }
 
 .incident-detail-map .map-empty-state i,
 .incident-detail-map > i {
-  color: var(--color-primary, #0ea5e9);
+  color: var(--sgi-primary);
   font-size: 2rem;
 }
 
@@ -102,7 +102,7 @@
 }
 
 .attachment-guidance {
-  background: linear-gradient(160deg, #f0fdf4 0%, #f8fafc 100%);
+  background: linear-gradient(160deg, #f0fdf4 0%, var(--sgi-primary-soft) 100%);
 }
 
 .attachment-grid {
@@ -116,16 +116,16 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(8, 32, 51, 0.08);
   border-radius: 1rem;
-  background: var(--color-surface, #ffffff);
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  background: var(--sgi-surface);
+  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   transition: all 0.3s ease;
 }
 
 .attachment-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 15px 35px rgba(8, 32, 51, 0.08);
 }
 
 .attachment-preview {
@@ -134,7 +134,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: linear-gradient(160deg, #f0fdf4 0%, #f0f9ff 100%);
+  background: linear-gradient(160deg, #f0fdf4 0%, var(--sgi-primary-soft) 100%);
 }
 
 .attachment-preview-link,
@@ -173,7 +173,7 @@
 
 .attachment-title {
   margin: 0 0 0.5rem;
-  color: var(--color-text-main, #0f172a);
+  color: var(--sgi-text);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.35;
@@ -187,7 +187,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 0.83rem;
 }
 
@@ -214,7 +214,7 @@
   min-height: 60vh;
   align-items: center;
   justify-content: center;
-  background: #0f172a;
+  background: var(--sgi-text);
 }
 
 .attachment-preview-modal-image {
@@ -229,7 +229,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--color-text-muted, #64748b);
+  color: var(--sgi-text-muted);
   font-size: 1rem;
   text-align: center;
 }

@@ -139,9 +139,14 @@ function initEditProfile(user) {
 
   btnEdit.addEventListener('click', () => {
     const editUsername = document.getElementById('editUsername');
-    const currentUserData = localStorage.getItem('user_data');
+    // Read the latest user data from localStorage to ensure we have the most up-to-date username
+    const currentUserData = localStorage.getItem(window.AUTH_KEYS?.user || 'user_data');
     const currentUser = currentUserData ? JSON.parse(currentUserData) : user;
     editUsername.value = currentUser.username || '';
+
+    editUsername.addEventListener('input', function () {
+      this.value = this.value.toLowerCase();
+    });
 
     document.getElementById('editProfileAlert').classList.add('d-none');
 
@@ -175,9 +180,6 @@ function initEditProfile(user) {
       }
 
       renderUserData(updatedUser);
-      if (window.SGIGApi?.clearApiCache) {
-        window.SGIGApi.clearApiCache();
-      }
       if (typeof window.renderLayout === 'function') {
         window.renderLayout();
       }
