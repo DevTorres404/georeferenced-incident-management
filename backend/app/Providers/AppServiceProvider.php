@@ -2,26 +2,38 @@
 
 namespace App\Providers;
 
-use App\Auth\Infrastructure\Persistence\Models\PersonalAccessToken;
-use App\Auth\Domain\Repositories\UserRepositoryInterface;
-use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
-use App\Auth\Domain\Repositories\PasswordResetCodeRepositoryInterface;
-use App\Auth\Domain\Services\GoogleTokenVerifierInterface;
-use App\Auth\Infrastructure\Repositories\EloquentUserRepository;
-use App\Auth\Infrastructure\Repositories\EloquentLoginAttemptRepository;
-use App\Auth\Infrastructure\Repositories\EloquentPasswordResetCodeRepository;
-use App\Auth\Infrastructure\Services\FirebaseGoogleTokenVerifier;
 use App\Audit\Domain\Repositories\AuditRepositoryInterface;
 use App\Audit\Infrastructure\Persistence\Repositories\EloquentAuditRepository;
+use App\Auth\Application\Ports\PasswordHasherPort;
+use App\Auth\Application\Ports\SessionManagerPort;
+use App\Auth\Application\Ports\TwoFactorAuthPort;
+use App\Auth\Application\Ports\UserNotificationPort;
+use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
+use App\Auth\Domain\Repositories\PasswordResetCodeRepositoryInterface;
+use App\Auth\Domain\Repositories\UserRepositoryInterface;
+use App\Auth\Domain\Services\GoogleTokenVerifierInterface;
+use App\Auth\Infrastructure\Persistence\Models\PersonalAccessToken;
+use App\Auth\Infrastructure\Repositories\EloquentLoginAttemptRepository;
+use App\Auth\Infrastructure\Repositories\EloquentPasswordResetCodeRepository;
+use App\Auth\Infrastructure\Repositories\EloquentUserRepository;
+use App\Auth\Infrastructure\Services\FirebaseGoogleTokenVerifier;
+use App\Auth\Infrastructure\Services\GoogleTwoFactorAuthAdapter;
+use App\Auth\Infrastructure\Services\LaravelPasswordHasherAdapter;
+use App\Auth\Infrastructure\Services\LaravelSessionManagerAdapter;
+use App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter;
 use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
 use App\Catalogs\Infrastructure\Persistence\Repositories\EloquentCatalogRepository;
+use App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentMetricsRepository;
 use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentRepository;
 use App\Incidents\Infrastructure\Storage\LaravelFileStorageAdapter;
 use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
 use App\Operations\Infrastructure\Persistence\Repositories\EloquentOperationalStructureRepository;
 use App\Shared\Application\Ports\FileStoragePort;
+use App\Shared\Application\Ports\LoggerPort;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\Shared\Infrastructure\Support\LaravelLoggerAdapter;
 use App\TerritorialUnits\Domain\Repositories\TerritorialUnitRepositoryInterface;
 use App\TerritorialUnits\Infrastructure\Persistence\Repositories\EloquentTerritorialUnitRepository;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
@@ -29,8 +41,10 @@ use App\Users\Domain\Repositories\UserRepositoryInterface as ModuleUserRepositor
 use App\Users\Infrastructure\Persistence\Repositories\EloquentAccessControlRepository;
 use App\Users\Infrastructure\Persistence\Repositories\EloquentUserRepository as ModuleEloquentUserRepository;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 
@@ -48,17 +62,17 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CatalogRepositoryInterface::class, EloquentCatalogRepository::class);
         $this->app->bind(AuditRepositoryInterface::class, EloquentAuditRepository::class);
         $this->app->bind(IncidentRepositoryInterface::class, EloquentIncidentRepository::class);
-        $this->app->bind(\App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface::class, \App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentMetricsRepository::class);
+        $this->app->bind(IncidentMetricsRepositoryInterface::class, EloquentIncidentMetricsRepository::class);
         $this->app->bind(FileStoragePort::class, LaravelFileStorageAdapter::class);
         $this->app->bind(ModuleUserRepositoryInterface::class, ModuleEloquentUserRepository::class);
         $this->app->bind(AccessControlRepositoryInterface::class, EloquentAccessControlRepository::class);
         $this->app->bind(TerritorialUnitRepositoryInterface::class, EloquentTerritorialUnitRepository::class);
         $this->app->bind(OperationalStructureRepositoryInterface::class, EloquentOperationalStructureRepository::class);
-        $this->app->bind(\App\Auth\Application\Ports\PasswordHasherPort::class, \App\Auth\Infrastructure\Services\LaravelPasswordHasherAdapter::class);
-        $this->app->bind(\App\Auth\Application\Ports\SessionManagerPort::class, \App\Auth\Infrastructure\Services\LaravelSessionManagerAdapter::class);
-        $this->app->bind(\App\Auth\Application\Ports\UserNotificationPort::class, \App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter::class);
-        $this->app->bind(\App\Shared\Application\Ports\LoggerPort::class, \App\Shared\Infrastructure\Support\LaravelLoggerAdapter::class);
-        $this->app->bind(\App\Auth\Application\Ports\TwoFactorAuthPort::class, \App\Auth\Infrastructure\Services\GoogleTwoFactorAuthAdapter::class);
+        $this->app->bind(PasswordHasherPort::class, LaravelPasswordHasherAdapter::class);
+        $this->app->bind(SessionManagerPort::class, LaravelSessionManagerAdapter::class);
+        $this->app->bind(UserNotificationPort::class, LaravelUserNotificationAdapter::class);
+        $this->app->bind(LoggerPort::class, LaravelLoggerAdapter::class);
+        $this->app->bind(TwoFactorAuthPort::class, GoogleTwoFactorAuthAdapter::class);
     }
 
     /**
@@ -66,19 +80,25 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Laravel\Sanctum\Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
-        \Illuminate\Database\Eloquent\Model::preventLazyLoading(! app()->isProduction());
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+        Model::preventLazyLoading(! app()->isProduction());
 
         RateLimiter::for('login', function (Request $request) {
             $email = (string) $request->input('email');
+
             return [
                 Limit::perMinute(5)->by($request->ip())->response($this->rateLimitResponse()),
-                Limit::perMinute(5)->by($email . '|' . $request->ip())->response($this->rateLimitResponse()),
+                Limit::perMinute(5)->by($email.'|'.$request->ip())->response($this->rateLimitResponse()),
             ];
         });
 
         RateLimiter::for('register', function (Request $request) {
             $email = (string) $request->input('email');
+
             return [
                 Limit::perHour(3)->by($request->ip())->response($this->rateLimitResponse()),
                 Limit::perHour(3)->by($email ?: $request->ip())->response($this->rateLimitResponse()),
@@ -87,6 +107,7 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('password.recovery', function (Request $request) {
             $email = strtolower((string) $request->input('email'));
+
             return [
                 Limit::perMinute(30)->by($request->ip())->response($this->rateLimitResponse()),
                 Limit::perMinute(3)->by(($email ?: 'unknown').'|'.$request->ip())->response($this->rateLimitResponse()),
