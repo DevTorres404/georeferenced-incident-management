@@ -76,6 +76,17 @@ function initProfilePage() {
   initEditProfile(user);
   initChangePassword();
 
+  const modal2fa = document.getElementById('modalSetup2fa');
+  if (modal2fa) {
+    $(modal2fa).on('hidden.bs.modal', function () {
+      const qrContainer = document.getElementById('qrcode-container');
+      if (qrContainer) qrContainer.innerHTML = '';
+      const input = document.getElementById('tfaCodeInput');
+      if (input) input.value = '';
+      clearTwoFactorAlert();
+    });
+  }
+
   const loader = document.getElementById('pageLoader');
   if (loader) {
     loader.setAttribute('hidden', '');
@@ -333,17 +344,7 @@ function renderSecurityData(user) {
                    ? `<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>`
                    : ''}
                </div>`
-            : `<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>
-               <div id="tfaStep2" class="d-none mt-3">
-                 <p class="text-sm text-muted mb-2">Escanea este código QR con tu aplicación autenticadora:</p>
-                 <div id="qrcode-container" class="d-inline-block bg-white p-2 border rounded shadow-sm"></div>
-                 <div class="mt-3">
-                   <label class="text-sm">Ingresa el código generado:</label>
-                   <input type="text" id="tfaCodeInput" class="form-control text-center mx-auto" style="max-width: 180px; font-size: 1.1rem; letter-spacing: 0.2em;" maxlength="6" placeholder="000000">
-                 </div>
-                 <button type="button" class="btn btn-success btn-sm mt-3" id="btnConfirm2fa">Verificar y activar</button>
-               </div>
-               <div id="tfaAlert" class="mt-2"></div>`
+            : `<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>`
           }
         </div>
       </div>
@@ -372,15 +373,18 @@ function renderSecurityData(user) {
     if (btnDisable2fa) btnDisable2fa.addEventListener('click', disableTwoFactor);
   } else {
     const btnSetup2fa = document.getElementById('btnSetup2fa');
-    const btnConfirm2fa = document.getElementById('btnConfirm2fa');
     if (btnSetup2fa) btnSetup2fa.addEventListener('click', initSetup2FA);
-    if (btnConfirm2fa) btnConfirm2fa.addEventListener('click', confirmSetup2FA);
   }
+  const btnConfirm2fa = document.getElementById('btnConfirm2fa');
+  if (btnConfirm2fa) btnConfirm2fa.addEventListener('click', confirmSetup2FA);
 }
 
 async function initSetup2FA() {
   const btn = document.getElementById('btnSetup2fa');
   if (!btn) return;
+
+  const modalEl = document.getElementById('modalSetup2fa');
+  if (!modalEl) return;
 
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generando QR...';
@@ -396,20 +400,19 @@ async function initSetup2FA() {
       qrLibraryReady = false;
     }
 
-    const step2 = document.getElementById('tfaStep2');
-    if (step2) {
-      btn.style.display = 'none';
-      step2.classList.remove('d-none');
-    }
-
     const qrContainer = document.getElementById('qrcode-container');
     renderTwoFactorSetup(qrContainer, data.qr_url, data.secret, qrLibraryReady);
+
+    clearTwoFactorAlert();
 
     if (!qrLibraryReady) {
       setTwoFactorAlert('No se pudo generar el código QR. Ingresa la clave manual en tu aplicación autenticadora.', 'warning');
     }
+
+    $(modalEl).modal('show');
   } catch (error) {
     setTwoFactorAlert(error.message || 'Error al generar QR.', 'danger');
+    $(modalEl).modal('show');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-qrcode mr-2"></i>Configurar 2FA';
@@ -474,6 +477,7 @@ function ensureQrCodeLibrary() {
 
 async function confirmSetup2FA() {
   const btn = document.getElementById('btnConfirm2fa');
+  const modalEl = document.getElementById('modalSetup2fa');
   const input = document.getElementById('tfaCodeInput');
   const code = input?.value.trim() || '';
 
@@ -493,12 +497,16 @@ async function confirmSetup2FA() {
       body: JSON.stringify({ code })
     });
 
-    setTwoFactorAlert('Autenticación activada con éxito.', 'success');
+    if (modalEl) $(modalEl).modal('hide');
 
     const user = readSessionUser();
     if (user) {
       user.two_factor_enabled = true;
       localStorage.setItem(AUTH_KEYS.user, JSON.stringify(user));
+    }
+
+    if (window.showGlobalAlert) {
+      window.showGlobalAlert('Autenticación en 2 pasos activada con éxito.', 'success');
     }
 
     setTimeout(() => {
@@ -507,7 +515,7 @@ async function confirmSetup2FA() {
   } catch (error) {
     setTwoFactorAlert(error.message || 'Código inválido.', 'danger');
     btn.disabled = false;
-    btn.innerHTML = 'Verificar y activar';
+    btn.innerHTML = '<i class="fas fa-check mr-1"></i>Verificar y activar';
   }
 }
 
@@ -544,9 +552,17 @@ async function disableTwoFactor() {
   }
 }
 
+function clearTwoFactorAlert() {
+  const alert = document.getElementById('tfaAlert');
+  if (!alert) return;
+  alert.innerHTML = '';
+  alert.classList.add('d-none');
+}
+
 function setTwoFactorAlert(message, type = 'danger') {
   const alert = document.getElementById('tfaAlert');
   if (!alert) return;
 
-  alert.innerHTML = `<div class="alert alert-${type} py-2 text-sm mb-0">${escapeHtml(message)}</div>`;
+  alert.innerHTML = `<div class="alert alert-${type} py-2 mb-0">${escapeHtml(message)}</div>`;
+  alert.classList.remove('d-none');
 }
