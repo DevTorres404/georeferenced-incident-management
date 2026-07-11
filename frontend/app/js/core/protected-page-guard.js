@@ -42,7 +42,7 @@
 
   window.SGIProtectedPageGuard = {
     reveal() {
-      // No-op: eliminamos el ocultamiento global para evitar el pantallazo blanco
+      root.style.visibility = '';
     },
     verifyOrRedirect,
   };

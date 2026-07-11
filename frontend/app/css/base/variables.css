@@ -1,16 +1,43 @@
-/* ============================================================
-   SISTEMA DE GESTIÓN DE INCIDENCIAS GEORREFERENCIADAS
-   Estilos personalizados - AdminLTE 3 + Bootstrap 4
-   ============================================================ */
-
-/* ---- Variables de color ---- */
 :root {
-  --color-critica: #dc3545;
-  --color-alta: #fd7e14;
-  --color-media: #ffc107;
-  --color-baja: #28a745;
+  --sgi-navy-950: #082033;
+  --sgi-navy-800: #174A78;
+  --sgi-primary: #1498D4;
+  --sgi-primary-hover: #117EAF;
+  --sgi-primary-soft: #EAF6FC;
+  --sgi-accent: #14b8a6;
+  --sgi-background: #F4F7FA;
+  --sgi-surface: #FFFFFF;
+  --sgi-border: #DCE5EC;
+  --sgi-text: #142033;
+  --sgi-text-muted: #657486;
+  --sgi-success: #269B72;
+  --sgi-warning: #D99A27;
+  --sgi-danger: #D9534F;
+  --sgi-radius-sm: 8px;
+  --sgi-radius-md: 12px;
+  --sgi-shadow-sm: 0 1px 3px rgba(8,32,51,0.08);
+  --sgi-shadow-md: 0 4px 14px rgba(8,32,51,0.10);
+
+  --color-primary: #1498D4;
+  --color-primary-dark: #117EAF;
+  --color-primary-soft: #EAF6FC;
+  --color-sidebar-bg: #082033;
+  --color-sidebar-bg-soft: #174A78;
+  --color-sidebar-text: #cbd5e1;
+  --color-sidebar-active: #1498D4;
+  --color-accent: #14b8a6;
+  --color-background: #F4F7FA;
+  --color-surface: #FFFFFF;
+  --color-border: #DCE5EC;
+  --color-text-main: #142033;
+  --color-text-muted: #657486;
+
+  --color-critica: #D9534F;
+  --color-alta: #D99A27;
+  --color-media: #f0ad4e;
+  --color-baja: #269B72;
   --color-pendiente: #6c757d;
-  --color-proceso: #0ea5e9;
-  --color-resuelta: #28a745;
-  --color-header-bg: #001f3f;
+  --color-proceso: #1498D4;
+  --color-resuelta: #269B72;
+  --color-header-bg: #082033;
 }
