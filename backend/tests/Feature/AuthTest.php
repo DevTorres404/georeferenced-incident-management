@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
 use App\Auth\Infrastructure\Notifications\PasswordChangedNotification;
 use App\Auth\Infrastructure\Notifications\PasswordResetCodeNotification;
@@ -9,9 +10,11 @@ use App\Auth\Infrastructure\Notifications\PasswordResetCompletedNotification;
 use App\Auth\Infrastructure\Persistence\Models\PasswordResetToken;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Auth\Infrastructure\Persistence\Models\UserIdentity;
-use App\Audit\Infrastructure\Persistence\Models\AuditLog;
+use App\Shared\Infrastructure\Jobs\NotifyAdminsJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -60,6 +63,7 @@ class AuthTest extends TestCase
 
     public function test_user_can_register_with_email_and_password(): void
     {
+        Bus::fake([NotifyAdminsJob::class]);
         Notification::fake();
 
         $response = $this->postJson('/api/register', [
@@ -86,19 +90,23 @@ class AuthTest extends TestCase
             'provider' => 'local',
             'provider_uid' => 'registro-local@incidencias.local',
         ]);
+        Bus::assertDispatched(NotifyAdminsJob::class);
     }
 
     public function test_user_can_register_with_google_token(): void
     {
         Notification::fake();
 
-        app()->instance('firebase.auth', new class {
+        app()->instance('firebase.auth', new class
+        {
             public function verifyIdToken(string $idToken): object
             {
-                return new class {
+                return new class
+                {
                     public function claims(): object
                     {
-                        return new class {
+                        return new class
+                        {
                             public function get(string $key): mixed
                             {
                                 return match ($key) {
@@ -174,13 +182,16 @@ class AuthTest extends TestCase
 
     public function test_google_login_fails_if_user_not_found(): void
     {
-        app()->instance('firebase.auth', new class {
+        app()->instance('firebase.auth', new class
+        {
             public function verifyIdToken(string $idToken): object
             {
-                return new class {
+                return new class
+                {
                     public function claims(): object
                     {
-                        return new class {
+                        return new class
+                        {
                             public function get(string $key): mixed
                             {
                                 return match ($key) {
@@ -211,13 +222,16 @@ class AuthTest extends TestCase
             'email' => 'existing@incidencias.local',
         ]);
 
-        app()->instance('firebase.auth', new class {
+        app()->instance('firebase.auth', new class
+        {
             public function verifyIdToken(string $idToken): object
             {
-                return new class {
+                return new class
+                {
                     public function claims(): object
                     {
-                        return new class {
+                        return new class
+                        {
                             public function get(string $key): mixed
                             {
                                 return match ($key) {
@@ -264,7 +278,7 @@ class AuthTest extends TestCase
 
         $token = $user->createToken('test-token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/auth/profile', [
                 'username' => 'perfil.google',
             ]);
@@ -358,7 +372,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('test-token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/me');
 
         $response->assertStatus(200)
@@ -385,7 +399,7 @@ class AuthTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('test-token')->plainTextToken;
 
-        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
             ->postJson('/api/logout');
 
         $response->assertStatus(200)
@@ -393,9 +407,9 @@ class AuthTest extends TestCase
                 'message' => 'Sesión cerrada correctamente.',
             ]);
 
-        \Illuminate\Support\Facades\Auth::forgetGuards();
+        Auth::forgetGuards();
 
-        $meResponse = $this->withHeader('Authorization', 'Bearer ' . $token)
+        $meResponse = $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/me');
 
         $meResponse->assertStatus(401);
@@ -428,14 +442,14 @@ class AuthTest extends TestCase
 
         Notification::assertSentTo($user->fresh(), PasswordChangedNotification::class);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
-        $this->assertFalse(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-nueva', $user->fresh()->password));
+        $this->assertFalse(Hash::check('password-actual', $user->fresh()->password));
 
         $this->withHeader('Authorization', 'Bearer '.$currentToken)
             ->getJson('/api/me')
             ->assertOk();
 
-        \Illuminate\Support\Facades\Auth::forgetGuards();
+        Auth::forgetGuards();
 
         $this->withHeader('Authorization', 'Bearer '.$otherToken)
             ->getJson('/api/me')
@@ -483,7 +497,7 @@ class AuthTest extends TestCase
             ]);
 
         Notification::assertNothingSent();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-actual', $user->fresh()->password));
     }
 
     public function test_change_password_fails_if_new_password_is_not_confirmed(): void
@@ -503,7 +517,7 @@ class AuthTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['password']);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-actual', $user->fresh()->password));
     }
 
     public function test_change_password_fails_if_new_password_is_same_as_current(): void
@@ -528,7 +542,7 @@ class AuthTest extends TestCase
             ]);
 
         Notification::assertNothingSent();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-actual', $user->fresh()->password));
     }
 
     public function test_old_password_no_longer_allows_login_after_password_change(): void
@@ -658,7 +672,7 @@ class AuthTest extends TestCase
                 'message' => 'Contrasena restablecida correctamente.',
             ]);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-nueva', $user->fresh()->password));
         Notification::assertSentTo($user, PasswordResetCompletedNotification::class);
     }
 
@@ -683,7 +697,7 @@ class AuthTest extends TestCase
                 'message' => 'El codigo de recuperacion es invalido o expiro.',
             ]);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-actual', $user->fresh()->password));
         $this->assertSame(1, (int) PasswordResetToken::query()->where('email', $user->email)->value('attempts'));
     }
 
@@ -708,7 +722,7 @@ class AuthTest extends TestCase
             'password_confirmation' => 'password-nueva',
         ])->assertStatus(422);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-actual', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-actual', $user->fresh()->password));
     }
 
     public function test_used_password_reset_code_cannot_be_reused(): void
@@ -735,7 +749,7 @@ class AuthTest extends TestCase
             'password_confirmation' => 'otra-password',
         ])->assertStatus(422);
 
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password-nueva', $user->fresh()->password));
+        $this->assertTrue(Hash::check('password-nueva', $user->fresh()->password));
     }
 
     public function test_old_password_no_longer_allows_login_after_password_reset(): void
@@ -804,7 +818,7 @@ class AuthTest extends TestCase
             'password_confirmation' => 'password-nueva',
         ])->assertOk();
 
-        \Illuminate\Support\Facades\Auth::forgetGuards();
+        Auth::forgetGuards();
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/api/me')
@@ -824,6 +838,7 @@ class AuthTest extends TestCase
             PasswordResetCodeNotification::class,
             function (PasswordResetCodeNotification $notification) use (&$code): bool {
                 $code = $notification->code;
+
                 return preg_match('/^\d{6}$/', $code) === 1;
             }
         );

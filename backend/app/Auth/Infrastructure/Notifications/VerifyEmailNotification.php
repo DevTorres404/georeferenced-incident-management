@@ -3,12 +3,13 @@
 namespace App\Auth\Infrastructure\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
 
-class VerifyEmailNotification extends Notification
+class VerifyEmailNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -29,9 +30,16 @@ class VerifyEmailNotification extends Notification
         );
 
         return (new MailMessage)
-            ->subject('Verifica tu correo en SGI')
-            ->line('Haz clic en el boton de abajo para verificar tu correo y activar tu cuenta.')
-            ->action('Verificar correo', $verificationUrl)
-            ->line('Si no creaste esta cuenta, puedes ignorar este mensaje.');
+            ->subject('SGI | Verifica tu correo')
+            ->view('emails.sgi-email', [
+                'subject' => 'SGI | Verifica tu correo',
+                'eyebrow' => 'Activación de cuenta',
+                'title' => 'Verifica tu correo',
+                'displayName' => $notifiable->first_name ?? 'Usuario',
+                'intro' => 'Confirma tu correo electrónico para activar tu cuenta en SGI.',
+                'actionLabel' => 'Verificar correo',
+                'actionUrl' => $verificationUrl,
+                'notice' => 'Si no creaste esta cuenta, puedes ignorar este mensaje de forma segura.',
+            ]);
     }
 }

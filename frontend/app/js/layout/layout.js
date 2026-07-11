@@ -2,6 +2,7 @@ import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=20';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=20';
+import { clearSession as clearAuthSession } from '../core/auth-session.js?v=15';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
 
 /**
@@ -171,36 +172,33 @@ function isSessionExpired() {
   return Number.isFinite(expiresAt) && expiresAt <= Date.now();
 }
 function clearSession() {
-  localStorage.removeItem(AUTH_KEYS.token);
-  localStorage.removeItem(AUTH_KEYS.user);
-  localStorage.removeItem(AUTH_KEYS.expiresAt);
+  clearAuthSession();
   localStorage.removeItem(AUTH_KEYS.lastActivityAt);
 }
 function getLoginPath() {
   return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
 }
 function redirectToLogin() {
-  window.location.href = getLoginPath();
+  window.location.replace(getLoginPath());
 }
 function ensureSessionOrRedirect() {
   const token = localStorage.getItem(AUTH_KEYS.token);
-  if (!token || isSessionExpired()) {
+  const user = readSessionUser();
+  if (!token || !user || isSessionExpired()) {
     clearSession();
     redirectToLogin();
     return null;
   }
-  return readSessionUser();
+  return user;
 }
 function getLastActivityAt() {
   const timestamp = Number(localStorage.getItem(AUTH_KEYS.lastActivityAt));
   return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : Date.now();
 }
-function requestBackendLogout() {
+async function requestBackendLogout() {
   const token = localStorage.getItem(AUTH_KEYS.token);
   if (!token) return;
-  apiRequestRaw('/logout', { method: 'POST' }).catch(() => {
-    // El frontend limpia la sesion aunque el backend no responda.
-  });
+  await apiRequestRaw('/logout', { method: 'POST', keepalive: true });
 }
 async function requestBackend(path, options = {}) {
   const token = localStorage.getItem(AUTH_KEYS.token);
@@ -270,10 +268,15 @@ async function mutateBackend(path, options = {}) {
 
 
 
-function logoutFromInactivity() {
-  requestBackendLogout();
-  clearSession();
-  redirectToLogin();
+async function logoutFromInactivity() {
+  try {
+    await requestBackendLogout();
+  } catch {
+    // La sesión local se elimina incluso si el backend no responde.
+  } finally {
+    clearSession();
+    redirectToLogin();
+  }
 }
 function scheduleInactivityLogout() {
   window.clearTimeout(inactivityTimer);
@@ -312,10 +315,15 @@ function startInactivityWatcher() {
   });
   scheduleInactivityLogout();
 }
-function logoutManually() {
-  requestBackendLogout();
-  clearSession();
-  redirectToLogin();
+async function logoutManually() {
+  try {
+    await requestBackendLogout();
+  } catch {
+    // La sesión local se elimina incluso si el backend no responde.
+  } finally {
+    clearSession();
+    redirectToLogin();
+  }
 }
 function scheduleSessionExpiryLogout() {
   const expiresAt = new Date(localStorage.getItem(AUTH_KEYS.expiresAt) || '').getTime();
@@ -624,6 +632,7 @@ async function renderLayout(activeId = '') {
     window.location.href = defaultPage;
     return;
   }
+
   // Navbar
   const userFirstName = user.nombre || user.first_name || user.name || user.username || 'Usuario';
   const userLastName = user.apellido || user.last_name || '';
@@ -775,6 +784,7 @@ async function renderLayout(activeId = '') {
     });
   }
   
+  window.SGIProtectedPageGuard?.reveal();
   startInactivityWatcher();
   loadNavbarNotifications(true);
   startRealtimeNotifications(user);
@@ -783,6 +793,15 @@ async function renderLayout(activeId = '') {
   }
 }
 window.renderLayout = renderLayout;
+
+window.addEventListener('sgi:unauthorized', () => {
+  clearSession();
+  redirectToLogin();
+});
+
+window.addEventListener('sgi:validate-session', () => {
+  refreshSessionUserOrRedirect();
+});
 
 function filterAuthorizedMenuItems(items = []) {
   return items.reduce((result, item) => {

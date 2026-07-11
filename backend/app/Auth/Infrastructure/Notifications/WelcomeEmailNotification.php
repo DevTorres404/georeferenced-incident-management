@@ -3,11 +3,12 @@
 namespace App\Auth\Infrastructure\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Notifications\Notification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Lang;
 
-class WelcomeEmailNotification extends Notification
+class WelcomeEmailNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -21,11 +22,12 @@ class WelcomeEmailNotification extends Notification
     {
         return ['mail'];
     }
+
     /**
      * Build the mail representation of the notification.
      *
      * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
@@ -33,9 +35,23 @@ class WelcomeEmailNotification extends Notification
 
         return (new MailMessage)
             ->subject(Lang::get('Bienvenido a SGI'))
-            ->view('emails.welcome-email', [
-                'url' => $dashboardUrl,
-                'notifiable' => $notifiable
+            ->view('emails.sgi-email', [
+                'subject' => 'Bienvenido a SGI',
+                'eyebrow' => 'Cuenta activada',
+                'title' => 'Bienvenido a SGI',
+                'displayName' => $notifiable->first_name
+                    ?? $notifiable->name
+                    ?? $notifiable->username
+                    ?? 'Usuario',
+                'intro' => 'Tu cuenta está lista para registrar, consultar y dar seguimiento a incidencias desde una plataforma segura.',
+                'items' => [
+                    'Accede con tu cuenta registrada.',
+                    'Revisa las acciones disponibles para tu rol.',
+                    'Crea, consulta o da seguimiento a las incidencias autorizadas.',
+                ],
+                'actionLabel' => 'Entrar a SGI',
+                'actionUrl' => $dashboardUrl,
+                'notice' => 'Por seguridad, ingresa siempre desde el enlace oficial de SGI y mantén actualizados tus datos de perfil.',
             ]);
     }
 }

@@ -13,6 +13,26 @@ class NotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed([\Database\Seeders\RoleSeeder::class, \Database\Seeders\PermissionSeeder::class]);
+    }
+
+    private function createAuthorizedUser(): User
+    {
+        $user = User::factory()->create([
+            'two_factor_confirmed_at' => now(),
+        ]);
+        
+        $role = \App\Auth\Infrastructure\Persistence\Models\Role::where('code', 'ADMIN')->first();
+        if ($role) {
+            $user->roles()->sync([$role->id]);
+        }
+        
+        return $user;
+    }
+
     public function test_notification_creation_dispatches_realtime_event(): void
     {
         Event::fake([NotificationCreated::class]);
@@ -32,7 +52,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_can_fetch_notifications(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createAuthorizedUser();
         
         Notification::create([
             'user_id' => $user->id,
@@ -59,7 +79,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_can_filter_unread_notifications(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createAuthorizedUser();
         
         Notification::create([
             'user_id' => $user->id,
@@ -86,7 +106,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_can_get_unread_notifications_count(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createAuthorizedUser();
         
         Notification::create([
             'user_id' => $user->id,
@@ -112,7 +132,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_can_mark_notification_as_read(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createAuthorizedUser();
         
         $notification = Notification::create([
             'user_id' => $user->id,
@@ -132,7 +152,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_cannot_mark_other_users_notification_as_read(): void
     {
-        $user1 = User::factory()->create();
+        $user1 = $this->createAuthorizedUser();
         $user2 = User::factory()->create();
         
         $notification = Notification::create([
@@ -150,7 +170,7 @@ class NotificationsTest extends TestCase
 
     public function test_user_can_mark_all_notifications_as_read(): void
     {
-        $user = User::factory()->create();
+        $user = $this->createAuthorizedUser();
         
         Notification::create([
             'user_id' => $user->id,

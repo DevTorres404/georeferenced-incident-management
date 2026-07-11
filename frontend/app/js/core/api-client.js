@@ -66,6 +66,10 @@ async function requestRaw(path, options = {}) {
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await response.json() : {};
 
+    if (response.status === 401 && token) {
+      window.dispatchEvent(new Event('sgi:unauthorized'));
+    }
+
     if (method === 'GET' && response.ok && !options.noCache) {
       sessionStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
     }

@@ -19,6 +19,7 @@ function initAuthPage() {
     const el = {
       loginView: document.getElementById('login-view'),
       registerView: document.getElementById('register-view'),
+      emailVerificationView: document.getElementById('email-verification-view'),
       profileView: document.getElementById('profile-view'),
       twoFactorView: document.getElementById('two-factor-view'),
       setupTwoFactorView: document.getElementById('setup-2fa-view'),
@@ -33,6 +34,14 @@ function initAuthPage() {
     resetPasswordForm: document.getElementById('reset-password-form'),
     loginAlert: document.getElementById('login-alert'),
     registerAlert: document.getElementById('register-alert'),
+    emailVerificationEyebrow: document.getElementById('email-verification-eyebrow'),
+    emailVerificationTitle: document.getElementById('email-verification-title'),
+    emailVerificationCopy: document.getElementById('email-verification-copy'),
+    emailVerificationEmail: document.getElementById('email-verification-email'),
+    emailVerificationHelp: document.getElementById('email-verification-help'),
+    emailVerificationStatus: document.getElementById('email-verification-status'),
+    emailVerificationLoginBtn: document.getElementById('email-verification-login-btn'),
+    emailVerificationResendBtn: document.getElementById('email-verification-resend-btn'),
     profileAlert: document.getElementById('profile-alert'),
     twoFactorAlert: document.getElementById('two-factor-alert'),
     setupTwoFactorAlert: document.getElementById('setup-2fa-alert'),
@@ -97,6 +106,7 @@ function initAuthPage() {
   let tempTwoFactorToken = null;
   let recoveryEmail = '';
   let recoveryCode = '';
+  let pendingVerificationEmail = '';
 
   bindEvents();
   setupValidationListeners(el.loginForm);
@@ -143,6 +153,8 @@ function initAuthPage() {
       event.preventDefault();
       switchView('register');
     });
+    if (el.emailVerificationLoginBtn) el.emailVerificationLoginBtn.addEventListener('click', returnToLogin);
+    if (el.emailVerificationResendBtn) el.emailVerificationResendBtn.addEventListener('click', resendPendingVerification);
     if (el.backToLoginBtn) el.backToLoginBtn.addEventListener('click', () => switchView('login'));
     if (el.openForgotPasswordBtn) el.openForgotPasswordBtn.addEventListener('click', (event) => {
       event.preventDefault();
@@ -190,37 +202,16 @@ function initAuthPage() {
     localStorage.removeItem('sgig_flash_message');
   }
 
-  function showLoginEmailNotVerified(alertEl, email) {
-    if (!alertEl) return;
-    alertEl.className = 'alert alert-warning py-3 mb-3 text-start small';
-    alertEl.innerHTML = '';
-    alertEl.classList.remove('d-none');
+  function showLoginEmailNotVerified(email) {
+    if (el.passwordInput) el.passwordInput.value = '';
 
-    const msg = document.createElement('p');
-    msg.className = 'mb-2';
-    msg.textContent = 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.';
-    alertEl.appendChild(msg);
-
-    if (email) {
-      const resendBtn = document.createElement('button');
-      resendBtn.type = 'button';
-      resendBtn.className = 'btn btn-sm btn-outline-primary mt-1';
-      resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo de verificación';
-      resendBtn.addEventListener('click', async () => {
-        resendBtn.disabled = true;
-        resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enviando...';
-        try {
-          await resendVerificationEmail(email);
-          showAlert(alertEl, 'Correo de verificación reenviado. Revisa tu bandeja de entrada.', 'success');
-        } catch (e) {
-          showAlert(alertEl, e.message || 'No se pudo reenviar el correo.', 'danger');
-        } finally {
-          resendBtn.disabled = false;
-          resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo de verificación';
-        }
-      });
-      alertEl.appendChild(resendBtn);
-    }
+    showEmailVerificationScreen({
+      email,
+      eyebrow: 'Cuenta pendiente de activación',
+      title: 'Verifica tu correo para continuar',
+      copy: 'Tu cuenta existe, pero todavía no está activa. Para iniciar sesión en SGI, verifica el correo enviado a:',
+      help: 'Abre el enlace de verificación y luego vuelve al inicio de sesión.',
+    });
   }
 
   function showVerificationNotice() {
@@ -258,7 +249,7 @@ function initAuthPage() {
       routeAfterAuth(data.user);
     } catch (error) {
       if (error?.status === 403 && (error?.data?.error_code === 'EMAIL_NOT_VERIFIED' || error?.message?.includes('verificar tu correo'))) {
-        showLoginEmailNotVerified(el.loginAlert, el.loginEmailInput?.value?.trim() || '');
+        showLoginEmailNotVerified(el.loginEmailInput?.value?.trim() || '');
         return;
       }
       handleBackendErrors(error, el.loginForm, el.loginAlert);
@@ -456,7 +447,7 @@ function initAuthPage() {
 
       const registeredEmail = el.registerEmailInput.value.trim();
       el.registerForm.reset();
-      showRegisterSuccess(el.registerAlert, registeredEmail, data.verification_sent, data.verification_error);
+      showRegisterSuccess(registeredEmail, data.verification_sent, data.verification_error);
     } catch (error) {
       handleBackendErrors(error, el.registerForm, el.registerAlert);
     } finally {
@@ -464,52 +455,72 @@ function initAuthPage() {
     }
   }
 
-  function showRegisterSuccess(alertEl, email, verificationSent, verificationError) {
-    alertEl.className = 'alert alert-success py-3 mb-3 text-start small';
-    alertEl.innerHTML = '';
-    alertEl.classList.remove('d-none');
+  function showRegisterSuccess(email, verificationSent, verificationError) {
+    showEmailVerificationScreen({
+      email,
+      eyebrow: 'Registro completado',
+      title: 'Revisa tu correo',
+      copy: 'Tu cuenta fue creada correctamente. Enviamos un enlace de verificación a:',
+      help: 'Abre el enlace del correo para activar tu cuenta. Después podrás iniciar sesión en SGI.',
+      warning: !verificationSent ? verificationError : '',
+    });
+  }
 
-    const msg = document.createElement('p');
-    msg.className = 'mb-2 fw-bold';
-    msg.textContent = 'Cuenta creada exitosamente.';
-    alertEl.appendChild(msg);
+  function showEmailVerificationScreen({ email, eyebrow, title, copy, help, warning = '' }) {
+    pendingVerificationEmail = email;
+    if (el.emailVerificationEyebrow) el.emailVerificationEyebrow.textContent = eyebrow;
+    if (el.emailVerificationTitle) el.emailVerificationTitle.textContent = title;
+    if (el.emailVerificationCopy) el.emailVerificationCopy.textContent = copy;
+    if (el.emailVerificationEmail) el.emailVerificationEmail.textContent = email;
+    if (el.emailVerificationHelp) el.emailVerificationHelp.textContent = help;
 
-    const detail = document.createElement('p');
-    detail.className = 'mb-2';
-    detail.textContent = 'Te enviamos un correo de verificación. Revisa tu bandeja de entrada y verifica tu cuenta antes de iniciar sesión.';
-    alertEl.appendChild(detail);
-
-    if (!verificationSent && verificationError) {
-      const err = document.createElement('p');
-      err.className = 'mb-2 text-warning';
-      err.textContent = verificationError;
-      alertEl.appendChild(err);
+    if (warning) {
+      showEmailVerificationStatus(warning, 'warning');
+    } else {
+      hideAlert(el.emailVerificationStatus);
     }
 
-    const resendBtn = document.createElement('button');
-    resendBtn.type = 'button';
-    resendBtn.className = 'btn btn-sm btn-outline-primary mr-2 mb-1';
-    resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo';
-    resendBtn.addEventListener('click', async () => {
-      resendBtn.disabled = true;
-      resendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enviando...';
-      try {
-        await resendVerificationEmail(email);
-        showAlert(alertEl, 'Correo de verificación reenviado.', 'success');
-      } catch (e) {
-        showAlert(alertEl, e.message || 'No se pudo reenviar el correo.', 'danger');
-      } finally {
-        resendBtn.disabled = false;
-        resendBtn.innerHTML = '<i class="fas fa-redo-alt mr-1"></i> Reenviar correo';
-      }
-    });
-    alertEl.appendChild(resendBtn);
+    switchView('email-verification');
+  }
 
-    const loginLink = document.createElement('a');
-    loginLink.href = '/index.html';
-    loginLink.className = 'btn btn-sm btn-primary-gradient ml-1 mb-1';
-    loginLink.innerHTML = '<i class="fas fa-sign-in-alt mr-1"></i> Ir a iniciar sesión';
-    alertEl.appendChild(loginLink);
+  async function resendPendingVerification() {
+    if (!pendingVerificationEmail || !el.emailVerificationResendBtn) return;
+
+    const button = el.emailVerificationResendBtn;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Enviando correo...';
+
+    try {
+      await resendVerificationEmail(pendingVerificationEmail);
+      showEmailVerificationStatus('Correo de verificación reenviado. Revisa tu bandeja de entrada.', 'success');
+    } catch (error) {
+      showEmailVerificationStatus(error.message || 'No se pudo reenviar el correo de verificación.', 'danger');
+    } finally {
+      button.disabled = false;
+      button.innerHTML = '<i class="fas fa-redo-alt mr-1"></i>Reenviar correo de verificación';
+    }
+  }
+
+  function showEmailVerificationStatus(message, type) {
+    if (!el.emailVerificationStatus) return;
+    showAlert(el.emailVerificationStatus, message, type);
+  }
+
+  function returnToLogin() {
+    const email = pendingVerificationEmail;
+    pendingVerificationEmail = '';
+
+    if (window.location.pathname.includes('register.html')) {
+      window.location.href = '/index.html#login';
+      return;
+    }
+
+    switchView('login');
+    if (el.loginEmailInput && email) el.loginEmailInput.value = email;
+    if (el.passwordInput) {
+      el.passwordInput.value = '';
+      el.passwordInput.focus();
+    }
   }
 
   async function handleGoogleAuth(event, intent) {
@@ -649,14 +660,15 @@ function initAuthPage() {
   }
 
   function switchView(viewName) {
-    const isAuthMode = viewName === 'login' || viewName === 'register';
+    const isAuthMode = viewName === 'login' || viewName === 'register' || viewName === 'email-verification';
     if (isAuthMode) {
-      document.body.classList.remove('auth-login-mode', 'auth-register-mode');
+      document.body.classList.remove('auth-login-mode', 'auth-register-mode', 'auth-email-verification-mode');
       document.body.classList.add(`auth-${viewName}-mode`);
     }
 
     if (el.loginView) el.loginView.classList.toggle('d-none', viewName !== 'login');
     if (el.registerView) el.registerView.classList.toggle('d-none', viewName !== 'register');
+    if (el.emailVerificationView) el.emailVerificationView.classList.toggle('d-none', viewName !== 'email-verification');
     if (el.profileView) el.profileView.classList.toggle('d-none', viewName !== 'profile');
     if (el.twoFactorView) el.twoFactorView.classList.toggle('d-none', viewName !== 'two-factor');
     if (el.setupTwoFactorView) el.setupTwoFactorView.classList.toggle('d-none', viewName !== 'setup-2fa');

@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
@@ -16,14 +17,15 @@ use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Database\Seeders\CategorySeeder;
+use Database\Seeders\OperationalZoneGeometrySeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\PrioritySeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\StateSeeder;
-use Database\Seeders\OperationalZoneGeometrySeeder;
 use Database\Seeders\TerritorialUnitSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -34,6 +36,7 @@ class IncidentsTest extends TestCase
 
     public function test_citizen_can_create_incident_and_view_detail(): void
     {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
         $this->seedCoreData();
         $citizen = $this->authenticateAs('CIUDADANO', 'citizen-create@incidencias.local');
 
@@ -58,6 +61,9 @@ class IncidentsTest extends TestCase
 
         $incidentId = $createResponse->json('data.id');
         $this->assertNull(Incident::findOrFail($incidentId)->priority_id);
+        Bus::assertDispatched(NotifyIncidentCreatedJob::class, function (NotifyIncidentCreatedJob $job) use ($incidentId): bool {
+            return $job->incidentId === (int) $incidentId;
+        });
 
         $showResponse = $this->actingAsUser($citizen['user'])
             ->getJson("/api/incidents/{$incidentId}");
@@ -667,7 +673,8 @@ class IncidentsTest extends TestCase
             Notification::where('user_id', $supervisor['user']->id)->count()
         );
     }
-public function test_supervisor_alert_command_notifies_control_and_summary_events(): void
+
+    public function test_supervisor_alert_command_notifies_control_and_summary_events(): void
     {
         $this->seedCoreData();
 
@@ -1063,7 +1070,3 @@ public function test_supervisor_alert_command_notifies_control_and_summary_event
         return 0;
     }
 }
-
-
-
-

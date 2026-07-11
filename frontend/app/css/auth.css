@@ -100,6 +100,10 @@ body.auth-register-mode .auth-subheading-register {
   display: block;
 }
 
+body.auth-email-verification-mode .auth-card-heading {
+  display: none;
+}
+
 #login-view,
 #register-view {
   position: static;
@@ -260,6 +264,101 @@ body.auth-register-mode .auth-form-panel {
 
 .auth-security-notice p {
   color: var(--auth-muted) !important;
+}
+
+.auth-email-verification {
+  padding: 0.5rem 0;
+}
+
+.auth-success-icon {
+  position: relative;
+  display: inline-flex;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 1.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8f4fc;
+  color: var(--auth-primary-dark);
+  font-size: 2.35rem;
+}
+
+.auth-success-icon span {
+  position: absolute;
+  right: -2px;
+  bottom: 2px;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--auth-primary);
+  color: #fff;
+  font-size: 0.75rem;
+}
+
+.auth-success-eyebrow {
+  margin-bottom: 0.4rem;
+  color: var(--auth-primary-dark);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.auth-email-verification h2 {
+  margin-bottom: 0.75rem;
+  color: #0f172a;
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.auth-success-copy,
+.auth-success-help {
+  color: var(--auth-muted);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.auth-success-copy {
+  margin-bottom: 1rem;
+}
+
+.auth-success-email {
+  display: flex;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--auth-border);
+  border-radius: 12px;
+  background: var(--auth-bg);
+  color: var(--auth-primary-dark);
+  overflow-wrap: anywhere;
+}
+
+.auth-success-email i {
+  margin-right: 0.6rem;
+  color: var(--auth-primary);
+}
+
+.auth-success-help {
+  margin-bottom: 1.35rem;
+}
+
+#email-verification-status {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.auth-success-note {
+  margin-top: 1.35rem;
+  color: var(--auth-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 #reset-code {
