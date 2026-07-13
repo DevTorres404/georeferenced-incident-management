@@ -13,6 +13,8 @@ import {
 import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=15';
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
+const GOOGLE_POPUP_CLOSED_BY_USER = 'auth/popup-closed-by-user';
+
 document.addEventListener('DOMContentLoaded', initAuthPage);
 
 function initAuthPage() {
@@ -559,6 +561,10 @@ function initAuthPage() {
 
       routeAfterAuth(data.user || data);
     } catch (error) {
+      if (error?.code === GOOGLE_POPUP_CLOSED_BY_USER) {
+        return;
+      }
+
       showAlert(alertEl, error.message || 'No se pudo completar la operación con Google.', 'danger');
     } finally {
       setLoading(scope, false);

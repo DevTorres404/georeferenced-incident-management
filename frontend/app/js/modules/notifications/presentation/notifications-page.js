@@ -8,6 +8,7 @@ let allNotifications = [];
 
 document.addEventListener('DOMContentLoaded', initNotificationsPage);
 window.addEventListener('sgi:notification-created', handleRealtimeNotification);
+window.addEventListener('sgi:notifications-refreshed', handleNotificationsRefresh);
 
 async function initNotificationsPage() {
   window.renderLayout?.('notifications');
@@ -38,13 +39,25 @@ function handleRealtimeNotification(event) {
   renderList();
 }
 
+function handleNotificationsRefresh(event) {
+  const items = Array.isArray(event?.detail?.items) ? event.detail.items : [];
+  const newItems = items.filter((notification) => (
+    notification?.id && !allNotifications.some((item) => Number(item.id) === Number(notification.id))
+  ));
+  if (!newItems.length) return;
+
+  allNotifications = [...newItems, ...allNotifications];
+  currentPage = 1;
+  renderList();
+}
+
 async function loadAllNotifications() {
   let page = 1;
   let hasMore = true;
   allNotifications = [];
 
   while (hasMore) {
-    const response = await requestBackend(`/notifications?per_page=50&page=${page}`);
+    const response = await requestBackend(`/notifications?per_page=50&page=${page}`, { noCache: true });
     const data = Array.isArray(response?.data) ? response.data : [];
     allNotifications = allNotifications.concat(data);
     hasMore = data.length === 50;

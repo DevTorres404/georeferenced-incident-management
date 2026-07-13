@@ -51,7 +51,7 @@
                 <div class="container-fluid">
                     <div class="row mb-3"> <!-- Botones de Acción Globales -->
                         <div class="col-12 d-flex justify-content-end mb-3" style="gap: 12px;"> <a
-                                href="incident-map.html"
+                                href="incident-map.html" id="btnViewMap"
                                 class="btn btn-outline-primary btn-sm shadow-sm font-weight-bold"> <i
                                     class="fas fa-map-marked-alt mr-1"></i>Ver en Mapa </a> <a
                                 href="incident-create.html" id="btnCreateIncident"
@@ -119,6 +119,19 @@
                                     data-card-widget="collapse"> <i class="fas fa-minus"></i> </button> </div>
                         </div>
                         <div class="card-body">
+                            <div class="form-group mb-3">
+                                <label for="incidentSearch" class="sr-only">Buscar incidencias</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white text-muted" aria-hidden="true">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                    </div>
+                                    <input type="text" class="form-control" id="incidentSearch"
+                                        placeholder="Buscar código, título o descripción..."
+                                        aria-label="Buscar por código, título o descripción" autocomplete="off">
+                                </div>
+                            </div>
                             <div class="table-responsive">
                                 <table id="tablaIncidencias" class="table table-hover table-sm align-middle mb-0"
                                     style="width:100%">
@@ -184,8 +197,8 @@
     <script src="/plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=37"></script>
-    <script type="module" src="/js/modules/incidents/presentation/incidents-page.js?v=22"></script>
+    <script type="module" src="/js/layout/layout.js?v=40"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incidents-page.js?v=23"></script>
 </body>
 
 </html>

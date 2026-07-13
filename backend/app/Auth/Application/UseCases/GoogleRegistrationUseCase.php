@@ -5,12 +5,14 @@ namespace App\Auth\Application\UseCases;
 use App\Auth\Application\DTOs\AuthActionResultData;
 use App\Auth\Application\DTOs\CreateUserInputData;
 use App\Auth\Application\DTOs\GoogleAuthInputData;
+use App\Auth\Application\Ports\ProfilePhotoStoragePort;
 use App\Auth\Application\Ports\SessionManagerPort;
 use App\Auth\Application\Ports\UserNotificationPort;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
 use App\Auth\Domain\Repositories\UserRepositoryInterface;
 use App\Auth\Domain\Services\GoogleTokenVerifierInterface;
+use App\Shared\Application\Ports\DateTimeProviderPort;
 use App\Shared\Application\Ports\LoggerPort;
 use Throwable;
 
@@ -22,9 +24,10 @@ final class GoogleRegistrationUseCase
         private GoogleTokenVerifierInterface $googleTokenVerifier,
         private SessionManagerPort $sessionManager,
         private UserNotificationPort $notificationPort,
-        private LoggerPort $logger
-    ) {
-    }
+        private LoggerPort $logger,
+        private DateTimeProviderPort $dateTimeProvider,
+        private ProfilePhotoStoragePort $profilePhotoStorage
+    ) {}
 
     public function execute(GoogleAuthInputData $input): AuthActionResultData
     {
@@ -56,7 +59,7 @@ final class GoogleRegistrationUseCase
         }
 
         // Check if the user is deactivated (soft deleted)
-        $trashedUser = \App\Auth\Infrastructure\Persistence\Models\User::onlyTrashed()->where('email', $email)->first();
+        $trashedUser = $this->userRepository->findTrashedByEmail($email);
         if ($trashedUser) {
             $this->registrarIntentoGoogle($email, false, 'cuenta_desactivada', $input);
             throw AuthException::accountInactive();
@@ -78,6 +81,7 @@ final class GoogleRegistrationUseCase
                 throw AuthException::userNotFound();
             }
             [$firstName, $lastName] = $this->resolverNombreGoogle($payload);
+            $profilePhoto = $this->storeGoogleProfilePhoto($payload, $firebaseUid);
             $user = $this->userRepository->create(new CreateUserInputData(
                 firstName: $firstName,
                 lastName: $lastName,
@@ -85,8 +89,8 @@ final class GoogleRegistrationUseCase
                 email: $email,
                 password: bin2hex(random_bytes(32)),
                 phone: null,
-                profilePhoto: $payload['picture'] ?? null,
-                emailVerifiedAt: now()->toIso8601String(),
+                profilePhoto: $profilePhoto,
+                emailVerifiedAt: $this->dateTimeProvider->nowIso8601(),
                 isActive: true
             ));
 
@@ -95,6 +99,11 @@ final class GoogleRegistrationUseCase
         } elseif (! $user->isActive) {
             $this->registrarIntentoGoogle($email, false, 'cuenta_inactiva', $input, $user->id);
             throw AuthException::accountInactive();
+        } elseif ($this->shouldImportGoogleProfilePhoto($user->profilePhoto, $payload)) {
+            $profilePhoto = $this->storeGoogleProfilePhoto($payload, $firebaseUid);
+            if ($profilePhoto !== null) {
+                $user = $this->userRepository->updateProfilePhoto($user->id, $profilePhoto);
+            }
         }
 
         if (! $user->isActive) {
@@ -119,7 +128,7 @@ final class GoogleRegistrationUseCase
                 'picture' => $payload['picture'] ?? null,
                 'email_verified' => true,
             ],
-            now()->toIso8601String()
+            $this->dateTimeProvider->nowIso8601()
         );
 
         if (! $user->hasVerifiedEmail()) {
@@ -131,6 +140,7 @@ final class GoogleRegistrationUseCase
 
         if ($user->isTwoFactorEnabled()) {
             $twoFactorToken = $this->sessionManager->createTwoFactorToken($user->id);
+
             return new AuthActionResultData(
                 message: 'Se requiere verificación de dos factores.',
                 user: null,
@@ -181,6 +191,37 @@ final class GoogleRegistrationUseCase
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    private function shouldImportGoogleProfilePhoto(?string $currentPhoto, array $payload): bool
+    {
+        $googlePhoto = trim((string) ($payload['picture'] ?? ''));
+        if ($googlePhoto === '') {
+            return false;
+        }
+
+        return $currentPhoto === null
+            || trim($currentPhoto) === ''
+            || filter_var($currentPhoto, FILTER_VALIDATE_URL) !== false;
+    }
+
+    private function storeGoogleProfilePhoto(array $payload, string $firebaseUid): ?string
+    {
+        $sourceUrl = trim((string) ($payload['picture'] ?? ''));
+        if ($sourceUrl === '') {
+            return null;
+        }
+
+        try {
+            return $this->profilePhotoStorage->storeGoogleProfilePhoto($sourceUrl, $firebaseUid);
+        } catch (Throwable $e) {
+            $this->logger->error('No se pudo importar la foto de perfil de Google en RustFS.', [
+                'provider_uid_hash' => hash('sha256', $firebaseUid),
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 

@@ -98,21 +98,23 @@ class DomainRulesTest extends TestCase
 
     public function test_territorial_hierarchy_allows_valid_parent_chain(): void
     {
-        $rules = new TerritorialHierarchyRules();
+        $rules = new TerritorialHierarchyRules;
 
-        $rules->validate(TerritorialUnitType::PROVINCE, null);
-        $rules->validate(TerritorialUnitType::CANTON, TerritorialUnitType::PROVINCE, 1);
-        $rules->validate(TerritorialUnitType::PARISH, TerritorialUnitType::CANTON, 2, [1]);
-        $rules->validate(TerritorialUnitType::SECTOR, TerritorialUnitType::PARISH, 3, [2, 1]);
+        $rules->validate(TerritorialUnitType::COUNTRY, null);
+        $rules->validate(TerritorialUnitType::OPERATIONAL_ZONE, TerritorialUnitType::COUNTRY, 1);
+        $rules->validate(TerritorialUnitType::PROVINCE, TerritorialUnitType::OPERATIONAL_ZONE, 2, [1]);
+        $rules->validate(TerritorialUnitType::CANTON, TerritorialUnitType::PROVINCE, 3, [2, 1]);
+        $rules->validate(TerritorialUnitType::PARISH, TerritorialUnitType::CANTON, 4, [3, 2, 1]);
+        $rules->validate(TerritorialUnitType::SECTOR, TerritorialUnitType::PARISH, 5, [4, 3, 2, 1]);
 
-        $this->addToAssertionCount(4);
+        $this->addToAssertionCount(6);
     }
 
     public function test_territorial_hierarchy_rejects_invalid_parent_type(): void
     {
         $this->expectException(DomainException::class);
 
-        (new TerritorialHierarchyRules())->validate(
+        (new TerritorialHierarchyRules)->validate(
             TerritorialUnitType::PARISH,
             TerritorialUnitType::PROVINCE,
             1
@@ -123,7 +125,7 @@ class DomainRulesTest extends TestCase
     {
         $this->expectException(DomainException::class);
 
-        (new TerritorialHierarchyRules())->validate(
+        (new TerritorialHierarchyRules)->validate(
             TerritorialUnitType::PARISH,
             TerritorialUnitType::CANTON,
             2,

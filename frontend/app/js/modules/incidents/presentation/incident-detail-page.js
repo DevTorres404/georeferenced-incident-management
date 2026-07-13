@@ -3,11 +3,11 @@ import {
   changeIncidentState,
   getIncident,
   listPriorities,
-  listStates,
+  listStateTransitions,
   updateIncident,
   uploadIncidentAttachment,
-} from '../application/incidents-service.js?v=15';
-import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=1';
+} from '../application/incidents-service.js?v=17';
+import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2';
 import {
   API_URL,
   MAP_BASE_STYLES,
@@ -26,10 +26,14 @@ import {
 document.addEventListener('DOMContentLoaded', initIncidentDetailPage);
 
 let commentSubscription = null;
+let commentFallbackDelay = null;
+let commentFallbackTimer = null;
+let commentRefreshInFlight = false;
 
 window.addEventListener('pagehide', () => {
   commentSubscription?.cleanup?.();
   commentSubscription = null;
+  stopCommentFallback();
 });
 
 async function initIncidentDetailPage() {
@@ -48,13 +52,12 @@ async function initIncidentDetailPage() {
   try {
     const canChangeState = hasPermission('incidents.edit');
     const canAssignPriority = canManagePriority();
-    const [{ data: incident }, statesResponse] = await Promise.all([
+    const [incidentResponse, transitionsResponse, prioritiesResponse] = await Promise.all([
       getIncident(incidentId),
-      canChangeState ? listStates() : Promise.resolve({ data: [] }),
+      canChangeState ? listStateTransitions() : Promise.resolve({ data: [] }),
+      canAssignPriority ? listPriorities() : Promise.resolve({ data: [] }),
     ]);
-    const prioritiesResponse = canAssignPriority
-      ? await listPriorities()
-      : { data: [] };
+    const incident = incidentResponse?.data;
 
     if (!incident) {
       renderError(container, 'No se encontro la incidencia solicitada.');
@@ -70,7 +73,7 @@ async function initIncidentDetailPage() {
     renderIncidentDetail(
       container,
       incident,
-      Array.isArray(statesResponse?.data) ? statesResponse.data : [],
+      Array.isArray(transitionsResponse?.data) ? transitionsResponse.data : [],
       Array.isArray(prioritiesResponse?.data) ? prioritiesResponse.data : []
     );
     startRealtimeComments(incident);
@@ -79,7 +82,7 @@ async function initIncidentDetailPage() {
   }
 }
 
-function renderIncidentDetail(container, incident, states, priorities) {
+function renderIncidentDetail(container, incident, transitions, priorities) {
   const stateName = formatCatalogLabel(incident.state?.name || '-');
   const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin definir');
   const categoryName = formatCatalogLabel(incident.category?.name || '-');
@@ -92,6 +95,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
   const canChangeState = hasPermission('incidents.edit');
   const canAssignPriority = canManagePriority();
   const hasValidCoordinates = hasCoordinates(incident);
+  const historyTooltip = renderRecentStateChangesTooltip(history);
 
   container.innerHTML = `
     <div class="row mb-3">
@@ -110,9 +114,17 @@ function renderIncidentDetail(container, incident, states, priorities) {
             </button>
           ` : ''}
           ${canChangeState ? `
-            <button class="btn btn-sm btn-warning mr-1" id="btnCambiarEstado">
-              <i class="fas fa-exchange-alt mr-1"></i>Cambiar Estado
-            </button>
+            <div class="input-group input-group-sm d-inline-flex align-middle mr-1" style="width:auto;min-width:210px;">
+              <div class="input-group-prepend" id="stateHistoryTooltip" data-toggle="tooltip" data-html="true"
+                   data-placement="bottom" title="${historyTooltip}">
+                <span class="input-group-text bg-warning border-warning text-dark" aria-hidden="true">
+                  <i class="fas fa-sync-alt"></i>
+                </span>
+              </div>
+              <label for="estadoDirecto" class="sr-only">Cambiar estado</label>
+              <select class="custom-select custom-select-sm border-warning" id="estadoDirecto"
+                      aria-label="Cambiar estado de la incidencia"></select>
+            </div>
           ` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
@@ -141,7 +153,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
                 <p><span class="badge ${getPriorityBadgeClass(priorityName)} px-2 py-1" id="badgePrioridadDetalle">${escapeHtml(priorityName)}</span></p>
 
                 <p class="detalle-label">Estado</p>
-                <p><span class="badge ${getStateBadgeClass(stateName)} px-2 py-1">${escapeHtml(stateName)}</span></p>
+                <p><span class="badge ${getStateBadgeClass(stateName)} px-2 py-1" id="badgeEstadoResumen">${escapeHtml(stateName)}</span></p>
               </div>
               <div class="col-sm-6">
                 <p class="detalle-label">Código</p>
@@ -314,9 +326,6 @@ function renderIncidentDetail(container, incident, states, priorities) {
       </div>
     </div>`;
 
-  if (canChangeState) {
-    hydrateStateModal(incident, states);
-  }
   if (canAssignPriority) {
     hydratePriorityModal(incident, priorities);
   }
@@ -328,7 +337,7 @@ function renderIncidentDetail(container, incident, states, priorities) {
     bindPriorityForm(incident);
   }
   if (canChangeState) {
-    bindStateChangeForm(incident, states);
+    bindStateChangeControl(incident, transitions);
   }
 }
 
@@ -402,23 +411,68 @@ function territoryLabel(incident) {
   );
 }
 
-function hydrateStateModal(incident, states) {
-  const select = document.getElementById('nuevoEstado');
+function renderStateSelector(incident, transitions) {
+  const select = document.getElementById('estadoDirecto');
   if (!select) return;
 
-  const seen = new Set();
-  const filtered = [];
-  for (const state of states) {
-    const label = formatCatalogLabel(state.name);
-    if (seen.has(label)) continue;
-    seen.add(label);
-    filtered.push(state);
-  }
+  const currentStateName = formatCatalogLabel(incident.state?.name || '-');
+  const availableTransitions = getAvailableStateTransitions(incident, transitions);
+  select.innerHTML = [
+    `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`,
+    ...availableTransitions.map((transition) => {
+      const commentNotice = transition.requires_comment ? ' — requiere comentario' : '';
+      return `<option value="${Number(transition.target_state_id)}">${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}${commentNotice}</option>`;
+    }),
+  ].join('');
+  select.value = String(incident.state_id);
+  select.disabled = availableTransitions.length === 0;
+  select.title = availableTransitions.length
+    ? 'Seleccione el nuevo estado'
+    : 'No hay transiciones disponibles para su rol';
+}
 
-  select.innerHTML = filtered.map((state) => `
-    <option value="${state.id}" ${Number(state.id) === Number(incident.state_id) ? 'selected' : ''}>
-      ${escapeHtml(formatCatalogLabel(state.name))}
-    </option>`).join('');
+function getAvailableStateTransitions(incident, transitions) {
+  const seenTargets = new Set();
+
+  return transitions.filter((transition) => {
+    const targetStateId = Number(transition.target_state_id);
+    const isActive = transition.is_active !== false && Number(transition.is_active) !== 0;
+    const isCurrentSource = Number(transition.source_state_id) === Number(incident.state_id);
+    const isNewTarget = targetStateId !== Number(incident.state_id) && !seenTargets.has(targetStateId);
+    const isAllowed = isTransitionAllowedForCurrentUser(transition);
+
+    if (!isActive || !isCurrentSource || !isNewTarget || !isAllowed) return false;
+    seenTargets.add(targetStateId);
+    return true;
+  });
+}
+
+function isTransitionAllowedForCurrentUser(transition) {
+  const allowedRoles = Array.isArray(transition.allowed_roles)
+    ? transition.allowed_roles.map(normalizeCode).filter(Boolean)
+    : [];
+  if (!allowedRoles.length) return true;
+
+  const user = readCurrentUser();
+  const userRoles = Array.isArray(user?.roles)
+    ? user.roles.map(normalizeCode).filter(Boolean)
+    : [];
+
+  return userRoles.some((role) => allowedRoles.includes(role));
+}
+
+function prepareStateCommentModal(transition) {
+  const select = document.getElementById('nuevoEstado');
+  const commentInput = document.getElementById('comentarioEstado');
+  if (!select || !commentInput) return;
+
+  select.innerHTML = `
+    <option value="${Number(transition.target_state_id)}">
+      ${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}
+    </option>`;
+  commentInput.value = '';
+  window.jQuery?.('#modalEstado').modal('show');
+  window.setTimeout(() => commentInput.focus(), 250);
 }
 
 function hydratePriorityModal(incident, priorities) {
@@ -471,16 +525,57 @@ function bindCommentForm(incident) {
 }
 
 function startRealtimeComments(incident) {
+  scheduleCommentFallback(incident);
   subscribeToIncidentComments(
     incident.id,
     hasPermission('comments.internal'),
-    (comment) => appendCommentIfMissing(incident, comment)
+    (comment) => appendCommentIfMissing(incident, comment),
+    (state) => {
+      if (state === 'subscribed') {
+        stopCommentFallback();
+      } else {
+        scheduleCommentFallback(incident);
+      }
+    }
   ).then((subscription) => {
     commentSubscription?.cleanup?.();
     commentSubscription = subscription;
   }).catch((error) => {
-    console.warn('[SGI] Comentarios en tiempo real no disponibles; se mantiene la API REST.', error);
+    scheduleCommentFallback(incident);
+    console.warn('[SGI] Comentarios en tiempo real no disponibles; se activo la sincronizacion de respaldo.', error);
   });
+}
+
+function scheduleCommentFallback(incident) {
+  if (commentFallbackDelay || commentFallbackTimer) return;
+
+  commentFallbackDelay = window.setTimeout(() => {
+    commentFallbackDelay = null;
+    refreshIncidentComments(incident);
+    commentFallbackTimer = window.setInterval(() => refreshIncidentComments(incident), 10000);
+  }, 5000);
+}
+
+function stopCommentFallback() {
+  if (commentFallbackDelay) window.clearTimeout(commentFallbackDelay);
+  if (commentFallbackTimer) window.clearInterval(commentFallbackTimer);
+  commentFallbackDelay = null;
+  commentFallbackTimer = null;
+}
+
+async function refreshIncidentComments(incident) {
+  if (commentRefreshInFlight || document.visibilityState === 'hidden') return;
+  commentRefreshInFlight = true;
+
+  try {
+    const response = await getIncident(incident.id, { noCache: true });
+    const comments = Array.isArray(response?.data?.comments) ? response.data.comments : [];
+    comments.forEach((comment) => appendCommentIfMissing(incident, comment));
+  } catch (error) {
+    console.warn('[SGI] No se pudieron sincronizar los comentarios.', error);
+  } finally {
+    commentRefreshInFlight = false;
+  }
 }
 
 function appendCommentIfMissing(incident, comment) {
@@ -651,73 +746,151 @@ function bindPriorityForm(incident) {
   });
 }
 
-function bindStateChangeForm(incident) {
-  const openButton = document.getElementById('btnCambiarEstado');
+function bindStateChangeControl(incident, transitions) {
+  const directSelect = document.getElementById('estadoDirecto');
   const saveButton = document.getElementById('btnGuardarEstado');
-  const select = document.getElementById('nuevoEstado');
   const commentInput = document.getElementById('comentarioEstado');
 
-  if (!openButton || !saveButton || !select || !commentInput) return;
+  if (!directSelect || !saveButton || !commentInput) return;
 
-  openButton.addEventListener('click', () => {
-    window.jQuery?.('#modalEstado').modal('show');
-  });
+  let pendingTransition = null;
+  renderStateSelector(incident, transitions);
+  initializeStateHistoryTooltip(incident.history || []);
 
-  saveButton.addEventListener('click', async () => {
-    const nextStateId = Number(select.value);
-    const comment = commentInput.value.trim();
+  directSelect.addEventListener('change', async () => {
+    const nextStateId = Number(directSelect.value);
+    if (nextStateId === Number(incident.state_id)) return;
 
-    if (!Number.isFinite(nextStateId) || nextStateId <= 0) {
-      showGlobalAlert('Seleccione un estado valido.', 'warning');
+    const transition = getAvailableStateTransitions(incident, transitions)
+      .find((item) => Number(item.target_state_id) === nextStateId);
+
+    if (!transition) {
+      renderStateSelector(incident, transitions);
+      showGlobalAlert('La transición seleccionada no está disponible.', 'warning');
       return;
     }
 
+    if (transition.requires_comment) {
+      pendingTransition = transition;
+      directSelect.value = String(incident.state_id);
+      prepareStateCommentModal(transition);
+      return;
+    }
+
+    directSelect.disabled = true;
     try {
-      const previousStateId = incident.state_id;
-      const response = await changeIncidentState(incident.id, {
-        state_id: nextStateId,
-        comment: comment || undefined,
-      });
-
-      const updated = response?.data || {};
-      incident.state_id = updated.state_id ?? incident.state_id;
-      if (updated.state) {
-        incident.state = updated.state;
-      } else {
-        const stateLabel = select.options[select.selectedIndex]?.textContent?.trim() || incident.state?.name || '';
-        incident.state = {
-          ...(incident.state || {}),
-          id: nextStateId,
-          name: stateLabel,
-        };
-      }
-
-      incident.history = [
-        {
-          id: Date.now(),
-          previous_state_id: previousStateId,
-          previous_state_name: null,
-          new_state_id: nextStateId,
-          new_state_name: incident.state?.name,
-          user_id: incident.assignee_user_id || incident.reporter_user_id || 0,
-          comment: comment || null,
-          created_at: new Date().toISOString(),
-          user: null,
-        },
-        ...(incident.history || []),
-      ];
-
-      document.getElementById('badgeEstadoDetalle').textContent = formatCatalogLabel(incident.state?.name || '-');
-      document.getElementById('badgeEstadoDetalle').className = `badge estado-badge-grande ${getStateBadgeClass(incident.state?.name || '')}`;
-      document.getElementById('timelineHistorial').innerHTML = renderHistory(incident.history);
-      setText('historyMetric', incident.history.length);
-      window.jQuery?.('#modalEstado').modal('hide');
-      commentInput.value = '';
-      showGlobalAlert('Estado actualizado correctamente.', 'success');
+      await executeStateTransition(incident, transition, '', transitions);
     } catch (error) {
+      renderStateSelector(incident, transitions);
       showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
     }
   });
+
+  saveButton.addEventListener('click', async () => {
+    const comment = commentInput.value.trim();
+
+    if (!pendingTransition) {
+      window.jQuery?.('#modalEstado').modal('hide');
+      return;
+    }
+
+    if (!comment) {
+      showGlobalAlert('Ingrese el comentario obligatorio para continuar.', 'warning');
+      commentInput.focus();
+      return;
+    }
+
+    saveButton.disabled = true;
+    try {
+      await executeStateTransition(incident, pendingTransition, comment, transitions);
+      pendingTransition = null;
+      window.jQuery?.('#modalEstado').modal('hide');
+      commentInput.value = '';
+    } catch (error) {
+      showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+
+  window.jQuery?.('#modalEstado').on('hidden.bs.modal', () => {
+    pendingTransition = null;
+    commentInput.value = '';
+    renderStateSelector(incident, transitions);
+  });
+}
+
+async function executeStateTransition(incident, transition, comment, transitions) {
+  const previousStateId = Number(incident.state_id);
+  const previousStateName = incident.state?.name || null;
+  const nextStateId = Number(transition.target_state_id);
+  const response = await changeIncidentState(incident.id, {
+    state_id: nextStateId,
+    comment: comment || undefined,
+  });
+
+  const updated = response?.data || {};
+  incident.state_id = updated.state_id ?? nextStateId;
+  incident.state = updated.state || {
+    ...(incident.state || {}),
+    id: nextStateId,
+    name: transition.target_state_name || '-',
+  };
+
+  const currentUser = readCurrentUser();
+  incident.history = [
+    {
+      id: Date.now(),
+      previous_state_id: previousStateId,
+      previous_state_name: previousStateName,
+      new_state_id: nextStateId,
+      new_state_name: incident.state?.name,
+      user_id: Number(currentUser?.id || currentUser?.user_id || 0),
+      comment: comment || null,
+      created_at: new Date().toISOString(),
+      user: currentUser ? {
+        first_name: currentUser.first_name || currentUser.firstName || '',
+        last_name: currentUser.last_name || currentUser.lastName || '',
+      } : null,
+    },
+    ...(incident.history || []),
+  ];
+
+  updateStatePresentation(incident, transitions);
+  showStateChangeConfirmation(incident.state?.name);
+}
+
+function updateStatePresentation(incident, transitions) {
+  const stateName = formatCatalogLabel(incident.state?.name || '-');
+  const headerBadge = document.getElementById('badgeEstadoDetalle');
+  const summaryBadge = document.getElementById('badgeEstadoResumen');
+  const timeline = document.getElementById('timelineHistorial');
+
+  if (headerBadge) {
+    headerBadge.textContent = stateName;
+    headerBadge.className = `badge estado-badge-grande ${getStateBadgeClass(incident.state?.name || '')}`;
+  }
+  if (summaryBadge) {
+    summaryBadge.textContent = stateName;
+    summaryBadge.className = `badge ${getStateBadgeClass(incident.state?.name || '')} px-2 py-1`;
+  }
+  if (timeline) {
+    timeline.innerHTML = renderHistory(incident.history);
+  }
+
+  setText('historyMetric', incident.history.length);
+  renderStateSelector(incident, transitions);
+  initializeStateHistoryTooltip(incident.history);
+}
+
+function showStateChangeConfirmation(stateName) {
+  const message = `Estado actualizado a ${formatCatalogLabel(stateName || '-')}.`;
+  if (typeof window.showGlobalAlert === 'function') {
+    window.showGlobalAlert(message, 'success', 'Estado actualizado', 2000);
+    return;
+  }
+
+  showGlobalAlert(message, 'success');
 }
 
 function renderComments(comments) {
@@ -831,6 +1004,48 @@ function renderHistory(history) {
         <span class="badge ${getStateBadgeClass(stateName)} float-right">${escapeHtml(stateName)}</span>
       </div>`;
   }).join('');
+}
+
+function renderRecentStateChangesTooltip(history) {
+  const changes = recentStateChangeLines(history);
+  if (!changes.length) {
+    return '<strong>Últimos 3 cambios</strong><br>Sin cambios registrados';
+  }
+
+  return `<strong>Últimos 3 cambios</strong><br>${changes.map(escapeHtml).join('<br>')}`;
+}
+
+function recentStateChangeLines(history) {
+  if (!Array.isArray(history)) return [];
+
+  return history.slice(0, 3).map((entry) => {
+    const previousState = formatCatalogLabel(entry.previous_state_name || 'Inicio');
+    const newState = formatCatalogLabel(entry.new_state_name || '-');
+    return `${previousState} → ${newState} · ${formatDateTime(entry.created_at)}`;
+  });
+}
+
+function initializeStateHistoryTooltip(history) {
+  const target = document.getElementById('stateHistoryTooltip');
+  if (!target) return;
+
+  const changes = recentStateChangeLines(history);
+  const htmlContent = renderRecentStateChangesTooltip(history);
+  const tooltip = window.jQuery?.(target);
+
+  if (tooltip?.tooltip) {
+    if (tooltip.data('bs.tooltip')) {
+      tooltip.tooltip('dispose');
+    }
+    target.setAttribute('title', htmlContent);
+    tooltip.tooltip({ html: true, container: 'body', placement: 'bottom' });
+    return;
+  }
+
+  target.setAttribute('title', [
+    'Últimos 3 cambios',
+    ...(changes.length ? changes : ['Sin cambios registrados']),
+  ].join('\n'));
 }
 
 function renderError(container, message) {

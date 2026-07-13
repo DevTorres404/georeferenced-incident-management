@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Audit\Domain\Repositories\AuditRepositoryInterface;
 use App\Audit\Infrastructure\Persistence\Repositories\EloquentAuditRepository;
 use App\Auth\Application\Ports\PasswordHasherPort;
+use App\Auth\Application\Ports\ProfilePhotoStoragePort;
 use App\Auth\Application\Ports\SessionManagerPort;
 use App\Auth\Application\Ports\TwoFactorAuthPort;
 use App\Auth\Application\Ports\UserNotificationPort;
@@ -21,6 +22,7 @@ use App\Auth\Infrastructure\Services\GoogleTwoFactorAuthAdapter;
 use App\Auth\Infrastructure\Services\LaravelPasswordHasherAdapter;
 use App\Auth\Infrastructure\Services\LaravelSessionManagerAdapter;
 use App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter;
+use App\Auth\Infrastructure\Storage\RustFsProfilePhotoStorageAdapter;
 use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
 use App\Catalogs\Infrastructure\Persistence\Repositories\EloquentCatalogRepository;
 use App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface;
@@ -30,9 +32,11 @@ use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentReposi
 use App\Incidents\Infrastructure\Storage\LaravelFileStorageAdapter;
 use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
 use App\Operations\Infrastructure\Persistence\Repositories\EloquentOperationalStructureRepository;
+use App\Shared\Application\Ports\DateTimeProviderPort;
 use App\Shared\Application\Ports\FileStoragePort;
 use App\Shared\Application\Ports\LoggerPort;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\Shared\Infrastructure\Support\LaravelDateTimeProviderAdapter;
 use App\Shared\Infrastructure\Support\LaravelLoggerAdapter;
 use App\TerritorialUnits\Domain\Repositories\TerritorialUnitRepositoryInterface;
 use App\TerritorialUnits\Infrastructure\Persistence\Repositories\EloquentTerritorialUnitRepository;
@@ -71,7 +75,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PasswordHasherPort::class, LaravelPasswordHasherAdapter::class);
         $this->app->bind(SessionManagerPort::class, LaravelSessionManagerAdapter::class);
         $this->app->bind(UserNotificationPort::class, LaravelUserNotificationAdapter::class);
+        $this->app->bind(ProfilePhotoStoragePort::class, RustFsProfilePhotoStorageAdapter::class);
         $this->app->bind(LoggerPort::class, LaravelLoggerAdapter::class);
+        $this->app->bind(DateTimeProviderPort::class, LaravelDateTimeProviderAdapter::class);
         $this->app->bind(TwoFactorAuthPort::class, GoogleTwoFactorAuthAdapter::class);
     }
 

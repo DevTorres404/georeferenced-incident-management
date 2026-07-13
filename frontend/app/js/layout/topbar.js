@@ -10,14 +10,7 @@ export function buildTopbarHtml(user) {
           <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
             <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
           </a>`;
-
-  return `
-    <ul class="navbar-nav">
-      <li class="nav-item">
-        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-      </li>
-    </ul>
-    <ul class="navbar-nav ml-auto">
+  const notificationsMenu = user.showNotifications === false ? '' : `
       <li class="nav-item dropdown" id="notificationsDropdown">
         <a class="nav-link sgi-notif-bell" data-toggle="dropdown" href="#" aria-label="Notificaciones">
           <i class="far fa-bell"></i>
@@ -33,7 +26,16 @@ export function buildTopbarHtml(user) {
             <i class="fas fa-check-double mr-1"></i>Marcar todas como leidas
           </button>
         </div>
+      </li>`;
+
+  return `
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
+    </ul>
+    <ul class="navbar-nav ml-auto">
+      ${notificationsMenu}
       <li class="nav-item dropdown user-menu">
         <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menu de usuario">
           <span class="sgi-user-avatar-sm">${initial}</span>

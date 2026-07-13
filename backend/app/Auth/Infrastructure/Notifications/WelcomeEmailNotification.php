@@ -1,35 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Infrastructure\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Lang;
 
-class WelcomeEmailNotification extends Notification implements ShouldQueue
+class WelcomeEmailNotification extends QueuedMailNotification
 {
-    use Queueable;
-
-    /**
-     * Get the notification's delivery channels.
-     *
-     * @param  mixed  $notifiable
-     * @return array
-     */
-    public function via($notifiable)
+    public function via(mixed $notifiable): array
     {
         return ['mail'];
     }
 
-    /**
-     * Build the mail representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return MailMessage
-     */
-    public function toMail($notifiable)
+    public function toMail(mixed $notifiable): MailMessage
     {
         $dashboardUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5500'), '/');
 

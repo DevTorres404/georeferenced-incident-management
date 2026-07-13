@@ -13,8 +13,8 @@ async function listIncidents(filters = {}) {
   return request(`/incidents${suffix}`);
 }
 
-async function getIncident(incidentId) {
-  return request(`/incidents/${incidentId}`);
+async function getIncident(incidentId, options = {}) {
+  return request(`/incidents/${incidentId}`, options);
 }
 
 async function createIncident(payload) {
@@ -76,6 +76,10 @@ async function listStates() {
   return request('/catalogs/states');
 }
 
+async function listStateTransitions() {
+  return request('/catalogs/transitions');
+}
+
 async function listPriorities() {
   return request('/catalogs/priorities');
 }
@@ -91,6 +95,7 @@ const incidentsService = {
   assignIncidentOperators,
   changeIncidentState,
   listStates,
+  listStateTransitions,
   listAssignmentOperators,
   listPriorities,
 };
@@ -108,6 +113,7 @@ export {
   listIncidents,
   listPriorities,
   listStates,
+  listStateTransitions,
   updateIncident,
   uploadIncidentAttachment,
 };

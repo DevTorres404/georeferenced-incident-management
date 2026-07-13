@@ -11,7 +11,10 @@ use App\Operations\Application\DTOs\UpdateOperatorProfileInputData;
 use App\Operations\Application\DTOs\UpdateSupervisorProfileInputData;
 use App\Operations\Application\UseCases\OperationalStructureUseCase;
 use App\Operations\Domain\Exceptions\OperationalAssignmentException;
+use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
+use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\UserNotifier;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,9 +22,10 @@ use Illuminate\Validation\Rule;
 
 final class OperationalStructureController extends ApiController
 {
-    public function __construct(private OperationalStructureUseCase $operationalStructureUseCase)
-    {
-    }
+    public function __construct(
+        private OperationalStructureUseCase $operationalStructureUseCase,
+        private UserNotifier $userNotifier
+    ) {}
 
     public function zones(): JsonResponse
     {
@@ -70,6 +74,13 @@ final class OperationalStructureController extends ApiController
         $data = $request->validate([
             'supervisor_user_id' => ['required', 'integer', Rule::exists(User::class, 'id')],
         ]);
+        $previousSupervisorUserId = UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zoneId)
+            ->whereHas('user.roles', fn ($query) => $query
+                ->where('code', 'SUPERVISOR')
+                ->where('is_active', true))
+            ->value('user_id');
 
         try {
             $zone = $this->operationalStructureUseCase->assignSupervisorToZone(
@@ -81,6 +92,22 @@ final class OperationalStructureController extends ApiController
             );
         } catch (OperationalAssignmentException $exception) {
             return response()->json(['message' => $exception->getMessage()], $exception->getCode());
+        }
+
+        $zoneName = TerritorialUnit::query()->whereKey($zoneId)->value('name') ?: "#{$zoneId}";
+        $this->userNotifier->notify(
+            (int) $data['supervisor_user_id'],
+            'Zona operativa asignada',
+            "Ahora eres responsable de la zona {$zoneName}.",
+            'STATUS_CHANGE'
+        );
+        if ($previousSupervisorUserId && (int) $previousSupervisorUserId !== (int) $data['supervisor_user_id']) {
+            $this->userNotifier->notify(
+                (int) $previousSupervisorUserId,
+                'Zona operativa reasignada',
+                "La responsabilidad de la zona {$zoneName} fue transferida a otro supervisor.",
+                'STATUS_CHANGE'
+            );
         }
 
         return response()->json([
@@ -97,6 +124,12 @@ final class OperationalStructureController extends ApiController
             'operator_user_ids' => ['required', 'array'],
             'operator_user_ids.*' => ['integer', 'distinct', Rule::exists(User::class, 'id')],
         ]);
+        $previousOperatorUserIds = SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $supervisorUserId)
+            ->pluck('operator_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
         try {
             $profile = $this->operationalStructureUseCase->syncSupervisorOperators(
@@ -109,6 +142,29 @@ final class OperationalStructureController extends ApiController
         } catch (OperationalAssignmentException $exception) {
             return response()->json(['message' => $exception->getMessage()], $exception->getCode());
         }
+
+        $this->userNotifier->notify(
+            $supervisorUserId,
+            'Equipo operativo actualizado',
+            'La lista de operadores bajo tu supervision fue actualizada.',
+            'STATUS_CHANGE'
+        );
+        $this->userNotifier->notifyMany(
+            array_map('intval', $data['operator_user_ids']),
+            'Supervisor operativo actualizado',
+            'Tu vinculacion con el equipo de supervision fue actualizada.',
+            'STATUS_CHANGE'
+        );
+        $removedOperatorUserIds = array_values(array_diff(
+            $previousOperatorUserIds,
+            array_map('intval', $data['operator_user_ids'])
+        ));
+        $this->userNotifier->notifyMany(
+            $removedOperatorUserIds,
+            'Supervisor operativo actualizado',
+            'Ya no formas parte del equipo operativo de este supervisor.',
+            'STATUS_CHANGE'
+        );
 
         return response()->json([
             'message' => 'Operadores del supervisor sincronizados correctamente.',
@@ -135,6 +191,15 @@ final class OperationalStructureController extends ApiController
         } catch (OperationalAssignmentException $exception) {
             return response()->json(['message' => $exception->getMessage()], $exception->getCode());
         }
+
+        $territoryName = TerritorialUnit::query()->whereKey((int) $data['territorial_unit_id'])->value('name')
+            ?: "#{$data['territorial_unit_id']}";
+        $this->userNotifier->notify(
+            $operatorUserId,
+            'Territorio operativo actualizado',
+            "Tu territorio operativo ahora es {$territoryName}.",
+            'STATUS_CHANGE'
+        );
 
         return response()->json([
             'message' => 'Territorio operativo del operador actualizado correctamente.',
@@ -215,6 +280,20 @@ final class OperationalStructureController extends ApiController
         } catch (OperationalAssignmentException $exception) {
             return response()->json(['message' => $exception->getMessage()], $exception->getCode());
         }
+
+        $replacementOperatorUserId = (int) $data['replacement_operator_user_id'];
+        $this->userNotifier->notify(
+            $replacementOperatorUserId,
+            'Carga operativa transferida',
+            'Recibiste el territorio y las incidencias activas de otro operador.',
+            'INCIDENT_ASSIGNED'
+        );
+        $this->userNotifier->notify(
+            $operatorUserId,
+            'Reemplazo operativo completado',
+            'Tus incidencias activas fueron transferidas al operador de reemplazo.',
+            'STATUS_CHANGE'
+        );
 
         return response()->json([
             'message' => 'Operador reemplazado y carga operativa transferida correctamente.',

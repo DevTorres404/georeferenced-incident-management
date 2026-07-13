@@ -17,8 +17,7 @@ final class EloquentUserRepository implements UserRepositoryInterface
     public function __construct(
         private AuthUserMapper $userMapper,
         private AuthIdentityMapper $identityMapper
-    ) {
-    }
+    ) {}
 
     public function findByEmail(string $email): ?AuthUser
     {
@@ -30,6 +29,13 @@ final class EloquentUserRepository implements UserRepositoryInterface
     public function findById(int $id): ?AuthUser
     {
         $user = User::find($id);
+
+        return $user ? $this->userMapper->fromModel($user) : null;
+    }
+
+    public function findTrashedByEmail(string $email): ?AuthUser
+    {
+        $user = User::onlyTrashed()->where('email', $email)->first();
 
         return $user ? $this->userMapper->fromModel($user) : null;
     }
@@ -136,6 +142,16 @@ final class EloquentUserRepository implements UserRepositoryInterface
             'first_name' => trim($firstName),
             'last_name' => trim($lastName),
             'username' => trim($username),
+        ]);
+
+        return $this->userMapper->fromModel($user->fresh());
+    }
+
+    public function updateProfilePhoto(int $userId, ?string $profilePhoto): AuthUser
+    {
+        $user = User::findOrFail($userId);
+        $user->update([
+            'profile_photo' => $profilePhoto,
         ]);
 
         return $this->userMapper->fromModel($user->fresh());

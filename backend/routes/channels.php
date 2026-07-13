@@ -6,7 +6,8 @@ use App\Shared\Infrastructure\Authorization\IncidentAccessChecker;
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('users.{userId}.notifications', function (User $user, int $userId): bool {
-    return (int) $user->id === $userId;
+    return (int) $user->id === $userId
+        && $user->tienePermiso('notifications.view');
 });
 
 Broadcast::channel('incidents.{incidentId}.comments', function (User $user, int $incidentId): bool {

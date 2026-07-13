@@ -62,21 +62,21 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="modalEstadoLabel"> <i class="fas fa-exchange-alt mr-2"></i>Cambiar
-                        Estado de Incidencia </h5> <button type="button" class="close text-white" data-dismiss="modal"
+                    <h5 class="modal-title" id="modalEstadoLabel"> <i class="fas fa-comment-alt mr-2"></i>Comentario
+                        requerido </h5> <button type="button" class="close text-white" data-dismiss="modal"
                         aria-label="Cerrar"> <span>&times;</span> </button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group"> <label for="nuevoEstado">Nuevo Estado:</label> <select class="form-control"
-                            id="nuevoEstado"></select> </div>
+                            id="nuevoEstado" disabled></select> </div>
                     <div class="form-group"> <label for="comentarioEstado">Comentario del cambio: <small
-                                class="text-muted">(opcional)</small></label> <textarea class="form-control"
+                                class="text-danger">(obligatorio)</small></label> <textarea class="form-control"
                             id="comentarioEstado" rows="3"
-                            placeholder="Explique brevemente el motivo del cambio de estado..."></textarea> </div>
+                            placeholder="Explique brevemente el motivo del cambio de estado..." required></textarea> </div>
                 </div>
                 <div class="modal-footer"> <button type="button" class="btn btn-secondary"
                         data-dismiss="modal">Cancelar</button> <button type="button" class="btn btn-primary"
-                        id="btnGuardarEstado"> <i class="fas fa-save mr-1"></i>Guardar Cambio </button> </div>
+                        id="btnGuardarEstado"> <i class="fas fa-check mr-1"></i>Confirmar Cambio </button> </div>
             </div>
         </div>
     </div>
@@ -127,8 +127,8 @@
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=37"></script>
-    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=28"></script>
+    <script type="module" src="/js/layout/layout.js?v=40"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=30"></script>
 </body>
 
 </html>

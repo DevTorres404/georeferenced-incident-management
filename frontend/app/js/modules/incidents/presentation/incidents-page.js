@@ -12,6 +12,8 @@ import {
   showPageLoading,
 } from './incidents-ui.js?v=16';
 
+const INCIDENT_SEARCH_STORAGE_KEY = 'SGI_incidents_search';
+
 document.addEventListener('DOMContentLoaded', initIncidentsPage);
 
 async function initIncidentsPage() {
@@ -27,6 +29,7 @@ async function initIncidentsPage() {
     dataTable: null,
     activeStateFilter: 'todos',
     activePriorityFilter: 'todas',
+    activeSearchQuery: readStoredSearch(),
     activeScopeFilter: 'role',
     canDeleteIncident: false,
   };
@@ -35,6 +38,7 @@ async function initIncidentsPage() {
   bindDeleteConfirmation(state);
   configureScopeFilters(state);
   configureRoleActions(state);
+  bindFilters(state);
 
   showPageLoading('Cargando incidencias', 'Consultando base de datos...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
@@ -42,7 +46,6 @@ async function initIncidentsPage() {
   try {
     const response = await listIncidents({ per_page: 100 });
     state.incidents = Array.isArray(response?.data) ? response.data : [];
-    bindFilters(state);
     applyFilters(state);
   } catch (error) {
     renderErrorRow(error.message || 'No se pudieron cargar las incidencias.');
@@ -53,6 +56,16 @@ async function initIncidentsPage() {
 }
 
 function bindFilters(state) {
+  const searchInput = document.getElementById('incidentSearch');
+  if (searchInput) {
+    searchInput.value = state.activeSearchQuery;
+    searchInput.addEventListener('input', () => {
+      state.activeSearchQuery = searchInput.value;
+      storeSearch(state.activeSearchQuery);
+      applyFilters(state);
+    });
+  }
+
   document.querySelectorAll('.filtro-btn').forEach((button) => {
     button.addEventListener('click', () => {
       document.querySelectorAll('.filtro-btn').forEach((item) => item.classList.remove('active'));
@@ -81,10 +94,47 @@ function applyFilters(state) {
   state.filteredIncidents = scopeIncidents.filter((incident) => {
     const matchState = state.activeStateFilter === 'todos' || matchesStateFilter(incident, state.activeStateFilter);
     const matchPriority = state.activePriorityFilter === 'todas' || matchesPriorityFilter(incident, state.activePriorityFilter);
-    return matchState && matchPriority;
+    const matchSearch = matchesSearch(incident, state.activeSearchQuery);
+    return matchState && matchPriority && matchSearch;
   });
   renderCounters(scopeIncidents);
   renderTable(state);
+}
+
+function matchesSearch(incident, query) {
+  const normalizedQuery = normalizeSearchText(query).trim();
+  if (!normalizedQuery) return true;
+
+  const searchableText = normalizeSearchText([
+    incident.code,
+    incident.title,
+    incident.description,
+  ].filter(Boolean).join(' '));
+
+  return searchableText.includes(normalizedQuery);
+}
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function readStoredSearch() {
+  try {
+    return sessionStorage.getItem(INCIDENT_SEARCH_STORAGE_KEY) || '';
+  } catch {
+    return '';
+  }
+}
+
+function storeSearch(query) {
+  try {
+    sessionStorage.setItem(INCIDENT_SEARCH_STORAGE_KEY, query);
+  } catch {
+    // La búsqueda sigue operativa aunque el navegador bloquee sessionStorage.
+  }
 }
 
 function configureScopeFilters(state) {
@@ -193,6 +243,16 @@ function configureRoleActions(state) {
   if (createButton) {
     createButton.style.display = userHasPermission(state.currentUser, 'incidents.create') ? '' : 'none';
   }
+
+  const mapButton = document.getElementById('btnViewMap');
+  if (mapButton) {
+    const isAdmin = userHasRole(state.currentUser, 'ADMIN');
+    const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR');
+    const isOperator = userHasRole(state.currentUser, 'OPERADOR');
+    const isInternalUser = isAdmin || isSupervisor || isOperator;
+
+    mapButton.style.display = isInternalUser ? '' : 'none';
+  }
 }
 
 function matchesPriorityFilter(incident, filter) {
@@ -241,10 +301,13 @@ function renderTable(state) {
   if (!tbody) return;
 
   if (!state.filteredIncidents.length) {
+    const emptyMessage = state.activeSearchQuery.trim()
+      ? 'No se encontraron incidencias que coincidan con la búsqueda.'
+      : 'No hay incidencias disponibles.';
     tbody.innerHTML = `
       <tr>
         <td colspan="8" class="text-center text-muted py-4">
-          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>No hay incidencias disponibles.
+          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>${emptyMessage}
         </td>
       </tr>`;
     if (tableEl) tableEl.style.opacity = '1';
@@ -325,6 +388,7 @@ function renderTable(state) {
       },
       pageLength: 5,
       lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+      searching: false,
       ordering: false,
       initComplete: function() {
         if (tableEl) {

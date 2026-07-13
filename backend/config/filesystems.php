@@ -17,6 +17,8 @@ return [
 
     'incident_disk' => env('INCIDENT_FILESYSTEM_DISK', 'public'),
 
+    'profile_photo_disk' => env('PROFILE_PHOTO_FILESYSTEM_DISK', 'rustfs'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

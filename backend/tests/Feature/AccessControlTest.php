@@ -6,6 +6,7 @@ use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
+use Database\Seeders\NavigationItemSeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,13 +22,13 @@ class AccessControlTest extends TestCase
 
         $responseRoles = $this->withToken($admin['token'])
             ->getJson('/api/catalogs/roles');
-            
+
         $responseRoles->assertOk()
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
 
         $responsePermissions = $this->withToken($admin['token'])
             ->getJson('/api/catalogs/permissions');
-            
+
         $responsePermissions->assertOk()
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
     }
@@ -40,7 +41,7 @@ class AccessControlTest extends TestCase
 
         $response = $this->withToken($admin['token'])
             ->putJson("/api/admin/roles/{$role->id}/permissions", [
-                'permissions' => [$permission->code]
+                'permissions' => [$permission->code],
             ]);
 
         $response->assertOk()
@@ -58,7 +59,7 @@ class AccessControlTest extends TestCase
 
         $response = $this->withToken($admin['token'])
             ->putJson("/api/users/{$user->id}/roles", [
-                'roles' => [$role->code]
+                'roles' => [$role->code],
             ]);
 
         $response->assertOk()
@@ -66,16 +67,55 @@ class AccessControlTest extends TestCase
 
         $this->assertTrue($user->roles()->where('roles.id', $role->id)->exists());
         $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de rol'));
+        $this->assertTrue(
+            Notification::where('user_id', $user->id)
+                ->where('title', 'Tu rol fue actualizado')
+                ->exists()
+        );
+    }
+
+    public function test_navigation_includes_authorized_child_when_parent_uses_another_permission(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $citizen = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $citizenRole = Role::where('code', 'CIUDADANO')->firstOrFail();
+        $citizen->roles()->sync([$citizenRole->id]);
+
+        $response = $this->withToken($citizen->createToken('navigation-test')->plainTextToken)
+            ->getJson('/api/navigation/menu')
+            ->assertOk();
+
+        $workspace = collect($response->json('data'))->firstWhere('code', 'workspace');
+
+        $this->assertNotNull($workspace);
+        $this->assertContains('notifications', collect($workspace['children'])->pluck('code')->all());
+        $this->assertNotContains('dashboard', collect($workspace['children'])->pluck('code')->all());
+    }
+
+    public function test_navigation_ignores_permissions_from_inactive_roles(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $user = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $role = Role::where('code', 'CIUDADANO')->firstOrFail();
+        $user->roles()->sync([$role->id]);
+        $role->update(['is_active' => false]);
+
+        $this->withToken($user->createToken('inactive-role-test')->plainTextToken)
+            ->getJson('/api/navigation/menu')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
     }
 
     public function test_non_admin_cannot_manage_roles(): void
     {
         $this->seed([RoleSeeder::class, PermissionSeeder::class]);
-        
+
         $citizen = User::factory()->create(['two_factor_confirmed_at' => now()]);
         $citizenRole = Role::where('code', 'CIUDADANO')->firstOrFail();
         $citizen->roles()->sync([$citizenRole->id]);
-        
+
         $token = $citizen->createToken('test-token')->plainTextToken;
 
         $response = $this->withToken($token)
@@ -88,7 +128,7 @@ class AccessControlTest extends TestCase
 
         $response2 = $this->withToken($token)
             ->putJson("/api/admin/roles/{$role->id}/permissions", [
-                'permissions' => [$permission->id]
+                'permissions' => [$permission->id],
             ]);
 
         $response2->assertForbidden();

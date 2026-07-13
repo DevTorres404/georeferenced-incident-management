@@ -3,33 +3,101 @@
 namespace App\Catalogs\Domain\Repositories;
 
 use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
+use App\Catalogs\Application\DTOs\CategoryData;
+use App\Catalogs\Application\DTOs\PriorityData;
+use App\Catalogs\Application\DTOs\StateData;
+use App\Catalogs\Application\DTOs\StateTransitionData;
+use App\Catalogs\Application\DTOs\SubcategoryData;
+use App\Catalogs\Application\DTOs\PermissionData;
+use App\Catalogs\Application\DTOs\RoleData;
 use App\Shared\Application\Results\PaginatedResult;
 
 interface CatalogRepositoryInterface
 {
+    /**
+     * Retorna un overview completo de los catálogos principales.
+     *
+     * @return array<string, array>
+     */
     public function overview(): array;
 
-    public function categories();
+    /**
+     * Obtiene todas las categorías activas con sus subcategorías.
+     *
+     * @return array<int, CategoryData>
+     */
+    public function categories(): array;
 
-    public function subcategories(int $categoriaId);
+    /**
+     * Obtiene todas las subcategorías de una categoría.
+     *
+     * @return array<int, SubcategoryData>
+     */
+    public function subcategories(int $categoriaId): array;
 
-    public function priorities();
+    /**
+     * Obtiene todas las prioridades activas.
+     *
+     * @return array<int, PriorityData>
+     */
+    public function priorities(): array;
 
-    public function states();
+    /**
+     * Obtiene todos los estados activos.
+     *
+     * @return array<int, StateData>
+     */
+    public function states(): array;
 
-    public function transitions(?int $estadoId = null);
+    /**
+     * Obtiene las transiciones de estado.
+     *
+     * @return array<int, StateTransitionData>
+     */
+    public function transitions(?int $estadoId = null): array;
 
-    public function roles();
+    /**
+     * Obtiene todos los roles activos.
+     *
+     * @return array<int, RoleData>
+     */
+    public function roles(): array;
 
-    public function permissions();
+    /**
+     * Obtiene todos los permisos.
+     *
+     * @return array<int, PermissionData>
+     */
+    public function permissions(): array;
 
+    /**
+     * Pagina registros de un catálogo.
+     */
     public function paginate(string $catalog, CatalogPaginationFiltersData $filters): PaginatedResult;
 
-    public function create(string $catalog, array $data);
+    /**
+     * Crea un nuevo registro en un catálogo.
+     *
+     * @return array<string, mixed>
+     */
+    public function create(string $catalog, array $data): array;
 
-    public function find(string $catalog, int $id);
+    /**
+     * Encuentra un registro en un catálogo.
+     *
+     * @return array<string, mixed>
+     */
+    public function find(string $catalog, int $id): array;
 
-    public function update(string $catalog, int $id, array $data);
+    /**
+     * Actualiza un registro en un catálogo.
+     *
+     * @return array<string, mixed>
+     */
+    public function update(string $catalog, int $id, array $data): array;
 
+    /**
+     * Elimina un registro de un catálogo.
+     */
     public function delete(string $catalog, int $id): void;
 }

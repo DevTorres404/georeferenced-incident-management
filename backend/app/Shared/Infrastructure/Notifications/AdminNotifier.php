@@ -52,7 +52,11 @@ final class AdminNotifier
         return User::query()
             ->where('is_active', true)
             ->whereNotIn('id', $excludeUserIds)
-            ->whereHas('roles', fn ($query) => $query->where('code', 'ADMIN')->where('is_active', true))
+            ->whereHas('roles', fn ($query) => $query
+                ->where('code', 'ADMIN')
+                ->where('is_active', true)
+                ->whereHas('permissions', fn ($permissionQuery) => $permissionQuery
+                    ->where('code', 'notifications.view')))
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();
