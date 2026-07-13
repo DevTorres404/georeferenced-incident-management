@@ -1,6 +1,7 @@
 import { getUsersAndRoles, assignUserRole } from '../../roles/application/access-control-service.js?v=15';
 import { hidePageLoading, showPageLoading, escapeHtml } from '../../incidents/presentation/incidents-ui.js?v=16';
 import { handleBackendErrors, setFormAlert } from '../../../shared/validators/validation-utils.js?v=1';
+import { requestBackend } from '../../../core/api-client.js?v=20';
 
 const CITIZEN_ROLE_CODE = 'CIUDADANO';
 const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
@@ -153,18 +154,7 @@ function bindActions(state) {
       btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Desactivando...';
       
       try {
-        if (typeof window.mutateBackend === 'function') {
-          await window.mutateBackend(`/users/${userId}`, { method: 'DELETE' });
-        } else {
-          const response = await fetch(`/api/users/${userId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-              'Accept': 'application/json'
-            }
-          });
-          if (!response.ok) throw new Error('Error al desactivar el usuario');
-        }
+        await requestBackend(`/users/${userId}`, { method: 'DELETE' });
         
         $('#modalDeactivateUser').modal('hide');
         

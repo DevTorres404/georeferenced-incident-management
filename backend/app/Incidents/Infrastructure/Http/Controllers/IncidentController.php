@@ -6,6 +6,7 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Application\DTOs\AddCommentInputData;
 use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
@@ -13,9 +14,9 @@ use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
-use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
+use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
@@ -36,9 +37,7 @@ class IncidentController extends ApiController
     public function __construct(
         private IncidentUseCase $incidentUseCase,
         private AdminNotifier $adminNotifier
-    )
-    {
-    }
+    ) {}
 
     /**
      * Listar incidencias.
@@ -46,6 +45,7 @@ class IncidentController extends ApiController
      * Devuelve una lista paginada de incidencias según filtros.
      *
      * @authenticated
+     *
      * @queryParam state_id int Filtrar por ID de estado. Example: 1
      * @queryParam priority_id int Filtrar por ID de prioridad. Example: 2
      * @queryParam category_id int Filtrar por ID de categoría. Example: 3
@@ -63,7 +63,6 @@ class IncidentController extends ApiController
         $user = $request->user();
         // No verificamos 'incidents.view' estricto aquí, ya que el UseCase se encarga de
         // restringir la consulta a las incidencias propias del usuario si no es administrador.
-
 
         $filters = $request->validate([
             'state_id' => ['nullable', 'integer', Rule::exists(State::class, 'id')],
@@ -148,6 +147,7 @@ class IncidentController extends ApiController
      * Reporta una nueva incidencia en el sistema.
      *
      * @authenticated
+     *
      * @bodyParam title string required Título de la incidencia. Example: Fuga de agua en la avenida principal
      * @bodyParam description string required Descripción detallada. Example: Hay una fuga inmensa que está rompiendo el asfalto.
      * @bodyParam category_id int required ID de la categoría principal. Example: 1
@@ -197,6 +197,7 @@ class IncidentController extends ApiController
      * Devuelve el detalle de una incidencia, incluyendo sus comentarios, historial y asignaciones.
      *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
      */
     public function show(Request $request, Incident $incident): JsonResponse
@@ -214,7 +215,7 @@ class IncidentController extends ApiController
                 fn ($comment) => ! $comment->isInternal
             ));
 
-            $detail = new \App\Incidents\Application\DTOs\IncidentDetailData(
+            $detail = new IncidentDetailData(
                 id: $detail->id,
                 code: $detail->code,
                 title: $detail->title,
@@ -253,7 +254,9 @@ class IncidentController extends ApiController
      * Permite modificar los datos básicos de una incidencia.
      *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
      * @bodyParam title string Título de la incidencia. Example: Fuga de agua reparada parcialmente
      * @bodyParam description string Descripción detallada.
      * @bodyParam category_id int ID de la categoría principal.
@@ -304,11 +307,12 @@ class IncidentController extends ApiController
      * Elimina una incidencia lógicamente (Soft Delete).
      *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
      */
     public function destroy(Request $request, Incident $incident): JsonResponse
     {
-        if (! $this->can($request->user(), 'incidents.delete')) {
+        if (! $this->canViewIncident($request->user(), $incident) || ! $this->can($request->user(), 'incidents.delete')) {
             return $this->forbid();
         }
 
@@ -325,8 +329,11 @@ class IncidentController extends ApiController
      * Añade un comentario al hilo de la incidencia. Puede ser interno.
      *
      * @group Comentarios y seguimiento
+     *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
      * @bodyParam comment string required El texto del comentario. Example: El equipo está en camino.
      * @bodyParam is_internal boolean Indica si el comentario es solo visible para agentes/admins. Example: 0
      */
@@ -366,8 +373,11 @@ class IncidentController extends ApiController
      * Sube un archivo adjunto relacionado con la incidencia.
      *
      * @group Comentarios y seguimiento
+     *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
      * @bodyParam file file required El archivo a subir.
      */
     public function addAttachment(Request $request, Incident $incident): JsonResponse
@@ -416,14 +426,17 @@ class IncidentController extends ApiController
      * Asigna un usuario (agente) a la incidencia para su resolución.
      *
      * @group Asignaciones
+     *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
      * @bodyParam user_id int required El ID del usuario a asignar. Example: 2
      */
     public function assign(Request $request, Incident $incident): JsonResponse
     {
         $user = $request->user();
-        if (! $this->can($user, 'incidents.assign')) {
+        if (! $this->canViewIncident($user, $incident) || ! $this->can($user, 'incidents.assign')) {
             return $this->forbid();
         }
 
@@ -485,15 +498,18 @@ class IncidentController extends ApiController
      * Transiciona la incidencia a un nuevo estado, verificando que la transición sea válida.
      *
      * @group Estados de incidencia
+     *
      * @authenticated
+     *
      * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
      * @bodyParam state_id int required El ID del nuevo estado. Example: 2
      * @bodyParam comment string Comentario opcional explicando el cambio. Example: Se verificó la fuga y se procedió a cerrar la válvula.
      */
     public function changeState(Request $request, Incident $incident): JsonResponse
     {
         $user = $request->user();
-        if (! $this->can($user, 'incidents.edit')) {
+        if (! $this->canViewIncident($user, $incident) || ! $this->can($user, 'incidents.edit')) {
             return $this->forbid();
         }
 

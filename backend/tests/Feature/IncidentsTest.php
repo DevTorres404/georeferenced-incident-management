@@ -128,6 +128,88 @@ class IncidentsTest extends TestCase
         );
     }
 
+    public function test_citizen_cannot_view_another_citizens_incident_by_id(): void
+    {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
+        $this->seedCoreData();
+
+        $owner = $this->authenticateAs('CIUDADANO', 'incident-owner@incidencias.local');
+        $otherCitizen = $this->authenticateAs('CIUDADANO', 'other-citizen@incidencias.local');
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+
+        $incidentId = $this->actingAsUser($owner['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia privada del reportante',
+                'description' => 'Solo el ciudadano que reporto debe poder consultar este detalle.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAsUser($otherCitizen['user'])
+            ->getJson("/api/incidents/{$incidentId}")
+            ->assertForbidden();
+    }
+
+    public function test_operator_cannot_change_state_of_an_unassigned_incident(): void
+    {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'state-owner@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'unassigned-operator@incidencias.local');
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $state = State::where('name', 'EN_REVISION')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia sin operador',
+                'description' => 'No debe aceptar cambios de un operador que no esta asignado.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAsUser($operator['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $state->id])
+            ->assertForbidden();
+    }
+
+    public function test_supervisor_cannot_change_state_outside_assigned_zone(): void
+    {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'zone-state-owner@incidencias.local');
+        $supervisor = $this->authenticateAs('SUPERVISOR', 'wrong-zone-supervisor@incidencias.local');
+        $this->assignUserToZone($supervisor['user']->id, 'Guayas');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $state = State::where('name', 'EN_REVISION')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia fuera de zona',
+                'description' => 'La incidencia pertenece a Pichincha y no a la zona Guayas.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $this->parishIdForProvince('Pichincha'),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $this->actingAsUser($supervisor['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $state->id])
+            ->assertForbidden();
+    }
+
     public function test_citizen_cannot_assign_priority_or_state_when_creating_incident(): void
     {
         $this->seedCoreData();
@@ -591,6 +673,7 @@ class IncidentsTest extends TestCase
         $citizen = $this->authenticateAs('CIUDADANO', 'citizen-command-alerts@incidencias.local');
         $admin = $this->authenticateAs('ADMIN', 'admin-command-alerts@incidencias.local');
         $operator = $this->authenticateAs('OPERADOR', 'operator-command-alerts@incidencias.local');
+        $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-command-alerts@incidencias.local');
 
         $category = Category::firstOrFail();
         $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
@@ -635,10 +718,19 @@ class IncidentsTest extends TestCase
         $nearDueCode = Incident::findOrFail($nearDueIncidentId)->code;
 
         $this->assertTrue(
-            $this->userHasNotification($operator['user'], 'Incidencia sin atender', "La incidencia {$unreviewedCode} lleva 30 minutos sin revisiÃ³n.")
+            $this->userHasNotification($supervisor['user'], 'Incidencia sin atender', $unreviewedCode)
+        );
+        $this->assertFalse(
+            $this->userHasNotification($operator['user'], 'Incidencia sin atender', $unreviewedCode)
         );
         $this->assertTrue(
-            $this->userHasNotification($operator['user'], 'Incidencia prÃ³xima a vencer', "La incidencia {$nearDueCode} estÃ¡ cerca de superar el tiempo de atenciÃ³n.")
+            $this->userHasNotification($operator['user'], 'Incidencia proxima a vencer', $nearDueCode)
+        );
+        $this->assertTrue(
+            Notification::where('user_id', $operator['user']->id)
+                ->where('incident_id', $nearDueIncidentId)
+                ->where('title', 'Incidencia proxima a vencer')
+                ->exists()
         );
     }
 
@@ -777,6 +869,50 @@ class IncidentsTest extends TestCase
         );
         $this->assertTrue(
             $this->userHasNotification($supervisor['user'], 'Carga alta de operadores', 'demasiadas incidencias asignadas')
+        );
+    }
+
+    public function test_supervisor_alert_command_does_not_cross_operational_zones(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-zone-alert@incidencias.local');
+        $guayasSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-guayas-alert@incidencias.local');
+        $sierraSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-sierra-alert@incidencias.local');
+        $this->assignUserToZone($guayasSupervisor['user']->id, 'Guayas');
+        $this->assignUserToZone($sierraSupervisor['user']->id, 'Sierra Norte / Centro');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $priority = Priority::where('name', 'Baja')->firstOrFail();
+        $state = State::where('name', 'NUEVA')->firstOrFail();
+
+        $incident = Incident::create([
+            'code' => 'INC-ZONE-OVERDUE',
+            'title' => 'SLA vencido en Pichincha',
+            'description' => 'Alerta que solo corresponde al supervisor de Sierra.',
+            'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
+            'priority_id' => $priority->id,
+            'state_id' => $state->id,
+            'territorial_unit_id' => $this->parishIdForProvince('Pichincha'),
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+        $incident->forceFill(['due_date' => now()->subHour()])->save();
+
+        $this->artisan('incidents:notify-supervisors')->assertExitCode(0);
+
+        $this->assertTrue(
+            Notification::where('user_id', $sierraSupervisor['user']->id)
+                ->where('incident_id', $incident->id)
+                ->where('title', 'Incidencia vencida por SLA')
+                ->exists()
+        );
+        $this->assertFalse(
+            Notification::where('user_id', $guayasSupervisor['user']->id)
+                ->where('incident_id', $incident->id)
+                ->where('title', 'Incidencia vencida por SLA')
+                ->exists()
         );
     }
 

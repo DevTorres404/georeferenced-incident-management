@@ -1,16 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Infrastructure\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class PasswordChangedNotification extends Notification implements ShouldQueue
+class PasswordChangedNotification extends QueuedMailNotification
 {
-    use Queueable;
-
     /**
      * @return array<int, string>
      */

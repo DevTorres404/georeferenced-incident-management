@@ -2,7 +2,6 @@
 
 namespace App\Auth\Infrastructure\Persistence\Mappers;
 
-use App\Auth\Domain\Entities\AuthIdentity;
 use App\Auth\Domain\Entities\AuthUser;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use DateTimeInterface;
@@ -10,13 +9,13 @@ use Illuminate\Support\Carbon;
 
 final class AuthUserMapper
 {
-    public function __construct(private AuthIdentityMapper $identityMapper)
-    {
-    }
+    public function __construct(private AuthIdentityMapper $identityMapper) {}
 
     public function fromModel(User $user): AuthUser
     {
-        $roles = $user->relationLoaded('roles') ? $user->roles : collect();
+        $roles = $user->relationLoaded('roles')
+            ? $user->roles->where('is_active', true)->values()
+            : collect();
         $roleCodes = $roles->pluck('code')->filter()->values()->all();
         $permissionCodes = $roles
             ->flatMap(static fn ($role) => $role->permissions ?? [])

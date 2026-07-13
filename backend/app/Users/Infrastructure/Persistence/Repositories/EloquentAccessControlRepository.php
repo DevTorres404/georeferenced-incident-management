@@ -2,8 +2,8 @@
 
 namespace App\Users\Infrastructure\Persistence\Repositories;
 
-use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
+use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
@@ -60,7 +60,12 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
     public function navigationForUser(int $userId): array
     {
         $user = User::with('roles.permissions')->findOrFail($userId);
+        if (! $user->is_active) {
+            return [];
+        }
+
         $permissionCodes = $user->roles
+            ->where('is_active', true)
             ->flatMap(fn (Role $role) => $role->permissions)
             ->pluck('code')
             ->filter()
@@ -130,10 +135,6 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
 
     private function mapNavigationItem(NavigationItem $item, Collection $permissionCodes): ?array
     {
-        if (! $this->canAccessNavigationItem($item, $permissionCodes)) {
-            return null;
-        }
-
         $childItems = $item->relationLoaded('children') ? $item->children : collect();
         $children = $childItems
             ->map(fn (NavigationItem $child) => $this->mapNavigationItem($child, $permissionCodes))
@@ -141,7 +142,11 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
             ->values()
             ->all();
 
-        if ($childItems->isNotEmpty() && $children === []) {
+        if ($childItems->isNotEmpty()) {
+            if ($children === []) {
+                return null;
+            }
+        } elseif (! $this->canAccessNavigationItem($item, $permissionCodes)) {
             return null;
         }
 

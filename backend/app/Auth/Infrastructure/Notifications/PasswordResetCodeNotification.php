@@ -1,16 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Infrastructure\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
-class PasswordResetCodeNotification extends Notification implements ShouldQueue
+class PasswordResetCodeNotification extends QueuedMailNotification
 {
-    use Queueable;
-
     public function __construct(
         public readonly string $code,
         public readonly int $expiresInMinutes

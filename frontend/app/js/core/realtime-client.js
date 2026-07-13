@@ -1,10 +1,18 @@
-import { API_URL, REVERB_APP_KEY, REVERB_HOST, REVERB_PORT, REVERB_SCHEME } from './config.js?v=20';
+import { API_URL, REVERB_APP_KEY, REVERB_HOST, REVERB_PORT, REVERB_SCHEME } from './config.js?v=21';
 import { getSession } from './auth-session.js?v=14';
 
 const PUSHER_CDN = 'https://js.pusher.com/8.4.0/pusher.min.js';
+const SCRIPT_LOAD_TIMEOUT_MS = 10000;
 
 let scriptPromise = null;
 let socket = null;
+let socketToken = null;
+
+function reportRealtimeState(channelName, state, error = null) {
+  const detail = { channelName, state, error };
+  window.dispatchEvent(new CustomEvent('sgi:realtime-state', { detail }));
+  return detail;
+}
 
 function loadPusherScript() {
   if (window.Pusher) {
@@ -14,11 +22,25 @@ function loadPusherScript() {
   if (!scriptPromise) {
     scriptPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
+      const timeoutId = window.setTimeout(() => {
+        script.remove();
+        reject(new Error('El cliente de tiempo real excedio el tiempo de carga.'));
+      }, SCRIPT_LOAD_TIMEOUT_MS);
+
       script.src = PUSHER_CDN;
       script.async = true;
-      script.onload = () => resolve(window.Pusher);
-      script.onerror = () => reject(new Error('No se pudo cargar el cliente de tiempo real.'));
+      script.onload = () => {
+        window.clearTimeout(timeoutId);
+        resolve(window.Pusher);
+      };
+      script.onerror = () => {
+        window.clearTimeout(timeoutId);
+        reject(new Error('No se pudo cargar el cliente de tiempo real.'));
+      };
       document.head.appendChild(script);
+    }).catch((error) => {
+      scriptPromise = null;
+      throw error;
     });
   }
 
@@ -37,9 +59,11 @@ async function getRealtimeSocket() {
     return null;
   }
 
-  if (socket) {
+  if (socket && socketToken === token) {
     return socket;
   }
+
+  socket?.disconnect?.();
 
   socket = new Pusher(REVERB_APP_KEY, {
     wsHost: REVERB_HOST,
@@ -57,21 +81,46 @@ async function getRealtimeSocket() {
       },
     },
   });
+  socketToken = token;
 
   return socket;
 }
 
-async function subscribePrivateChannel(channelName, events = {}) {
-  const activeSocket = await getRealtimeSocket();
+async function subscribePrivateChannel(channelName, events = {}, options = {}) {
+  let activeSocket;
+  try {
+    activeSocket = await getRealtimeSocket();
+  } catch (error) {
+    options.onStateChange?.(reportRealtimeState(channelName, 'unavailable', error));
+    throw error;
+  }
+
   if (!activeSocket) {
+    options.onStateChange?.(reportRealtimeState(channelName, 'unavailable'));
     return null;
   }
 
   const channel = activeSocket.subscribe(`private-${channelName}`);
+  const notifyState = (state, error = null) => {
+    options.onStateChange?.(reportRealtimeState(channelName, state, error));
+  };
+  const handleSubscriptionSucceeded = () => notifyState('subscribed');
+  const handleSubscriptionError = (error) => notifyState('unavailable', error);
+  const handleConnectionState = ({ current }) => {
+    if (current === 'connected') {
+      notifyState(channel.subscribed ? 'subscribed' : 'connecting');
+      return;
+    }
+    notifyState(current || 'disconnected');
+  };
 
   Object.entries(events).forEach(([eventName, handler]) => {
     channel.bind(eventName, handler);
   });
+  channel.bind('pusher:subscription_succeeded', handleSubscriptionSucceeded);
+  channel.bind('pusher:subscription_error', handleSubscriptionError);
+  activeSocket.connection.bind('state_change', handleConnectionState);
+  notifyState(activeSocket.connection.state === 'connected' ? 'connecting' : activeSocket.connection.state);
 
   return {
     channelName,
@@ -80,6 +129,9 @@ async function subscribePrivateChannel(channelName, events = {}) {
       Object.entries(events).forEach(([eventName, handler]) => {
         channel.unbind(eventName, handler);
       });
+      channel.unbind('pusher:subscription_succeeded', handleSubscriptionSucceeded);
+      channel.unbind('pusher:subscription_error', handleSubscriptionError);
+      activeSocket.connection.unbind('state_change', handleConnectionState);
       activeSocket.unsubscribe(`private-${channelName}`);
     },
   };

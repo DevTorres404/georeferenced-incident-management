@@ -46,6 +46,7 @@ use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\Shared\Application\DTOs\StoredFileData;
 use App\Shared\Application\Results\PaginatedResult;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\Shared\Infrastructure\Notifications\UserNotifier;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -82,7 +83,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         private CommentMapper $commentMapper,
         private AttachmentMapper $attachmentMapper,
         private AssignmentMapper $assignmentMapper,
-        private NotificationMapper $notificationMapper
+        private NotificationMapper $notificationMapper,
+        private UserNotifier $userNotifier
     ) {}
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
@@ -812,15 +814,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
     private function createNotification(int $userId, string $title, string $message, string $type, ?int $incidentId = null): void
     {
-        Notification::create([
-            'user_id' => $userId,
-            'incident_id' => $incidentId,
-            'title' => $title,
-            'message' => $message,
-            'type' => $type,
-        ]);
-
-        app(AdminNotifier::class)->notify($title, $message, $type, [$userId], $incidentId);
+        $this->userNotifier->notify($userId, $title, $message, $type, $incidentId);
     }
 
     private function createNotificationIfMissing(int $userId, string $title, string $message, string $type, ?int $incidentId = null): void
@@ -874,19 +868,6 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
     /**
      * @return array<int, int>
      */
-    private function supervisorUserIds(): array
-    {
-        return User::query()
-            ->where('is_active', true)
-            ->whereHas('roles', fn ($query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-    }
-
-    /**
-     * @return array<int, int>
-     */
     private function zoneSupervisorUserIdsForIncident(Incident $incident): array
     {
         $zone = $this->resolveOperationalZoneForIncident($incident);
@@ -898,7 +879,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         return UserTerritory::query()
             ->active()
             ->where('territorial_unit_id', $zone->id)
-            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
+            ->whereHas('user', fn ($userQuery) => $userQuery
+                ->where('is_active', true)
+                ->whereHas('roles', fn ($roleQuery) => $roleQuery
+                    ->where('code', 'SUPERVISOR')
+                    ->where('is_active', true)
+                    ->whereHas('permissions', fn ($permissionQuery) => $permissionQuery
+                        ->where('code', 'notifications.view'))))
             ->pluck('user_id')
             ->map(fn ($id) => (int) $id)
             ->all();

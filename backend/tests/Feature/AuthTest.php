@@ -15,7 +15,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
@@ -96,17 +98,33 @@ class AuthTest extends TestCase
     public function test_user_can_register_with_google_token(): void
     {
         Notification::fake();
+        Storage::fake('rustfs');
+        Http::fake([
+            'https://lh3.googleusercontent.com/*' => Http::response(
+                'fake-google-avatar',
+                200,
+                ['Content-Type' => 'image/jpeg']
+            ),
+        ]);
 
-        app()->instance('firebase.auth', new class
+        $googlePhotoUrl = 'https://lh3.googleusercontent.com/a-/'.str_repeat('a', 600).'=s96-c';
+
+        app()->instance('firebase.auth', new class($googlePhotoUrl)
         {
+            public function __construct(private readonly string $googlePhotoUrl) {}
+
             public function verifyIdToken(string $idToken): object
             {
-                return new class
+                return new class($this->googlePhotoUrl)
                 {
+                    public function __construct(private readonly string $googlePhotoUrl) {}
+
                     public function claims(): object
                     {
-                        return new class
+                        return new class($this->googlePhotoUrl)
                         {
+                            public function __construct(private readonly string $googlePhotoUrl) {}
+
                             public function get(string $key): mixed
                             {
                                 return match ($key) {
@@ -116,7 +134,7 @@ class AuthTest extends TestCase
                                     'name' => 'Google Usuario',
                                     'given_name' => 'Google',
                                     'family_name' => 'Usuario',
-                                    'picture' => 'https://example.com/avatar.png',
+                                    'picture' => $this->googlePhotoUrl,
                                     default => null,
                                 };
                             }
@@ -148,8 +166,12 @@ class AuthTest extends TestCase
             ]);
 
         $user = User::where('email', 'registro-google@incidencias.local')->firstOrFail();
+        $expectedProfilePhoto = 'profile-photos/google/'.hash('sha256', 'firebase-google-uid-001').'.jpg';
 
         $this->assertNotNull($user->email_verified_at);
+        $this->assertSame($expectedProfilePhoto, $user->profile_photo);
+        $this->assertLessThanOrEqual(255, strlen($user->profile_photo));
+        Storage::disk('rustfs')->assertExists($expectedProfilePhoto);
         $this->assertDatabaseHas('auth.user_identities', [
             'user_id' => $user->id,
             'provider' => 'google',

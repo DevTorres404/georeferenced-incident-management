@@ -40,7 +40,7 @@ final class IncidentAccessChecker
             return true;
         }
 
-        return $user->tienePermiso('incidents.view');
+        return false;
     }
 
     private function resolveOperationalZoneForIncident(Incident $incident): ?TerritorialUnit

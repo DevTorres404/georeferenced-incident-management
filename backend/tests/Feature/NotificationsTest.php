@@ -7,6 +7,7 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Broadcasting\NotificationCreated;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\Shared\Infrastructure\Notifications\UserNotifier;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -69,6 +70,36 @@ class NotificationsTest extends TestCase
             fn (NotificationCreated $event): bool => (int) $event->broadcastWith()['notification']['user_id'] === $admin->id
                 && $event->broadcastWith()['notification']['title'] === 'Nueva incidencia'
         );
+    }
+
+    public function test_notifiers_ignore_users_without_active_notification_permission(): void
+    {
+        $admin = $this->createAuthorizedUser();
+        $role = Role::where('code', 'ADMIN')->firstOrFail();
+        $role->permissions()->detach(
+            $role->permissions()->where('code', 'notifications.view')->value('permissions.id')
+        );
+
+        app(AdminNotifier::class)->notify('Alerta administrativa', 'No debe llegar sin permiso.');
+        app(UserNotifier::class)->notify($admin->id, 'Alerta directa', 'Tampoco debe persistirse.');
+
+        $this->assertFalse(Notification::where('user_id', $admin->id)->exists());
+    }
+
+    public function test_realtime_channel_rejects_user_without_notification_permission(): void
+    {
+        $admin = $this->createAuthorizedUser();
+        $role = Role::where('code', 'ADMIN')->firstOrFail();
+        $role->permissions()->detach(
+            $role->permissions()->where('code', 'notifications.view')->value('permissions.id')
+        );
+
+        $this->actingAs($admin)
+            ->postJson('/broadcasting/auth', [
+                'channel_name' => "private-users.{$admin->id}.notifications",
+                'socket_id' => '1234.5678',
+            ])
+            ->assertForbidden();
     }
 
     public function test_user_can_fetch_notifications(): void

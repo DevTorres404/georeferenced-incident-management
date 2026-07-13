@@ -1,6 +1,6 @@
-import { subscribePrivateChannel } from '../../../core/realtime-client.js?v=20';
+import { subscribePrivateChannel } from '../../../core/realtime-client.js?v=21';
 
-async function subscribeToUserNotifications(user, onNotification) {
+async function subscribeToUserNotifications(user, onNotification, onStateChange = null) {
   const userId = user?.id || user?.user_id;
   if (!userId || typeof onNotification !== 'function') {
     return null;
@@ -12,6 +12,8 @@ async function subscribeToUserNotifications(user, onNotification) {
         onNotification(payload.notification);
       }
     },
+  }, {
+    onStateChange: ({ state }) => onStateChange?.(state),
   });
 }
 

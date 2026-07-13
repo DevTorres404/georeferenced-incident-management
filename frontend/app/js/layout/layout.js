@@ -1,9 +1,9 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
-import { buildTopbarHtml } from './topbar.js?v=20';
+import { buildTopbarHtml } from './topbar.js?v=21';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=21';
 import { clearSession as clearAuthSession } from '../core/auth-session.js?v=15';
-import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=20';
+import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21';
 
 /**
  * ============================================================
@@ -63,6 +63,15 @@ const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000; // Cierre por inactividad: 2 minuto
 const ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown'];
 let inactivityTimer = null;
 let lastActivityWrite = 0;
+let notificationSubscription = null;
+let notificationFallbackTimer = null;
+let notificationRefreshInFlight = false;
+
+window.addEventListener('pagehide', () => {
+  notificationSubscription?.cleanup?.();
+  notificationSubscription = null;
+  stopNotificationFallback();
+});
 function readSessionUser() {
   try {
     const raw = localStorage.getItem(AUTH_KEYS.user);
@@ -358,9 +367,12 @@ async function loadNavbarNotifications(forceRefresh = false) {
   }
   try {
     const [countResponse, notificationsResponse] = await Promise.all([
-      requestBackend('/notifications/unread/count'),
-      requestBackend('/notifications?per_page=5'),
+      requestBackend('/notifications/unread/count', { noCache: forceRefresh }),
+      requestBackend('/notifications?per_page=5', { noCache: forceRefresh }),
     ]);
+    if (!countResponse || !notificationsResponse) {
+      throw new Error('La API de notificaciones no respondio.');
+    }
     const count = Number(countResponse?.count || 0);
     const notifications = Array.isArray(notificationsResponse?.data) ? notificationsResponse.data : [];
     sessionStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -369,12 +381,21 @@ async function loadNavbarNotifications(forceRefresh = false) {
       items: notifications
     }));
     renderBetterNavbarNotifications(count, notifications);
+    window.dispatchEvent(new CustomEvent('sgi:notifications-refreshed', {
+      detail: { count, items: notifications },
+    }));
+    return { count, items: notifications };
   } catch (e) {
-    renderBetterNavbarNotifications(0, []);
+    console.warn('[SGI] No se pudieron actualizar las notificaciones.', e);
+    return null;
   }
 }
 
 function startRealtimeNotifications(user) {
+  notificationSubscription?.cleanup?.();
+  notificationSubscription = null;
+  scheduleNotificationFallback();
+
   subscribeToUserNotifications(user, async (notification) => {
     window.dispatchEvent(new CustomEvent('sgi:notification-created', {
       detail: notification,
@@ -384,9 +405,37 @@ function startRealtimeNotifications(user) {
     if (notification?.title && window.showGlobalAlert) {
       window.showGlobalAlert(notification.title, 'info');
     }
-  }).catch(() => {
-    // Si el WebSocket no está disponible, la API REST sigue funcionando como respaldo.
+  }, (state) => {
+    if (state === 'subscribed') {
+      stopNotificationFallback();
+    } else {
+      scheduleNotificationFallback();
+    }
+  }).then((subscription) => {
+    notificationSubscription = subscription;
+    if (!subscription) scheduleNotificationFallback();
+  }).catch((error) => {
+    scheduleNotificationFallback();
+    console.warn('[SGI] Tiempo real no disponible; se activo la sincronizacion de notificaciones.', error);
   });
+}
+
+function scheduleNotificationFallback() {
+  if (notificationFallbackTimer) return;
+  notificationFallbackTimer = window.setInterval(async () => {
+    if (notificationRefreshInFlight || document.visibilityState === 'hidden') return;
+    notificationRefreshInFlight = true;
+    try {
+      await loadNavbarNotifications(true);
+    } finally {
+      notificationRefreshInFlight = false;
+    }
+  }, 10000);
+}
+
+function stopNotificationFallback() {
+  if (notificationFallbackTimer) window.clearInterval(notificationFallbackTimer);
+  notificationFallbackTimer = null;
 }
 
 function renderBetterNavbarNotifications(count, notifications) {
@@ -531,7 +580,7 @@ function showLayoutMessage(message, type = 'success') {
  * Toast premium unificado con icono, barra de progreso y cierre.
  * Se expone como window.showGlobalAlert para que backend-client.js y otros modulos la usen.
  */
-function showGlobalAlert(message, type = 'success', title = '') {
+function showGlobalAlert(message, type = 'success', title = '', duration = 5000) {
   let stack = document.querySelector('.sgi-toast-stack');
   if (!stack) {
     stack = document.createElement('div');
@@ -579,10 +628,12 @@ function showGlobalAlert(message, type = 'success', title = '') {
     });
   });
 
-  const duration = 5000;
+  const visibleDuration = Number.isFinite(Number(duration)) && Number(duration) > 0
+    ? Number(duration)
+    : 5000;
   const progressFill = toast.querySelector('.sgi-toast-progress-fill');
   if (progressFill) {
-    progressFill.style.transitionDuration = `${duration}ms`;
+    progressFill.style.transitionDuration = `${visibleDuration}ms`;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         progressFill.style.width = '0%';
@@ -597,7 +648,7 @@ function showGlobalAlert(message, type = 'success', title = '') {
   };
 
   toast.querySelector('.sgi-toast-close')?.addEventListener('click', dismiss);
-  setTimeout(dismiss, duration);
+  setTimeout(dismiss, visibleDuration);
 }
 // Exposicion global para que backend-client.js y otros modulos externos puedan usarla
 window.showGlobalAlert = showGlobalAlert;
@@ -650,6 +701,7 @@ async function renderLayout(activeId = '') {
     email: userEmail,
     role: userRole,
     showProfileLink: canAccessItem(window.SGINavigationStore.pageAccess?.profile || {}),
+    showNotifications: hasPermission('notifications.view'),
   });
   const navEl = document.getElementById('mainNavbar');
   if (navEl) navEl.innerHTML = navbarHtml;
@@ -789,8 +841,10 @@ async function renderLayout(activeId = '') {
   
   window.SGIProtectedPageGuard?.reveal();
   startInactivityWatcher();
-  loadNavbarNotifications(true);
-  startRealtimeNotifications(user);
+  if (hasPermission('notifications.view')) {
+    loadNavbarNotifications(true);
+    startRealtimeNotifications(user);
+  }
   if (window.SGINavigationStore) {
     window.SGINavigationStore.clearNavigation();
   }
@@ -814,7 +868,7 @@ function filterAuthorizedMenuItems(items = []) {
     const hasRoute = Boolean(item.route || item.href);
 
     if (hasChildren) {
-      if (canViewItem && children.length) {
+      if (children.length) {
         result.push({ ...item, children });
       }
       return result;

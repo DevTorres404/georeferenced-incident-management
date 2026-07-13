@@ -4,13 +4,14 @@ namespace App\Users\Infrastructure\Http\Controllers;
 
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
+use App\Shared\Infrastructure\Notifications\UserNotifier;
 use App\Users\Application\DTOs\CreateManagedUserInputData;
 use App\Users\Application\DTOs\SyncUserRolesInputData;
 use App\Users\Application\DTOs\UpdateManagedUserInputData;
 use App\Users\Application\DTOs\UserFiltersData;
 use App\Users\Application\UseCases\UserManagementUseCase;
-use App\Shared\Infrastructure\Http\Controllers\ApiController;
-use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,10 +25,9 @@ class UserController extends ApiController
 {
     public function __construct(
         private UserManagementUseCase $userManagementUseCase,
-        private AdminNotifier $adminNotifier
-    )
-    {
-    }
+        private AdminNotifier $adminNotifier,
+        private UserNotifier $userNotifier
+    ) {}
 
     /**
      * Listar usuarios.
@@ -35,6 +35,7 @@ class UserController extends ApiController
      * Devuelve una lista paginada de usuarios, con opciones de filtrado.
      *
      * @authenticated
+     *
      * @queryParam search string Búsqueda por nombre, apellido o correo. Example: admin
      * @queryParam role string Filtrar por código de rol. Example: ADMIN
      * @queryParam activo boolean Filtrar por estado activo/inactivo. Example: 1
@@ -65,6 +66,7 @@ class UserController extends ApiController
      * Permite a un administrador crear un nuevo usuario en el sistema.
      *
      * @authenticated
+     *
      * @bodyParam nombre string required Nombre del usuario. Example: Carlos
      * @bodyParam apellido string required Apellido del usuario. Example: Gonzalez
      * @bodyParam username string Nombre de usuario (opcional). Example: cgonzalez
@@ -138,6 +140,7 @@ class UserController extends ApiController
      * Devuelve la información detallada de un usuario específico.
      *
      * @authenticated
+     *
      * @urlParam user int required El ID del usuario. Example: 2
      */
     public function show(User $user): JsonResponse
@@ -153,7 +156,9 @@ class UserController extends ApiController
      * Permite modificar los datos de un usuario existente.
      *
      * @authenticated
+     *
      * @urlParam user int required El ID del usuario. Example: 2
+     *
      * @bodyParam nombre string Nombre del usuario. Example: Carlos
      * @bodyParam apellido string Apellido del usuario. Example: Gonzalez
      * @bodyParam username string Nombre de usuario. Example: cgonzalez
@@ -192,6 +197,8 @@ class UserController extends ApiController
             'roles.*' => ['string', Rule::exists(Role::class, 'code')],
         ], $this->validationMessages());
 
+        $previousRole = isset($data['roles']) ? $user->roles()->first() : null;
+
         $user = $this->userManagementUseCase->update(
             $user->id,
             new UpdateManagedUserInputData(
@@ -208,6 +215,23 @@ class UserController extends ApiController
             )
         );
 
+        if (isset($data['roles'][0])) {
+            $newRole = Role::where('code', $data['roles'][0])->first();
+            $userName = trim("{$user->firstName} {$user->lastName}") ?: $user->email;
+
+            $this->userNotifier->notify(
+                userId: (int) $user->id,
+                title: 'Tu rol fue actualizado',
+                message: "Tu acceso ahora corresponde al rol {$this->roleLabel($newRole)}. Actualiza la pagina para aplicar el nuevo menu y permisos.",
+                type: 'STATUS_CHANGE'
+            );
+            $this->adminNotifier->notify(
+                title: 'Cambio de rol',
+                message: "El usuario {$userName} cambio de {$this->roleLabel($previousRole)} a {$this->roleLabel($newRole)}.",
+                type: 'STATUS_CHANGE'
+            );
+        }
+
         return response()->json([
             'message' => 'Usuario actualizado correctamente.',
             'data' => $user,
@@ -220,6 +244,7 @@ class UserController extends ApiController
      * Elimina lógicamente a un usuario del sistema (Soft Delete).
      *
      * @authenticated
+     *
      * @urlParam user int required El ID del usuario a eliminar. Example: 3
      */
     public function destroy(Request $request, User $user): JsonResponse
@@ -241,7 +266,9 @@ class UserController extends ApiController
      * Asigna el rol unico del usuario, eliminando cualquier rol anterior.
      *
      * @authenticated
+     *
      * @urlParam user int required El ID del usuario. Example: 2
+     *
      * @bodyParam roles string[] required Arreglo con los códigos de roles. Example: ["SUPERVISOR"]
      */
     public function syncUserRoles(Request $request, User $user): JsonResponse
@@ -262,6 +289,12 @@ class UserController extends ApiController
         );
 
         $newRole = Role::where('code', $data['roles'][0])->first();
+        $this->userNotifier->notify(
+            userId: (int) $user->id,
+            title: 'Tu rol fue actualizado',
+            message: "Tu acceso ahora corresponde al rol {$this->roleLabel($newRole)}. Actualiza la pagina para aplicar el nuevo menu y permisos.",
+            type: 'STATUS_CHANGE'
+        );
         $userName = trim("{$user->firstName} {$user->lastName}") ?: $user->email;
         $this->adminNotifier->notify(
             title: 'Cambio de rol',
@@ -276,7 +309,7 @@ class UserController extends ApiController
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array{0: string, 1: string}
      */
     private function resolveNames(array $data): array

@@ -12,6 +12,8 @@ interface UserRepositoryInterface
 
     public function findById(int $id): ?AuthUser;
 
+    public function findTrashedByEmail(string $email): ?AuthUser;
+
     public function create(CreateUserInputData $data): AuthUser;
 
     public function loadProfile(int $userId): ?AuthUser;
@@ -34,6 +36,8 @@ interface UserRepositoryInterface
     public function updateUsername(int $userId, string $username): AuthUser;
 
     public function updateProfile(int $userId, string $firstName, string $lastName, string $username): AuthUser;
+
+    public function updateProfilePhoto(int $userId, ?string $profilePhoto): AuthUser;
 
     public function updatePasswordHash(int $userId, string $passwordHash): void;
 

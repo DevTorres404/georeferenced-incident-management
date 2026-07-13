@@ -183,6 +183,11 @@ function initializeMap() {
 
   state.map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
   state.map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
+
+  // Initialize GeoJSON source for clustering (will be added in renderMarkers)
+  state.map.on('load', () => {
+    // Source will be created dynamically in renderMarkers
+  });
 }
 
 function renderMarkers() {
@@ -192,22 +197,154 @@ function renderMarkers() {
     return;
   }
 
-  const bounds = new window.maplibregl.LngLatBounds();
+  // Convert points to GeoJSON format with clustering
+  const geojson = {
+    type: 'FeatureCollection',
+    features: state.points
+      .map((point) => {
+        const lng = Number(point.longitude);
+        const lat = Number(point.latitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [lng, lat] },
+          properties: point,
+        };
+      })
+      .filter(Boolean),
+  };
 
-  state.points.forEach((point) => {
-    const lng = Number(point.longitude);
-    const lat = Number(point.latitude);
+  // Remove existing source/layers if they exist
+  if (state.map.getSource('incidents-source')) {
+    state.map.getStyle().layers.forEach((layer) => {
+      if (layer.id.startsWith('incidents-')) state.map.removeLayer(layer.id);
+    });
+    state.map.removeSource('incidents-source');
+  }
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return;
-    }
+  // Add GeoJSON source with clustering enabled
+  state.map.addSource('incidents-source', {
+    type: 'geojson',
+    data: geojson,
+    cluster: true,
+    clusterMaxZoom: 14, // Max zoom to cluster points
+    clusterRadius: 50, // Radius of each cluster in pixels
+  });
 
-    const marker = new window.maplibregl.Marker({ element: buildMarkerElement(point) })
-      .setLngLat([lng, lat])
-      .setPopup(new window.maplibregl.Popup({ offset: 18 }).setHTML(buildPopupHtml(point)))
+  // Cluster layer (blue circles with count)
+  state.map.addLayer({
+    id: 'incidents-clusters',
+    type: 'circle',
+    source: 'incidents-source',
+    filter: ['has', 'point_count'],
+    paint: {
+      'circle-color': '#3498db',
+      'circle-radius': [
+        'step',
+        ['get', 'point_count'],
+        20, // 1-99 points = 20px
+        100,
+        30, // 100-999 = 30px
+        750,
+        40, // 750+ = 40px
+      ],
+      'circle-opacity': 0.8,
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#fff',
+    },
+  });
+
+  // Cluster count text layer
+  state.map.addLayer({
+    id: 'incidents-cluster-count',
+    type: 'symbol',
+    source: 'incidents-source',
+    filter: ['has', 'point_count'],
+    layout: {
+      'text-field': ['get', 'point_count'],
+      'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      'text-size': 12,
+    },
+    paint: {
+      'text-color': '#fff',
+    },
+  });
+
+  // Individual incident markers (when zoomed in or unclustered)
+  state.map.addLayer({
+    id: 'incidents-points',
+    type: 'circle',
+    source: 'incidents-source',
+    filter: ['!', ['has', 'point_count']],
+    paint: {
+      'circle-radius': [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        10,
+        7,
+      ],
+      'circle-color': [
+        'case',
+        ['boolean', ['feature-state', 'active'], false],
+        '#e74c3c', // Active: red
+        [
+          'match',
+          ['get', ['get', 'properties', 'priority'], 'name'],
+          'CRITICA', '#e74c3c', // Critical: red
+          'ALTA', '#f39c12', // High: orange
+          'MEDIA', '#3498db', // Medium: blue
+          '#27ae60', // Low: green
+        ],
+      ],
+      'circle-stroke-width': 2,
+      'circle-stroke-color': '#fff',
+    },
+  });
+
+  // Add click handlers for clusters
+  state.map.on('click', 'incidents-clusters', (e) => {
+    const features = state.map.querySourceFeatures('incidents-source', {
+      sourceLayer: undefined,
+    });
+    const clusterId = e.features[0].properties.cluster_id;
+    state.map.getSource('incidents-source').getClusterExpansionZoom(clusterId, (err, zoom) => {
+      if (err) return;
+      state.map.easeTo({
+        center: e.lngLat,
+        zoom,
+        duration: 300,
+      });
+    });
+  });
+
+  // Add click handlers for individual points to show popup
+  state.map.on('click', 'incidents-points', (e) => {
+    if (!e.features.length) return;
+    const point = e.features[0].properties;
+    const popup = new window.maplibregl.Popup({ offset: 18 })
+      .setLngLat(e.lngLat)
+      .setHTML(buildPopupHtml(point))
       .addTo(state.map);
+  });
 
-    state.markers.push(marker);
+  // Change cursor on hover
+  state.map.on('mouseenter', 'incidents-clusters', () => {
+    state.map.getCanvas().style.cursor = 'pointer';
+  });
+  state.map.on('mouseleave', 'incidents-clusters', () => {
+    state.map.getCanvas().style.cursor = '';
+  });
+  state.map.on('mouseenter', 'incidents-points', () => {
+    state.map.getCanvas().style.cursor = 'pointer';
+  });
+  state.map.on('mouseleave', 'incidents-points', () => {
+    state.map.getCanvas().style.cursor = '';
+  });
+
+  // Fit bounds to all points
+  const bounds = new window.maplibregl.LngLatBounds();
+  geojson.features.forEach((feature) => {
+    const [lng, lat] = feature.geometry.coordinates;
     bounds.extend([lng, lat]);
   });
 
@@ -221,7 +358,18 @@ function renderMarkers() {
 }
 
 function clearMarkers() {
-  state.markers.forEach((marker) => marker.remove());
+  // Remove layers and source (will be recreated in renderMarkers)
+  if (state.map) {
+    ['incidents-clusters', 'incidents-cluster-count', 'incidents-points'].forEach((layerId) => {
+      if (state.map.getLayer(layerId)) {
+        state.map.removeLayer(layerId);
+      }
+    });
+    if (state.map.getSource('incidents-source')) {
+      state.map.removeSource('incidents-source');
+    }
+  }
+  // Clear old markers array (kept for backward compatibility)
   state.markers = [];
 }
 
@@ -258,8 +406,25 @@ function renderList() {
 
 function focusPoint(point) {
   if (!state.map) return;
+
+  const lng = Number(point.longitude);
+  const lat = Number(point.latitude);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+  // Close any open popups
+  const popups = document.querySelectorAll('.maplibregl-popup');
+  popups.forEach((p) => p.remove());
+
+  // Create and show popup at the point location
+  const popup = new window.maplibregl.Popup({ offset: 18 })
+    .setLngLat([lng, lat])
+    .setHTML(buildPopupHtml(point))
+    .addTo(state.map);
+
+  // Navigate to the point
   state.map.easeTo({
-    center: [Number(point.longitude), Number(point.latitude)],
+    center: [lng, lat],
     zoom: 16,
     duration: 650,
   });
