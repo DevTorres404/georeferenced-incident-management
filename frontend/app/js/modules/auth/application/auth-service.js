@@ -189,14 +189,6 @@ async function logout() {
   }
 }
 
-function createFlowId() {
-  if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-    return window.crypto.randomUUID();
-  }
-
-  return `flow_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
 function openGoogleFlowChannel(flowId, onUpdate) {
   if (!window.Pusher) {
     return null;

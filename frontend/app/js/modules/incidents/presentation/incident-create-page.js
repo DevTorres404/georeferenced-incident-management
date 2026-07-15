@@ -774,7 +774,7 @@ function validateEmail(id) {
     setFieldError(id, 'Ingresa un correo de contacto.');
     return false;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+  if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(value)) {
     setFieldError(id, 'Ingresa un correo valido.');
     return false;
   }
