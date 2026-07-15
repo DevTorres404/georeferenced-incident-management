@@ -19,6 +19,9 @@ nbproject/private
 node_modules/
 bower_components/
 
+# JS test coverage
+/coverage/
+
 # Plugins
 /plugins/**/*.html
 /plugins/**/*.less
