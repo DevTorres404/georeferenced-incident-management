@@ -318,6 +318,25 @@ try {
     $TestResult = "PASS(tests=$($ReportSummary.Tests),assertions=$($ReportSummary.Assertions))"
     Write-Host "Validated fresh reports: tests=$($ReportSummary.Tests), assertions=$($ReportSummary.Assertions), files=$($ReportSummary.Files), statements=$($ReportSummary.Statements), covered=$($ReportSummary.CoveredStatements)."
 
+    $CurrentPhase = 'js_coverage'
+    Write-Host 'Running JS tests with Vitest for coverage...'
+    $JsCoverageLog = Join-Path $RootDir 'docs/e6/logs/vitest-coverage.log'
+    $VitestRoot = Join-Path $RootDir 'frontend'
+    $VitestExit = 0
+    $VitestOutput = @(& npm --prefix $VitestRoot run test:js:coverage 2>&1)
+    $VitestOutput | Out-File -FilePath $JsCoverageLog -Encoding utf8 -Force
+    if ($LASTEXITCODE -ne 0) { $VitestExit = $LASTEXITCODE }
+    Write-Host ($VitestOutput -join "`n")
+    if ($VitestExit -ne 0) {
+        Write-Host "JS tests failed (exit $VitestExit). Proceeding with SonarScanner anyway (coverage may be partial)."
+    }
+    $JsLcov = Join-Path $VitestRoot 'coverage/lcov.info'
+    if (Test-Path $JsLcov) {
+        Write-Host "JS coverage lcov.info generated successfully."
+    } else {
+        Write-Host "Warning: JS coverage lcov.info not found at $JsLcov. Proceeding without JS coverage."
+    }
+
     $CurrentPhase = 'scanner_and_quality_gate'
     Write-Host 'Running SonarScanner and waiting for background processing and the Quality Gate...'
     try {
