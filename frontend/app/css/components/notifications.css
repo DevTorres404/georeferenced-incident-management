@@ -91,6 +91,7 @@
   padding: 0.25rem 0;
 }
 
+/* NOSONAR - scrollbar pseudo-elementos sin equivalente estandar */
 .sgi-notif-dropdown-list::-webkit-scrollbar {
   width: 3px;
 }

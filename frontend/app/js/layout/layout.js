@@ -11,7 +11,7 @@ import { subscribeToUserNotifications } from '../modules/notifications/applicati
  * Inyectado dinámicamente para mantener DRY
  * ============================================================
  */
-window.SGIDomUtils = {
+globalThis.SGIDomUtils = {
   delegateEvent(parent, selector, eventType, handler) {
     parent.addEventListener(eventType, function (e) {
       const target = e.target.closest(selector);
@@ -21,7 +21,7 @@ window.SGIDomUtils = {
     });
   }
 };
-window.SGINavigationStore = {
+globalThis.SGINavigationStore = {
   NAV_STATE_KEY: 'SGI_nav_state',
   menuItems: NAV_ITEMS,
   pageAccess: PAGE_ACCESS,
@@ -37,7 +37,7 @@ window.SGINavigationStore = {
     if (!stateStr) return false;
     try {
       const state = JSON.parse(stateStr);
-      if (state && state.inProgress) {
+      if (state?.inProgress) {
         if (Date.now() - state.timestamp > 5000) {
           sessionStorage.removeItem(this.NAV_STATE_KEY);
           return false;
@@ -67,17 +67,17 @@ let notificationSubscription = null;
 let notificationFallbackTimer = null;
 let notificationRefreshInFlight = false;
 
-window.addEventListener('pagehide', () => {
+globalThis.addEventListener('pagehide', () => {
   notificationSubscription?.cleanup?.();
   notificationSubscription = null;
   stopNotificationFallback();
 });
 
 function normalizeMobileSidebar() {
-  if (!window.matchMedia('(max-width: 991.98px), (hover: none), (pointer: coarse)').matches) return;
+  if (!globalThis.matchMedia('(max-width: 991.98px), (hover: none), (pointer: coarse)').matches) return;
 
   const pushMenuToggle = document.querySelector('[data-widget="pushmenu"]');
-  const $ = window.jQuery;
+  const $ = globalThis.jQuery;
   if (pushMenuToggle && typeof $ === 'function') {
     try {
       const pushMenu = $(pushMenuToggle).data('lte.pushmenu');
@@ -95,7 +95,7 @@ function normalizeMobileSidebar() {
   overlay?.style.removeProperty('display');
 }
 
-window.addEventListener('pageshow', (event) => {
+globalThis.addEventListener('pageshow', (event) => {
   if (event.persisted) normalizeMobileSidebar();
 });
 
@@ -155,10 +155,10 @@ function formatUserRoles(user) {
   return roles.length ? roles.join(', ') : 'Sin rol asignado';
 }
 function getAvailableMenus() {
-  return flattenMenuItems(window.SGINavigationStore.getAuthorizedMenu());
+  return flattenMenuItems(globalThis.SGINavigationStore.getAuthorizedMenu());
 }
 function getPagePermission(activeId) {
-  return window.SGINavigationStore.pageAccess?.[activeId]?.permission || null;
+  return globalThis.SGINavigationStore.pageAccess?.[activeId]?.permission || null;
 }
 function getDefaultPageForSession() {
   // Orden de candidatos: se retorna la primera página que el usuario puede ver.
@@ -182,7 +182,7 @@ function safeUrl(url) {
     return '#';
   }
   try {
-    const parsed = new URL(strUrl, window.location.origin);
+    const parsed = new URL(strUrl, globalThis.location.origin);
     if (['http:', 'https:'].includes(parsed.protocol)) return strUrl;
     return '#';
   } catch (e) {
@@ -212,10 +212,10 @@ function clearSession() {
   localStorage.removeItem(AUTH_KEYS.lastActivityAt);
 }
 function getLoginPath() {
-  return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+  return globalThis.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
 }
 function redirectToLogin() {
-  window.location.replace(getLoginPath());
+  globalThis.location.replace(getLoginPath());
 }
 function ensureSessionOrRedirect() {
   const token = localStorage.getItem(AUTH_KEYS.token);
@@ -276,21 +276,21 @@ function normalizeNavigationItems(items = []) {
     .filter((item) => item.id && item.label);
 }
 async function loadAuthorizedNavigation() {
-  const fallbackMenu = filterAuthorizedMenuItems(window.SGINavigationStore.menuItems);
+  const fallbackMenu = filterAuthorizedMenuItems(globalThis.SGINavigationStore.menuItems);
 
   try {
     const response = await requestBackend('/navigation/menu', { noCache: true });
     const items = normalizeNavigationItems(Array.isArray(response?.data) ? response.data : []);
 
     if (items.length) {
-      window.SGINavigationStore.authorizedMenuItems = items;
+      globalThis.SGINavigationStore.authorizedMenuItems = items;
       return items;
     }
   } catch {
     // Si el endpoint aún no está migrado, mantenemos la navegación local filtrada.
   }
 
-  window.SGINavigationStore.authorizedMenuItems = fallbackMenu;
+  globalThis.SGINavigationStore.authorizedMenuItems = fallbackMenu;
   return fallbackMenu;
 }
 async function mutateBackend(path, options = {}) {
@@ -315,14 +315,14 @@ async function logoutFromInactivity() {
   }
 }
 function scheduleInactivityLogout() {
-  window.clearTimeout(inactivityTimer);
+  globalThis.clearTimeout(inactivityTimer);
   const inactiveFor = Date.now() - getLastActivityAt();
   const remaining = INACTIVITY_TIMEOUT_MS - inactiveFor;
   if (remaining <= 0) {
     logoutFromInactivity();
     return;
   }
-  inactivityTimer = window.setTimeout(logoutFromInactivity, remaining);
+  inactivityTimer = globalThis.setTimeout(logoutFromInactivity, remaining);
 }
 function recordActivity() {
   const now = Date.now();
@@ -337,14 +337,14 @@ function startInactivityWatcher() {
     localStorage.setItem(AUTH_KEYS.lastActivityAt, String(Date.now()));
   }
   ACTIVITY_EVENTS.forEach((eventName) => {
-    window.addEventListener(eventName, recordActivity, { passive: true });
+    globalThis.addEventListener(eventName, recordActivity, { passive: true });
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       scheduleInactivityLogout();
     }
   });
-  window.addEventListener('storage', (event) => {
+  globalThis.addEventListener('storage', (event) => {
     if (event.key === AUTH_KEYS.lastActivityAt) {
       scheduleInactivityLogout();
     }
@@ -372,7 +372,7 @@ function scheduleSessionExpiryLogout() {
     redirectToLogin();
     return;
   }
-  window.setTimeout(() => {
+  globalThis.setTimeout(() => {
     clearSession();
     redirectToLogin();
   }, delay);
@@ -408,7 +408,7 @@ async function loadNavbarNotifications(forceRefresh = false) {
       items: notifications
     }));
     renderBetterNavbarNotifications(count, notifications);
-    window.dispatchEvent(new CustomEvent('sgi:notifications-refreshed', {
+    globalThis.dispatchEvent(new CustomEvent('sgi:notifications-refreshed', {
       detail: { count, items: notifications },
     }));
     return { count, items: notifications };
@@ -424,13 +424,13 @@ function startRealtimeNotifications(user) {
   scheduleNotificationFallback();
 
   subscribeToUserNotifications(user, async (notification) => {
-    window.dispatchEvent(new CustomEvent('sgi:notification-created', {
+    globalThis.dispatchEvent(new CustomEvent('sgi:notification-created', {
       detail: notification,
     }));
     sessionStorage.removeItem('SGI_notifications_cache');
     await loadNavbarNotifications(true);
-    if (notification?.title && window.showGlobalAlert) {
-      window.showGlobalAlert(notification.title, 'info');
+    if (notification?.title && globalThis.showGlobalAlert) {
+      globalThis.showGlobalAlert(notification.title, 'info');
     }
   }, (state) => {
     if (state === 'subscribed') {
@@ -449,7 +449,7 @@ function startRealtimeNotifications(user) {
 
 function scheduleNotificationFallback() {
   if (notificationFallbackTimer) return;
-  notificationFallbackTimer = window.setInterval(async () => {
+  notificationFallbackTimer = globalThis.setInterval(async () => {
     if (notificationRefreshInFlight || document.visibilityState === 'hidden') return;
     notificationRefreshInFlight = true;
     try {
@@ -461,7 +461,7 @@ function scheduleNotificationFallback() {
 }
 
 function stopNotificationFallback() {
-  if (notificationFallbackTimer) window.clearInterval(notificationFallbackTimer);
+  if (notificationFallbackTimer) globalThis.clearInterval(notificationFallbackTimer);
   notificationFallbackTimer = null;
 }
 
@@ -515,8 +515,8 @@ function renderBetterNavbarNotifications(count, notifications) {
       </button>`;
   }).join('');
 
-  if (window.SGIDomUtils?.delegateEvent) {
-    window.SGIDomUtils.delegateEvent(list, '.js-notification-item', 'click', async (e, item) => {
+  if (globalThis.SGIDomUtils?.delegateEvent) {
+    globalThis.SGIDomUtils.delegateEvent(list, '.js-notification-item', 'click', async (e, item) => {
       const id = item.dataset.notificationId;
       const incidentId = item.dataset.incidentId;
       if (!id) return;
@@ -549,11 +549,11 @@ function renderBetterNavbarNotifications(count, notifications) {
             </div>`;
         }
         if (incidentId) {
-          window.location.href = `/html/incident-detail.html?id=${incidentId}`;
+          globalThis.location.href = `/html/incident-detail.html?id=${incidentId}`;
         }
       } catch {
-        if (window.showGlobalAlert) {
-          window.showGlobalAlert('No se pudo marcar la notificación como leída.', 'danger');
+        if (globalThis.showGlobalAlert) {
+          globalThis.showGlobalAlert('No se pudo marcar la notificación como leída.', 'danger');
         }
       }
     });
@@ -599,13 +599,13 @@ function showLayoutMessage(message, type = 'success') {
   alert.className = `alert alert-${type} shadow-sm`;
   alert.textContent = message;
   alert.style.display = 'block';
-  window.setTimeout(() => {
+  globalThis.setTimeout(() => {
     alert.style.display = 'none';
   }, 3500);
 }
 /**
  * Toast premium unificado con icono, barra de progreso y cierre.
- * Se expone como window.showGlobalAlert para que backend-client.js y otros modulos la usen.
+ * Se expone como globalThis.showGlobalAlert para que backend-client.js y otros modulos la usen.
  */
 function showGlobalAlert(message, type = 'success', title = '', duration = 5000) {
   let stack = document.querySelector('.sgi-toast-stack');
@@ -678,12 +678,12 @@ function showGlobalAlert(message, type = 'success', title = '', duration = 5000)
   setTimeout(dismiss, visibleDuration);
 }
 // Exposicion global para que backend-client.js y otros modulos externos puedan usarla
-window.showGlobalAlert = showGlobalAlert;
-window.requestBackend = requestBackend;
-window.mutateBackend = mutateBackend;
+globalThis.showGlobalAlert = showGlobalAlert;
+globalThis.requestBackend = requestBackend;
+globalThis.mutateBackend = mutateBackend;
 
 
-async function renderLayout(activeId = '') {
+async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI initialization with role-based routing, sidebar construction, notification polling, and event binding
   let user = ensureSessionOrRedirect();
   if (!user) return;
 
@@ -698,19 +698,19 @@ async function renderLayout(activeId = '') {
   // Ruteo de accesos por rol y permiso.
   const menuItems = await loadAuthorizedNavigation();
   const currentItem = flattenMenuItems(menuItems).find(i => i.id === activeId)
-    || flattenMenuItems(window.SGINavigationStore.menuItems).find(i => i.id === activeId);
+    || flattenMenuItems(globalThis.SGINavigationStore.menuItems).find(i => i.id === activeId);
   if (activeId === 'territorial-units') {
-    window.location.href = 'operational-structure.html';
+    globalThis.location.href = 'operational-structure.html';
     return;
   }
-  const pageAccess = currentItem || window.SGINavigationStore.pageAccess?.[activeId] || null;
+  const pageAccess = currentItem || globalThis.SGINavigationStore.pageAccess?.[activeId] || null;
   if (pageAccess && !canAccessItem(pageAccess)) {
     const defaultPage = getDefaultPageForSession();
     if (!defaultPage) {
       showLayoutMessage('No tienes una pantalla disponible para tu rol.', 'danger');
       return;
     }
-    window.location.href = defaultPage;
+    globalThis.location.href = defaultPage;
     return;
   }
 
@@ -727,23 +727,23 @@ async function renderLayout(activeId = '') {
     initial: userInitial,
     email: userEmail,
     role: userRole,
-    showProfileLink: canAccessItem(window.SGINavigationStore.pageAccess?.profile || {}),
+    showProfileLink: canAccessItem(globalThis.SGINavigationStore.pageAccess?.profile || {}),
     showNotifications: hasPermission('notifications.view'),
   });
   const navEl = document.getElementById('mainNavbar');
   if (navEl) {
     navEl.innerHTML = navbarHtml;
-    if (window.jQuery && typeof window.jQuery.fn.PushMenu === 'function') {
-      window.jQuery('[data-widget="pushmenu"]').PushMenu();
+    if (globalThis.jQuery && typeof globalThis.jQuery.fn.PushMenu === 'function') {
+      globalThis.jQuery('[data-widget="pushmenu"]').PushMenu();
     }
     
     // Fallback nativo: si PushMenu no se enlaza bien, alternamos manualmente
     const btn = navEl.querySelector('[data-widget="pushmenu"]');
     if (btn) {
       btn.addEventListener('click', (e) => {
-        if (!window.jQuery || !window.jQuery.data(btn, 'lte.pushmenu')) {
+        if (!globalThis.jQuery || !globalThis.jQuery.data(btn, 'lte.pushmenu')) {
           e.preventDefault();
-          if (window.innerWidth < 992) {
+          if (globalThis.innerWidth < 992) {
             if (document.body.classList.contains('sidebar-open')) {
               document.body.classList.remove('sidebar-open');
               document.body.classList.add('sidebar-collapse', 'sidebar-closed');
@@ -765,8 +765,8 @@ async function renderLayout(activeId = '') {
     sidebarEl.innerHTML = sidebarHtml;
     
     // Inicializar barras de desplazamiento (overlayScrollbars) porque el HTML es inyectado dinámicamente
-    if (window.jQuery && window.jQuery.fn.overlayScrollbars) {
-      window.jQuery('.sidebar').overlayScrollbars({
+    if (globalThis.jQuery?.fn?.overlayScrollbars) {
+      globalThis.jQuery('.sidebar').overlayScrollbars({
         className: 'os-theme-light',
         sizeAutoCapable: true,
         scrollbars: {
@@ -813,19 +813,17 @@ async function renderLayout(activeId = '') {
       e.preventDefault();
 
       // Evitar recargar la misma página si ya estamos en ella
-      const currentPath = window.location.pathname.split('/').pop();
+      const currentPath = globalThis.location.pathname.split('/').pop();
       if (href === currentPath) {
         return;
       }
 
       // Evitar múltiples clics si ya se está navegando
-      if (window.SGINavigationStore && window.SGINavigationStore.isNavigationInProgress()) {
+      if (globalThis.SGINavigationStore?.isNavigationInProgress?.()) {
         return;
       }
 
-      if (window.SGINavigationStore) {
-        window.SGINavigationStore.startNavigation(href);
-      }
+      globalThis.SGINavigationStore?.startNavigation?.(href);
 
       normalizeMobileSidebar();
 
@@ -838,7 +836,7 @@ async function renderLayout(activeId = '') {
       }
 
       // Ejecutar la navegación
-      window.location.href = href;
+      globalThis.location.href = href;
     });
   }
   normalizeMobileSidebar();
@@ -851,7 +849,7 @@ async function renderLayout(activeId = '') {
     link.addEventListener('click', (e) => {
       e.preventDefault();
 
-      if (window.SGINavigationStore && window.SGINavigationStore.isNavigationInProgress()) {
+      if (globalThis.SGINavigationStore?.isNavigationInProgress?.()) {
         return;
       }
 
@@ -864,12 +862,12 @@ async function renderLayout(activeId = '') {
       const targetHref = availableMenus[0].route || availableMenus[0].href;
 
       // Si ya estamos en esa página, no hacer nada
-      if (window.location.pathname.endsWith(targetHref)) {
+      if (globalThis.location.pathname.endsWith(targetHref)) {
         return;
       }
 
-      if (window.SGINavigationStore) {
-        window.SGINavigationStore.startNavigation(targetHref);
+      if (globalThis.SGINavigationStore) {
+        globalThis.SGINavigationStore.startNavigation(targetHref);
       }
 
       const loader = document.getElementById('pageLoader');
@@ -879,22 +877,22 @@ async function renderLayout(activeId = '') {
         loader.style.display = 'flex';
       }
 
-      window.location.href = targetHref;
+      globalThis.location.href = targetHref;
     });
   });
 
-  if (window.SGIDomUtils?.delegateEvent) {
-    window.SGIDomUtils.delegateEvent(document.body, '#btnMarkAllRead', 'click', async (e) => {
+  if (globalThis.SGIDomUtils?.delegateEvent) {
+    globalThis.SGIDomUtils.delegateEvent(document.body, '#btnMarkAllRead', 'click', async (e) => {
       e.preventDefault();
       try {
         await mutateBackend('/notifications/mark-all-read', { method: 'PATCH' });
         await loadNavbarNotifications(true);
-        if (window.showGlobalAlert) {
-          window.showGlobalAlert('Todas las notificaciones han sido marcadas como leídas.', 'success');
+        if (globalThis.showGlobalAlert) {
+          globalThis.showGlobalAlert('Todas las notificaciones han sido marcadas como leídas.', 'success');
         }
       } catch { 
-        if (window.showGlobalAlert) {
-          window.showGlobalAlert('No se pudieron marcar las notificaciones.', 'danger');
+        if (globalThis.showGlobalAlert) {
+          globalThis.showGlobalAlert('No se pudieron marcar las notificaciones.', 'danger');
         }
       }
     });
@@ -908,24 +906,24 @@ async function renderLayout(activeId = '') {
     });
   }
   
-  window.SGIProtectedPageGuard?.reveal();
+  globalThis.SGIProtectedPageGuard?.reveal();
   startInactivityWatcher();
   if (hasPermission('notifications.view')) {
     loadNavbarNotifications(true);
     startRealtimeNotifications(user);
   }
-  if (window.SGINavigationStore) {
-    window.SGINavigationStore.clearNavigation();
+  if (globalThis.SGINavigationStore) {
+    globalThis.SGINavigationStore.clearNavigation();
   }
 }
-window.renderLayout = renderLayout;
+globalThis.renderLayout = renderLayout;
 
-window.addEventListener('sgi:unauthorized', () => {
+globalThis.addEventListener('sgi:unauthorized', () => {
   clearSession();
   redirectToLogin();
 });
 
-window.addEventListener('sgi:validate-session', () => {
+globalThis.addEventListener('sgi:validate-session', () => {
   refreshSessionUserOrRedirect();
 });
 
@@ -967,7 +965,7 @@ function canAccessItem(item = {}) {
 }
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  globalThis.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js').catch(() => {});
   });
 }

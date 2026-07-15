@@ -508,18 +508,16 @@ class IncidentController extends ApiController
 
         $primaryUserId = (int) ($data['primary_user_id'] ?? $data['user_id'] ?? 0);
 
-        if ($primaryUserId <= 0) {
-            return response()->json([
-                'message' => 'Debes seleccionar un operador principal.',
-            ], 422);
-        }
-
         $supportUserIds = array_values(array_unique(array_map(
             'intval',
             array_filter($data['support_user_ids'] ?? [], fn ($value) => (int) $value !== $primaryUserId)
         )));
 
         try {
+            if ($primaryUserId <= 0) {
+                throw new IncidentException('Debes seleccionar un operador principal.', 422);
+            }
+
             $asignacion = $this->incidentUseCase->assign(
                 $incident->id,
                 $user->id,

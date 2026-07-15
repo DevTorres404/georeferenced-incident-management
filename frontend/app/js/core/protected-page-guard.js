@@ -5,7 +5,7 @@
 
 
   function loginPath() {
-    return window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+    return globalThis.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
   }
 
   function clearLocalSession() {
@@ -31,7 +31,7 @@
 
   function redirectToLogin() {
     clearLocalSession();
-    window.location.replace(loginPath());
+    globalThis.location.replace(loginPath());
   }
 
   function verifyOrRedirect() {
@@ -40,19 +40,19 @@
     return false;
   }
 
-  window.SGIProtectedPageGuard = {
+  globalThis.SGIProtectedPageGuard = {
     reveal() {
       root.style.visibility = '';
     },
     verifyOrRedirect,
   };
 
-  window.addEventListener('pageshow', (event) => {
+  globalThis.addEventListener('pageshow', (event) => {
     if (!verifyOrRedirect()) return;
-    if (event.persisted) window.dispatchEvent(new Event('sgi:validate-session'));
+    if (event.persisted) globalThis.dispatchEvent(new Event('sgi:validate-session'));
   });
 
-  window.addEventListener('storage', (event) => {
+  globalThis.addEventListener('storage', (event) => {
     if (event.key === 'auth_token' && !event.newValue) redirectToLogin();
   });
 

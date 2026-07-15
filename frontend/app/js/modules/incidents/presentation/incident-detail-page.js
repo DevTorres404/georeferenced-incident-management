@@ -33,7 +33,7 @@ let commentRefreshInFlight = false;
 let detailRealtimeSubscription = null;
 let cachedTransitions = [];
 
-window.addEventListener('pagehide', () => {
+globalThis.addEventListener('pagehide', () => {
   commentSubscription?.cleanup?.();
   commentSubscription = null;
   detailRealtimeSubscription?.cleanup?.();
@@ -42,11 +42,11 @@ window.addEventListener('pagehide', () => {
 });
 
 async function initIncidentDetailPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('incident-detail');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('incident-detail');
   }
 
-  const incidentId = new URLSearchParams(window.location.search).get('id');
+  const incidentId = new URLSearchParams(globalThis.location.search).get('id');
   const container = document.getElementById('contenidoDetalle');
 
   if (!incidentId) {
@@ -352,7 +352,7 @@ function renderIncidentMap(incident) {
   const mapContainer = document.getElementById('incidentDetailMap');
   if (!mapContainer || !hasCoordinates(incident)) return;
 
-  if (!window.maplibregl) {
+  if (!globalThis.maplibregl) {
     mapContainer.innerHTML = `
       <div class="map-empty-state">
         <i class="fas fa-exclamation-triangle"></i>
@@ -368,7 +368,7 @@ function renderIncidentMap(incident) {
 
   mapContainer.innerHTML = '';
 
-  const map = new window.maplibregl.Map({
+  const map = new globalThis.maplibregl.Map({
     container: mapContainer,
     style: MAP_BASE_STYLES.streets.style,
     center,
@@ -378,17 +378,17 @@ function renderIncidentMap(incident) {
     maxBounds: MAP_ECUADOR_BOUNDS,
   });
 
-  map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-  map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
+  map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new globalThis.maplibregl.FullscreenControl(), 'top-right');
 
   const popupHtml = `
     <strong>${escapeHtml(incident.code || `#${incident.id}`)}</strong><br>
     <span>${escapeHtml(incident.title || 'Incidencia')}</span><br>
     <small>${escapeHtml(territoryLabel(incident))}</small>`;
 
-  new window.maplibregl.Marker({ color: '#0d6efd' })
+  new globalThis.maplibregl.Marker({ color: '#0d6efd' })
     .setLngLat(center)
-    .setPopup(new window.maplibregl.Popup({ offset: 24 }).setHTML(popupHtml))
+    .setPopup(new globalThis.maplibregl.Popup({ offset: 24 }).setHTML(popupHtml))
     .addTo(map);
 
   map.on('load', () => map.resize());
@@ -478,8 +478,8 @@ function prepareStateCommentModal(transition) {
       ${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}
     </option>`;
   commentInput.value = '';
-  window.jQuery?.('#modalEstado').modal('show');
-  window.setTimeout(() => commentInput.focus(), 250);
+  globalThis.jQuery?.('#modalEstado').modal('show');
+  globalThis.setTimeout(() => commentInput.focus(), 250);
 }
 
 function hydratePriorityModal(incident, priorities) {
@@ -604,16 +604,16 @@ function startRealtimeDetail(incident) {
 function scheduleCommentFallback(incident) {
   if (commentFallbackDelay || commentFallbackTimer) return;
 
-  commentFallbackDelay = window.setTimeout(() => {
+  commentFallbackDelay = globalThis.setTimeout(() => {
     commentFallbackDelay = null;
     refreshIncidentComments(incident);
-    commentFallbackTimer = window.setInterval(() => refreshIncidentComments(incident), 10000);
+    commentFallbackTimer = globalThis.setInterval(() => refreshIncidentComments(incident), 10000);
   }, 5000);
 }
 
 function stopCommentFallback() {
-  if (commentFallbackDelay) window.clearTimeout(commentFallbackDelay);
-  if (commentFallbackTimer) window.clearInterval(commentFallbackTimer);
+  if (commentFallbackDelay) globalThis.clearTimeout(commentFallbackDelay);
+  if (commentFallbackTimer) globalThis.clearInterval(commentFallbackTimer);
   commentFallbackDelay = null;
   commentFallbackTimer = null;
 }
@@ -744,7 +744,7 @@ function bindAttachmentPreview() {
         modalFallback.classList.remove('d-none');
       };
 
-      window.jQuery?.('#modalAttachmentPreview').modal('show');
+      globalThis.jQuery?.('#modalAttachmentPreview').modal('show');
     });
   });
 }
@@ -757,7 +757,7 @@ function bindPriorityForm(incident) {
   if (!openButton || !saveButton || !select) return;
 
   openButton.addEventListener('click', () => {
-    window.jQuery?.('#modalPrioridad').modal('show');
+    globalThis.jQuery?.('#modalPrioridad').modal('show');
   });
 
   saveButton.addEventListener('click', async () => {
@@ -780,7 +780,7 @@ function bindPriorityForm(incident) {
 
       incident.priority_id = updated.priority_id ?? nextPriorityId;
       incident.priority = updated.priority || {
-        ...(incident.priority || {}),
+        ...incident.priority,
         id: nextPriorityId,
         name: selectedLabel,
       };
@@ -791,7 +791,7 @@ function bindPriorityForm(incident) {
         badge.className = `badge ${getPriorityBadgeClass(incident.priority?.name || '')} px-2 py-1`;
       }
 
-      window.jQuery?.('#modalPrioridad').modal('hide');
+      globalThis.jQuery?.('#modalPrioridad').modal('hide');
       showGlobalAlert('Prioridad actualizada correctamente.', 'success');
     } catch (error) {
       showGlobalAlert(error.message || 'No se pudo actualizar la prioridad.', 'danger');
@@ -845,7 +845,7 @@ function bindStateChangeControl(incident, transitions) {
     const comment = commentInput.value.trim();
 
     if (!pendingTransition) {
-      window.jQuery?.('#modalEstado').modal('hide');
+      globalThis.jQuery?.('#modalEstado').modal('hide');
       return;
     }
 
@@ -859,7 +859,7 @@ function bindStateChangeControl(incident, transitions) {
     try {
       await executeStateTransition(incident, pendingTransition, comment, transitions);
       pendingTransition = null;
-      window.jQuery?.('#modalEstado').modal('hide');
+      globalThis.jQuery?.('#modalEstado').modal('hide');
       commentInput.value = '';
     } catch (error) {
       showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
@@ -868,7 +868,7 @@ function bindStateChangeControl(incident, transitions) {
     }
   });
 
-  window.jQuery?.('#modalEstado').on('hidden.bs.modal', () => {
+  globalThis.jQuery?.('#modalEstado').on('hidden.bs.modal', () => {
     pendingTransition = null;
     commentInput.value = '';
     renderStateSelector(incident, transitions);
@@ -887,7 +887,7 @@ async function executeStateTransition(incident, transition, comment, transitions
   const updated = response?.data || {};
   incident.state_id = updated.state_id ?? nextStateId;
   incident.state = updated.state || {
-    ...(incident.state || {}),
+    ...incident.state,
     id: nextStateId,
     name: transition.target_state_name || '-',
   };
@@ -940,8 +940,8 @@ function updateStatePresentation(incident, transitions) {
 
 function showStateChangeConfirmation(stateName) {
   const message = `Estado actualizado a ${formatCatalogLabel(stateName || '-')}.`;
-  if (typeof window.showGlobalAlert === 'function') {
-    window.showGlobalAlert(message, 'success', 'Estado actualizado', 2000);
+  if (typeof globalThis.showGlobalAlert === 'function') {
+    globalThis.showGlobalAlert(message, 'success', 'Estado actualizado', 2000);
     return;
   }
 
@@ -1086,7 +1086,7 @@ function initializeStateHistoryTooltip(history) {
 
   const changes = recentStateChangeLines(history);
   const htmlContent = renderRecentStateChangesTooltip(history);
-  const tooltip = window.jQuery?.(target);
+  const tooltip = globalThis.jQuery?.(target);
 
   if (tooltip?.tooltip) {
     if (tooltip.data('bs.tooltip')) {
@@ -1146,8 +1146,8 @@ function resolveAttachmentUrl(attachment) {
 
   const normalizedPath = rawPath.replace(/^\/+/, '');
   const configuredBaseUrl = String(
-    window.SGI_ATTACHMENTS_BASE_URL
-      || window.SGI_STORAGE_BASE_URL
+    globalThis.SGI_ATTACHMENTS_BASE_URL
+      || globalThis.SGI_STORAGE_BASE_URL
       || deriveStorageBaseUrl()
   ).trim();
 
@@ -1166,7 +1166,7 @@ function deriveStorageBaseUrl() {
     return `${normalizedApiUrl.slice(0, -4)}/storage`;
   }
 
-  return `${window.location.origin}/storage`;
+  return `${globalThis.location.origin}/storage`;
 }
 
 function attachmentIconClass(mimeType, fileName) {

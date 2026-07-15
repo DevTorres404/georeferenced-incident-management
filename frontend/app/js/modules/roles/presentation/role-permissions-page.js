@@ -5,8 +5,8 @@ import { handleBackendErrors, setFormAlert } from '../../../shared/validators/va
 document.addEventListener('DOMContentLoaded', initRolePermissionsPage);
 
 async function initRolePermissionsPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('role-permissions');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('role-permissions');
   }
 
   const state = {
@@ -22,7 +22,7 @@ async function initRolePermissionsPage() {
 
   bindActions(state);
   showPageLoading('Cargando accesos', 'Consultando roles y permisos...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 3500);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 3500);
 
   try {
     const overview = await getAccessControlOverview();
@@ -36,7 +36,7 @@ async function initRolePermissionsPage() {
   } catch (error) {
     handleBackendErrors(error, null, document.getElementById('access-alert'));
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -207,8 +207,8 @@ function bindPermissionFilters(container, state) {
   searchInput?.addEventListener('input', () => {
     state.permissionSearchTerm = searchInput.value;
     state.keepSearchFocus = true;
-    window.clearTimeout(state.searchRenderTimer);
-    state.searchRenderTimer = window.setTimeout(() => renderPermissions(state), 180);
+    globalThis.clearTimeout(state.searchRenderTimer);
+    state.searchRenderTimer = globalThis.setTimeout(() => renderPermissions(state), 180);
   });
 
   navigationOnlyInput?.addEventListener('change', () => {

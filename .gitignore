@@ -90,3 +90,13 @@ sonar-project.properties
 scripts/
 .env.example
 docker-compose.sonar.yml
+
+# Canonical Sonar workflow assets (keep all generated analysis artifacts ignored)
+!scripts/
+scripts/*
+!scripts/sonarqube-scan.ps1
+!scripts/sonarqube-up.ps1
+!.env.example
+!sonar-project.properties
+!docker-compose.sonar.yml
+!REPORTE-SONARQUBE.md

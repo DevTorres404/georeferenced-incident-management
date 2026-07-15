@@ -14,8 +14,8 @@ const state = {
 document.addEventListener('DOMContentLoaded', initIncidentMapPage);
 
 async function initIncidentMapPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('incident-map');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('incident-map');
   }
 
   state.currentUser = readUser();
@@ -34,7 +34,7 @@ async function initIncidentMapPage() {
   }
 
   // Refrescar mapa cuando llega una notificación de cambio
-  window.addEventListener('sgi:notification-created', () => {
+  globalThis.addEventListener('sgi:notification-created', () => {
     if (document.visibilityState !== 'hidden') {
       refreshMap();
     }
@@ -174,20 +174,20 @@ function buildFilters() {
 }
 
 function initializeMap() {
-  if (!window.maplibregl) {
+  if (!globalThis.maplibregl) {
     showMapLibreMessage();
     return;
   }
 
-  state.map = new window.maplibregl.Map({
+  state.map = new globalThis.maplibregl.Map({
     container: 'incidentsMap',
     style: MAP_STYLE_URL,
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
   });
 
-  state.map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-  state.map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
+  state.map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  state.map.addControl(new globalThis.maplibregl.FullscreenControl(), 'top-right');
 
   // Esperar a que el style cargue antes de agregar sources/layers
   state.map.on('load', () => {
@@ -296,7 +296,7 @@ function renderMarkers() {
     state.map.on('click', 'incidents-points', (e) => {
       if (!e.features.length) return;
       const point = e.features[0].properties;
-      new window.maplibregl.Popup({ offset: 18 })
+      new globalThis.maplibregl.Popup({ offset: 18 })
         .setLngLat(e.lngLat)
         .setHTML(buildPopupHtml(point))
         .addTo(state.map);
@@ -310,7 +310,7 @@ function renderMarkers() {
 
   // Ajustar la vista si hay puntos
   if (geojson.features.length > 0) {
-    const bounds = new window.maplibregl.LngLatBounds();
+    const bounds = new globalThis.maplibregl.LngLatBounds();
     geojson.features.forEach((feature) => bounds.extend(feature.geometry.coordinates));
     state.map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: 700 });
   }
@@ -360,7 +360,7 @@ function focusPoint(point) {
   popups.forEach((p) => p.remove());
 
   // Create and show popup at the point location
-  const popup = new window.maplibregl.Popup({ offset: 18 })
+  const popup = new globalThis.maplibregl.Popup({ offset: 18 })
     .setLngLat([lng, lat])
     .setHTML(buildPopupHtml(point))
     .addTo(state.map);

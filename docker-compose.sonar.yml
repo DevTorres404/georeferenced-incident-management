@@ -1,0 +1,153 @@
+name: sgi-sonarqube
+
+services:
+  sonarqube-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SONAR_DB_NAME:?SONAR_DB_NAME is required}
+      POSTGRES_USER: ${SONAR_DB_USER:?SONAR_DB_USER is required}
+      POSTGRES_PASSWORD: ${SONAR_DB_PASSWORD:?SONAR_DB_PASSWORD is required}
+    volumes:
+      - sonarqube-db-data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - sonarqube-db-network
+
+  sonarqube:
+    image: ${SONARQUBE_IMAGE:?SONARQUBE_IMAGE is required}
+    restart: unless-stopped
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/${SONAR_DB_NAME:?SONAR_DB_NAME is required}
+      SONAR_JDBC_USERNAME: ${SONAR_DB_USER:?SONAR_DB_USER is required}
+      SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:?SONAR_DB_PASSWORD is required}
+    ports:
+      - "127.0.0.1:${SONARQUBE_PORT:-9002}:9000"
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-extensions:/opt/sonarqube/extensions
+      - sonarqube-logs:/opt/sonarqube/logs
+    ulimits:
+      nofile:
+        soft: 131072
+        hard: 131072
+      nproc:
+        soft: 8192
+        hard: 8192
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/api/system/status | grep -Eq '\"status\"[[:space:]]*:[[:space:]]*\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    networks:
+      - sonarqube-db-network
+      - sonarqube-scanner-network
+      - sonarqube-web-network
+
+  backend-test-db:
+    image: postgis/postgis:16-3.4-alpine
+    profiles: ["analysis"]
+    restart: "no"
+    environment:
+      POSTGRES_DB: ${ANALYSIS_DB_NAME:?ANALYSIS_DB_NAME is required}
+      POSTGRES_USER: ${ANALYSIS_DB_USER:?ANALYSIS_DB_USER is required}
+      POSTGRES_PASSWORD: ${ANALYSIS_DB_PASSWORD:?ANALYSIS_DB_PASSWORD is required}
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+    networks:
+      - backend-analysis-network
+
+  backend-coverage:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.analysis
+    image: sgi-backend-analysis:local
+    profiles: ["analysis"]
+    restart: "no"
+    depends_on:
+      backend-test-db:
+        condition: service_healthy
+    environment:
+      APP_ENV: testing
+      APP_KEY: ${ANALYSIS_APP_KEY:?ANALYSIS_APP_KEY is required}
+      DB_CONNECTION: pgsql
+      DB_HOST: backend-test-db
+      DB_PORT: 5432
+      DB_DATABASE: ${ANALYSIS_DB_NAME:?ANALYSIS_DB_NAME is required}
+      DB_USERNAME: ${ANALYSIS_DB_USER:?ANALYSIS_DB_USER is required}
+      DB_PASSWORD: ${ANALYSIS_DB_PASSWORD:?ANALYSIS_DB_PASSWORD is required}
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+      PCOV_ENABLED: "1"
+    volumes:
+      - ./backend/build:/usr/src/backend/build
+    networks:
+      - backend-analysis-network
+
+  sonar-scanner:
+    image: ${SONAR_SCANNER_IMAGE:?SONAR_SCANNER_IMAGE is required}
+    profiles: ["analysis"]
+    restart: "no"
+    depends_on:
+      sonarqube:
+        condition: service_healthy
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ${SONAR_TOKEN:-}
+    working_dir: /usr/src
+    volumes:
+      - ./sonar-project.properties:/usr/src/sonar-project.properties:ro
+      - ./backend/app:/usr/src/backend/app:ro
+      - ./backend/bootstrap/app.php:/usr/src/backend/bootstrap/app.php:ro
+      - ./backend/bootstrap/providers.php:/usr/src/backend/bootstrap/providers.php:ro
+      - ./backend/config:/usr/src/backend/config:ro
+      - ./backend/database:/usr/src/backend/database:ro
+      - ./backend/resources:/usr/src/backend/resources:ro
+      - ./backend/routes:/usr/src/backend/routes:ro
+      - ./backend/tests:/usr/src/backend/tests:ro
+      - ./backend/build/logs:/usr/src/backend/build/logs:ro
+      - ./frontend/app:/usr/src/frontend/app:ro
+      - sonar-scanner-cache:/opt/sonar-scanner/.sonar/cache
+    tmpfs:
+      - /tmp/sonar-scanner-work:mode=1777
+    networks:
+      - sonarqube-scanner-network
+
+networks:
+  sonarqube-db-network:
+    driver: bridge
+    internal: true
+  sonarqube-scanner-network:
+    driver: bridge
+    internal: true
+  backend-analysis-network:
+    driver: bridge
+    internal: true
+  sonarqube-web-network:
+    driver: bridge
+
+volumes:
+  sonarqube-db-data:
+  sonarqube-data:
+  sonarqube-extensions:
+  sonarqube-logs:
+  sonar-scanner-cache:

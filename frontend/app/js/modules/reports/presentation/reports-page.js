@@ -49,11 +49,11 @@ const state = {
 document.addEventListener('DOMContentLoaded', initReportsPage);
 
 async function initReportsPage() {
-  window.renderLayout?.('reports');
+  globalThis.renderLayout?.('reports');
 
   bindActions();
   showPageLoading('Generando reportes', 'Consolidando tendencias e indicadores...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const [incidents, statesResponse] = await Promise.all([
@@ -67,7 +67,7 @@ async function initReportsPage() {
   } catch (error) {
     handleBackendErrors(error, null, document.getElementById('alertaGlobal'));
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -457,7 +457,7 @@ function renderInsights(analytics, filters) {
 }
 
 function renderCharts(analytics) {
-  if (!window.Chart) return;
+  if (!globalThis.Chart) return;
 
   configureChartDefaults();
   destroyCharts();
@@ -468,13 +468,13 @@ function renderCharts(analytics) {
 }
 
 function configureChartDefaults() {
-  if (window.Chart?.defaults?.font) {
+  if (globalThis.Chart?.defaults?.font) {
     Chart.defaults.font.family = "'Source Sans Pro', sans-serif";
     Chart.defaults.color = '#64748b';
     return;
   }
 
-  if (window.Chart?.defaults?.global) {
+  if (globalThis.Chart?.defaults?.global) {
     Chart.defaults.global.defaultFontFamily = "'Source Sans Pro', sans-serif";
     Chart.defaults.global.defaultFontColor = '#64748b';
   }
@@ -786,7 +786,7 @@ function renderAppliedFilterFeedback(filters, total) {
   alertDiv.innerHTML = '<button type="button" class="close" data-dismiss="alert">&times;</button>'
     + `<i class="fas fa-filter mr-2"></i>Análisis actualizado con ${total} incidencias${activeFilters.length ? ` (${escapeHtml(activeFilters.join(', '))})` : ''}.`;
   alertDiv.classList.remove('d-none');
-  window.setTimeout(() => alertDiv.classList.add('d-none'), 2500);
+  globalThis.setTimeout(() => alertDiv.classList.add('d-none'), 2500);
 }
 
 function exportFilteredIncidentsCsv() {
@@ -818,7 +818,7 @@ function exportFilteredIncidentsCsv() {
 }
 
 function exportPrintableReport() {
-  window.print();
+  globalThis.print();
 }
 
 function escapeCsvValue(value) {

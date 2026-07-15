@@ -18,8 +18,8 @@ import {
 document.addEventListener('DOMContentLoaded', initAssignmentManagementPage);
 
 async function initAssignmentManagementPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('assignment-management');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('assignment-management');
   }
 
   const state = {
@@ -260,7 +260,7 @@ async function openAssignmentModal(state, incidentId) {
     const response = await getIncident(incidentId);
     state.selectedIncident = response?.data || null;
     renderAssignmentModal(state);
-    window.jQuery?.('#assignmentModal').modal('show');
+    globalThis.jQuery?.('#assignmentModal').modal('show');
   } catch (error) {
     showGlobalAlert(error?.message || 'No se pudo cargar el detalle de la incidencia.', 'danger');
   } finally {
@@ -335,7 +335,7 @@ async function submitAssignment(state) {
     const incidentsResponse = await listIncidents({ per_page: 100 });
     state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
     applyFilters(state);
-    window.jQuery?.('#assignmentModal').modal('hide');
+    globalThis.jQuery?.('#assignmentModal').modal('hide');
     showGlobalAlert('Asignación actualizada correctamente.', 'success');
   } catch (error) {
     showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger');
@@ -362,7 +362,7 @@ function uniqueValues(values) {
 
 function readSessionUser() {
   try {
-    const raw = window.localStorage?.getItem('user_data');
+    const raw = globalThis.localStorage?.getItem('user_data');
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;

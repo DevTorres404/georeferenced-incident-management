@@ -18,8 +18,8 @@ const INCIDENT_SEARCH_STORAGE_KEY = 'SGI_incidents_search';
 document.addEventListener('DOMContentLoaded', initIncidentsPage);
 
 async function initIncidentsPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('incidents');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('incidents');
   }
 
   const state = {
@@ -40,7 +40,7 @@ async function initIncidentsPage() {
   bindDeleteConfirmation(state);
 
   showPageLoading('Cargando incidencias', 'Consultando base de datos...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const [statesData, prioritiesData] = await Promise.all([
@@ -61,12 +61,12 @@ async function initIncidentsPage() {
   } catch (error) {
     renderErrorRow(error.message || 'No se pudieron cargar las incidencias.');
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 
   // Refrescar el DataTable cuando llega una notificación de cambio de estado/asignación
-  window.addEventListener('sgi:notification-created', () => {
+  globalThis.addEventListener('sgi:notification-created', () => {
     if (state.dataTable && document.visibilityState !== 'hidden') {
       state.dataTable.ajax.reload(null, false);
     }
@@ -102,7 +102,7 @@ function initDataTable(state) {
   // Start hidden so initComplete transition is visible
   tableEl.style.opacity = '0';
 
-  state.dataTable = window.jQuery('#tablaIncidencias').DataTable({
+  state.dataTable = globalThis.jQuery('#tablaIncidencias').DataTable({
     responsive: true,
     serverSide: true,
     ajax: function (data, callback, settings) {
@@ -365,8 +365,8 @@ function bindSearchInput(state) {
 
   let debounceTimer;
   searchInput.addEventListener('input', () => {
-    window.clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(() => {
+    globalThis.clearTimeout(debounceTimer);
+    debounceTimer = globalThis.setTimeout(() => {
       state.activeSearchQuery = searchInput.value;
       storeSearch(state.activeSearchQuery);
       if (state.dataTable) {
@@ -538,7 +538,7 @@ function bindDeleteConfirmation(state) {
       if (state.dataTable) {
         state.dataTable.ajax.reload();
       }
-      window.jQuery?.('#modalEliminar').modal('hide');
+      globalThis.jQuery?.('#modalEliminar').modal('hide');
       showGlobalAlert('Incidencia eliminada correctamente.', 'success');
     } catch (error) {
       showGlobalAlert(error.message || 'No se pudo eliminar la incidencia.', 'danger');
@@ -551,7 +551,7 @@ function bindDeleteConfirmation(state) {
 function openDeleteModal(state, incidentId, code) {
   state.pendingDeleteId = incidentId;
   setText('codigoEliminar', code || `#${incidentId}`);
-  window.jQuery?.('#modalEliminar').modal('show');
+  globalThis.jQuery?.('#modalEliminar').modal('show');
 }
 
 function updateKpiCounters(kpiCounts) {

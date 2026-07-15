@@ -10,19 +10,19 @@ let socketToken = null;
 
 function reportRealtimeState(channelName, state, error = null) {
   const detail = { channelName, state, error };
-  window.dispatchEvent(new CustomEvent('sgi:realtime-state', { detail }));
+  globalThis.dispatchEvent(new CustomEvent('sgi:realtime-state', { detail }));
   return detail;
 }
 
 function loadPusherScript() {
-  if (window.Pusher) {
-    return Promise.resolve(window.Pusher);
+  if (globalThis.Pusher) {
+    return Promise.resolve(globalThis.Pusher);
   }
 
   if (!scriptPromise) {
     scriptPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      const timeoutId = window.setTimeout(() => {
+      const timeoutId = globalThis.setTimeout(() => {
         script.remove();
         reject(new Error('El cliente de tiempo real excedio el tiempo de carga.'));
       }, SCRIPT_LOAD_TIMEOUT_MS);
@@ -30,11 +30,11 @@ function loadPusherScript() {
       script.src = PUSHER_CDN;
       script.async = true;
       script.onload = () => {
-        window.clearTimeout(timeoutId);
-        resolve(window.Pusher);
+        globalThis.clearTimeout(timeoutId);
+        resolve(globalThis.Pusher);
       };
       script.onerror = () => {
-        window.clearTimeout(timeoutId);
+        globalThis.clearTimeout(timeoutId);
         reject(new Error('No se pudo cargar el cliente de tiempo real.'));
       };
       document.head.appendChild(script);

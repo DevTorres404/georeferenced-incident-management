@@ -172,7 +172,6 @@
     linear-gradient(90deg, rgba(20,152,212,0.06), rgba(23,162,184,0.08), rgba(40,167,69,0.06)),
     var(--sgi-background);
   backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
 }
 .spinner-overlay[hidden] {
   display: none !important;

@@ -54,7 +54,7 @@ use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-final class EloquentIncidentRepository implements IncidentRepositoryInterface
+final class EloquentIncidentRepository implements IncidentRepositoryInterface // NOSONAR - Infrastructure repository implementing a domain interface; public methods match the repository contract and support methods are private
 {
     private const INACTIVE_WORKLOAD_STATE_NAMES = [
         'RESUELTA',

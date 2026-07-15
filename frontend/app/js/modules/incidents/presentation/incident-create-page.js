@@ -112,7 +112,7 @@ function bindAutoSave() {
 // ────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', async () => {
-  window.renderLayout?.('incident-create');
+  globalThis.renderLayout?.('incident-create');
 
   hydrateContactEmail();
 
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateLocationSummary();
 
   showPageLoading('Cargando formulario', 'Preparando mapa y catalogos...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     catalogs = await getCatalogOverview();
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     showErrorAlert(error.message || 'No se pudieron cargar los datos iniciales.');
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 
@@ -624,8 +624,8 @@ async function handleSubmit(event) {
 
     showSuccessAlert(response?.message || 'Incidencia registrada con éxito.');
     clearDraft();
-    window.setTimeout(() => {
-      window.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`;
+    globalThis.setTimeout(() => {
+      globalThis.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`;
     }, 1000);
   } catch (error) {
     handleBackendErrors(error, document.getElementById('formNuevaIncidencia'));
@@ -713,7 +713,7 @@ function validateDetails() {
   const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
   const detailsPanel = $('[data-step-panel="details"]');
   let detailsHint = document.getElementById('detailsStepHint');
-  if (category && category.name && /accidente|desastre|siniestro|vehicular|incendio/i.test(category.name)) {
+  if (category?.name && /accidente|desastre|siniestro|vehicular|incendio/i.test(category.name)) {
     if (!detailsHint && detailsPanel) {
       detailsHint = document.createElement('div');
       detailsHint.id = 'detailsStepHint';
@@ -774,7 +774,7 @@ function validateEmail(id) {
     setFieldError(id, 'Ingresa un correo de contacto.');
     return false;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+  if (!/^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/.test(value)) {
     setFieldError(id, 'Ingresa un correo valido.');
     return false;
   }
@@ -1087,7 +1087,7 @@ function showFormAlert(message, type = 'danger') {
   alert.className = `alert alert-${type}`;
   alert.textContent = message;
   alert.classList.remove('d-none');
-  window.setTimeout(() => {
+  globalThis.setTimeout(() => {
     alert.classList.add('d-none');
   }, 5000);
 }
@@ -1103,6 +1103,6 @@ function formatFileSize(bytes) {
 }
 
 function createClientId() {
-  if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

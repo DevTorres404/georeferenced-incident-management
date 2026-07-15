@@ -10,9 +10,9 @@ async function fetchAuditLogs(filters = {}) {
   if (filters.page) params.set('page', filters.page);
   if (filters.perPage) params.set('per_page', filters.perPage);
 
-  const query = params.toString();
+  const queryString = params.toString();
 
-  return request(`/audit/logs${query ? `?${query}` : ''}`, { noCache: true });
+  return request(`/audit/logs${queryString ? `?${queryString}` : ''}`, { noCache: true });
 }
 
 export { fetchAuditLogs };
