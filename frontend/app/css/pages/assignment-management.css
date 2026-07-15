@@ -109,9 +109,83 @@
   font-size: 0.82rem;
 }
 
+/* --- Responsive: columnas de la tabla --- */
+@media (max-width: 1199.98px) {
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
+    display: none;
+  }
+}
+
 @media (max-width: 767.98px) {
   .assignment-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .assignment-kpi {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .assignment-kpi strong {
+    font-size: 1.3rem;
+  }
+
+  /* Tabla: columnas que se ocultan */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(8),
+  .table td:nth-child(8) {
+    display: none;
+  }
+
+  /* Hace que "Acciones" ocupe menos espacio */
+  .assignment-row-actions .btn {
+    min-width: auto;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .assignment-row-actions .btn span.d-none.d-sm-inline,
+  .assignment-row-actions .btn i + span {
+    display: none !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .table th:nth-child(2) .d-inline,
+  .table td:nth-child(2) .d-inline {
+    font-size: 0.85rem;
+  }
+
+  .table td:nth-child(2) small {
+    font-size: 0.7rem;
+  }
+
+  .assignment-row-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .assignment-row-actions .btn {
+    padding: 0.25rem 0.4rem;
+  }
+
+  .assignment-chip {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.45rem;
+    margin: 0 0.2rem 0.2rem 0;
   }
 }
 

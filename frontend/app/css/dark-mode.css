@@ -823,6 +823,20 @@ body.dark-mode .wg-kpi-label {
   color: var(--sgi-text-muted);
 }
 
+/* --- Gestión de Asignaciones (tabla) --- */
+body.dark-mode .assignment-kpi {
+  background: linear-gradient(135deg, var(--sgi-surface) 0%, #1e2a38 100%);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .assignment-kpi:hover {
+  border-color: var(--sgi-primary);
+}
+
+body.dark-mode .assignment-zone-banner {
+  background: linear-gradient(135deg, rgba(20, 152, 212, 0.18) 0%, rgba(20, 152, 212, 0.08) 100%);
+  border-color: rgba(20, 152, 212, 0.25);
+}
+
 /* --- Notifications history --- */
 body.dark-mode .notif-item {
   border-bottom-color: var(--sgi-border);
