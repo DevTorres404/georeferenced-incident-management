@@ -35,6 +35,11 @@ export function buildTopbarHtml(user) {
       </li>
     </ul>
     <ul class="navbar-nav ml-auto">
+      <li class="nav-item">
+        <button id="btnDarkModeToggle" class="nav-link btn border-0 bg-transparent shadow-none" type="button" aria-label="Alternar modo oscuro" title="Modo oscuro">
+          <i class="fas fa-moon"></i>
+        </button>
+      </li>
       ${notificationsMenu}
       <li class="nav-item dropdown user-menu">
         <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menu de usuario">

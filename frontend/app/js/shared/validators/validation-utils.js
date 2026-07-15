@@ -2,7 +2,7 @@
  * Utilidades para manejo de validaciones y errores de backend en el DOM (Estilo Bootstrap)
  */
 
-import { show, hide } from '../utils/dom-utils.js?v=15';
+import { show, hide } from '../../presentation/dom-utils.js?v=15';
 
 /**
  * Limpia todos los errores visuales de un formulario.

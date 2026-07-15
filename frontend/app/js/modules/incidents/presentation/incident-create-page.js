@@ -1,4 +1,4 @@
-import { $, $$, hideSpinner, showErrorAlert, showSpinner, showSuccessAlert } from '../../../shared/utils/dom-utils.js?v=14';
+import { $, $$, hideSpinner, showErrorAlert, showSpinner, showSuccessAlert } from '../../../presentation/dom-utils.js?v=14';
 import { hidePageLoading, showPageLoading } from './incidents-ui.js?v=16';
 import { getCatalogOverview } from '../../catalogs/application/catalogs-service.js?v=14';
 import { createIncident, uploadIncidentAttachment } from '../application/incidents-service.js?v=15';
@@ -16,6 +16,7 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png'];
 const INCIDENT_CREATE_INITIAL_CENTER = [-78.55, -1.7];
 const INCIDENT_CREATE_INITIAL_ZOOM = 6.15;
+const DRAFT_STORAGE_KEY = 'SGI_incident_draft';
 
 let currentStepIndex = 0;
 let catalogs = {};
@@ -34,15 +35,108 @@ const selectTerritoryFields = {
   sector: 'fTerritorialSector',
 };
 
+// ─── Auto-save: borrador del wizard ──────────────────────────────
+
+function getFormValue(id) {
+  const el = document.getElementById(id);
+  if (!el) return '';
+  if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? '1' : '';
+  return el.value;
+}
+
+function setFormValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el || value === undefined || value === null || value === '') return;
+  if (el.type === 'checkbox' || el.type === 'radio') { el.checked = value === '1' || value === true; return; }
+  el.value = value;
+}
+
+const DRAFT_FIELDS = [
+  'fTitulo', 'fDescripcion', 'fTipo', 'fSubtipo',
+  'fDireccion', 'fReferencia', 'fLatitud', 'fLongitud', 'fCorreo',
+  'fTerritorialProvince', 'fTerritorialCanton', 'fTerritorialParish', 'fTerritorialSector', 'fManualSector',
+  'fConfirmacion',
+];
+
+function saveDraft() {
+  try {
+    const data = {};
+    DRAFT_FIELDS$$.forEach((id) => { data[id] = getFormValue(id); });
+    data._currentStep = currentStepIndex;
+    data._savedAt = Date.now();
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
+  } catch { /* localStorage lleno o no disponible — no crítico */ }
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+
+    DRAFT_FIELDS.forEach((id) => {
+      if (id in data) setFormValue(id, data[id]);
+    });
+
+    if (typeof data._currentStep === 'number' && data._currentStep > 0) {
+      currentStepIndex = data._currentStep;
+    }
+    return true;
+  } catch { return false; }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch { /* no crítico */ }
+}
+
+function hasDraft() {
+  try { return localStorage.getItem(DRAFT_STORAGE_KEY) !== null; } catch { return false; }
+}
+
+function bindAutoSave() {
+  const debouncedSave = (() => {
+    let timer = null;
+    return () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(saveDraft, 500);
+    };
+  })();
+
+  DRAFT_FIELDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', debouncedSave);
+    el.addEventListener('change', debouncedSave);
+  });
+}
+
+// ────────────────────────────────────────────────
+
 document.addEventListener('DOMContentLoaded', async () => {
   window.renderLayout?.('incident-create');
 
   hydrateContactEmail();
+
+  if (restoreDraft()) {
+    // Se restauró un borrador; mostrar indicador sutil
+    const banner = document.getElementById('draftBanner');
+    if (banner) banner.classList.remove('d-none');
+  }
+
   bindEvents();
+  bindAutoSave();
   bindCounters();
   renderEvidencePreviews();
   renderStep();
   updateLocationSummary();
+
+  // Alerta si el usuario intenta salir con datos sin guardar
+  window.addEventListener('beforeunload', (event) => {
+    if (hasDraft()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  });
 
   showPageLoading('Cargando formulario', 'Preparando mapa y catalogos...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
@@ -201,6 +295,8 @@ function renderStep() {
 
   if (activeStep === 'review') renderSummary();
   coordinatePicker?.invalidateSize();
+
+  saveDraft();
 }
 
 function populateCatalogs() {
@@ -519,6 +615,7 @@ async function handleSubmit(event) {
     );
 
     showSuccessAlert(response?.message || 'Incidencia registrada con éxito.');
+    clearDraft();
     window.setTimeout(() => {
       window.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`;
     }, 1000);
@@ -555,15 +652,34 @@ function validateStep(step) {
 function validateLocation() {
   let valid = true;
   valid = validateRequiredCoordinatePair() && valid;
+
+  // Si hay coordenadas pero no hay provincia seleccionada, advertencia cruzada
+  const lat = String($('#fLatitud')?.value || '').trim();
+  const lng = String($('#fLongitud')?.value || '').trim();
+  const province = String($('#fTerritorialProvince')?.value || '').trim();
+
+  const locationPanel = $('[data-step-panel="location"]');
+  let hint = document.getElementById('locationStepHint');
+  if (lat && lng && !province) {
+    if (!hint && locationPanel) {
+      hint = document.createElement('div');
+      hint.id = 'locationStepHint';
+      hint.className = 'alert alert-info mt-2 mb-0 py-2 small';
+      locationPanel.appendChild(hint);
+    }
+    if (hint) {
+      hint.textContent = 'Tienes coordenadas pero no seleccionaste provincia. Se detectará automáticamente al registrar.';
+      hint.style.display = 'block';
+    }
+  } else if (hint) {
+    hint.style.display = 'none';
+  }
+
   updateLocationSummary();
   return valid;
 }
 
 function validateEvidence() {
-  if (evidenceFiles.length === 0) {
-    setEvidenceError('Carga al menos una foto de la incidencia.');
-    return false;
-  }
   clearEvidenceError();
   return true;
 }
@@ -573,10 +689,37 @@ function validateDetails() {
   valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
   valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
   valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
-  valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
+
+  // Validación cruzada: si hay categoría, subtipo debe ser coherente
+  const categoryId = String($('#fTipo')?.value || '').trim();
+  const subcategorySelect = $('#fSubtipo');
+  if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
+    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
+  }
+
   valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
   valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
   valid = validateEmail('fCorreo') && valid;
+
+  // Hint: si la categoría sugiere evidencias obligatorias
+  const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
+  const detailsPanel = $('[data-step-panel="details"]');
+  let detailsHint = document.getElementById('detailsStepHint');
+  if (category && category.name && /accidente|desastre|siniestro|vehicular|incendio/i.test(category.name)) {
+    if (!detailsHint && detailsPanel) {
+      detailsHint = document.createElement('div');
+      detailsHint.id = 'detailsStepHint';
+      detailsHint.className = 'alert alert-info mt-2 mb-0 py-2 small';
+      detailsPanel.appendChild(detailsHint);
+    }
+    if (detailsHint) {
+      detailsHint.textContent = 'Recomendación: para este tipo de incidencia, adjunta una foto como evidencia en el siguiente paso.';
+      detailsHint.style.display = 'block';
+    }
+  } else if (detailsHint) {
+    detailsHint.style.display = 'none';
+  }
+
   return valid;
 }
 

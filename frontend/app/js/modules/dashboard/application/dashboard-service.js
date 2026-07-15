@@ -1,4 +1,4 @@
-import { requestBackend } from '../../../core/api-client.js?v=21';
+import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
 import { listIncidents } from '../../incidents/application/incidents-service.js?v=14';
 
 export async function getDashboardMetrics() {

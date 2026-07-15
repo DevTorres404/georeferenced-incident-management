@@ -75,7 +75,7 @@ class IncidentController extends ApiController
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'radio_km' => ['nullable', 'numeric', 'min:0.1', 'max:200'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:500'],
         ]);
 
         $filtersDto = new IncidentFiltersData(
@@ -95,6 +95,90 @@ class IncidentController extends ApiController
         return response()->json(
             $this->incidentUseCase->paginate($filtersDto, $user->id, $this->canManage($user))
         );
+    }
+
+    /**
+     * Server-side DataTables para incidencias.
+     *
+     * Devuelve datos paginados con formato DataTables (draw, recordsTotal, recordsFiltered, data, kpiCounts).
+     *
+     * @authenticated
+     */
+    public function dataTable(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'draw' => ['required', 'integer', 'min:0'],
+            'start' => ['required', 'integer', 'min:0'],
+            'length' => ['required', 'integer', 'min:1', 'max:500'],
+            'search.value' => ['nullable', 'string', 'max:120'],
+            'order.0.column' => ['nullable', 'integer', 'min:0', 'max:7'],
+            'order.0.dir' => ['nullable', 'in:asc,desc'],
+            'mine' => ['nullable', 'boolean'],
+            'assigned_to_me' => ['nullable', 'boolean'],
+            'state_filter' => ['nullable', 'string', 'max:50'],
+            'priority_filter' => ['nullable', 'integer'],
+        ]);
+
+        $draw = (int) $validated['draw'];
+        $start = (int) $validated['start'];
+        $length = (int) $validated['length'];
+        $searchValue = $validated['search']['value'] ?? null;
+        $orderColumnIndex = $validated['order'][0]['column'] ?? null;
+        $orderDirection = $validated['order'][0]['dir'] ?? 'desc';
+
+        $sortBy = $this->mapDataTableColumnToSortField($orderColumnIndex);
+
+        $filtersDto = new IncidentFiltersData(
+            stateFilter: $validated['state_filter'] ?? null,
+            priorityId: $validated['priority_filter'] ?? null,
+            mine: $validated['mine'] ?? null,
+            assignedToMe: $validated['assigned_to_me'] ?? null,
+            search: $searchValue,
+            sortBy: $sortBy,
+            sortDirection: $orderDirection,
+        );
+
+        $result = $this->incidentUseCase->dataTable($filtersDto, $user->id, $this->canManage($user), $start, $length);
+
+        $rows = array_map(
+            fn ($incident) => $this->buildDataTableRow($incident),
+            $result['items']
+        );
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $result['recordsTotal'],
+            'recordsFiltered' => $result['recordsFiltered'],
+            'data' => $rows,
+        ]);
+    }
+
+    /**
+     * KPIs de incidencias por estado.
+     *
+     * Devuelve conteos agrupados por categoría de estado (pendiente, en_proceso, resuelta).
+     *
+     * @authenticated
+     */
+    public function kpiCounts(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'mine' => ['nullable', 'boolean'],
+            'assigned_to_me' => ['nullable', 'boolean'],
+        ]);
+
+        $filters = new IncidentFiltersData(
+            mine: $validated['mine'] ?? null,
+            assignedToMe: $validated['assigned_to_me'] ?? null,
+        );
+
+        return response()->json([
+            'data' => $this->incidentUseCase->countByStateCategory($filters, $user->id, $this->canManage($user)),
+        ]);
     }
 
     /**
@@ -207,41 +291,10 @@ class IncidentController extends ApiController
             return $this->forbid();
         }
 
-        $detail = $this->incidentUseCase->detail($incident->id);
-
-        if (! $this->can($user, 'comments.internal')) {
-            $filteredComments = array_values(array_filter(
-                $detail->comments,
-                fn ($comment) => ! $comment->isInternal
-            ));
-
-            $detail = new IncidentDetailData(
-                id: $detail->id,
-                code: $detail->code,
-                title: $detail->title,
-                description: $detail->description,
-                address: $detail->address,
-                latitude: $detail->latitude,
-                longitude: $detail->longitude,
-                resolutionDate: $detail->resolutionDate,
-                createdAt: $detail->createdAt,
-                reporterUserId: $detail->reporterUserId,
-                assigneeUserId: $detail->assigneeUserId,
-                stateId: $detail->stateId,
-                state: $detail->state,
-                category: $detail->category,
-                subcategory: $detail->subcategory,
-                priority: $detail->priority,
-                territorialUnit: $detail->territorialUnit,
-                reporter: $detail->reporter,
-                assignedOperator: $detail->assignedOperator,
-                sla: $detail->sla,
-                history: $detail->history,
-                comments: $filteredComments,
-                attachments: $detail->attachments,
-                assignments: $detail->assignments,
-            );
-        }
+        $detail = $this->visibleIncidentDetail(
+            $user,
+            $this->incidentUseCase->detail($incident->id)
+        );
 
         return response()->json([
             'data' => $detail,
@@ -292,9 +345,14 @@ class IncidentController extends ApiController
         );
 
         try {
+            $detail = $this->visibleIncidentDetail(
+                $user,
+                $this->incidentUseCase->update($incident->id, $dto)
+            );
+
             return response()->json([
                 'message' => 'Incidencia actualizada correctamente.',
-                'data' => $this->incidentUseCase->update($incident->id, $dto),
+                'data' => $detail,
             ]);
         } catch (IncidentException $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode());
@@ -535,6 +593,51 @@ class IncidentController extends ApiController
         }
     }
 
+    private function mapDataTableColumnToSortField(?int $columnIndex): ?string
+    {
+        return match ($columnIndex) {
+            0 => 'code',
+            1 => 'title',
+            3 => 'priority_id',
+            4 => 'state_id',
+            6 => 'created_at',
+            default => null,
+        };
+    }
+
+    private function buildDataTableRow(mixed $incident): array
+    {
+        return [
+            'id' => (int) $incident->id,
+            'code' => $incident->code ?? "#{$incident->id}",
+            'title' => $incident->title ?? 'Sin titulo',
+            'category' => $incident->category?->name ?? '-',
+            'priority' => $incident->priority?->name ?? '-',
+            'state' => $incident->state?->name ?? '-',
+            'territory' => $this->territoryLabel($incident),
+            'created_at' => $incident->createdAt,
+        ];
+    }
+
+    private function territoryLabel(mixed $incident): string
+    {
+        $tu = $incident->territorialUnit;
+
+        if ($tu !== null && ! empty($tu->fullPath)) {
+            return $tu->fullPath;
+        }
+
+        if ($tu !== null && ! empty($tu->name)) {
+            return $tu->name;
+        }
+
+        if (! empty($incident->address)) {
+            return $incident->address;
+        }
+
+        return '-';
+    }
+
     private function rules(bool $partial = false, bool $allowPriority = true): array
     {
         $required = $partial ? 'sometimes' : 'required';
@@ -587,6 +690,43 @@ class IncidentController extends ApiController
         }
 
         return $presentFields;
+    }
+
+    private function visibleIncidentDetail(User $user, IncidentDetailData $detail): IncidentDetailData
+    {
+        if ($this->can($user, 'comments.internal')) {
+            return $detail;
+        }
+
+        return new IncidentDetailData(
+            id: $detail->id,
+            code: $detail->code,
+            title: $detail->title,
+            description: $detail->description,
+            address: $detail->address,
+            latitude: $detail->latitude,
+            longitude: $detail->longitude,
+            resolutionDate: $detail->resolutionDate,
+            createdAt: $detail->createdAt,
+            reporterUserId: $detail->reporterUserId,
+            assigneeUserId: $detail->assigneeUserId,
+            stateId: $detail->stateId,
+            state: $detail->state,
+            category: $detail->category,
+            subcategory: $detail->subcategory,
+            priority: $detail->priority,
+            territorialUnit: $detail->territorialUnit,
+            reporter: $detail->reporter,
+            assignedOperator: $detail->assignedOperator,
+            sla: $detail->sla,
+            history: $detail->history,
+            comments: array_values(array_filter(
+                $detail->comments,
+                fn ($comment) => ! $comment->isInternal
+            )),
+            attachments: $detail->attachments,
+            assignments: $detail->assignments,
+        );
     }
 
     private function validationMessages(): array

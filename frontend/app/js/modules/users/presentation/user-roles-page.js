@@ -1,7 +1,7 @@
 import { getUsersAndRoles, assignUserRole } from '../../roles/application/access-control-service.js?v=15';
 import { hidePageLoading, showPageLoading, escapeHtml } from '../../incidents/presentation/incidents-ui.js?v=16';
 import { handleBackendErrors, setFormAlert } from '../../../shared/validators/validation-utils.js?v=1';
-import { requestBackend } from '../../../core/api-client.js?v=20';
+import { requestBackend } from '../../../infrastructure/backend-client.js?v=20';
 
 const CITIZEN_ROLE_CODE = 'CIUDADANO';
 const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);

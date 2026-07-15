@@ -27,6 +27,16 @@ interface IncidentRepositoryInterface
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult;
 
     /**
+     * @return array{items: array<int, mixed>, recordsTotal: int, recordsFiltered: int}
+     */
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array;
+
+    /**
+     * @return array{pendiente: int, en_proceso: int, resuelta: int}
+     */
+    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array;
+
+    /**
      * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>
      */
     public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array;

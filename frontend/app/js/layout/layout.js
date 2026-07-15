@@ -1,7 +1,7 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=21';
-import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../core/api-client.js?v=21';
+import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../infrastructure/backend-client.js?v=21';
 import { clearSession as clearAuthSession } from '../core/auth-session.js?v=15';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21';
 
@@ -896,3 +896,162 @@ function canAccessItem(item = {}) {
 
   return !item.permission || hasPermission(item.permission);
 }
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').then((reg) => {
+      // Detect new version activation
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        let notified = false;
+        newWorker.addEventListener('statechange', () => {
+          // skipWaiting() fires immediately so state goes installed→activating→activated
+          if (newWorker.state === 'activated' && !notified) {
+            notified = true;
+            // Don't notify on first-ever install (no previous controller)
+            if (navigator.serviceWorker.controller) {
+              showNewVersionBanner();
+            }
+          }
+        });
+      });
+    }).catch(() => {});
+  });
+}
+
+/** Shows a sticky banner when a new SW version is activated */
+function showNewVersionBanner() {
+  // Remove any existing banner first
+  const old = document.getElementById('sgi-new-version-banner');
+  if (old) old.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'sgi-new-version-banner';
+  banner.setAttribute('role', 'alert');
+  banner.style.cssText = [
+    'position:fixed',
+    'top:0',
+    'left:0',
+    'right:0',
+    'z-index:10000',
+    'background:#155724',
+    'color:#fff',
+    'padding:0.75rem 1rem',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:1rem',
+    'font-size:0.95rem',
+    'box-shadow:0 2px 8px rgba(0,0,0,0.2)',
+    'transform:translateY(-100%)',
+    'transition:transform 0.3s ease',
+  ].join(';');
+
+  banner.innerHTML = [
+    '<i class="fas fa-sync-alt mr-1"></i>',
+    'Nueva versión disponible.',
+    '<button type="button" id="btn-sw-reload" class="btn btn-sm btn-light font-weight-bold" style="padding:0.25rem 1rem;">',
+    'Actualizar',
+    '</button>',
+    '<button type="button" id="btn-sw-dismiss" class="close text-white" style="position:static;font-size:1.2rem;" aria-label="Cerrar">',
+    '&times;',
+    '</button>',
+  ].join('');
+
+  document.body.prepend(banner);
+
+  // Animate in
+  requestAnimationFrame(() => { banner.style.transform = 'translateY(0)'; });
+
+  document.getElementById('btn-sw-reload').addEventListener('click', () => {
+    window.location.reload();
+  });
+  document.getElementById('btn-sw-dismiss').addEventListener('click', () => {
+    banner.style.transform = 'translateY(-100%)';
+    setTimeout(() => banner.remove(), 300);
+  });
+}
+
+/* =====================================================================
+   Accessibility setup — runs once on every page
+   ===================================================================== */
+document.addEventListener('DOMContentLoaded', function initAccessibility() {
+  // 1. Skip-to-content link
+  const skipLink = document.createElement('a');
+  skipLink.href = '#mainContent';
+  skipLink.textContent = 'Saltar al contenido principal';
+  skipLink.className = 'sr-only sr-only-focusable position-absolute';
+  skipLink.style.cssText = 'z-index: 9999; top: 0; left: 0; padding: 0.5rem 1rem; background: #082033; color: #fff; text-decoration: none; border-radius: 0 0 4px 0;';
+  document.body.insertBefore(skipLink, document.body.firstChild);
+
+  // 2. Main landmark + id for skip target on content-wrapper
+  const contentWrapper = document.querySelector('.content-wrapper');
+  if (contentWrapper) {
+    contentWrapper.setAttribute('role', 'main');
+    if (!contentWrapper.id) contentWrapper.id = 'mainContent';
+  }
+
+  // 3. aria-live on global alert
+  const alertaGlobal = document.getElementById('alertaGlobal');
+  if (alertaGlobal && !alertaGlobal.hasAttribute('aria-live')) {
+    alertaGlobal.setAttribute('aria-live', 'polite');
+  }
+
+  // 4. Add aria-label to card-widget collapse buttons (AdminLTE icon-only)
+  document.querySelectorAll('[data-card-widget="collapse"]').forEach(function(btn) {
+    if (!btn.getAttribute('aria-label')) {
+      btn.setAttribute('aria-label', 'Colapsar sección');
+    }
+  });
+  document.querySelectorAll('[data-card-widget="remove"]').forEach(function(btn) {
+    if (!btn.getAttribute('aria-label')) {
+      btn.setAttribute('aria-label', 'Cerrar sección');
+    }
+  });
+});
+
+/* =====================================================================
+   Dark Mode — toggle + persistence
+   ===================================================================== */
+(function initDarkMode() {
+  const STORAGE_KEY = 'SGI_darkMode';
+
+  function applyDarkMode(enabled) {
+    document.body.classList.toggle('dark-mode', enabled);
+    const icon = document.getElementById('btnDarkModeToggle')?.querySelector('i');
+    if (icon) {
+      icon.className = enabled ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    // Alternar navbar entre claro y oscuro (AdminLTE)
+    const navbar = document.getElementById('mainNavbar');
+    if (navbar) {
+      if (enabled) {
+        navbar.classList.remove('navbar-white', 'navbar-light');
+        navbar.classList.add('navbar-dark');
+      } else {
+        navbar.classList.remove('navbar-dark');
+        navbar.classList.add('navbar-white', 'navbar-light');
+      }
+    }
+  }
+
+  // Restore saved preference
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'true') applyDarkMode(true);
+  } catch { /* localStorage unavailable */ }
+
+  // Listen for toggle clicks (delegated in case the button is added later)
+  document.addEventListener('click', function onToggle(e) {
+    const btn = e.target.closest('#btnDarkModeToggle');
+    if (!btn) return;
+
+    const enabled = !document.body.classList.contains('dark-mode');
+    applyDarkMode(enabled);
+    try {
+      localStorage.setItem(STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch { /* localStorage unavailable */ }
+  });
+})();

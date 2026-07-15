@@ -1,4 +1,4 @@
-import { requestBackend } from '../../../core/api-client.js?v=21';
+import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
 
 async function listOperationalZones() {
   const response = await requestBackend('/admin/operations/zones', { noCache: true });

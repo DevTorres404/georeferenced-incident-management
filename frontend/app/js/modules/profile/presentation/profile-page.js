@@ -1,4 +1,5 @@
-import { requestBackend } from '../../../core/api-client.js?v=21';
+import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
+import { handleBackendErrors, clearValidationErrors } from '../../../shared/validators/validation-utils.js?v=1';
 
 document.addEventListener('DOMContentLoaded', initProfilePage);
 
@@ -146,6 +147,21 @@ function initEditProfile(user) {
 
     editUsername.addEventListener('input', function () {
       this.value = this.value.toLowerCase();
+      if (/\s/.test(this.value)) {
+        this.classList.add('is-invalid');
+        let feedback = this.parentElement.querySelector('.invalid-feedback');
+        if (!feedback) {
+          feedback = document.createElement('div');
+          feedback.className = 'invalid-feedback';
+          this.parentElement.appendChild(feedback);
+        }
+        feedback.textContent = 'El nombre de usuario no puede contener espacios.';
+        feedback.style.display = 'block';
+      } else {
+        this.classList.remove('is-invalid');
+        const feedback = this.parentElement.querySelector('.invalid-feedback');
+        if (feedback) feedback.style.display = 'none';
+      }
     });
 
     document.getElementById('editProfileAlert').classList.add('d-none');
@@ -184,8 +200,7 @@ function initEditProfile(user) {
         window.renderLayout();
       }
     } catch (error) {
-      alertBox.textContent = error.message || 'Error al actualizar el perfil';
-      alertBox.classList.remove('d-none');
+      handleBackendErrors(error, formEdit, alertBox);
     } finally {
       btnSave.disabled = false;
       btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar Cambios';
@@ -221,14 +236,14 @@ function initChangePassword() {
   btnOpen.addEventListener('click', () => {
     form.reset();
     clearChangePasswordAlert();
-    clearPasswordFieldErrors(form);
+    clearValidationErrors(form);
     $(modal).modal('show');
   });
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     clearChangePasswordAlert();
-    clearPasswordFieldErrors(form);
+    clearValidationErrors(form);
 
     const currentPassword = document.getElementById('currentPassword')?.value || '';
     const newPassword = document.getElementById('newPassword')?.value || '';
@@ -281,42 +296,11 @@ function initChangePassword() {
         window.location.href = '../index.html';
         return;
       }
-      showChangePasswordAlert(error.message || 'No se pudo cambiar la contraseña.');
-      renderPasswordBackendErrors(error, form);
+      const alertBox = document.getElementById('changePasswordAlert');
+      handleBackendErrors(error, form, alertBox);
     } finally {
       btnSave.disabled = false;
       btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Guardar Contraseña';
-    }
-  });
-}
-
-function clearPasswordFieldErrors(form) {
-  form.querySelectorAll('.is-invalid').forEach((input) => input.classList.remove('is-invalid'));
-  form.querySelectorAll('.invalid-feedback.backend-error').forEach((feedback) => feedback.remove());
-}
-
-function setPasswordFieldError(inputId, message) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-
-  input.classList.add('is-invalid');
-  let feedback = input.parentElement?.querySelector('.invalid-feedback.backend-error');
-  if (!feedback) {
-    feedback = document.createElement('div');
-    feedback.className = 'invalid-feedback backend-error';
-    input.parentElement?.appendChild(feedback);
-  }
-  feedback.textContent = message;
-  feedback.style.display = 'block';
-}
-
-function renderPasswordBackendErrors(error, form) {
-  if (error?.status !== 422 || !error.errors) return;
-
-  Object.entries(error.errors).forEach(([field, messages]) => {
-    const input = form.querySelector(`[name="${field}"]`);
-    if (input && Array.isArray(messages) && messages[0]) {
-      setPasswordFieldError(input.id, messages[0]);
     }
   });
 }

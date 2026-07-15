@@ -11,7 +11,9 @@ final class StateData implements JsonSerializable
         public readonly string $code,
         public readonly string $name,
         public readonly ?string $color,
-        public readonly int $order
+        public readonly int $order,
+        public readonly bool $isInitialState,
+        public readonly bool $isFinalState
     ) {
     }
 
@@ -23,6 +25,8 @@ final class StateData implements JsonSerializable
             'name' => $this->name,
             'color' => $this->color,
             'order' => $this->order,
+            'is_initial_state' => $this->isInitialState,
+            'is_final_state' => $this->isFinalState,
         ];
     }
 }

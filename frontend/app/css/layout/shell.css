@@ -418,7 +418,7 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link.active .nav-icon {
-  color: #ffffff !important;
+  color: inherit !important;
 }
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link:not(.active):hover {
@@ -426,7 +426,7 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 }
 
 .main-header.navbar {
-  min-height: 58px;
+  min-height: 64px;
   background: var(--sgi-surface) !important;
   border-bottom: 1px solid var(--sgi-border);
 }
@@ -504,4 +504,75 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 .sidebar-dark-primary .nav-sidebar .nav-link:focus-visible {
   outline-color: #7dd3fc;
   outline-offset: -2px;
+}
+
+/* Sidebar theme follows the application theme despite the fixed AdminLTE class. */
+.main-sidebar.sidebar-dark-primary {
+  --sgi-sidebar-background: var(--sgi-surface);
+  --sgi-sidebar-border: var(--sgi-border);
+  --sgi-sidebar-text: var(--sgi-text-muted);
+  --sgi-sidebar-text-strong: var(--sgi-navy-950);
+  --sgi-sidebar-hover: var(--sgi-primary-soft);
+  --sgi-sidebar-active-background: var(--sgi-primary-soft);
+  --sgi-sidebar-active-text: var(--sgi-navy-800);
+  --sgi-sidebar-focus: var(--sgi-primary);
+  background-color: var(--sgi-sidebar-background) !important;
+  border-right: 1px solid var(--sgi-sidebar-border);
+}
+
+body.dark-mode .main-sidebar.sidebar-dark-primary {
+  --sgi-sidebar-background: var(--sgi-navy-950);
+  --sgi-sidebar-border: rgba(255, 255, 255, 0.08);
+  --sgi-sidebar-text: rgba(203, 213, 225, 0.88);
+  --sgi-sidebar-text-strong: #ffffff;
+  --sgi-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sgi-sidebar-active-background: var(--sgi-navy-800);
+  --sgi-sidebar-active-text: #ffffff;
+  --sgi-sidebar-focus: #7dd3fc;
+}
+
+.main-sidebar.sidebar-dark-primary .brand-link {
+  border-bottom-color: var(--sgi-sidebar-border) !important;
+  color: var(--sgi-sidebar-text-strong) !important;
+}
+
+.main-sidebar.sidebar-dark-primary .brand-text {
+  color: var(--sgi-sidebar-text-strong) !important;
+}
+
+.main-sidebar.sidebar-dark-primary .sidebar {
+  border-right-color: var(--sgi-sidebar-border);
+}
+
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-item > .nav-link,
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link {
+  color: var(--sgi-sidebar-text) !important;
+}
+
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-link .nav-icon {
+  color: inherit !important;
+}
+
+.main-sidebar.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active,
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link.active,
+body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-dark-primary:not(:hover) .nav-sidebar > .nav-item > .nav-link.active,
+body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-dark-primary:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link.active {
+  background: var(--sgi-sidebar-active-background) !important;
+  color: var(--sgi-sidebar-active-text) !important;
+}
+
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-item.menu-open > .nav-link,
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-item > .nav-link:not(.active):hover,
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-treeview > .nav-item > .nav-link:not(.active):hover,
+body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-dark-primary:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link:not(.active):hover {
+  background: var(--sgi-sidebar-hover) !important;
+  color: var(--sgi-sidebar-text-strong) !important;
+}
+
+body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-dark-primary:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link {
+  background: var(--sgi-sidebar-background) !important;
+}
+
+.main-sidebar.sidebar-dark-primary .nav-sidebar .nav-link:focus-visible {
+  outline-color: var(--sgi-sidebar-focus);
 }

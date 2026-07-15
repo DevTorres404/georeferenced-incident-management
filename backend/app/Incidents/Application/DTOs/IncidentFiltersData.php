@@ -6,6 +6,8 @@ final class IncidentFiltersData
 {
     public function __construct(
         public readonly ?int $stateId = null,
+        public readonly ?array $stateIds = null,
+        public readonly ?string $stateFilter = null,
         public readonly ?int $priorityId = null,
         public readonly ?int $categoryId = null,
         public readonly ?bool $mine = null,
@@ -15,7 +17,9 @@ final class IncidentFiltersData
         public readonly ?float $latitude = null,
         public readonly ?float $longitude = null,
         public readonly ?float $radiusKm = null,
-        public readonly ?int $perPage = null
+        public readonly ?int $perPage = null,
+        public readonly ?string $sortBy = null,
+        public readonly ?string $sortDirection = null,
     ) {
     }
 }

@@ -1,4 +1,4 @@
-import { requestBackend } from '../../../core/api-client.js?v=21';
+import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
 
 /**
  * Obtener todos los catálogos en una sola llamada si el backend lo soporta,

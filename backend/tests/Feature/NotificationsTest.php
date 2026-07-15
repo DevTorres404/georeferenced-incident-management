@@ -11,6 +11,7 @@ use App\Shared\Infrastructure\Notifications\UserNotifier;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
@@ -94,12 +95,41 @@ class NotificationsTest extends TestCase
             $role->permissions()->where('code', 'notifications.view')->value('permissions.id')
         );
 
-        $this->actingAs($admin)
-            ->postJson('/broadcasting/auth', [
-                'channel_name' => "private-users.{$admin->id}.notifications",
-                'socket_id' => '1234.5678',
-            ])
-            ->assertForbidden();
+        $originalConnection = config('broadcasting.default');
+        $originalPusherConnection = config('broadcasting.connections.pusher');
+        config([
+            'broadcasting.default' => 'pusher',
+            'broadcasting.connections.pusher' => [
+                'driver' => 'pusher',
+                'key' => 'local-test-key',
+                'secret' => 'local-test-secret',
+                'app_id' => 'local-test-app',
+                'options' => [
+                    'host' => '127.0.0.1',
+                    'port' => 65535,
+                    'scheme' => 'http',
+                    'useTLS' => false,
+                ],
+            ],
+        ]);
+        Broadcast::purge();
+        Broadcast::forgetDrivers();
+
+        try {
+            $this->actingAs($admin)
+                ->postJson('/broadcasting/auth', [
+                    'channel_name' => "private-users.{$admin->id}.notifications",
+                    'socket_id' => '1234.5678',
+                ])
+                ->assertForbidden();
+        } finally {
+            config([
+                'broadcasting.default' => $originalConnection,
+                'broadcasting.connections.pusher' => $originalPusherConnection,
+            ]);
+            Broadcast::purge();
+            Broadcast::forgetDrivers();
+        }
     }
 
     public function test_user_can_fetch_notifications(): void

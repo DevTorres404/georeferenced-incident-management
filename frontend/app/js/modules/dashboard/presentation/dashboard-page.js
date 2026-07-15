@@ -1,4 +1,4 @@
-import { $, hide, showErrorAlert } from '../../../shared/utils/dom-utils.js?v=14';
+import { $, hide, showErrorAlert } from '../../../presentation/dom-utils.js?v=14';
 import { getDashboardMetrics } from '../application/dashboard-service.js?v=14';
 import {
   escapeHtml,
@@ -41,6 +41,7 @@ async function initDashboardPage() {
   window.renderLayout?.('dashboard');
 
   showPageLoading('Cargando panel', 'Consultando métricas...');
+  showKpiSkeletons();
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
   try {
@@ -79,6 +80,20 @@ function renderKPIs(kpis) {
       </div>
       <i class="fas ${item.icon} dash-kpi-icon text-${item.accent}"></i>
     </a>`).join('');
+}
+
+function showKpiSkeletons() {
+  const grid = $('#kpiRow');
+  if (!grid) return;
+
+  grid.innerHTML = Array.from({ length: 4 }, () => `
+    <div class="dash-kpi-card dash-kpi-skeleton" aria-hidden="true">
+      <div class="dash-kpi-content">
+        <span class="skeleton-line skeleton-line--short">&nbsp;</span>
+        <span class="skeleton-line skeleton-line--long">&nbsp;</span>
+      </div>
+      <i class="fas fa-circle skeleton-icon"></i>
+    </div>`).join('');
 }
 
 /* ── Priority Bars ───────────────────────────────────────────────────────── */

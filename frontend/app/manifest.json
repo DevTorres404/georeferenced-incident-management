@@ -1,0 +1,21 @@
+{
+  "name": "SGI - Sistema de Gestión de Incidencias",
+  "short_name": "SGI",
+  "description": "Sistema web para la gestión, seguimiento y georreferenciación de incidencias.",
+  "start_url": "/html/dashboard.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/img/SGI_LOGO.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "utilities"],
+  "lang": "es-EC",
+  "scope": "/"
+}

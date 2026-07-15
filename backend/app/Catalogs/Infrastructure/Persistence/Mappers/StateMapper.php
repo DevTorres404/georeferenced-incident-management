@@ -14,7 +14,9 @@ final class StateMapper
             code: str($state->name)->upper()->replace(' ', '_')->toString(),
             name: $state->name,
             color: $state->color,
-            order: (int) $state->order
+            order: (int) $state->order,
+            isInitialState: (bool) $state->is_initial_state,
+            isFinalState: (bool) $state->is_final_state
         );
     }
 }

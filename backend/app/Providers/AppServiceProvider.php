@@ -35,9 +35,11 @@ use App\Operations\Infrastructure\Persistence\Repositories\EloquentOperationalSt
 use App\Shared\Application\Ports\DateTimeProviderPort;
 use App\Shared\Application\Ports\FileStoragePort;
 use App\Shared\Application\Ports\LoggerPort;
+use App\Shared\Application\Ports\TransactionManagerPort;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\Shared\Infrastructure\Support\LaravelDateTimeProviderAdapter;
 use App\Shared\Infrastructure\Support\LaravelLoggerAdapter;
+use App\Shared\Infrastructure\Support\LaravelTransactionManagerAdapter;
 use App\TerritorialUnits\Domain\Repositories\TerritorialUnitRepositoryInterface;
 use App\TerritorialUnits\Infrastructure\Persistence\Repositories\EloquentTerritorialUnitRepository;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
@@ -77,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserNotificationPort::class, LaravelUserNotificationAdapter::class);
         $this->app->bind(ProfilePhotoStoragePort::class, RustFsProfilePhotoStorageAdapter::class);
         $this->app->bind(LoggerPort::class, LaravelLoggerAdapter::class);
+        $this->app->bind(TransactionManagerPort::class, LaravelTransactionManagerAdapter::class);
         $this->app->bind(DateTimeProviderPort::class, LaravelDateTimeProviderAdapter::class);
         $this->app->bind(TwoFactorAuthPort::class, GoogleTwoFactorAuthAdapter::class);
     }

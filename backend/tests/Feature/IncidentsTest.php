@@ -5,6 +5,11 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Application\UseCases\IncidentUseCase;
+use App\Incidents\Domain\Entities\Incident as IncidentEntity;
+use App\Incidents\Domain\Entities\IncidentState as IncidentStateEntity;
+use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
@@ -16,6 +21,7 @@ use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
+use App\Shared\Application\Ports\FileStoragePort;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\OperationalZoneGeometrySeeder;
@@ -30,6 +36,8 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class IncidentsTest extends TestCase
@@ -467,7 +475,7 @@ class IncidentsTest extends TestCase
             ])->assertOk();
 
         $this->assertTrue(
-            $this->userHasNotification($operatorTwo['user'], 'Cambio de prioridad', 'cambiÃ³ a Alta')
+            $this->userHasNotification($operatorTwo['user'], 'Cambio de prioridad', 'cambió a Alta')
         );
     }
 
@@ -664,6 +672,119 @@ class IncidentsTest extends TestCase
         $this->assertSame('Frente a la cancha del barrio', $incident->address_reference);
         $this->assertSame('-2.17090000', (string) $incident->latitude);
         $this->assertSame('-79.92240000', (string) $incident->longitude);
+    }
+
+    public function test_update_hides_internal_comments_from_editor_without_internal_comment_permission(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-update-redaction@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-update-redaction@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-update-redaction@incidencias.local');
+
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $priority = Priority::where('name', 'Alta')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia con comentario interno',
+                'description' => 'El detalle interno no debe filtrarse por una ruta diferente.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])->assertCreated()
+            ->json('data.id');
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$incidentId}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])->assertCreated();
+
+        $this->actingAsUser($operator['user'])
+            ->postJson("/api/incidents/{$incidentId}/comments", [
+                'comment' => 'Diagnóstico interno confidencial.',
+                'is_internal' => true,
+            ])->assertCreated();
+
+        Role::where('code', 'ADMIN')->firstOrFail()->permissions()->detach(
+            Permission::where('code', 'comments.internal')->value('id')
+        );
+        $this->assertTrue($admin['user']->fresh()->tienePermiso('incidents.edit'));
+        $this->assertFalse($admin['user']->fresh()->tienePermiso('comments.internal'));
+
+        $response = $this->actingAsUser($admin['user'])
+            ->putJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priority->id,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.priority.id', $priority->id)
+            ->assertJsonPath('data.comments', []);
+    }
+
+    public function test_update_rolls_back_when_reloading_detail_fails(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-update-rollback@incidencias.local');
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $priority = Priority::where('name', 'Alta')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Incidencia para rollback',
+                'description' => 'La prioridad no debe persistir si falla la recarga del detalle.',
+                'category_id' => $category->id,
+                'subcategory_id' => $subcategory->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])->assertCreated()
+            ->json('data.id');
+
+        $editableIncident = new IncidentEntity(
+            id: (int) $incidentId,
+            code: 'INC-ROLLBACK',
+            title: 'Incidencia para rollback',
+            description: 'La prioridad no debe persistir si falla la recarga del detalle.',
+            reporterUserId: (int) $citizen['user']->id,
+            assigneeUserId: null,
+            stateId: 1,
+            state: new IncidentStateEntity(1, 'NUEVA', true, false)
+        );
+
+        $repository = Mockery::mock(IncidentRepositoryInterface::class);
+        $repository->shouldReceive('load')->once()->andReturn($editableIncident);
+        $repository->shouldReceive('update')
+            ->once()
+            ->andReturnUsing(function () use ($incidentId, $priority, $editableIncident): IncidentEntity {
+                Incident::whereKey($incidentId)->update(['priority_id' => $priority->id]);
+
+                return $editableIncident;
+            });
+        $repository->shouldReceive('loadDetail')
+            ->once()
+            ->andThrow(new RuntimeException('Forced detail reload failure.'));
+
+        $this->app->instance(IncidentRepositoryInterface::class, $repository);
+        $this->app->instance(FileStoragePort::class, Mockery::mock(FileStoragePort::class));
+
+        $exceptionWasThrown = false;
+        try {
+            app(IncidentUseCase::class)->update(
+                (int) $incidentId,
+                new UpdateIncidentInputData(
+                    priorityId: (int) $priority->id,
+                    presentFields: ['priorityId']
+                )
+            );
+        } catch (RuntimeException $exception) {
+            $exceptionWasThrown = true;
+            $this->assertSame('Forced detail reload failure.', $exception->getMessage());
+        }
+
+        $this->assertTrue($exceptionWasThrown);
+        $this->assertNull(Incident::findOrFail($incidentId)->priority_id);
     }
 
     public function test_operator_alert_command_notifies_unreviewed_and_near_due_incidents(): void

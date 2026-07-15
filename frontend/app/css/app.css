@@ -1,7 +1,7 @@
 @import url("./base/variables.css?v=22");
 @import url("./components/components.css?v=22");
 @import url("./components/notifications.css?v=2");
-@import url("./layout/shell.css?v=29");
+@import url("./layout/shell.css?v=30");
 @import url("./pages/access-control.css?v=21");
 @import url("./pages/audit.css?v=3");
 @import url("./pages/dashboard.css?v=2");
@@ -15,3 +15,5 @@
 @import url("./pages/reports.css?v=3");
 @import url("./pages/territorial-units.css?v=3");
 @import url("./pages/about.css?v=2");
+@import url("./responsive.css?v=2");
+@import url("./dark-mode.css?v=1");

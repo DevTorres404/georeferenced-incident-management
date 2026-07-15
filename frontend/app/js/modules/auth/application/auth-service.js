@@ -1,5 +1,5 @@
 import { firebaseConfig } from '../infrastructure/firebase-config.js';
-import { request, requestRaw } from '../../../core/api-client.js?v=21';
+import { request, requestRaw } from '../../../infrastructure/backend-client.js?v=21';
 import { clearSession, updateUser, writeSession } from '../../../core/auth-session.js?v=15';
 
 let firebaseAuthPromise = null;

@@ -179,6 +179,17 @@ class AuthTest extends TestCase
         ]);
     }
 
+    public function test_username_mutator_preserves_null_and_normalizes_strings(): void
+    {
+        $user = new User;
+
+        $user->username = null;
+        $this->assertNull($user->username);
+
+        $user->username = '  Mixed   Case  ';
+        $this->assertSame('mixed case', $user->username);
+    }
+
     public function test_google_registration_can_be_dispatched_asynchronously(): void
     {
         Bus::fake();
