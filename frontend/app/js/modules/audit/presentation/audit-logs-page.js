@@ -20,7 +20,7 @@ const state = {
 document.addEventListener('DOMContentLoaded', initAuditLogsPage);
 
 async function initAuditLogsPage() {
-  window.renderLayout?.('audit-logs');
+  globalThis.renderLayout?.('audit-logs');
   bindFilters();
   await loadAuditLogs();
 }

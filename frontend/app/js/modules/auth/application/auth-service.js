@@ -124,7 +124,7 @@ async function submitGoogleToken(idToken, intent) {
 }
 
 async function refreshAuthenticatedUser() {
-  if (!window.SGIGSession?.hasValidSession?.()) {
+  if (!globalThis.SGIGSession?.hasValidSession?.()) {
     return null;
   }
 
@@ -162,7 +162,7 @@ async function completeProfile(username) {
 }
 
 async function restoreSession() {
-  if (!window.SGIGSession?.hasValidSession?.()) {
+  if (!globalThis.SGIGSession?.hasValidSession?.()) {
     clearSession();
     return null;
   }
@@ -190,13 +190,13 @@ async function logout() {
 }
 
 function openGoogleFlowChannel(flowId, onUpdate) {
-  if (!window.Pusher) {
+  if (!globalThis.Pusher) {
     return null;
   }
 
-  const isHttps = window.location.protocol === 'https:';
-  const socket = new window.Pusher('local-gic-key', {
-    wsHost: window.location.hostname,
+  const isHttps = globalThis.location.protocol === 'https:';
+  const socket = new globalThis.Pusher('local-gic-key', {
+    wsHost: globalThis.location.hostname,
     wsPort: 8080,
     wssPort: 8080,
     forceTLS: isHttps,
@@ -271,7 +271,7 @@ const authService = {
   resendVerificationEmail,
 };
 
-window.SGIGAuthService = authService;
+globalThis.SGIGAuthService = authService;
 
 export {
   completeProfile,

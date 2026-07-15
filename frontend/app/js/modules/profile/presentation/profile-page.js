@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', initProfilePage);
 const AUTH_KEYS = { user: 'user_data' };
 let twoFactorQr = null;
 
-window.addEventListener('pagehide', (event) => {
+globalThis.addEventListener('pagehide', (event) => {
   if (event.persisted) return;
 
   twoFactorQr?.clear?.();
@@ -70,13 +70,13 @@ function formatDateTime(dateStr) {
 }
 
 function initProfilePage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('profile');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('profile');
   }
 
   const user = readSessionUser();
   if (!user) {
-    window.location.href = '../index.html';
+    globalThis.location.href = '../index.html';
     return;
   }
 
@@ -151,7 +151,7 @@ function initEditProfile(user) {
   btnEdit.addEventListener('click', () => {
     const editUsername = document.getElementById('editUsername');
     // Read the latest user data from localStorage to ensure we have the most up-to-date username
-    const currentUserData = localStorage.getItem(window.AUTH_KEYS?.user || 'user_data');
+    const currentUserData = localStorage.getItem(globalThis.AUTH_KEYS?.user || 'user_data');
     const currentUser = currentUserData ? JSON.parse(currentUserData) : user;
     editUsername.value = currentUser.username || '';
 
@@ -201,13 +201,13 @@ function initEditProfile(user) {
 
       $(modalEdit).modal('hide');
 
-      if (window.showGlobalAlert) {
-        window.showGlobalAlert('Perfil actualizado exitosamente', 'success');
+      if (globalThis.showGlobalAlert) {
+        globalThis.showGlobalAlert('Perfil actualizado exitosamente', 'success');
       }
 
       renderUserData(updatedUser);
-      if (typeof window.renderLayout === 'function') {
-        window.renderLayout();
+      if (typeof globalThis.renderLayout === 'function') {
+        globalThis.renderLayout();
       }
     } catch (error) {
       handleBackendErrors(error, formEdit, alertBox);
@@ -296,14 +296,14 @@ function initChangePassword() {
       $(modal).modal('hide');
       form.reset();
 
-      if (window.showGlobalAlert) {
-        window.showGlobalAlert('Contraseña actualizada correctamente.', 'success');
+      if (globalThis.showGlobalAlert) {
+        globalThis.showGlobalAlert('Contraseña actualizada correctamente.', 'success');
       }
     } catch (error) {
       if (error?.status === 401) {
         localStorage.removeItem('user_data');
         localStorage.setItem('sgig_flash_message', 'Tu contraseña fue actualizada. Vuelve a iniciar sesión.');
-        window.location.href = '../index.html';
+        globalThis.location.href = '../index.html';
         return;
       }
       const alertBox = document.getElementById('changePasswordAlert');
@@ -407,7 +407,7 @@ async function initSetup2FA() {
 
     try {
       await ensureQrCodeLibrary();
-      qrLibraryReady = Boolean(window.QRCode);
+      qrLibraryReady = Boolean(globalThis.QRCode);
     } catch {
       qrLibraryReady = false;
     }
@@ -446,7 +446,7 @@ function renderTwoFactorSetup(container, qrUrl, secret, qrLibraryReady) {
     qrBox.className = 'd-inline-block';
     wrapper.appendChild(qrBox);
 
-    twoFactorQr = new window.QRCode(qrBox, {
+    twoFactorQr = new globalThis.QRCode(qrBox, {
       text: qrUrl,
       width: 160,
       height: 160
@@ -469,7 +469,7 @@ function renderTwoFactorSetup(container, qrUrl, secret, qrLibraryReady) {
 }
 
 function ensureQrCodeLibrary() {
-  if (window.QRCode) return Promise.resolve();
+  if (globalThis.QRCode) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
     const existing = document.querySelector('script[data-sgig-qrcode], script[data-sgi-qrcode]');
@@ -519,12 +519,12 @@ async function confirmSetup2FA() {
       localStorage.setItem(AUTH_KEYS.user, JSON.stringify(user));
     }
 
-    if (window.showGlobalAlert) {
-      window.showGlobalAlert('Autenticación en 2 pasos activada con éxito.', 'success');
+    if (globalThis.showGlobalAlert) {
+      globalThis.showGlobalAlert('Autenticación en 2 pasos activada con éxito.', 'success');
     }
 
     setTimeout(() => {
-      window.location.reload();
+      globalThis.location.reload();
     }, 1500);
   } catch (error) {
     setTwoFactorAlert(error.message || 'Código inválido.', 'danger');
@@ -548,16 +548,16 @@ async function disableTwoFactor() {
       localStorage.setItem(AUTH_KEYS.user, JSON.stringify(user));
     }
 
-    if (window.showGlobalAlert) {
-      window.showGlobalAlert('Autenticación en 2 pasos desactivada.', 'success');
+    if (globalThis.showGlobalAlert) {
+      globalThis.showGlobalAlert('Autenticación en 2 pasos desactivada.', 'success');
     }
 
     setTimeout(() => {
-      window.location.reload();
+      globalThis.location.reload();
     }, 1500);
   } catch (error) {
-    if (window.showGlobalAlert) {
-      window.showGlobalAlert(error.message || 'Error al desactivar 2FA.', 'danger');
+    if (globalThis.showGlobalAlert) {
+      globalThis.showGlobalAlert(error.message || 'Error al desactivar 2FA.', 'danger');
     } else {
       alert(error.message || 'Error al desactivar 2FA.');
     }

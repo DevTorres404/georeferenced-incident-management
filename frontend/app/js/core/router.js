@@ -1,4 +1,4 @@
 /**
  * Wrapper para la navegación
  */
-export const NavigationStore = window.SGINavigationStore || {};
+export const NavigationStore = globalThis.SGINavigationStore || {};

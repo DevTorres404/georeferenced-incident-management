@@ -9,8 +9,8 @@ const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
 document.addEventListener('DOMContentLoaded', initUserRolesPage);
 
 async function initUserRolesPage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('user-roles');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('user-roles');
   }
 
   const state = {
@@ -25,7 +25,7 @@ async function initUserRolesPage() {
 
   bindActions(state);
   showPageLoading('Cargando usuarios', 'Consultando directorio de usuarios...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 3500);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 3500);
 
   try {
     const data = await getUsersAndRoles();
@@ -35,7 +35,7 @@ async function initUserRolesPage() {
   } catch (error) {
     handleBackendErrors(error, null, document.getElementById('access-alert'));
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -109,8 +109,8 @@ function bindActions(state) {
         
         try {
           const response = await assignUserRole(userId, roleCode);
-          if (window.showGlobalAlert) {
-            window.showGlobalAlert('Rol asignado correctamente', 'success');
+          if (globalThis.showGlobalAlert) {
+            globalThis.showGlobalAlert('Rol asignado correctamente', 'success');
           }
           const userObj = state.users.find(u => u.id == userId);
           if (userObj) {
@@ -158,8 +158,8 @@ function bindActions(state) {
         
         $('#modalDeactivateUser').modal('hide');
         
-        if (window.showGlobalAlert) {
-          window.showGlobalAlert('Usuario desactivado exitosamente', 'success');
+        if (globalThis.showGlobalAlert) {
+          globalThis.showGlobalAlert('Usuario desactivado exitosamente', 'success');
         }
         
         // Remover usuario del estado

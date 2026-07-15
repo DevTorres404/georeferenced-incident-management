@@ -121,7 +121,7 @@ function showGlobalAlert(message, type = 'success') {
     </button>`;
   target.style.display = 'block';
 
-  window.setTimeout(() => {
+  globalThis.setTimeout(() => {
     target.style.display = 'none';
   }, 5000);
 }

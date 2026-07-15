@@ -9,7 +9,7 @@ function clearSessionScopedCache() {
     .filter((key) => key.startsWith('SGI_API_CACHE_') || key === 'SGI_notifications_cache' || key === 'SGI_nav_state')
     .forEach((key) => sessionStorage.removeItem(key));
 
-  window.SGIGApi?.clearApiCache?.();
+  globalThis.SGIGApi?.clearApiCache?.();
 }
 
 function readUser() {
@@ -117,7 +117,7 @@ const api = {
   isEmailVerified,
 };
 
-window.SGIGSession = api;
+globalThis.SGIGSession = api;
 
 export {
   STORAGE_KEYS,

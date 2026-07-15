@@ -100,7 +100,7 @@ const incidentsService = {
   listPriorities,
 };
 
-window.SGIGIncidentsService = incidentsService;
+globalThis.SGIGIncidentsService = incidentsService;
 
 export {
   addIncidentComment,

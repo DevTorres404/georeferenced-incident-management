@@ -7,14 +7,14 @@ let currentFilter = 'all';
 let allNotifications = [];
 
 document.addEventListener('DOMContentLoaded', initNotificationsPage);
-window.addEventListener('sgi:notification-created', handleRealtimeNotification);
-window.addEventListener('sgi:notifications-refreshed', handleNotificationsRefresh);
+globalThis.addEventListener('sgi:notification-created', handleRealtimeNotification);
+globalThis.addEventListener('sgi:notifications-refreshed', handleNotificationsRefresh);
 
 async function initNotificationsPage() {
-  window.renderLayout?.('notifications');
+  globalThis.renderLayout?.('notifications');
 
   showPageLoading('Cargando notificaciones', 'Obteniendo historial...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     await loadAllNotifications();
@@ -24,7 +24,7 @@ async function initNotificationsPage() {
     console.error('[SGI] Error loading notifications:', error);
     showGlobalAlert('Error al cargar las notificaciones.', 'danger');
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -146,7 +146,7 @@ function createNotificationElement(notification) {
           await mutateBackend(`/notifications/${notification.id}/read`, { method: 'PATCH' });
         } catch { /* silent */ }
       }
-      window.location.href = `/html/incident-detail.html?id=${incidentId}`;
+      globalThis.location.href = `/html/incident-detail.html?id=${incidentId}`;
     });
   }
 
@@ -215,7 +215,7 @@ function updatePagination(totalItems) {
       btn.addEventListener('click', () => {
         currentPage = Number(page);
         renderList();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        globalThis.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }
     if (reference && reference.parentNode) {
@@ -261,7 +261,7 @@ function bindActions() {
     if (currentPage > 1) {
       currentPage--;
       renderList();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      globalThis.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 
@@ -271,7 +271,7 @@ function bindActions() {
     if (currentPage < totalPages) {
       currentPage++;
       renderList();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      globalThis.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 

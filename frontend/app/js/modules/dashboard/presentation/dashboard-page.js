@@ -37,18 +37,18 @@ const STATE_COLORS = {
 const dashboardCharts = {};
 
 document.addEventListener('DOMContentLoaded', initDashboardPage);
-window.addEventListener('pagehide', (event) => {
+globalThis.addEventListener('pagehide', (event) => {
   if (event.persisted) return;
 
   destroyDashboardCharts();
 });
 
 async function initDashboardPage() {
-  window.renderLayout?.('dashboard');
+  globalThis.renderLayout?.('dashboard');
 
   showPageLoading('Cargando panel', 'Consultando métricas...');
   showKpiSkeletons();
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const metrics = await getDashboardMetrics();
@@ -60,7 +60,7 @@ async function initDashboardPage() {
   } catch (error) {
     showErrorAlert(error.message || 'No se pudieron cargar las métricas del panel.');
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -228,7 +228,7 @@ function renderRecentIncidents(incidents) {
 
 function renderCharts(metrics) {
   destroyDashboardCharts();
-  if (!window.Chart) return;
+  if (!globalThis.Chart) return;
 
   renderDoughnut('graficoPorTipo', metrics.countsByCategory || {});
   renderStateChart(metrics.countsByState || {});
@@ -245,7 +245,7 @@ function renderDoughnut(canvasId, dataMap) {
   const entries = Object.entries(dataMap);
   if (!canvas || !entries.length) return;
 
-  dashboardCharts.categories = new window.Chart(canvas.getContext('2d'), {
+  dashboardCharts.categories = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: entries.map(([label]) => formatCatalogLabel(label)),
@@ -291,7 +291,7 @@ function renderStateChart(countsByState) {
   const labels = ['Pendiente', 'En proceso', 'Resuelta'];
   const colors = [STATE_COLORS.PENDIENTE, STATE_COLORS['EN PROCESO'], STATE_COLORS.RESUELTA];
 
-  dashboardCharts.states = new window.Chart(canvas.getContext('2d'), {
+  dashboardCharts.states = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels,
@@ -337,7 +337,7 @@ function renderTrendChart(trend) {
   const canvas = document.getElementById('graficoTendencia');
   if (!canvas) return;
 
-  dashboardCharts.trend = new window.Chart(canvas.getContext('2d'), {
+  dashboardCharts.trend = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: trend.months || [],

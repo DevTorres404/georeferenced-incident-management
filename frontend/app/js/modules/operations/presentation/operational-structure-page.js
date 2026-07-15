@@ -45,8 +45,8 @@ const state = {
 document.addEventListener('DOMContentLoaded', initOperationalStructurePage);
 
 async function initOperationalStructurePage() {
-  if (typeof window.renderLayout === 'function') {
-    window.renderLayout('operational-structure');
+  if (typeof globalThis.renderLayout === 'function') {
+    globalThis.renderLayout('operational-structure');
   }
 
   state.currentUser = readSessionUser();
@@ -57,7 +57,7 @@ async function initOperationalStructurePage() {
 
 async function refreshPageData() {
   showPageLoading('Cargando operación nacional', 'Consultando zonas, supervisores y operadores...');
-  const loadingFallback = window.setTimeout(hidePageLoading, 12000);
+  const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const [zones, supervisors, operators] = await Promise.all([
@@ -84,7 +84,7 @@ async function refreshPageData() {
   } catch (error) {
     renderError(error.message || 'No se pudo cargar la estructura operativa.');
   } finally {
-    window.clearTimeout(loadingFallback);
+    globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
 }
@@ -152,13 +152,13 @@ function applyAccessMode() {
 }
 
 function initializeMapsIfNeeded() {
-  if (!window.maplibregl) {
+  if (!globalThis.maplibregl) {
     showMapUnavailableMessage('operationalCoverageMap');
     return;
   }
 
   if (!state.map) {
-    state.map = new window.maplibregl.Map({
+    state.map = new globalThis.maplibregl.Map({
       container: 'operationalCoverageMap',
       style: MAP_STYLE_URL,
       center: MAP_DEFAULT_CENTER,
@@ -166,7 +166,7 @@ function initializeMapsIfNeeded() {
       maxBounds: MAP_ECUADOR_BOUNDS,
     });
 
-    state.map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    state.map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
     state.map.on('load', () => {
       ensureMainMapLayers();
       syncMapsData();
@@ -345,9 +345,9 @@ function syncSelectedZoneLayers() {
 
 function fitZone(zone) {
   const features = zoneFeatures(zone.zone?.id);
-  if (!features.length || !window.maplibregl || !state.map) return;
+  if (!features.length || !globalThis.maplibregl || !state.map) return;
 
-  const bounds = new window.maplibregl.LngLatBounds();
+  const bounds = new globalThis.maplibregl.LngLatBounds();
   features.forEach((feature) => extendBounds(bounds, feature.geometry?.coordinates, feature.geometry?.type));
 
   if (!bounds.isEmpty()) {
@@ -375,13 +375,13 @@ function clearHoveredFeature() {
 }
 
 function showZonePopup(lngLat, properties = {}) {
-  if (!window.maplibregl) return;
+  if (!globalThis.maplibregl) return;
 
   const zone = findZoneById(Number(properties.zone_id || 0));
   if (!zone) return;
 
   if (!state.popup) {
-    state.popup = new window.maplibregl.Popup({
+    state.popup = new globalThis.maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
       offset: 18,
@@ -574,7 +574,7 @@ function buildZonePopupHtml(zone, provinceName) {
 }
 
 function applyZoneDetailPosition(wrapper, anchorPoint) {
-  if (!wrapper || !anchorPoint || window.innerWidth <= 991) {
+  if (!wrapper || !anchorPoint || globalThis.innerWidth <= 991) {
     wrapper.style.removeProperty('--detail-left');
     wrapper.style.removeProperty('--detail-top');
     return;

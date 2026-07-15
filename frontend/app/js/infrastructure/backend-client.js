@@ -28,7 +28,7 @@ function clearApiCache() {
 
 async function requestRaw(path, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
-  const token = localStorage.getItem(window.SGIGSession?.STORAGE_KEYS?.token || 'auth_token');
+  const token = localStorage.getItem(globalThis.SGIGSession?.STORAGE_KEYS?.token || 'auth_token');
   const hasBody = options.body !== undefined && options.body !== null;
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const headers = {
@@ -71,7 +71,7 @@ async function requestRaw(path, options = {}) {
     const data = contentType.includes('application/json') ? await response.json() : {};
 
     if ((response.status === 401 || response.status === 419) && token) {
-      window.dispatchEvent(new Event('sgi:unauthorized'));
+      globalThis.dispatchEvent(new Event('sgi:unauthorized'));
     }
 
     if (method === 'GET' && response.ok && !options.noCache) {
@@ -153,6 +153,6 @@ const api = {
   extractErrorMessage,
 };
 
-window.SGIGApi = api;
+globalThis.SGIGApi = api;
 
 export { API_URL, ApiError, clearApiCache, extractErrorMessage, request, requestBackend, requestRaw };

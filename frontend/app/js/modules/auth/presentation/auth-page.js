@@ -112,7 +112,7 @@ function initAuthPage() {
   let pendingVerificationEmail = '';
   let setupTwoFactorQr = null;
 
-  window.addEventListener('pagehide', (event) => {
+  globalThis.addEventListener('pagehide', (event) => {
     if (event.persisted) return;
 
     setupTwoFactorQr?.clear?.();
@@ -132,7 +132,7 @@ function initAuthPage() {
   bootstrap();
 
   async function bootstrap() {
-    if (window.location.protocol === 'file:') {
+    if (globalThis.location.protocol === 'file:') {
       showAlert(el.loginAlert, 'Abre esta página desde http://localhost:5500 para que Firebase y el WebSocket funcionen.', 'danger');
       return;
     }
@@ -198,7 +198,7 @@ function initAuthPage() {
     if (el.dashboardLink) {
       el.dashboardLink.addEventListener('click', () => {
         if (!busy) {
-          window.location.href = getAppPath('dashboard.html');
+          globalThis.location.href = getAppPath('dashboard.html');
         }
       });
     }
@@ -269,15 +269,15 @@ function initAuthPage() {
   }
 
   function showVerificationNotice() {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.location.search);
     if (params.get('verified') === '1') {
       showAlert(el.loginAlert, 'Correo verificado correctamente. Ya puedes iniciar sesion.', 'success');
-      window.history.replaceState({}, document.title, window.location.pathname);
+      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
       return;
     }
     if (params.get('error') === 'invalid_link') {
       showAlert(el.loginAlert, 'El enlace de verificación ha expirado o no es válido. Solicita un nuevo enlace en la pantalla de inicio de sesión.', 'danger');
-      window.history.replaceState({}, document.title, window.location.pathname);
+      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
     }
   }
 
@@ -569,8 +569,8 @@ function initAuthPage() {
     const email = pendingVerificationEmail;
     pendingVerificationEmail = '';
 
-    if (window.location.pathname.includes('register.html')) {
-      window.location.href = '/index.html#login';
+    if (globalThis.location.pathname.includes('register.html')) {
+      globalThis.location.href = '/index.html#login';
       return;
     }
 
@@ -592,11 +592,11 @@ function initAuthPage() {
 
     let focusTimer;
     const onWindowFocus = () => {
-      focusTimer = window.setTimeout(() => {
+      focusTimer = globalThis.setTimeout(() => {
         if (busy) setLoading(scope, false);
       }, 800);
     };
-    window.addEventListener('focus', onWindowFocus);
+    globalThis.addEventListener('focus', onWindowFocus);
 
     try {
       const data = await registerWithGoogle({
@@ -627,8 +627,8 @@ function initAuthPage() {
 
       showAlert(alertEl, error.message || 'No se pudo completar la operación con Google.', 'danger');
     } finally {
-      window.removeEventListener('focus', onWindowFocus);
-      window.clearTimeout(focusTimer);
+      globalThis.removeEventListener('focus', onWindowFocus);
+      globalThis.clearTimeout(focusTimer);
       setLoading(scope, false);
     }
   }
@@ -645,7 +645,7 @@ function initAuthPage() {
     try {
       const data = await completeProfile(el.usernameInput.value.trim());
       updateUser(data.user);
-      window.location.href = getPostAuthPath(data.user);
+      globalThis.location.href = getPostAuthPath(data.user);
     } catch (error) {
       showAlert(el.profileAlert, error.message || 'No se pudo guardar el nombre de usuario.', 'danger');
     } finally {
@@ -663,8 +663,8 @@ function initAuthPage() {
     hideAlert(el.setupTwoFactorAlert);
 
     try {
-      await window.SGIGAuthService.confirmTwoFactor(el.setupTwoFactorCodeInput.value.trim());
-      const user = await window.SGIGAuthService.restoreSession();
+      await globalThis.SGIGAuthService.confirmTwoFactor(el.setupTwoFactorCodeInput.value.trim());
+      const user = await globalThis.SGIGAuthService.restoreSession();
       routeAfterAuth(user);
     } catch (error) {
       showAlert(el.setupTwoFactorAlert, error.message || 'Código incorrecto.', 'danger');
@@ -676,7 +676,7 @@ function initAuthPage() {
   }
 
   function getAppPath(page) {
-    return window.location.pathname.includes('/html/') ? page : `html/${page}`;
+    return globalThis.location.pathname.includes('/html/') ? page : `html/${page}`;
   }
 
   function getPostAuthPath(user) {
@@ -723,7 +723,7 @@ function initAuthPage() {
       localStorage.setItem('sgig_flash_message', notice.verificationMessage);
     }
 
-    window.location.href = getPostAuthPath(user);
+    globalThis.location.href = getPostAuthPath(user);
   }
 
   function showRecoveryStep(step) {
@@ -837,12 +837,12 @@ function initAuthPage() {
       el.setupTwoFactorQrContainer.appendChild(spinner);
       el.setupTwoFactorForm.classList.add('d-none');
 
-      const data = await window.SGIGAuthService.enableTwoFactor();
+      const data = await globalThis.SGIGAuthService.enableTwoFactor();
       let qrLibraryReady = false;
 
       try {
         await ensureQrCodeLibrary();
-        qrLibraryReady = Boolean(window.QRCode);
+        qrLibraryReady = Boolean(globalThis.QRCode);
       } catch {
         qrLibraryReady = false;
       }
@@ -864,7 +864,7 @@ function initAuthPage() {
   }
 
   function ensureQrCodeLibrary() {
-    if (window.QRCode) return Promise.resolve();
+    if (globalThis.QRCode) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
       const existing = document.querySelector('script[data-sgi-qrcode]');
@@ -897,13 +897,13 @@ function initAuthPage() {
       qrBox.className = 'd-inline-block';
       wrapper.appendChild(qrBox);
 
-      setupTwoFactorQr = new window.QRCode(qrBox, {
+      setupTwoFactorQr = new globalThis.QRCode(qrBox, {
         text: qrUrl,
         width: 200,
         height: 200,
         colorDark: '#000000',
         colorLight: '#ffffff',
-        correctLevel: window.QRCode.CorrectLevel.H,
+        correctLevel: globalThis.QRCode.CorrectLevel.H,
       });
     }
 

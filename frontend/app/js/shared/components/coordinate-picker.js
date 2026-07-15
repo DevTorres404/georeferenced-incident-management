@@ -17,7 +17,7 @@ export function createCoordinatePicker(options) {
     return null;
   }
 
-  if (!window.maplibregl) {
+  if (!globalThis.maplibregl) {
     mapElement.innerHTML = `
       <div class="map-empty-state">
         <i class="fas fa-map-marker-alt"></i>
@@ -28,7 +28,7 @@ export function createCoordinatePicker(options) {
   }
 
   const initialCenter = readInputsAsLngLat(latitudeInput, longitudeInput) || options.center || MAP_DEFAULT_CENTER;
-  const map = new window.maplibregl.Map({
+  const map = new globalThis.maplibregl.Map({
     container: mapElement,
     style: MAP_BASE_STYLES.streets.style,
     center: initialCenter,
@@ -40,8 +40,8 @@ export function createCoordinatePicker(options) {
   let reverseGeocodeTimer = null;
   let geolocateControl = null;
 
-  map.addControl(new window.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-  map.addControl(new window.maplibregl.FullscreenControl(), 'top-right');
+  map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new globalThis.maplibregl.FullscreenControl(), 'top-right');
   addLayerSwitcher(mapElement, setBaseLayer);
   addSearchControl(mapElement, onSearchResult);
   addGeolocateButton(mapElement, onGeolocate);
@@ -54,7 +54,7 @@ export function createCoordinatePicker(options) {
     const lngLat = [lng, lat];
 
     if (!marker) {
-      marker = new window.maplibregl.Marker({ draggable: true, color: options.markerColor || '#17a2b8' })
+      marker = new globalThis.maplibregl.Marker({ draggable: true, color: options.markerColor || '#17a2b8' })
         .setLngLat(lngLat)
         .addTo(map);
       marker.on('dragend', () => {
@@ -91,8 +91,8 @@ export function createCoordinatePicker(options) {
   }
 
   function scheduleReverseGeocode(latitude, longitude) {
-    window.clearTimeout(reverseGeocodeTimer);
-    reverseGeocodeTimer = window.setTimeout(async () => {
+    globalThis.clearTimeout(reverseGeocodeTimer);
+    reverseGeocodeTimer = globalThis.setTimeout(async () => {
       try {
         const result = await reverseGeocode(latitude, longitude);
         if (typeof options.onReverseGeocode === 'function') options.onReverseGeocode(result);
@@ -135,7 +135,7 @@ export function createCoordinatePicker(options) {
   return {
     map,
     setPosition,
-    invalidateSize: () => window.setTimeout(() => map.resize(), 120),
+    invalidateSize: () => globalThis.setTimeout(() => map.resize(), 120),
   };
 }
 
@@ -180,7 +180,7 @@ function addSearchControl(mapElement, onResult) {
   }
 
   function collapseSearch({ restoreFocus = false } = {}) {
-    window.clearTimeout(debounceTimer);
+    globalThis.clearTimeout(debounceTimer);
     searchController?.abort();
     searchController = null;
     resultsEl.innerHTML = '';
@@ -201,7 +201,7 @@ function addSearchControl(mapElement, onResult) {
   });
 
   input.addEventListener('input', () => {
-    window.clearTimeout(debounceTimer);
+    globalThis.clearTimeout(debounceTimer);
     searchController?.abort();
     searchController = null;
     const query = input.value.trim();
@@ -210,7 +210,7 @@ function addSearchControl(mapElement, onResult) {
       resultsEl.style.display = 'none';
       return;
     }
-    debounceTimer = window.setTimeout(() => doSearch(query), 400);
+    debounceTimer = globalThis.setTimeout(() => doSearch(query), 400);
   });
 
   document.addEventListener('click', (event) => {
