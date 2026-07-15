@@ -44,7 +44,6 @@ Thumbs.db
 .phpunit.result.cache
 .phpunit.cache/
 .scribe/
-tests/
 docs/
 README.md
 DEPLOY.md
