@@ -126,6 +126,7 @@ services:
       - ./backend/tests:/usr/src/backend/tests:ro
       - ./backend/build/logs:/usr/src/backend/build/logs:ro
       - ./frontend/app:/usr/src/frontend/app:ro
+      - ./frontend/coverage:/usr/src/frontend/coverage:ro
       - sonar-scanner-cache:/opt/sonar-scanner/.sonar/cache
     tmpfs:
       - /tmp/sonar-scanner-work:mode=1777

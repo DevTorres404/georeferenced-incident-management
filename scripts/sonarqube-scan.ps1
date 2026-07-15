@@ -322,6 +322,8 @@ try {
     Write-Host 'Running JS tests with Vitest for coverage...'
     $JsCoverageLog = Join-Path $RootDir 'docs/e6/logs/vitest-coverage.log'
     $VitestRoot = Join-Path $RootDir 'frontend'
+    # Ensure coverage directory exists so Docker volume mount doesn't fail
+    $Null = New-Item -ItemType Directory -Path (Join-Path $VitestRoot 'coverage') -Force 2>&1
     $VitestExit = 0
     $VitestOutput = @(& npm --prefix $VitestRoot run test:js:coverage 2>&1)
     $VitestOutput | Out-File -FilePath $JsCoverageLog -Encoding utf8 -Force
@@ -333,6 +335,26 @@ try {
     $JsLcov = Join-Path $VitestRoot 'coverage/lcov.info'
     if (Test-Path $JsLcov) {
         Write-Host "JS coverage lcov.info generated successfully."
+        # Convert paths to Docker container paths (/usr/src/...)
+        # Vitest uses paths relative to frontend/ (e.g., app/js/foo.js)
+        # SonarQube expects paths relative to project base (/usr/src/), so:
+        #   app/js/foo.js -> frontend/app/js/foo.js
+        $LcovLines = Get-Content $JsLcov
+        $LcovLines = $LcovLines | ForEach-Object {
+            $line = $_
+            # Normalize backslashes
+            $line = $line -replace '\\', '/'
+            # Convert absolute Windows paths: remove host root, add /usr/src/
+            $line = $line -replace [regex]::Escape(($RootDir -replace '\\', '/') + '/'), '/usr/src/'
+            # Convert relative paths: app/js/foo.js -> frontend/app/js/foo.js
+            if ($line -match '^SF:(?!usr/src/|backend/|frontend/)') {
+                $line = $line -replace '^SF:', 'SF:frontend/'
+            }
+            $line
+        }
+        $LcovContent = $LcovLines -join "`n"
+        Set-Content -Path $JsLcov -Value $LcovContent -NoNewline
+        Write-Host "JS coverage paths normalized for Docker container."
     } else {
         Write-Host "Warning: JS coverage lcov.info not found at $JsLcov. Proceeding without JS coverage."
     }
