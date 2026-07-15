@@ -40,7 +40,7 @@
                 <div class="loader-orbit" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></div>
             </div>
             <script>
-                window.setTimeout(function () {
+                setTimeout(function () {
                     var loader = document.getElementById('pageLoader');
                     if (!loader) return;
                     loader.setAttribute('hidden', '');
@@ -160,7 +160,7 @@
                         <div class="d-flex align-items-center">
                             <div id="assignUserAvatar" class="assign-user-avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"></div>
                             <div class="ml-3 min-w-0">
-                                <h5 id="assignUserName" class="font-weight-bold mb-1 text-truncate"></h5>
+                                <h5 id="assignUserName" class="font-weight-bold mb-1 text-truncate" aria-label="Nombre del usuario"></h5>
                                 <p id="assignUserEmail" class="text-muted small mb-1"></p>
                                 <div id="assignUserStatus" class="d-flex align-items-center gap-2"></div>
                             </div>
