@@ -114,7 +114,7 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         $createdTrend = $this->visibleIncidentQuery($userId)
             ->select(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
             ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
-            ->groupBy('month')
+            ->groupBy(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM')"))
             ->get();
 
         foreach ($createdTrend as $row) {
@@ -129,7 +129,7 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
             ->whereIn('core.states.name', ['RESUELTA', 'CERRADA'])
             ->whereNotNull('resolution_date')
             ->where('resolution_date', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
-            ->groupBy('month')
+            ->groupBy(DB::raw("TO_CHAR(resolution_date, 'YYYY-MM')"))
             ->get();
 
         foreach ($resolvedTrend as $row) {

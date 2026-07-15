@@ -72,6 +72,28 @@ foreach (['tests/Unit', 'tests/Feature'] as $testDirectory) {
 }
 
 $startedAt = time();
+
+// Pre-run migrations in a single isolated connection WITHOUT seeding.
+// RefreshDatabaseState::migrated is true at suite start (see tests/TestCase.php)
+// so RefreshDatabase never runs migrate:fresh — only uses BEGIN/ROLLBACK.
+// This avoids PostgreSQL deadlocks with multi-schema DROP TABLE CASCADE when
+// the Laravel app connection and the artisan connection share the same database.
+//
+// Note: --seed is intentionally omitted. Tests that need specific data create
+// it within their own transaction. A pre-seeded database would cause
+// unexpected results (duplicate keys, wrong counts) because tests operate
+// on top of committed seed data.
+$migrateCommand = array_map(
+    escapeshellarg(...),
+    [PHP_BINARY, 'artisan', 'migrate:fresh', '--force']
+);
+
+passthru(implode(' ', $migrateCommand), $migrateCode);
+
+if ($migrateCode !== 0) {
+    failAnalysis("migrate:fresh exited with status {$migrateCode}.", $reports);
+}
+
 $command = array_map(
     escapeshellarg(...),
     [PHP_BINARY, 'artisan', 'test', '--coverage-clover='.CLOVER_REPORT, '--log-junit='.JUNIT_REPORT]
