@@ -139,30 +139,50 @@ function renderAuditLogs(logs) {
 }
 
 function renderChanges(log) {
-  const oldText = stringifyValues(log.oldValues);
-  const newText = stringifyValues(log.newValues);
+  const oldValues = parseValues(log.oldValues);
+  const newValues = parseValues(log.newValues);
 
-  if (!oldText && !newText) {
+  if (!Object.keys(oldValues).length && !Object.keys(newValues).length) {
     return '<span class="text-muted">Sin cambios registrados</span>';
   }
 
+  const allKeys = [...new Set([...Object.keys(oldValues), ...Object.keys(newValues)])];
+
   return `
     <details class="audit-log-details">
-      <summary>Ver detalle</summary>
-      ${oldText ? `<span class="audit-log-json-label">Antes</span><pre>${escapeHtml(oldText)}</pre>` : ''}
-      ${newText ? `<span class="audit-log-json-label">Después</span><pre>${escapeHtml(newText)}</pre>` : ''}
+      <summary>${allKeys.length} campo(s) modificados</summary>
+      <table class="table table-sm table-borderless mb-0 audit-log-diff-table" style="min-width:200px;">
+        <thead>
+          <tr>
+            <th>Campo</th>
+            ${oldValues ? '<th>Valor anterior</th>' : ''}
+            <th>Valor nuevo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allKeys.map((key) => `
+            <tr>
+              <td class="font-weight-bold">${escapeHtml(key)}</td>
+              ${oldValues ? `<td class="text-muted">${escapeHtml(formatDiffValue(oldValues[key]))}</td>` : ''}
+              <td>${escapeHtml(formatDiffValue(newValues[key]))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     </details>`;
 }
 
-function renderSummary(meta) {
-  setText('audit-total', String(meta.total || 0));
-  setText('audit-page-summary', `${meta.currentPage || 1}/${meta.lastPage || 1}`);
+function parseValues(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try { return JSON.parse(value); } catch { return {}; }
+}
 
-  const start = meta.total > 0 ? ((meta.currentPage - 1) * meta.perPage) + 1 : 0;
-  const end = Math.min(meta.currentPage * meta.perPage, meta.total);
-  setText('audit-pagination-info', meta.total > 0
-    ? `Mostrando ${start} a ${end} de ${meta.total} registros`
-    : 'Sin registros');
+function formatDiffValue(value) {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'boolean') return value ? 'Si' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
 }
 
 function renderPagination(meta) {

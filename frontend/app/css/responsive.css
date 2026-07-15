@@ -1,0 +1,540 @@
+/* ==========================================================================
+   Responsive Global — Mobile-first overrides for all pages
+   ========================================================================== */
+
+/* ---- Cards: padding más compacto en móvil ---- */
+@media (max-width: 991.98px) {
+  body .main-sidebar,
+  body .main-sidebar::before,
+  body.sidebar-mini.sidebar-collapse .main-sidebar,
+  body.sidebar-mini.sidebar-collapse .main-sidebar::before {
+    width: var(--sgi-sidebar-width) !important;
+    margin-left: calc(-1 * var(--sgi-sidebar-width)) !important;
+  }
+
+  body.sidebar-open .main-sidebar,
+  body.sidebar-open .main-sidebar::before,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar::before {
+    margin-left: 0 !important;
+  }
+
+  body .content-wrapper,
+  body .main-footer,
+  body .main-header,
+  body.sidebar-mini.sidebar-collapse .content-wrapper,
+  body.sidebar-mini.sidebar-collapse .main-footer,
+  body.sidebar-mini.sidebar-collapse .main-header {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .card-footer {
+    padding: 0.85rem 1rem;
+  }
+
+  /* KPI numbers más pequeños */
+  .inc-kpi-number,
+  .assignment-kpi strong,
+  .ops-summary-card strong {
+    font-size: 1.4rem !important;
+  }
+
+  /* Dash KPI number */
+  .dash-kpi-number {
+    font-size: 1.5rem !important;
+  }
+
+  /* Report KPI */
+  .report-kpi-grid strong,
+  .kpi-card strong {
+    font-size: 1.35rem !important;
+  }
+
+  /* Summary counters */
+  .audit-log-summary-item strong {
+    font-size: 0.95rem !important;
+  }
+}
+
+/* ---- Card-header con actions: stack en mobile ---- */
+@media (max-width: 575.98px) {
+  .card-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .card-header .card-title {
+    width: 100%;
+  }
+
+  .card-header .card-tools {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+  }
+}
+
+/* ---- Action bars: stack vertical en mobile ---- */
+@media (max-width: 575.98px) {
+  .d-flex.justify-content-end[style*="gap"],
+  .d-flex.justify-content-between {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
+  .d-flex.justify-content-end[style*="gap"] .btn,
+  .d-flex.justify-content-between .btn {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+/* ---- Filter button rows (priority pills, scope pills) ---- */
+@media (max-width: 575.98px) {
+  .d-flex.flex-wrap[style*="gap"],
+  div[style*="gap: 10px"],
+  div[style*="gap:10px"] {
+    gap: 0.35rem !important;
+  }
+
+  .rounded-pill.px-3 {
+    padding-left: 0.65rem !important;
+    padding-right: 0.65rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .d-flex.flex-wrap .btn-sm {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.55rem;
+  }
+}
+
+/* ---- Input groups: full width en mobile ---- */
+@media (max-width: 575.98px) {
+  .input-group {
+    width: 100%;
+  }
+
+  .form-inline .form-control,
+  .form-inline .input-group {
+    width: 100% !important;
+  }
+
+  select.form-control:not([multiple]):not([size]) {
+    width: 100%;
+  }
+}
+
+/* ---- Modal: mobile friendly ---- */
+@media (max-width: 575.98px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  .modal-body {
+    padding: 1rem;
+  }
+
+  .modal-header {
+    padding: 0.85rem 1rem;
+  }
+
+  .modal-footer {
+    padding: 0.75rem 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+/* ---- DataTables responsive tweaks ---- */
+@media (max-width: 767.98px) {
+  .dataTables_wrapper .dataTables_length,
+  .dataTables_wrapper .dataTables_filter,
+  .dataTables_wrapper .dataTables_info,
+  .dataTables_wrapper .dataTables_paginate {
+    float: none !important;
+    text-align: left !important;
+    display: block !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .dataTables_wrapper .dataTables_filter input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .dataTables_wrapper .dataTables_length select {
+    width: auto;
+  }
+
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.2rem 0.5rem !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+/* ---- Select2: full width en mobile ---- */
+@media (max-width: 575.98px) {
+  .select2-container {
+    width: 100% !important;
+  }
+}
+
+/* ---- Badges in table cells ---- */
+@media (max-width: 575.98px) {
+  .table td .badge,
+  .table td span.badge {
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  .table td .d-flex.align-items-center {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+}
+
+/* ---- Timeline items en mobile ---- */
+@media (max-width: 575.98px) {
+  .timeline::before {
+    left: 18px;
+  }
+
+  .timeline > li > .timeline-item {
+    margin-left: 40px;
+  }
+
+  .timeline > li > .timeline-item > .time {
+    float: none !important;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* ---- Alertas globales ---- */
+@media (max-width: 575.98px) {
+  #alertaGlobal {
+    padding: 0 0.5rem;
+  }
+
+  .alert {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* ---- Headings scale ---- */
+@media (max-width: 575.98px) {
+  h1, .h1 { font-size: 1.5rem; }
+  h2, .h2 { font-size: 1.25rem; }
+  h3, .h3 { font-size: 1.1rem; }
+  h4, .h4 { font-size: 1rem; }
+  h5, .h5 { font-size: 0.9rem; }
+  h6, .h6 { font-size: 0.82rem; }
+}
+
+/* ---- Card header with subtitle ---- */
+@media (max-width: 575.98px) {
+  .card-header + .card-body {
+    padding-top: 0.75rem;
+  }
+
+  .card-title i {
+    font-size: 0.9rem;
+  }
+}
+
+/* ---- Footer actions (pagination + summary) ---- */
+@media (max-width: 575.98px) {
+  .card-footer.d-flex {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .card-footer.d-flex .pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---- Tabs responsive ---- */
+@media (max-width: 575.98px) {
+  .nav-tabs .nav-item {
+    width: 100%;
+  }
+
+  .nav-tabs .nav-link {
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  .tab-content {
+    padding: 0.75rem !important;
+  }
+}
+
+/* ---- Grid de KPIs en dos columnas en mobile mediano ---- */
+@media (max-width: 450px) {
+  .inc-kpi-grid,
+  .dash-kpi-grid,
+  .report-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .inc-kpi-card,
+  .dash-kpi-card,
+  .report-kpi-card {
+    padding: 0.7rem 0.65rem !important;
+  }
+
+  .inc-kpi-label,
+  .dash-kpi-label {
+    font-size: 0.65rem !important;
+  }
+}
+
+/* ---- Mapa en mobile ---- */
+@media (max-width: 575.98px) {
+  .incidents-map,
+  .incident-detail-map,
+  .ops-map-canvas,
+  .coordinate-picker-map-lg {
+    border-radius: 0.65rem !important;
+  }
+
+  .map-layer-switcher {
+    left: 6px !important;
+    top: 6px !important;
+  }
+
+  .map-layer-switcher button {
+    font-size: 0.7rem !important;
+    padding: 5px 7px !important;
+  }
+}
+
+/* ---- Wizard steps en mobile (incident-create) ---- */
+@media (max-width: 575.98px) {
+  .wizard-step-indicator {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .wizard-step {
+    font-size: 0.72rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .wizard-step .step-number {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ---- Tabla content: no forzar celdas con wrap en mobile ---- */
+@media (max-width: 575.98px) {
+  .table td {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .table td .text-truncate {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+/* ---- Profile: ajustes mobile ---- */
+@media (max-width: 575.98px) {
+  .profile-header-card {
+    padding: 1.25rem 1rem 1rem;
+  }
+
+  .profile-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+
+  .profile-name {
+    font-size: 1rem;
+  }
+
+  .profile-meta {
+    padding: 1rem;
+  }
+
+  .security-item {
+    padding: 1rem;
+  }
+}
+
+/* ---- Operational structure: zone detail mejoras mobile ---- */
+@media (max-width: 575.98px) {
+  .ops-zone-detail-head {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .ops-zone-detail-code {
+    align-self: flex-start;
+  }
+
+  .ops-zone-detail-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* ---- About: hero banner mobile ---- */
+@media (max-width: 767.98px) {
+  .hero-about {
+    padding: 28px 20px !important;
+  }
+
+  .hero-about h2 {
+    font-size: 1.5rem !important;
+  }
+
+  .hero-about p {
+    font-size: 0.9rem !important;
+  }
+
+  .hero-about::before {
+    font-size: 6rem !important;
+    right: 10px !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .hero-about {
+    padding: 20px 16px !important;
+  }
+
+  .hero-about h2 {
+    font-size: 1.25rem !important;
+  }
+
+  .hero-about p {
+    font-size: 0.82rem !important;
+  }
+
+  .hero-about::before {
+    display: none;
+  }
+
+  .feature-item {
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
+  }
+
+  .version-item {
+    padding: 4px 0 10px 16px;
+  }
+}
+
+/* ---- Reports: table responsive + filter stacking ---- */
+@media (max-width: 575.98px) {
+  .report-filters-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .report-filters-bar .btn-group {
+    width: 100%;
+  }
+
+  .report-filters-bar .btn-group .btn {
+    flex: 1;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* ---- Notification: paginación mobile ---- */
+@media (max-width: 575.98px) {
+  .notif-history-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .notif-page-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .notif-page-info {
+    width: 100%;
+    text-align: center;
+    font-size: 0.75rem;
+  }
+}
+
+/* ---- Audit: diff table mobile ---- */
+@media (max-width: 575.98px) {
+  .table-diff {
+    font-size: 0.75rem;
+  }
+
+  .table-diff th,
+  .table-diff td {
+    padding: 0.35rem 0.45rem;
+  }
+}
+
+/* ---- Assignment: operator list mobile ---- */
+@media (max-width: 575.98px) {
+  .support-operator-item {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .support-operator-item .btn {
+    width: 100%;
+  }
+}
+
+/* ---- Access control: role matrix mobile ---- */
+@media (max-width: 575.98px) {
+  .role-permission-matrix td,
+  .role-permission-matrix th {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.4rem;
+  }
+
+  .role-permission-matrix .permission-label {
+    max-width: 120px;
+    white-space: normal;
+    word-break: break-word;
+  }
+}

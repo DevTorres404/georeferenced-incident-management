@@ -1,4 +1,4 @@
-import { API_CACHE_TTL_MS, API_URL } from './config.js?v=20';
+import { API_CACHE_TTL_MS, API_URL } from '../core/config.js?v=20';
 
 class ApiError extends Error {
   constructor(message, details = {}) {
@@ -59,14 +59,18 @@ async function requestRaw(path, options = {}) {
   }
   const controller = new AbortController();
   pendingControllers.set(requestKey, controller);
-  options.signal = controller.signal;
+  
+  const fetchOptions = { ...options, headers, signal: controller.signal };
+  if (options.noCache) {
+    fetchOptions.cache = 'no-store';
+  }
 
   try {
-    const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+    const response = await fetch(`${API_URL}${path}`, fetchOptions);
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await response.json() : {};
 
-    if (response.status === 401 && token) {
+    if ((response.status === 401 || response.status === 419) && token) {
       window.dispatchEvent(new Event('sgi:unauthorized'));
     }
 

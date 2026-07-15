@@ -1,0 +1,810 @@
+/* =====================================================================
+   SGI Dark Mode — overrides for .dark-mode on <body>
+   AdminLTE handles its own dark-mode; this covers SGI custom styles.
+   ===================================================================== */
+
+/* --- CSS variable redefinitions --- */
+body.dark-mode {
+  --sgi-navy-950: #0d2137;
+  --sgi-primary: #1ba9e8;
+  --sgi-primary-hover: #3ab8f0;
+  --sgi-primary-soft: #1a2d42;
+  --sgi-background: #1a1d23;
+  --sgi-surface: #24272e;
+  --sgi-border: #3a3f48;
+  --sgi-text: #e4e7eb;
+  --sgi-text-muted: #9ca3af;
+  --sgi-shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.3);
+  --sgi-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Layout --- */
+body.dark-mode .content-wrapper {
+  background-color: var(--sgi-background);
+}
+
+body.dark-mode .content-header h1,
+body.dark-mode .content-header p {
+  color: var(--sgi-text) !important;
+}
+
+/* --- Cards --- */
+body.dark-mode .card,
+body.dark-mode .card.shadow-sm.border-0 {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border) !important;
+}
+
+body.dark-mode .card-header.bg-white {
+  background-color: var(--sgi-surface) !important;
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .card-title {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .card.card-outline {
+  border-top-color: var(--sgi-primary) !important;
+}
+
+/* --- Tables --- */
+body.dark-mode .table {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .table thead th.bg-light {
+  background-color: #2a2d35 !important;
+  color: var(--sgi-text);
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .table td,
+body.dark-mode .table th {
+  border-top-color: var(--sgi-border);
+}
+
+body.dark-mode .table-ticket-code {
+  color: var(--sgi-primary);
+}
+
+/* --- DataTables --- */
+body.dark-mode .dataTables_wrapper .dataTables_length label,
+body.dark-mode .dataTables_wrapper .dataTables_info,
+body.dark-mode .dataTables_wrapper .dataTables_filter label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+  background: var(--sgi-primary) !important;
+  border-color: var(--sgi-primary) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+  color: var(--sgi-text-muted) !important;
+  opacity: 0.5;
+}
+
+/* --- Forms --- */
+body.dark-mode .form-control {
+  background-color: #1e2128;
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .form-control:focus {
+  background-color: #1e2128;
+  border-color: var(--sgi-primary);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .input-group-text,
+body.dark-mode .input-group-text.bg-white {
+  background-color: #1e2128 !important;
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .input-group-prepend .input-group-text {
+  border-right-color: var(--sgi-border);
+}
+
+body.dark-mode select.form-control option {
+  background-color: #1e2128;
+  color: var(--sgi-text);
+}
+
+/* --- Buttons --- */
+body.dark-mode .btn-outline-primary {
+  border-color: var(--sgi-primary);
+  color: var(--sgi-primary);
+}
+
+body.dark-mode .btn-outline-primary:hover {
+  background-color: var(--sgi-primary);
+  color: #fff;
+}
+
+body.dark-mode .btn-outline-secondary {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+  background-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .btn.bg-white {
+  background-color: #2a2d35 !important;
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .btn.bg-white:hover {
+  background-color: #353840 !important;
+}
+
+body.dark-mode .btn-light {
+  background-color: #2a2d35;
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .btn-tool {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Modals --- */
+body.dark-mode .modal-content {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .modal-header {
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .modal-footer {
+  border-top-color: var(--sgi-border);
+}
+
+body.dark-mode .modal-title {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .modal-body {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .close {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .close.text-white {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .modal-header.bg-danger .close.text-white {
+  color: #fff !important;
+}
+
+/* --- Text utilities --- */
+body.dark-mode .text-main {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .text-muted {
+  color: var(--sgi-text-muted) !important;
+}
+
+body.dark-mode .text-dark {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .text-primary {
+  color: var(--sgi-primary) !important;
+}
+
+/* --- Badges --- */
+body.dark-mode .badge-critica {
+  background-color: var(--color-critica) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .badge-alta {
+  background-color: var(--color-alta) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .badge-media {
+  background-color: var(--color-media) !important;
+  color: #1a1d23 !important;
+}
+
+body.dark-mode .badge-baja {
+  background-color: var(--color-baja) !important;
+  color: #fff !important;
+}
+
+body.dark-mode .badge-secondary {
+  background-color: var(--sgi-border) !important;
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .badge-light {
+  background-color: #2a2d35 !important;
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .badge-primary {
+  background-color: var(--sgi-primary) !important;
+}
+
+/* --- KPI cards (incidents page) --- */
+body.dark-mode .inc-kpi-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .inc-kpi-card.active {
+  border-color: var(--sgi-primary) !important;
+  background: var(--sgi-primary-soft) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .inc-kpi-label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .inc-kpi-number {
+  color: var(--sgi-text);
+}
+
+/* --- Scope filter buttons --- */
+body.dark-mode .btn-outline-primary.incident-scope-btn {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .btn-outline-primary.incident-scope-btn.active,
+body.dark-mode .btn-primary.incident-scope-btn {
+  background-color: var(--sgi-primary);
+  border-color: var(--sgi-primary);
+  color: #fff;
+}
+
+/* --- Priority pills --- */
+body.dark-mode .priority-btn.btn-outline-danger {
+  border-color: var(--color-critica) !important;
+  color: #f87171 !important;
+}
+
+body.dark-mode .priority-btn.btn-outline-warning {
+  border-color: var(--color-alta) !important;
+  color: #fbbf24 !important;
+}
+
+body.dark-mode .priority-btn.btn-outline-info {
+  border-color: var(--color-media) !important;
+  color: #fcd34d !important;
+}
+
+body.dark-mode .priority-btn.btn-outline-secondary {
+  border-color: var(--color-baja) !important;
+  color: #34d399 !important;
+}
+
+body.dark-mode .priority-btn.active.btn-dark {
+  background-color: var(--sgi-primary) !important;
+  border-color: var(--sgi-primary) !important;
+  color: #fff !important;
+}
+
+/* --- Navbar dropdowns --- */
+body.dark-mode .sgi-user-dropdown {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .sgi-user-dropdown .dropdown-item {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .sgi-user-dropdown .dropdown-item:hover {
+  background-color: var(--sgi-primary-soft);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .sgi-user-dropdown .dropdown-item.text-danger {
+  color: var(--sgi-danger) !important;
+}
+
+body.dark-mode .sgi-user-dropdown .dropdown-item.text-danger:hover {
+  background-color: rgba(217, 83, 79, 0.1);
+}
+
+body.dark-mode .sgi-user-dropdown-header h6 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .sgi-user-dropdown-header small {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .sgi-user-dropdown-header .badge-light {
+  background-color: #2a2d35;
+  color: var(--sgi-text);
+}
+
+body.dark-mode .dropdown-divider {
+  border-top-color: var(--sgi-border);
+}
+
+/* --- Notifications dropdown --- */
+body.dark-mode .sgi-notif-dropdown {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .sgi-notif-dropdown-header h6 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .sgi-notif-dropdown-footer {
+  color: var(--sgi-primary);
+}
+
+body.dark-mode .sgi-notif-dropdown-footer:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .sgi-notif-item {
+  border-bottom-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .sgi-notif-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .sgi-notif-item small {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Page loader --- */
+body.dark-mode #pageLoader {
+  background: rgba(26, 29, 35, 0.95);
+}
+
+body.dark-mode .loader-orbit {
+  background: var(--sgi-surface);
+  color: var(--sgi-primary);
+}
+
+/* --- Global alert --- */
+body.dark-mode #alertaGlobal {
+  color: var(--sgi-text);
+}
+
+/* --- Pagination (DataTables) --- */
+body.dark-mode .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background: var(--sgi-primary-soft);
+  border-color: var(--sgi-border);
+}
+
+/* --- Dashboard --- */
+body.dark-mode .dash-chart-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .dash-chart-header h3,
+body.dark-mode .dash-chart-header h2 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .dash-kpi-value {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .dash-kpi-label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .dash-recent-item {
+  border-bottom-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .dash-recent-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+/* --- Reports --- */
+body.dark-mode .reports-filter-bar .form-control {
+  background-color: #1e2128;
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .reports-filter-bar label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .reports-chart-container {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+/* --- Profile --- */
+body.dark-mode .profile-header {
+  background: linear-gradient(135deg, var(--sgi-navy-950), #1a2d42) !important;
+}
+
+body.dark-mode .profile-stat-value {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .profile-stat-label {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Incident detail --- */
+body.dark-mode .incident-detail-section {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .incident-detail-label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .incident-detail-value {
+  color: var(--sgi-text);
+}
+
+/* --- Timeline --- */
+body.dark-mode .timeline-item {
+  border-left-color: var(--sgi-border);
+}
+
+body.dark-mode .timeline-item::before {
+  background: var(--sgi-primary);
+  border-color: var(--sgi-surface);
+}
+
+body.dark-mode .timeline-content {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .timeline-content::before {
+  border-right-color: var(--sgi-surface);
+}
+
+body.dark-mode .timeline-date {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Comments --- */
+body.dark-mode .comment-item {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .comment-item .comment-author {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .comment-item .comment-text {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .comment-item .comment-date {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Wizard (incident-create) --- */
+body.dark-mode .wizard-step-indicator {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .wizard-step.active .wizard-step-circle {
+  background-color: var(--sgi-primary);
+  color: #fff;
+}
+
+body.dark-mode .wizard-step .wizard-step-circle {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .wizard-step .wizard-step-label {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .wizard-step.active .wizard-step-label {
+  color: var(--sgi-text);
+}
+
+/* --- Auth page --- */
+body.dark-mode.auth-page,
+body.dark-mode .auth-page {
+  background-color: #060a12;
+}
+
+body.dark-mode .auth-card {
+  background: var(--sgi-surface) !important;
+}
+
+body.dark-mode .auth-card h4 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .auth-card p {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .auth-input-icon {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .auth-footer a {
+  color: var(--sgi-primary);
+}
+
+/* --- Map --- */
+body.dark-mode .map-sidebar {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .map-popup-content {
+  background-color: var(--sgi-surface);
+  color: var(--sgi-text);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .map-popup-close {
+  color: var(--sgi-text-muted);
+}
+
+/* --- About --- */
+body.dark-mode .about-stat-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .about-stat-value {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .about-stat-label {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Operational structure --- */
+body.dark-mode .struct-zone-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .struct-zone-name {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .struct-member-item {
+  border-bottom-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .struct-member-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+/* --- Zones and assignment management --- */
+body.dark-mode .assign-operator-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .assign-operator-name {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .assign-operator-info {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Assignment management --- */
+body.dark-mode .wg-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .wg-card-header {
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .wg-card-header h3,
+body.dark-mode .wg-card-header h2 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .wg-operator-item {
+  background-color: rgba(255, 255, 255, 0.02);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .wg-operator-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .wg-kpi-value {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .wg-kpi-label {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Notifications history --- */
+body.dark-mode .notif-item {
+  border-bottom-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .notif-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .notif-item small {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .notif-unread {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .notif-page-btn {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .notif-page-btn:hover {
+  background-color: var(--sgi-primary);
+  color: #fff;
+}
+
+body.dark-mode .notif-page-btn:disabled {
+  background-color: var(--sgi-surface);
+  color: var(--sgi-text-muted);
+  opacity: 0.5;
+}
+
+/* --- Audit --- */
+body.dark-mode .audit-log-item {
+  border-bottom-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .audit-log-item:hover {
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .diff-table {
+  background-color: var(--sgi-surface);
+}
+
+body.dark-mode .diff-table th {
+  background-color: var(--sgi-primary-soft);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .diff-table td {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+/* --- Role-permissions --- */
+body.dark-mode .rp-role-item {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .rp-role-item.active {
+  border-color: var(--sgi-primary);
+  background-color: var(--sgi-primary-soft);
+}
+
+body.dark-mode .rp-permission-item {
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .rp-permission-label {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .rp-permission-desc {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Access control --- */
+body.dark-mode .ac-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .ac-card-header {
+  border-bottom-color: var(--sgi-border);
+}
+
+body.dark-mode .ac-role-name {
+  color: var(--sgi-text);
+}
+
+/* --- Scrollbar --- */
+body.dark-mode ::-webkit-scrollbar-track {
+  background: #1a1d23;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: #3a3f48;
+  border-radius: 4px;
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #4a4f58;
+}
+
+/* --- Navbar (AdminLTE + SGI custom) --- */
+body.dark-mode .main-header.navbar {
+  border-bottom-color: var(--sgi-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode .main-header.navbar .nav-link {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .main-header.navbar .nav-link:hover {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .main-header.navbar .sgi-user-toggle {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .sgi-notif-bell i {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .sgi-notif-bell:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .sgi-notif-bell:hover i {
+  color: var(--sgi-primary);
+}
+
+body.dark-mode .navbar .nav-item .nav-link i {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .navbar .nav-item .nav-link:hover i {
+  color: var(--sgi-text);
+}

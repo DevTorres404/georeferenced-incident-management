@@ -6,14 +6,14 @@ use App\Incidents\Application\DTOs\AddCommentInputData;
 use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
-use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
-use App\Incidents\Application\DTOs\IncidentDetailData;
-use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\CommentData;
+use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
+use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
+use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\Incident;
@@ -21,16 +21,26 @@ use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Application\Ports\FileStoragePort;
+use App\Shared\Application\Ports\TransactionManagerPort;
 use App\Shared\Application\Results\PaginatedResult;
 
 final class IncidentUseCase
 {
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array
+    {
+        return $this->incidentRepository->dataTable($filters, $userId, $canManage, $start, $length);
+    }
+
+    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array
+    {
+        return $this->incidentRepository->countByStateCategory($filters, $userId, $canManage);
+    }
+
     public function __construct(
         private IncidentRepositoryInterface $incidentRepository,
-        private FileStoragePort $fileStoragePort
-    )
-    {
-    }
+        private FileStoragePort $fileStoragePort,
+        private TransactionManagerPort $transactionManager
+    ) {}
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
@@ -55,14 +65,18 @@ final class IncidentUseCase
         return $this->incidentRepository->loadDetail($incidentId);
     }
 
-    public function update(int $incidentId, UpdateIncidentInputData $data): Incident
+    public function update(int $incidentId, UpdateIncidentInputData $data): IncidentDetailData
     {
-        $incident = $this->incidentRepository->load($incidentId, false);
-        if (! $incident->canBeEdited()) {
-            throw IncidentException::editNotAllowed();
-        }
+        return $this->transactionManager->run(function () use ($incidentId, $data): IncidentDetailData {
+            $incident = $this->incidentRepository->load($incidentId, false);
+            if (! $incident->canBeEdited()) {
+                throw IncidentException::editNotAllowed();
+            }
 
-        return $this->incidentRepository->update($incidentId, $data);
+            $this->incidentRepository->update($incidentId, $data);
+
+            return $this->incidentRepository->loadDetail($incidentId);
+        });
     }
 
     public function delete(int $incidentId): void

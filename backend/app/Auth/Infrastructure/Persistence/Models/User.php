@@ -286,4 +286,12 @@ class User extends Authenticatable
     {
         return "{$this->first_name} {$this->last_name}";
     }
+
+    /**
+     * Normaliza el username: sin dobles espacios, lowercase, y recortado.
+     */
+    public function setUsernameAttribute(?string $value): void
+    {
+        $this->attributes['username'] = $value !== null ? mb_strtolower(trim(preg_replace('/\s+/', ' ', $value))) : null;
+    }
 }

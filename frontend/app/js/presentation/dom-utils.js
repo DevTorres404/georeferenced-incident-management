@@ -69,3 +69,35 @@ function findElement(selectorOrId) {
   const value = String(selectorOrId);
   return document.querySelector(value.startsWith('#') || value.startsWith('.') ? value : `#${value}`);
 }
+
+export function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function html(strings, ...values) {
+  return strings.reduce((acc, str, i) => {
+    const value = values[i - 1];
+    const escapedValue = (value === null || value === undefined) ? '' : escapeHtml(value);
+    return acc + escapedValue + str;
+  });
+}
+
+export function delegateEvent(container, selector, eventName, callback) {
+  if (typeof container === 'string') {
+    container = document.querySelector(container);
+  }
+  if (!container) return;
+
+  container.addEventListener(eventName, (event) => {
+    const targetElement = event.target.closest(selector);
+    if (targetElement && container.contains(targetElement)) {
+      callback(event, targetElement);
+    }
+  });
+}

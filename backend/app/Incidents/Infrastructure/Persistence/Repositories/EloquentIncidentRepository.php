@@ -23,6 +23,8 @@ use App\Incidents\Domain\Entities\IncidentTransition;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
+use App\Incidents\Infrastructure\Broadcasting\IncidentAssigned;
+use App\Incidents\Infrastructure\Broadcasting\IncidentStateChanged;
 use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Mappers\AssignmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\AttachmentMapper;
@@ -89,44 +91,11 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
-        $query = Incident::query()->with(self::RELATIONS)->latest();
+        $query = Incident::query()->with(self::RELATIONS);
+        $this->applySorting($query, $filters);
         $this->applyIncidentVisibilityScope($query, $userId);
 
-        if ($filters->stateId !== null) {
-            $query->where('state_id', $filters->stateId);
-        }
-
-        if ($filters->priorityId !== null) {
-            $query->where('priority_id', $filters->priorityId);
-        }
-
-        if ($filters->categoryId !== null) {
-            $query->where('category_id', $filters->categoryId);
-        }
-
-        if ($filters->mine === true) {
-            $query->where('reported_by_id', $userId);
-        }
-
-        if ($filters->assignedToMe === true) {
-            $query->whereHas('assignments', function ($assignmentQuery) use ($userId) {
-                $assignmentQuery->where('user_id', $userId)
-                    ->where('active', true);
-            });
-        }
-
-        if ($filters->overdue === true) {
-            $query->overdue();
-        }
-
-        if (! empty($filters->search)) {
-            $search = $filters->search;
-            $query->where(function ($searchQuery) use ($search) {
-                $searchQuery->where('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('title', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%");
-            });
-        }
+        $this->applyFilterCriteria($query, $filters, $userId);
 
         if ($filters->latitude !== null && $filters->longitude !== null && $filters->radiusKm !== null) {
             $query->withinRadius($filters->latitude, $filters->longitude, $filters->radiusKm);
@@ -144,6 +113,55 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             total: $result->total(),
             lastPage: $result->lastPage()
         );
+    }
+
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array
+    {
+        $query = Incident::query()->with(self::RELATIONS);
+        $this->applyIncidentVisibilityScope($query, $userId);
+
+        $recordsTotal = (clone $query)->count();
+
+        $this->applyFilterCriteria($query, $filters, $userId);
+
+        $recordsFiltered = (clone $query)->count();
+
+        $this->applySorting($query, $filters);
+
+        $items = $query
+            ->skip($start)
+            ->take($length)
+            ->get()
+            ->map(fn (Incident $incident) => $this->incidentSummaryMapper->fromModel($incident))
+            ->all();
+
+        return [
+            'items' => $items,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+        ];
+    }
+
+    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array
+    {
+        $query = Incident::query();
+        $this->applyIncidentVisibilityScope($query, $userId);
+        $this->applyFilterCriteria($query, $filters, $userId);
+
+        $result = $query
+            ->join('core.states as s', 's.id', '=', 'core.incidents.state_id')
+            ->selectRaw("
+                COUNT(CASE WHEN s.is_initial_state AND NOT s.is_final_state THEN 1 END) as pendiente,
+                COUNT(CASE WHEN NOT s.is_initial_state AND NOT s.is_final_state THEN 1 END) as en_proceso,
+                COUNT(CASE WHEN s.is_final_state THEN 1 END) as resuelta
+            ")
+            ->first();
+
+        return [
+            'pendiente' => (int) ($result->pendiente ?? 0),
+            'en_proceso' => (int) ($result->en_proceso ?? 0),
+            'resuelta' => (int) ($result->resuelta ?? 0),
+        ];
     }
 
     public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array
@@ -429,7 +447,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
 
         if ($data->has('priorityId') && $data->priorityId !== null && (int) $previousPriorityId !== $data->priorityId) {
             $priorityName = Priority::find($data->priorityId)?->name ?? 'actualizada';
-            $message = "La prioridad de la incidencia {$incident->code} cambio a {$priorityName}.";
+            $message = "La prioridad de la incidencia {$incident->code} cambió a {$priorityName}.";
 
             $this->notifyAssignedOperators(
                 incidentId: (int) $incident->id,
@@ -441,7 +459,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             $this->notifyZoneSupervisorsForIncident(
                 incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Cambio manual de prioridad',
-                message: "Se cambio la prioridad de la incidencia {$incident->code} a {$priorityName}.",
+                message: "Se cambió la prioridad de la incidencia {$incident->code} a {$priorityName}.",
                 type: 'STATUS_CHANGE'
             );
         }
@@ -651,6 +669,19 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
                 );
             }
 
+            $assigner = User::query()->find($userId);
+
+            IncidentAssigned::dispatch(
+                incidentId: $incidentId,
+                assignments: $freshAssignments->map(fn (IncidentAssignment $a): array => [
+                    'user_id' => (int) $a->user_id,
+                    'user_name' => $a->relationLoaded('user') && $a->user ? $a->user->getNombreCompletoAttribute() : "Usuario #{$a->user_id}",
+                    'role' => $a->assignment_role,
+                ])->all(),
+                assignedByUserId: $userId,
+                assignedByName: $assigner?->getNombreCompletoAttribute() ?? 'Usuario',
+            );
+
             $incident->refresh();
 
             return new IncidentAssignmentBatchData(
@@ -710,6 +741,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         }
 
         $this->notifySupervisorsForStateChange($incident, $newState);
+
+        $changer = User::query()->find($userId);
+
+        IncidentStateChanged::dispatch(
+            incidentId: (int) $incident->id,
+            newStateId: (int) $data->stateId,
+            newStateName: $newState->name,
+            previousStateId: $previousStateId,
+            previousStateName: $previousState?->name,
+            changedByUserId: $userId,
+            changedByName: $changer?->getNombreCompletoAttribute() ?? 'Usuario',
+        );
 
         return $this->incidentMapper->fromModel($incident->fresh()->load(self::RELATIONS));
     }
@@ -1141,6 +1184,73 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         }
 
         return ! in_array($stateName, self::INACTIVE_WORKLOAD_STATE_NAMES, true);
+    }
+
+    private function applyFilterCriteria($query, IncidentFiltersData $filters, int $userId): void
+    {
+        if ($filters->stateFilter !== null) {
+            $stateIds = match ($filters->stateFilter) {
+                'pendiente' => State::where('is_initial_state', true)->where('is_active', true)->pluck('id')->all(),
+                'en_proceso' => State::where('is_initial_state', false)->where('is_final_state', false)->where('is_active', true)->pluck('id')->all(),
+                'resuelta' => State::where('is_final_state', true)->where('is_active', true)->pluck('id')->all(),
+                default => [],
+            };
+            if (count($stateIds) > 0) {
+                $query->whereIn('state_id', $stateIds);
+            }
+        } elseif ($filters->stateIds !== null && count($filters->stateIds) > 0) {
+            $query->whereIn('state_id', $filters->stateIds);
+        } elseif ($filters->stateId !== null) {
+            $query->where('state_id', $filters->stateId);
+        }
+
+        if ($filters->priorityId !== null) {
+            $query->where('priority_id', $filters->priorityId);
+        }
+
+        if ($filters->categoryId !== null) {
+            $query->where('category_id', $filters->categoryId);
+        }
+
+        if ($filters->mine === true) {
+            $query->where('reported_by_id', $userId);
+        }
+
+        if ($filters->assignedToMe === true) {
+            $query->whereHas('assignments', function ($assignmentQuery) use ($userId) {
+                $assignmentQuery->where('user_id', $userId)
+                    ->where('active', true);
+            });
+        }
+
+        if ($filters->overdue === true) {
+            $query->overdue();
+        }
+
+        if (! empty($filters->search)) {
+            $search = $filters->search;
+            $query->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('code', 'ILIKE', "%{$search}%")
+                    ->orWhere('title', 'ILIKE', "%{$search}%")
+                    ->orWhere('description', 'ILIKE', "%{$search}%");
+            });
+        }
+    }
+
+    private function applySorting($query, IncidentFiltersData $filters): void
+    {
+        if ($filters->sortBy !== null) {
+            $direction = $filters->sortDirection ?? 'asc';
+            $allowedColumns = ['code', 'title', 'priority_id', 'state_id', 'created_at'];
+
+            if (in_array($filters->sortBy, $allowedColumns, true)) {
+                $query->orderBy($filters->sortBy, $direction);
+
+                return;
+            }
+        }
+
+        $query->latest();
     }
 
     private function applyIncidentVisibilityScope($query, int $userId): void

@@ -5,13 +5,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SGI | Acerca del Sistema</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/img/favicon.png">
     <meta name="description" content="Información sobre el Sistema Web de Gestión de Incidencias Georreferenciadas">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=34">
+    <link rel="stylesheet" href="/css/app.css?v=37">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -124,6 +126,7 @@
                                         </h3>
                                     </div>
                                     <div class="card-body p-0">
+                                        <div class="table-responsive">
                                         <table class="table table-sm mb-0">
                                             <thead class="thead-light">
                                                 <tr>
@@ -176,11 +179,12 @@
                                                     <td><i class="fas fa-map mr-2 text-secondary"></i><strong>Mapa
                                                             Interactivo</strong></td>
                                                     <td class="text-center"><span
-                                                            class="badge badge-proceso">Pendiente</span></td>
-                                                    <td class="text-muted small">Integración MapLibre GL JS</td>
+                                                            class="badge badge-resuelta">Completo</span></td>
+                                                    <td class="text-muted small">Mapa interactivo con MapLibre GL JS</td>
                                                 </tr>
                                             </tbody>
                                         </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div> <!-- Historial de versiones -->
@@ -195,8 +199,8 @@
                                                 class="badge bg-success text-white version-badge">Actual</span>
                                             <div class="text-muted small mt-1">Junio 2026</div>
                                             <ul class="text-muted small mt-1 mb-0">
-                                                <li>5 módulos completos</li>
-                                                <li>8 incidencias de prueba</li>
+                                                <li>6 módulos completos</li>
+                                                <li>Mapa interactivo con MapLibre GL JS</li>
                                                 <li>Validaciones completas</li>
                                                 <li>4 gráficos Chart.js</li>
                                             </ul>
@@ -284,7 +288,7 @@
         <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
         <script src="/dist/js/adminlte.min.js"></script>
         <script type="module" src="/js/layout/layout.js?v=40"></script>
-        <script>document.addEventListener('DOMContentLoaded', () => { renderLayout('about'); });</script>
+        <script type="module" src="/js/layout/layout.js?v=40"></script>
 </body>
 
 </html>

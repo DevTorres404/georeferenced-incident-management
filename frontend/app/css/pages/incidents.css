@@ -16,8 +16,8 @@
   justify-content: space-between;
   background: var(--sgi-surface);
   border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  padding: 1.25rem 1.5rem;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
   box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   cursor: pointer;
   transition: all 0.3s ease-in-out;
@@ -42,11 +42,11 @@
 
 .inc-kpi-label {
   color: var(--sgi-text-muted);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .inc-kpi-card.active .inc-kpi-label {
@@ -55,16 +55,16 @@
 
 .inc-kpi-number {
   color: var(--sgi-text);
-  font-size: 2rem;
+  font-size: 1.5rem;
   line-height: 1;
   font-weight: 700;
 }
 
 .inc-kpi-icon {
   position: absolute;
-  right: -10px;
-  bottom: -20px;
-  font-size: 5rem;
+  right: -5px;
+  bottom: -15px;
+  font-size: 3.5rem;
   opacity: 0.06;
   z-index: 1;
   transform: rotate(-10deg);

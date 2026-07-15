@@ -86,6 +86,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             ->middleware('permission:incidents.map');
         Route::get('/incidents/assignment-operators', [IncidentController::class, 'assignmentOperators'])
             ->middleware('permission:incidents.assign');
+        Route::get('/incidents/datatable', [IncidentController::class, 'dataTable'])
+            ->middleware('throttle:120,1');
+        Route::get('/incidents/kpi-counts', [IncidentController::class, 'kpiCounts']);
         Route::apiResource('/incidents', IncidentController::class)
             ->parameters(['incidents' => 'incident'])
             ->except(['store']);

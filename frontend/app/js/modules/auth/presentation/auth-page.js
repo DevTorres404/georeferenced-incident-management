@@ -14,6 +14,7 @@ import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
 const GOOGLE_POPUP_CLOSED_BY_USER = 'auth/popup-closed-by-user';
+const GOOGLE_POPUP_CANCELLED = 'auth/cancelled-popup-request';
 
 document.addEventListener('DOMContentLoaded', initAuthPage);
 
@@ -194,6 +195,49 @@ function initAuthPage() {
       });
     }
 
+    bindUsernameValidation(el.registerUsernameInput);
+    bindUsernameValidation(el.usernameInput);
+  }
+
+  function bindUsernameValidation(input) {
+    if (!input) return;
+
+    const showError = (message) => {
+      input.classList.add('is-invalid');
+      let container = input.parentElement;
+      if (container?.classList.contains('input-group')) container = container.parentElement;
+      let feedback = container?.querySelector('.invalid-feedback.username-feedback');
+      if (!feedback && container) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback username-feedback';
+        container.appendChild(feedback);
+      }
+      if (feedback) { feedback.textContent = message; feedback.style.display = 'block'; }
+    };
+
+    const clearError = () => {
+      input.classList.remove('is-invalid');
+      const container = input.parentElement;
+      const feedback = (container?.classList.contains('input-group') ? container.parentElement : container)
+        ?.querySelector('.invalid-feedback.username-feedback');
+      if (feedback) feedback.style.display = 'none';
+    };
+
+    input.addEventListener('input', () => {
+      const value = input.value;
+
+      if (/\s/.test(value)) {
+        showError('El nombre de usuario no puede contener espacios.');
+        return;
+      }
+
+      if (/[A-Z]/.test(value)) {
+        showError('Solo se permiten minúsculas. Se convertirá automáticamente.');
+        return;
+      }
+
+      clearError();
+    });
   }
 
   function showFlashMessage() {
@@ -538,6 +582,14 @@ function initAuthPage() {
     setLoading(scope, true);
     hideAlert(alertEl);
 
+    let focusTimer;
+    const onWindowFocus = () => {
+      focusTimer = window.setTimeout(() => {
+        if (busy) setLoading(scope, false);
+      }, 800);
+    };
+    window.addEventListener('focus', onWindowFocus);
+
     try {
       const data = await registerWithGoogle({
         intent,
@@ -561,12 +613,14 @@ function initAuthPage() {
 
       routeAfterAuth(data.user || data);
     } catch (error) {
-      if (error?.code === GOOGLE_POPUP_CLOSED_BY_USER) {
+      if (error?.code === GOOGLE_POPUP_CLOSED_BY_USER || error?.code === GOOGLE_POPUP_CANCELLED) {
         return;
       }
 
       showAlert(alertEl, error.message || 'No se pudo completar la operación con Google.', 'danger');
     } finally {
+      window.removeEventListener('focus', onWindowFocus);
+      window.clearTimeout(focusTimer);
       setLoading(scope, false);
     }
   }

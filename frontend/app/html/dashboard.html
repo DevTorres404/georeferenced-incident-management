@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SGI | Panel principal - Sistema de Gestión de Incidencias Georreferenciadas</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/img/favicon.png">
     <meta name="description" content="Panel principal del Sistema Web de Gestión de Incidencias Georreferenciadas">
     <!-- Google Font -->
     <link rel="stylesheet"
@@ -15,7 +17,7 @@
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
     <!-- Estilos propios del sistema -->
-    <link rel="stylesheet" href="/css/app.css?v=34">
+    <link rel="stylesheet" href="/css/app.css?v=37">
     <link rel="stylesheet" href="/css/pages/dashboard.css">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
@@ -56,7 +58,7 @@
                         <div class="col-lg-5 col-md-12">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
-                                    <h3><i class="fas fa-chart-pie"></i>Incidencias por Tipo</h3> <button type="button"
+                                    <h2 class="h3"><i class="fas fa-chart-pie"></i>Incidencias por Tipo</h2> <button type="button"
                                         class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i> </button>
                                 </div>
@@ -67,7 +69,7 @@
                         <div class="col-lg-4 col-md-6">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
-                                    <h3><i class="fas fa-chart-bar"></i>Por Estado</h3> <button type="button"
+                                    <h2 class="h3"><i class="fas fa-chart-bar"></i>Por Estado</h2> <button type="button"
                                         class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
                                         <i class="fas fa-minus"></i> </button>
                                 </div>
@@ -78,7 +80,7 @@
                         <div class="col-lg-3 col-md-6">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
-                                    <h3><i class="fas fa-exclamation-triangle"></i>Por Prioridad</h3> <button
+                                    <h2 class="h3"><i class="fas fa-exclamation-triangle"></i>Por Prioridad</h2> <button
                                         type="button" class="btn btn-sm btn-outline-secondary border-0"
                                         data-card-widget="collapse"> <i class="fas fa-minus"></i> </button>
                                 </div>
@@ -107,7 +109,7 @@
                         <div class="col-lg-8">
                             <div class="dash-table-card mb-4">
                                 <div class="dash-table-header">
-                                    <h3><i class="fas fa-list"></i>Últimas Incidencias</h3> <a href="incidents.html"
+                                    <h2 class="h3"><i class="fas fa-list"></i>Últimas Incidencias</h2> <a href="incidents.html"
                                         class="btn btn-sm btn-outline-primary"> <i
                                             class="fas fa-arrow-right mr-1"></i>Ver todas </a>
                                 </div>
@@ -181,8 +183,13 @@
         var container = document.getElementById('dashMapPreview');
         if (!container || typeof maplibregl === 'undefined') return;
 
+        if (window.__sgiDashMap) {
+          try { window.__sgiDashMap.remove(); } catch(e) {}
+          window.__sgiDashMap = null;
+        }
+
         try {
-          var previewMap = new maplibregl.Map({
+          window.__sgiDashMap = new maplibregl.Map({
             container: 'dashMapPreview',
             style: 'https://tiles.openfreemap.org/styles/liberty',
             center: [-78.4678, -1.8312],
@@ -192,11 +199,11 @@
             fadeDuration: 0,
           });
 
-          previewMap.on('load', function () {
+          window.__sgiDashMap.on('load', function () {
             container.classList.add('dash-map-preview--loaded');
           });
 
-          previewMap.on('error', function () {
+          window.__sgiDashMap.on('error', function () {
             container.classList.add('dash-map-preview--fallback');
           });
         } catch (e) {

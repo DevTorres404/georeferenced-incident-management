@@ -23,3 +23,17 @@ Broadcast::channel('incidents.{incidentId}.internal-comments', function (User $u
         && $user->tienePermiso('comments.internal')
         && app(IncidentAccessChecker::class)->canView($user, $incident);
 });
+
+Broadcast::channel('incidents.{incidentId}.state', function (User $user, int $incidentId): bool {
+    $incident = Incident::query()->find($incidentId);
+
+    return $incident !== null
+        && app(IncidentAccessChecker::class)->canView($user, $incident);
+});
+
+Broadcast::channel('incidents.{incidentId}.assignments', function (User $user, int $incidentId): bool {
+    $incident = Incident::query()->find($incidentId);
+
+    return $incident !== null
+        && app(IncidentAccessChecker::class)->canView($user, $incident);
+});

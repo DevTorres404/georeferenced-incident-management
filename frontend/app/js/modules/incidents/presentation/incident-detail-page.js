@@ -8,6 +8,7 @@ import {
   uploadIncidentAttachment,
 } from '../application/incidents-service.js?v=17';
 import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2';
+import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1';
 import {
   API_URL,
   MAP_BASE_STYLES,
@@ -29,10 +30,14 @@ let commentSubscription = null;
 let commentFallbackDelay = null;
 let commentFallbackTimer = null;
 let commentRefreshInFlight = false;
+let detailRealtimeSubscription = null;
+let cachedTransitions = [];
 
 window.addEventListener('pagehide', () => {
   commentSubscription?.cleanup?.();
   commentSubscription = null;
+  detailRealtimeSubscription?.cleanup?.();
+  detailRealtimeSubscription = null;
   stopCommentFallback();
 });
 
@@ -77,6 +82,7 @@ async function initIncidentDetailPage() {
       Array.isArray(prioritiesResponse?.data) ? prioritiesResponse.data : []
     );
     startRealtimeComments(incident);
+    startRealtimeDetail(incident);
   } catch (error) {
     renderError(container, error.message || 'No se pudo cargar el detalle de la incidencia.');
   }
@@ -337,6 +343,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
     bindPriorityForm(incident);
   }
   if (canChangeState) {
+    cachedTransitions = transitions;
     bindStateChangeControl(incident, transitions);
   }
 }
@@ -543,6 +550,54 @@ function startRealtimeComments(incident) {
   }).catch((error) => {
     scheduleCommentFallback(incident);
     console.warn('[SGI] Comentarios en tiempo real no disponibles; se activo la sincronizacion de respaldo.', error);
+  });
+}
+
+function startRealtimeDetail(incident) {
+  subscribeToIncidentRealtime(
+    incident.id,
+    {
+      onStateChanged: async (payload) => {
+        if (payload?.new_state_id) {
+          try {
+            const response = await getIncident(incident.id, { noCache: true });
+            const fresh = response?.data;
+            if (fresh) {
+              Object.assign(incident, fresh);
+              updateStatePresentation(incident, cachedTransitions);
+              showGlobalAlert(
+                `Estado actualizado a ${formatCatalogLabel(fresh.state?.name || '-')}`,
+                'info',
+              );
+            }
+          } catch (e) {
+            console.warn('[SGI] No se pudo refrescar detalle tras cambio de estado.', e);
+          }
+        }
+      },
+      onAssigned: async (payload) => {
+        if (payload?.incident_id) {
+          try {
+            const response = await getIncident(incident.id, { noCache: true });
+            const fresh = response?.data;
+            if (fresh) {
+              Object.assign(incident, fresh);
+              showGlobalAlert(
+                'La asignación de esta incidencia fue actualizada.',
+                'info',
+              );
+            }
+          } catch (e) {
+            console.warn('[SGI] No se pudo refrescar detalle tras asignación.', e);
+          }
+        }
+      },
+    },
+  ).then((subscription) => {
+    detailRealtimeSubscription?.cleanup?.();
+    detailRealtimeSubscription = subscription;
+  }).catch((error) => {
+    console.warn('[SGI] Tiempo real de incidencia no disponible.', error);
   });
 }
 

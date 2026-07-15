@@ -234,6 +234,23 @@
   cursor: not-allowed;
 }
 
+.notif-page-btn.notif-page-num {
+  font-weight: 600;
+}
+
+.notif-page-btn.notif-page-num.active {
+  background: var(--sgi-primary);
+  color: #fff;
+  border-color: var(--sgi-primary);
+}
+
+.notif-page-btn.notif-page-num.disabled {
+  border: none;
+  background: none;
+  cursor: default;
+  color: var(--sgi-text-muted);
+}
+
 .notif-page-info {
   color: var(--sgi-text-muted);
   font-size: 0.82rem;

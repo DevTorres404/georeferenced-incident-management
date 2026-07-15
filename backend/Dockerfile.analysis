@@ -1,0 +1,37 @@
+FROM php:8.4-cli-bookworm
+
+WORKDIR /usr/src/backend
+
+ENV APP_ENV=testing \
+    COMPOSER_ALLOW_SUPERUSER=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       git libfreetype6-dev libicu-dev libjpeg62-turbo-dev libonig-dev \
+       libpng-dev libpq-dev libwebp-dev libzip-dev unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j"$(nproc)" \
+       bcmath exif gd intl mbstring pcntl pdo_pgsql pgsql sockets zip \
+    && pecl install pcov-1.0.12 redis-6.3.0 \
+    && docker-php-ext-enable pcov redis \
+    && printf 'pcov.enabled=1\npcov.directory=/usr/src/backend/app\n' > /usr/local/etc/php/conf.d/99-pcov.ini \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
+
+COPY --from=composer:2.8.10 /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-scripts
+
+COPY . .
+
+RUN composer dump-autoload --optimize \
+    && mkdir -p build/logs storage/app/public storage/framework/cache/data \
+       storage/framework/sessions storage/framework/testing storage/framework/views \
+       storage/logs bootstrap/cache
+
+CMD ["php", "artisan", "test", "--coverage-clover=build/logs/clover.xml"]

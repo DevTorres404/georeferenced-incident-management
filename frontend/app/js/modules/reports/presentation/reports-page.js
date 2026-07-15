@@ -1,4 +1,4 @@
-import { listIncidents } from '../../incidents/application/incidents-service.js?v=14';
+import { listIncidents, listStates } from '../../incidents/application/incidents-service.js?v=14';
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -39,14 +39,11 @@ const CHART_DEFAULTS = {
   },
 };
 
-const ACTIVE_STATE_CODES = ['PENDIENTE', 'ASIGNADA', 'ASIGNADO', 'EN_PROGRESO', 'EN PROCESO', 'PENDING_REVIEW', 'EN_REVISION', 'ON_HOLD', 'REABIERTA', 'REOPENED', 'NUEVA', 'PENDING'];
-const RESOLVED_STATE_CODES = ['RESUELTA', 'RESUELTO', 'RESOLVED'];
-const CLOSED_STATE_CODES = ['CERRADA', 'CERRADO', 'CLOSED'];
-
 const state = {
   incidents: [],
   filteredIncidents: [],
   charts: {},
+  states: [],
 };
 
 document.addEventListener('DOMContentLoaded', initReportsPage);
@@ -59,7 +56,12 @@ async function initReportsPage() {
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
   try {
-    state.incidents = await fetchIncidents();
+    const [incidents, statesResponse] = await Promise.all([
+      fetchIncidents(),
+      listStates(),
+    ]);
+    state.incidents = incidents;
+    state.states = Array.isArray(statesResponse?.data) ? statesResponse.data : [];
     hydrateFilterOptions(state.incidents);
     applyCurrentFilters();
   } catch (error) {
@@ -243,7 +245,7 @@ function buildAnalytics(incidents, totalUniverse) {
       }
     }
 
-    if (isResolvedState(stateCode)) {
+    if (matchesStateCategory(stateCode, isResolvedState())) {
       resolved += 1;
       if (createdAt && resolvedAt) {
         const resolutionDays = daysBetween(createdAt, resolvedAt);
@@ -260,9 +262,9 @@ function buildAnalytics(incidents, totalUniverse) {
         }
         monthlyBuckets.get(resolvedKey).resolved += 1;
       }
-    } else if (isClosedState(stateCode)) {
+    } else if (matchesStateCategory(stateCode, isClosedState())) {
       closed += 1;
-    } else if (isActiveState(stateCode)) {
+    } else if (matchesStateCategory(stateCode, isActiveState())) {
       active += 1;
       if (createdAt) {
         const activeKey = monthKey(createdAt);
@@ -273,7 +275,7 @@ function buildAnalytics(incidents, totalUniverse) {
       }
     }
 
-    if (dueDate && !isFinishedState(stateCode) && dueDate < today) {
+    if (dueDate && !matchesStateCategory(stateCode, [...isResolvedState(), ...isClosedState()]) && dueDate < today) {
       overdue += 1;
     }
 
@@ -344,9 +346,9 @@ function buildSummaryRows(incidents, countsByCategory) {
         return equalsNormalized(current, categoryName);
       });
 
-      const pending = categoryIncidents.filter((incident) => isActiveState(normalizeState(incident.state?.name))).length;
-      const resolved = categoryIncidents.filter((incident) => isResolvedState(normalizeState(incident.state?.name))).length;
-      const closed = categoryIncidents.filter((incident) => isClosedState(normalizeState(incident.state?.name))).length;
+      const pending = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isActiveState())).length;
+      const resolved = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isResolvedState())).length;
+      const closed = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isClosedState())).length;
       const total = categoryIncidents.length;
       const rate = total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0;
 
@@ -862,20 +864,24 @@ function includesNormalized(value, expected) {
   return normalizeText(value).includes(normalizeText(expected));
 }
 
-function isActiveState(stateCode) {
-  return ACTIVE_STATE_CODES.includes(stateCode) || ACTIVE_STATE_CODES.includes(stateCode.replace(/_/g, ' '));
+function isActiveState() {
+  return state.states.filter((s) => s.is_initial_state).map((s) => normalizeState(s.name));
 }
 
-function isResolvedState(stateCode) {
-  return RESOLVED_STATE_CODES.includes(stateCode) || RESOLVED_STATE_CODES.includes(stateCode.replace(/_/g, ' '));
+function isResolvedState() {
+  return state.states.filter((s) => s.is_final_state).map((s) => normalizeState(s.name));
 }
 
-function isClosedState(stateCode) {
-  return CLOSED_STATE_CODES.includes(stateCode) || CLOSED_STATE_CODES.includes(stateCode.replace(/_/g, ' '));
+function isClosedState() {
+  return [];
 }
 
-function isFinishedState(stateCode) {
-  return isResolvedState(stateCode) || isClosedState(stateCode);
+function isFinishedState() {
+  return isResolvedState();
+}
+
+function matchesStateCategory(stateCode, validCodes) {
+  return validCodes.includes(stateCode) || validCodes.includes(stateCode.replace(/_/g, ' '));
 }
 
 function monthKey(date) {

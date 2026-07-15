@@ -5,13 +5,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SGI | Reportes y Estadísticas</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/img/favicon.png">
     <meta name="description" content="Reportes y métricas del Sistema de Gestión de Incidencias Georreferenciadas">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=56">
+    <link rel="stylesheet" href="/css/app.css?v=59">
     <link rel="stylesheet" href="/css/pages/reports.css?v=2">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
@@ -47,14 +49,14 @@
             </div>
             <div class="content">
                 <div class="container-fluid"> <!-- FILTRO DE PERIODO -->
-                    <form class="reports-filter-bar mb-4" id="filtroReporte"> <label>Desde:</label> <input type="date"
+                    <form class="reports-filter-bar mb-4" id="filtroReporte"> <label for="fFechaInicial">Desde:</label> <input type="date"
                             class="form-control form-control-sm" id="fFechaInicial" name="fecha_inicial"
-                            style="width:150px;"> <label>Hasta:</label> <input type="date"
+                            style="width:150px;"> <label for="fFechaFinal">Hasta:</label> <input type="date"
                             class="form-control form-control-sm" id="fFechaFinal" name="fecha_final"
-                            style="width:150px;"> <label>Categoría:</label> <select class="form-control form-control-sm"
+                            style="width:150px;"> <label for="selectTipoFiltro">Categoría:</label> <select class="form-control form-control-sm"
                             id="selectTipoFiltro" style="width:160px;">
                             <option value="">Todas las categorías</option>
-                        </select> <label>Estado:</label> <select class="form-control form-control-sm"
+                        </select> <label for="selectEstadoFiltro">Estado:</label> <select class="form-control form-control-sm"
                             id="selectEstadoFiltro" style="width:160px;">
                             <option value="">Todos los estados</option>
                         </select> <button type="button" class="btn btn-sm btn-primary" id="btnFiltrar"> <i
@@ -83,7 +85,7 @@
                         <div class="col-lg-8">
                             <div class="reports-chart-card">
                                 <div class="reports-chart-header">
-                                    <h3><i class="fas fa-chart-bar mr-1"></i>Incidencias por Mes y Tipo</h3> <button
+                                    <h2 class="h3"><i class="fas fa-chart-bar mr-1"></i>Incidencias por Mes y Tipo</h2> <button
                                         type="button" class="btn btn-sm btn-tool" data-card-widget="collapse"> <i
                                             class="fas fa-minus"></i> </button>
                                 </div>
@@ -94,7 +96,7 @@
                         <div class="col-lg-4">
                             <div class="reports-chart-card">
                                 <div class="reports-chart-header">
-                                    <h3><i class="fas fa-chart-pie mr-1"></i>Distribución por Prioridad</h3> <button
+                                    <h2 class="h3"><i class="fas fa-chart-pie mr-1"></i>Distribución por Prioridad</h2> <button
                                         type="button" class="btn btn-sm btn-tool" data-card-widget="collapse"> <i
                                             class="fas fa-minus"></i> </button>
                                 </div>
