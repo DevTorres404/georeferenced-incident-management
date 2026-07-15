@@ -44,6 +44,34 @@ class IncidentsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_without_confirmed_2fa_cannot_authorize_incident_realtime_channels(): void
+    {
+        $this->seedCoreData();
+        $admin = $this->authenticateAs('ADMIN', 'admin-realtime-2fa@incidencias.local')['user'];
+        $admin->forceFill(['two_factor_confirmed_at' => null])->save();
+
+        $incident = Incident::create([
+            'code' => 'INC-2FA-001',
+            'title' => 'Incidencia para canal privado',
+            'description' => 'Valida la autorizacion 2FA de canales.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => State::firstOrFail()->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $admin->id,
+        ]);
+
+        foreach (['state', 'assignments'] as $channel) {
+            $this->actingAsUser($admin)
+                ->postJson('/broadcasting/auth', [
+                    'channel_name' => "private-incidents.{$incident->id}.{$channel}",
+                    'socket_id' => '1234.5678',
+                ])
+                ->assertForbidden()
+                ->assertJsonPath('requires_2fa_setup', true);
+        }
+    }
+
     public function test_citizen_can_create_incident_and_view_detail(): void
     {
         Bus::fake([NotifyIncidentCreatedJob::class]);

@@ -72,6 +72,33 @@ window.addEventListener('pagehide', () => {
   notificationSubscription = null;
   stopNotificationFallback();
 });
+
+function normalizeMobileSidebar() {
+  if (!window.matchMedia('(max-width: 991.98px), (hover: none), (pointer: coarse)').matches) return;
+
+  const pushMenuToggle = document.querySelector('[data-widget="pushmenu"]');
+  const $ = window.jQuery;
+  if (pushMenuToggle && typeof $ === 'function') {
+    try {
+      const pushMenu = $(pushMenuToggle).data('lte.pushmenu');
+      if (pushMenu && typeof pushMenu.collapse === 'function') {
+        pushMenu.collapse();
+      }
+    } catch {
+      // The class fallback below keeps navigation deterministic if the plugin fails.
+    }
+  }
+
+  document.body.classList.remove('sidebar-open');
+  const overlay = document.getElementById('sidebar-overlay');
+  overlay?.classList.remove('show');
+  overlay?.style.removeProperty('display');
+}
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) normalizeMobileSidebar();
+});
+
 function readSessionUser() {
   try {
     const raw = localStorage.getItem(AUTH_KEYS.user);
@@ -704,12 +731,50 @@ async function renderLayout(activeId = '') {
     showNotifications: hasPermission('notifications.view'),
   });
   const navEl = document.getElementById('mainNavbar');
-  if (navEl) navEl.innerHTML = navbarHtml;
+  if (navEl) {
+    navEl.innerHTML = navbarHtml;
+    if (window.jQuery && typeof window.jQuery.fn.PushMenu === 'function') {
+      window.jQuery('[data-widget="pushmenu"]').PushMenu();
+    }
+    
+    // Fallback nativo: si PushMenu no se enlaza bien, alternamos manualmente
+    const btn = navEl.querySelector('[data-widget="pushmenu"]');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        if (!window.jQuery || !window.jQuery.data(btn, 'lte.pushmenu')) {
+          e.preventDefault();
+          if (window.innerWidth < 992) {
+            if (document.body.classList.contains('sidebar-open')) {
+              document.body.classList.remove('sidebar-open');
+              document.body.classList.add('sidebar-collapse', 'sidebar-closed');
+            } else {
+              document.body.classList.add('sidebar-open');
+              document.body.classList.remove('sidebar-collapse', 'sidebar-closed');
+            }
+          } else {
+            document.body.classList.toggle('sidebar-collapse');
+          }
+        }
+      });
+    }
+  }
   // Sidebar
   const sidebarHtml = buildSidebarHtml(menuItems, activeId);
   const sidebarEl = document.getElementById('mainSidebar');
   if (sidebarEl) {
     sidebarEl.innerHTML = sidebarHtml;
+    
+    // Inicializar barras de desplazamiento (overlayScrollbars) porque el HTML es inyectado dinámicamente
+    if (window.jQuery && window.jQuery.fn.overlayScrollbars) {
+      window.jQuery('.sidebar').overlayScrollbars({
+        className: 'os-theme-light',
+        sizeAutoCapable: true,
+        scrollbars: {
+          autoHide: 'l',
+          clickScrolling: true
+        }
+      });
+    }
 
     // Interceptor de navegación para prevenir múltiples clics y recargas redundantes
     sidebarEl.addEventListener('click', function (e) {
@@ -762,6 +827,8 @@ async function renderLayout(activeId = '') {
         window.SGINavigationStore.startNavigation(href);
       }
 
+      normalizeMobileSidebar();
+
       // Mostrar el loader global antes de que el navegador cambie de página
       const loader = document.getElementById('pageLoader');
       if (loader) {
@@ -774,6 +841,8 @@ async function renderLayout(activeId = '') {
       window.location.href = href;
     });
   }
+  normalizeMobileSidebar();
+
   // Bind events
   document.getElementById('btnLogout')?.addEventListener('click', logoutManually);
 
@@ -787,7 +856,7 @@ async function renderLayout(activeId = '') {
       }
 
       // Obtener el primer menú disponible según los permisos del usuario
-      const availableMenus = getAvailableMenus(user);
+      const availableMenus = getAvailableMenus();
       if (!availableMenus || availableMenus.length === 0) {
         return;
       }
@@ -899,77 +968,7 @@ function canAccessItem(item = {}) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').then((reg) => {
-      // Detect new version activation
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (!newWorker) return;
-        let notified = false;
-        newWorker.addEventListener('statechange', () => {
-          // skipWaiting() fires immediately so state goes installed→activating→activated
-          if (newWorker.state === 'activated' && !notified) {
-            notified = true;
-            // Don't notify on first-ever install (no previous controller)
-            if (navigator.serviceWorker.controller) {
-              showNewVersionBanner();
-            }
-          }
-        });
-      });
-    }).catch(() => {});
-  });
-}
-
-/** Shows a sticky banner when a new SW version is activated */
-function showNewVersionBanner() {
-  // Remove any existing banner first
-  const old = document.getElementById('sgi-new-version-banner');
-  if (old) old.remove();
-
-  const banner = document.createElement('div');
-  banner.id = 'sgi-new-version-banner';
-  banner.setAttribute('role', 'alert');
-  banner.style.cssText = [
-    'position:fixed',
-    'top:0',
-    'left:0',
-    'right:0',
-    'z-index:10000',
-    'background:#155724',
-    'color:#fff',
-    'padding:0.75rem 1rem',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'gap:1rem',
-    'font-size:0.95rem',
-    'box-shadow:0 2px 8px rgba(0,0,0,0.2)',
-    'transform:translateY(-100%)',
-    'transition:transform 0.3s ease',
-  ].join(';');
-
-  banner.innerHTML = [
-    '<i class="fas fa-sync-alt mr-1"></i>',
-    'Nueva versión disponible.',
-    '<button type="button" id="btn-sw-reload" class="btn btn-sm btn-light font-weight-bold" style="padding:0.25rem 1rem;">',
-    'Actualizar',
-    '</button>',
-    '<button type="button" id="btn-sw-dismiss" class="close text-white" style="position:static;font-size:1.2rem;" aria-label="Cerrar">',
-    '&times;',
-    '</button>',
-  ].join('');
-
-  document.body.prepend(banner);
-
-  // Animate in
-  requestAnimationFrame(() => { banner.style.transform = 'translateY(0)'; });
-
-  document.getElementById('btn-sw-reload').addEventListener('click', () => {
-    window.location.reload();
-  });
-  document.getElementById('btn-sw-dismiss').addEventListener('click', () => {
-    banner.style.transform = 'translateY(-100%)';
-    setTimeout(() => banner.remove(), 300);
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
   });
 }
 

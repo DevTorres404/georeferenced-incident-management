@@ -73,6 +73,11 @@
   border-radius: 0;
 }
 
+/* Preserve side safe zones only while the address search is expanded. */
+.incident-create-map .map-search-control.is-expanded {
+  width: min(360px, calc(100% - 300px));
+}
+
 /* ---- Location Strip ---- */
 .incident-location-strip {
   display: grid;
@@ -336,7 +341,7 @@
   width: 66px;
   height: 20px;
   border-radius: 11px 11px 0 0;
-  background: linear-gradient(135deg, #fb923c, #f97316);
+  background: linear-gradient(135deg, #74b9ff, #0984e3);
   box-shadow: 0 8px 16px rgba(8, 32, 51, 0.18);
 }
 
@@ -347,7 +352,7 @@
   width: 104px;
   height: 64px;
   border-radius: 0 11px 11px 11px;
-  background: linear-gradient(135deg, #fde047, #f59e0b);
+  background: linear-gradient(135deg, #3498db, #2980b9);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 16px 30px rgba(8, 32, 51, 0.24);
 }
 
@@ -566,6 +571,23 @@
   .incident-map-toolbar {
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .incident-create-map .map-search-control {
+    top: 54px;
+    left: 8px;
+    right: auto;
+    width: 38px;
+    transform: none;
+  }
+
+  .incident-create-map .map-search-control.is-expanded {
+    right: 8px;
+    width: auto;
+  }
+
+  .incident-create-map .map-search-results {
+    max-height: 180px;
   }
 
   .incident-location-strip {

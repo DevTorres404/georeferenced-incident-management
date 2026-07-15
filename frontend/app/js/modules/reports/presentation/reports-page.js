@@ -329,7 +329,7 @@ function buildAnalytics(incidents, totalUniverse) {
 }
 
 function normalizeMonthlyTrend(monthlyBuckets) {
-  const sortedKeys = Array.from(monthlyBuckets.keys()).sort();
+  const sortedKeys = Array.from(monthlyBuckets.keys()).sort((a, b) => a.localeCompare(b));
   return {
     months: sortedKeys.map((key) => formatMonthLabel(key)),
     registered: sortedKeys.map((key) => monthlyBuckets.get(key)?.registered || 0),

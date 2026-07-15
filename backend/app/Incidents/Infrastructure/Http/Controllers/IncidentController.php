@@ -9,6 +9,7 @@ use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
+use App\Incidents\Application\DTOs\IncidentSummaryData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
@@ -144,13 +145,13 @@ class IncidentController extends ApiController
 
         $rows = array_map(
             fn ($incident) => $this->buildDataTableRow($incident),
-            $result['items']
+            $result->items
         );
 
         return response()->json([
             'draw' => $draw,
-            'recordsTotal' => $result['recordsTotal'],
-            'recordsFiltered' => $result['recordsFiltered'],
+            'recordsTotal' => $result->recordsTotal,
+            'recordsFiltered' => $result->recordsFiltered,
             'data' => $rows,
         ]);
     }
@@ -605,7 +606,7 @@ class IncidentController extends ApiController
         };
     }
 
-    private function buildDataTableRow(mixed $incident): array
+    private function buildDataTableRow(IncidentSummaryData $incident): array
     {
         return [
             'id' => (int) $incident->id,
@@ -619,7 +620,7 @@ class IncidentController extends ApiController
         ];
     }
 
-    private function territoryLabel(mixed $incident): string
+    private function territoryLabel(IncidentSummaryData $incident): string
     {
         $tu = $incident->territorialUnit;
 

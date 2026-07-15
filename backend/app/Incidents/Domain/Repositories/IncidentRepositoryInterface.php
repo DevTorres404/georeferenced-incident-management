@@ -12,6 +12,7 @@ use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
@@ -26,10 +27,7 @@ interface IncidentRepositoryInterface
 {
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult;
 
-    /**
-     * @return array{items: array<int, mixed>, recordsTotal: int, recordsFiltered: int}
-     */
-    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array;
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): IncidentListResultData;
 
     /**
      * @return array{pendiente: int, en_proceso: int, resuelta: int}

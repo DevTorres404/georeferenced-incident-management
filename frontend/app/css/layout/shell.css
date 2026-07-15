@@ -182,26 +182,62 @@ a:hover { color: var(--sgi-primary-hover); }
 .layout-fixed .brand-link {
   width: var(--sgi-sidebar-width) !important;
 }
-:not(.sidebar-mini):not(.sidebar-mini-md) .content-wrapper,
-:not(.sidebar-mini):not(.sidebar-mini-md) .main-footer,
-:not(.sidebar-mini):not(.sidebar-mini-md) .main-header {
-  margin-left: var(--sgi-sidebar-width) !important;
-}
-.sidebar-mini-md .content-wrapper,
-.sidebar-mini-md .main-footer,
-.sidebar-mini-md .main-header {
-  margin-left: var(--sgi-sidebar-width) !important;
-}
-.sidebar-collapse .main-sidebar::before {
-  margin-left: calc(-1 * var(--sgi-sidebar-width)) !important;
+@media (min-width: 992px) {
+  :not(.sidebar-mini):not(.sidebar-mini-md) .content-wrapper,
+  :not(.sidebar-mini):not(.sidebar-mini-md) .main-footer,
+  :not(.sidebar-mini):not(.sidebar-mini-md) .main-header {
+    margin-left: var(--sgi-sidebar-width) !important;
+  }
+  .sidebar-mini-md .content-wrapper,
+  .sidebar-mini-md .main-footer,
+  .sidebar-mini-md .main-header {
+    margin-left: var(--sgi-sidebar-width) !important;
+  }
+  .sidebar-collapse .main-sidebar::before {
+    margin-left: calc(-1 * var(--sgi-sidebar-width)) !important;
+  }
 }
 .main-sidebar,
 .main-sidebar::before {
   transition: margin-left .3s ease-in-out, width .3s ease-in-out;
 }
+
+.main-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100vh !important;
+  height: 100dvh !important;
+  overflow: hidden;
+}
+
+.main-sidebar > #mainSidebar {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main-sidebar > #mainSidebar > .sidebar {
+  height: 100% !important;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.main-sidebar > #mainSidebar > .sidebar.os-host {
+  overflow: hidden !important;
+}
+
+.main-sidebar > #mainSidebar > .sidebar .os-viewport {
+  overscroll-behavior-y: contain;
+}
+
 .main-sidebar .brand-link,
 .sgi-brand-link {
   min-height: 64px;
+  flex: 0 0 64px;
   display: flex !important;
   align-items: center;
   padding: 12px 16px !important;
@@ -310,6 +346,7 @@ a:hover { color: var(--sgi-primary-hover); }
   color: #ffffff !important;
 }
 
+@media (min-width: 992px) and (hover: hover) and (pointer: fine) {
 body.sidebar-mini.sidebar-collapse .main-sidebar,
 body.sidebar-mini.sidebar-collapse .main-sidebar::before {
   width: 5.4rem !important;
@@ -423,6 +460,7 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
 
 body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-treeview > .nav-item > .nav-link:not(.active):hover {
   background: rgba(20, 152, 212, 0.14) !important;
+}
 }
 
 .main-header.navbar {

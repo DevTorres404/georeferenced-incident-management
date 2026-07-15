@@ -391,7 +391,7 @@ function renderPagination(state, total, totalPages, startIndex, count) {
     </li>
     ${pages.map((page) => page === 'ellipsis'
       ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
-      : `<li class="page-item ${page === state.page ? 'active' : ''}">
+      : `<li class="page-item ${page === String(state.page) ? 'active' : ''}">
           <button type="button" class="page-link" data-page="${page}">${page}</button>
         </li>`).join('')}
     <li class="page-item ${state.page === totalPages ? 'disabled' : ''}">
@@ -404,17 +404,17 @@ function renderPagination(state, total, totalPages, startIndex, count) {
 
 function buildPageList(currentPage, totalPages) {
   if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
+    return Array.from({ length: totalPages }, (_, index) => String(index + 1));
   }
 
-  const pages = [1];
+  const pages = ['1'];
   const start = Math.max(currentPage - 1, 2);
   const end = Math.min(currentPage + 1, totalPages - 1);
 
   if (start > 2) pages.push('ellipsis');
-  for (let page = start; page <= end; page += 1) pages.push(page);
+  for (let page = start; page <= end; page += 1) pages.push(String(page));
   if (end < totalPages - 1) pages.push('ellipsis');
-  pages.push(totalPages);
+  pages.push(String(totalPages));
 
   return pages;
 }

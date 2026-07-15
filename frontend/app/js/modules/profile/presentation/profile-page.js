@@ -4,6 +4,14 @@ import { handleBackendErrors, clearValidationErrors } from '../../../shared/vali
 document.addEventListener('DOMContentLoaded', initProfilePage);
 
 const AUTH_KEYS = { user: 'user_data' };
+let twoFactorQr = null;
+
+window.addEventListener('pagehide', (event) => {
+  if (event.persisted) return;
+
+  twoFactorQr?.clear?.();
+  twoFactorQr = null;
+});
 
 function readSessionUser() {
   try {
@@ -80,6 +88,8 @@ function initProfilePage() {
   const modal2fa = document.getElementById('modalSetup2fa');
   if (modal2fa) {
     $(modal2fa).on('hidden.bs.modal', function () {
+      twoFactorQr?.clear?.();
+      twoFactorQr = null;
       const qrContainer = document.getElementById('qrcode-container');
       if (qrContainer) qrContainer.innerHTML = '';
       const input = document.getElementById('tfaCodeInput');
@@ -424,6 +434,8 @@ async function initSetup2FA() {
 function renderTwoFactorSetup(container, qrUrl, secret, qrLibraryReady) {
   if (!container) return;
 
+  twoFactorQr?.clear?.();
+  twoFactorQr = null;
   container.textContent = '';
 
   const wrapper = document.createElement('div');
@@ -434,7 +446,7 @@ function renderTwoFactorSetup(container, qrUrl, secret, qrLibraryReady) {
     qrBox.className = 'd-inline-block';
     wrapper.appendChild(qrBox);
 
-    new window.QRCode(qrBox, {
+    twoFactorQr = new window.QRCode(qrBox, {
       text: qrUrl,
       width: 160,
       height: 160

@@ -3,7 +3,7 @@ import { hidePageLoading, showPageLoading } from './incidents-ui.js?v=16';
 import { getCatalogOverview } from '../../catalogs/application/catalogs-service.js?v=14';
 import { createIncident, uploadIncidentAttachment } from '../application/incidents-service.js?v=15';
 import { handleBackendErrors, setFieldError, clearFieldError } from '../../../shared/validators/validation-utils.js?v=1';
-import { createCoordinatePicker } from '../../../shared/components/coordinate-picker.js?v=3';
+import { createCoordinatePicker } from '../../../shared/components/coordinate-picker.js?v=4';
 import {
   getTerritorialChildren,
   listTerritorialCantons,
@@ -32,7 +32,6 @@ const selectTerritoryFields = {
   province: 'fTerritorialProvince',
   canton: 'fTerritorialCanton',
   parish: 'fTerritorialParish',
-  sector: 'fTerritorialSector',
 };
 
 // ─── Auto-save: borrador del wizard ──────────────────────────────
@@ -54,14 +53,14 @@ function setFormValue(id, value) {
 const DRAFT_FIELDS = [
   'fTitulo', 'fDescripcion', 'fTipo', 'fSubtipo',
   'fDireccion', 'fReferencia', 'fLatitud', 'fLongitud', 'fCorreo',
-  'fTerritorialProvince', 'fTerritorialCanton', 'fTerritorialParish', 'fTerritorialSector', 'fManualSector',
+  'fTerritorialProvince', 'fTerritorialCanton', 'fTerritorialParish', 'fManualSector',
   'fConfirmacion',
 ];
 
 function saveDraft() {
   try {
     const data = {};
-    DRAFT_FIELDS$$.forEach((id) => { data[id] = getFormValue(id); });
+    DRAFT_FIELDS.forEach((id) => { data[id] = getFormValue(id); });
     data._currentStep = currentStepIndex;
     data._savedAt = Date.now();
     localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(data));
@@ -130,14 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderStep();
   updateLocationSummary();
 
-  // Alerta si el usuario intenta salir con datos sin guardar
-  window.addEventListener('beforeunload', (event) => {
-    if (hasDraft()) {
-      event.preventDefault();
-      event.returnValue = '';
-    }
-  });
-
   showPageLoading('Cargando formulario', 'Preparando mapa y catalogos...');
   const loadingFallback = window.setTimeout(hidePageLoading, 12000);
 
@@ -175,6 +166,18 @@ function bindEvents() {
   $('#btnPrevStep')?.addEventListener('click', goPrevious);
   $('#formNuevaIncidencia')?.addEventListener('submit', handleSubmit);
 
+  $('#formNuevaIncidencia')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
+      e.preventDefault();
+      if (activeStep !== 'review') {
+        goNext();
+      } else {
+        $('#btnRegistrar')?.click();
+      }
+    }
+  });
+
   $$('.wizard-step-button').forEach((button) => {
     button.addEventListener('click', () => goToStep(button.dataset.stepTarget));
   });
@@ -182,17 +185,16 @@ function bindEvents() {
   $('#fTipo')?.addEventListener('change', populateSubcategories);
   $('#fTerritorialProvince')?.addEventListener('change', () => populateTerritorialLevel('province'));
   $('#fTerritorialCanton')?.addEventListener('change', () => populateTerritorialLevel('canton'));
-  $('#fTerritorialParish')?.addEventListener('change', () => populateTerritorialLevel('parish'));
-  $('#fTerritorialSector')?.addEventListener('change', updateLocationSummary);
+  // Parroquia no tiene hijos que popular ahora que sector es manual
+  $('#fTerritorialParish')?.addEventListener('change', updateLocationSummary);
 
   ['fDireccion', 'fReferencia', 'fLatitud', 'fLongitud'].forEach((id) => {
-    $(`#${id}`)?.addEventListener('input', () => {
-      if (id === 'fDireccion') $('#fDireccion').dataset.autofilled = 'false';
+    $(`#${id}`)?.addEventListener('input', (e) => {
       updateLocationSummary();
     });
   });
 
-  ['fTerritorialProvince', 'fTerritorialCanton', 'fTerritorialParish', 'fTerritorialSector'].forEach((id) => {
+  ['fTerritorialProvince', 'fTerritorialCanton', 'fTerritorialParish'].forEach((id) => {
     $(`#${id}`)?.addEventListener('change', updateLocationSummary);
   });
 
@@ -334,20 +336,14 @@ async function populateTerritorialLevel(level) {
     province: {
       source: 'fTerritorialProvince',
       target: 'fTerritorialCanton',
-      reset: ['fTerritorialParish', 'fTerritorialSector'],
+      reset: ['fTerritorialParish'],
       placeholder: 'Seleccione canton',
     },
     canton: {
       source: 'fTerritorialCanton',
       target: 'fTerritorialParish',
-      reset: ['fTerritorialSector'],
-      placeholder: 'Seleccione parroquia',
-    },
-    parish: {
-      source: 'fTerritorialParish',
-      target: 'fTerritorialSector',
       reset: [],
-      placeholder: 'Seleccione sector o barrio',
+      placeholder: 'Seleccione parroquia',
     },
   }[level];
 
@@ -402,19 +398,25 @@ async function applyReverseGeocode(result) {
   const approximateAddress = buildApproximateAddress(result);
   const addressInput = $('#fDireccion');
 
-  if (addressInput && approximateAddress && shouldAutofillAddress(addressInput)) {
-    addressInput.value = approximateAddress;
-    addressInput.dataset.autofilled = 'true';
-    lastAutofilledAddress = approximateAddress;
+  if (addressInput) {
+    if (result === null) {
+      addressInput.value = '';
+    } else if (approximateAddress) {
+      addressInput.value = approximateAddress;
+    }
   }
 
-  await selectTerritorialFromAddress(address);
+  // Actualizar el resumen visual de la dirección antes de buscar el territorio
   updateLocationSummary();
-}
 
-function shouldAutofillAddress(input) {
-  const current = input.value.trim();
-  return !current || input.dataset.autofilled === 'true' || current === lastAutofilledAddress;
+  try {
+    await selectTerritorialFromAddress(address);
+  } catch (error) {
+    console.warn('Error al mapear territorio desde dirección:', error);
+  } finally {
+    // Actualizar nuevamente por si el territorio cambió
+    updateLocationSummary();
+  }
 }
 
 function buildApproximateAddress(result) {
@@ -434,6 +436,8 @@ async function selectTerritorialFromAddress(address) {
 
   const province = findUnitByName(territorialProvinces, provinceName);
   if (!province) {
+    setSelectValue('fTerritorialProvince', '');
+    await populateTerritorialLevel('province');
     setManualTerritoryValue('province', provinceName);
     setManualTerritoryValue('canton', cantonName);
     setManualTerritoryValue('parish', parishName);
@@ -446,6 +450,8 @@ async function selectTerritorialFromAddress(address) {
   const cantons = await getTerritorialChildrenCached(province.id, 'province');
   const canton = findUnitByName(cantons, cantonName);
   if (!canton) {
+    setSelectValue('fTerritorialCanton', '');
+    await populateTerritorialLevel('canton');
     setManualTerritoryValue('canton', cantonName);
     setManualTerritoryValue('parish', parishName);
     return;
@@ -457,6 +463,8 @@ async function selectTerritorialFromAddress(address) {
   const parishes = await getTerritorialChildrenCached(canton.id, 'canton');
   const parish = findUnitByName(parishes, parishName);
   if (!parish) {
+    setSelectValue('fTerritorialParish', '');
+    await populateTerritorialLevel('parish');
     setManualTerritoryValue('parish', parishName);
     return;
   }
@@ -961,11 +969,12 @@ function selectedText(id) {
 }
 
 function selectedTerritorialPath() {
+  const sector = getManualTerritoryValue('sector');
   const labels = [
     selectedTerritorialLabel('fTerritorialProvince', 'province'),
     selectedTerritorialLabel('fTerritorialCanton', 'canton'),
     selectedTerritorialLabel('fTerritorialParish', 'parish'),
-    selectedTerritorialLabel('fTerritorialSector', 'sector'),
+    sector,
   ].filter((value) => value && !/^Seleccione|^Sin registros/i.test(value));
 
   return labels.length ? labels.join(' / ') : 'No especificada';
@@ -978,8 +987,7 @@ function selectedTerritorialLabel(selectId, manualLevel) {
 }
 
 function getSelectedTerritorialUnitId() {
-  const value = $('#fTerritorialSector')?.value
-    || $('#fTerritorialParish')?.value
+  const value = $('#fTerritorialParish')?.value
     || $('#fTerritorialCanton')?.value
     || $('#fTerritorialProvince')?.value
     || null;
@@ -1022,7 +1030,6 @@ function resetManualTerritoryFields(selectIds) {
     fTerritorialProvince: 'province',
     fTerritorialCanton: 'canton',
     fTerritorialParish: 'parish',
-    fTerritorialSector: 'sector',
   };
 
   selectIds.forEach((id) => setManualTerritoryMode(idToLevel[id], false));
@@ -1033,7 +1040,6 @@ function levelToManualKey(selectId) {
     fTerritorialProvince: 'province',
     fTerritorialCanton: 'canton',
     fTerritorialParish: 'parish',
-    fTerritorialSector: 'sector',
   }[selectId] || null;
 }
 

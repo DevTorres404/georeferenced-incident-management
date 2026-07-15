@@ -132,8 +132,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - sgi-pgsql:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME:-user_im} -d ${DB_DATABASE:-incident_management_system}" ]
       interval: 10s
@@ -203,8 +203,7 @@ volumes:
   sgi-bootstrap-cache:
     driver: local
   sgi-pgsql:
-    external: true
-    name: incident-management-backend_incident-management-backend-pgsql
+    driver: local
   sgi-redis:
     driver: local
   sgi-rustfs:

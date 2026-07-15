@@ -1067,7 +1067,7 @@ function renderRecentStateChangesTooltip(history) {
     return '<strong>Últimos 3 cambios</strong><br>Sin cambios registrados';
   }
 
-  return `<strong>Últimos 3 cambios</strong><br>${changes.map(escapeHtml).join('<br>')}`;
+  return `<strong>Últimos 3 cambios</strong><br>${changes.map((change) => escapeHtml(change)).join('<br>')}`;
 }
 
 function recentStateChangeLines(history) {

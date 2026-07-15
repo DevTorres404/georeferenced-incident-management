@@ -97,9 +97,10 @@ export function createCoordinatePicker(options) {
         const result = await reverseGeocode(latitude, longitude);
         if (typeof options.onReverseGeocode === 'function') options.onReverseGeocode(result);
       } catch {
-        // La geocodificacion inversa es una ayuda visual; el usuario puede editar manualmente.
+        // La geocodificación inversa falló (posible rate limit)
+        if (typeof options.onReverseGeocode === 'function') options.onReverseGeocode(null);
       }
-    }, 450);
+    }, 1050); // Aumentado a >1s porque Nominatim permite max 1 req/sec
   }
 
   function syncFromInputs() {
@@ -143,37 +144,83 @@ export function createCoordinatePicker(options) {
 function addSearchControl(mapElement, onResult) {
   const container = document.createElement('div');
   container.className = 'map-search-control';
+  const panelId = `${mapElement.id}-address-search-panel`;
+  const resultsId = `${panelId}-results`;
   container.innerHTML = `
-    <div class="map-search-wrapper">
-      <i class="fas fa-search map-search-icon"></i>
-      <input type="text" class="map-search-input" placeholder="Buscar dirección…" autocomplete="off">
-      <div class="map-search-results" style="display:none;"></div>
+    <button type="button" class="map-search-toggle" aria-label="Buscar dirección" title="Buscar dirección"
+      aria-expanded="false" aria-controls="${panelId}">
+      <i class="fas fa-search" aria-hidden="true"></i>
+    </button>
+    <div class="map-search-panel" id="${panelId}" role="search" aria-label="Búsqueda de dirección" hidden>
+      <div class="map-search-wrapper">
+        <i class="fas fa-search map-search-icon" aria-hidden="true"></i>
+        <input type="text" class="map-search-input" placeholder="Buscar dirección…" autocomplete="off"
+          aria-label="Buscar dirección" aria-controls="${resultsId}">
+        <button type="button" class="map-search-close" aria-label="Cerrar búsqueda" title="Cerrar búsqueda">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="map-search-results" id="${resultsId}" aria-live="polite" style="display:none;"></div>
     </div>`;
   mapElement.appendChild(container);
 
+  const toggle = container.querySelector('.map-search-toggle');
+  const panel = container.querySelector('.map-search-panel');
   const input = container.querySelector('.map-search-input');
+  const closeButton = container.querySelector('.map-search-close');
   const resultsEl = container.querySelector('.map-search-results');
   let debounceTimer = null;
-  let searchInFlight = false;
+  let searchController = null;
+
+  function expandSearch() {
+    container.classList.add('is-expanded');
+    panel.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    input.focus();
+  }
+
+  function collapseSearch({ restoreFocus = false } = {}) {
+    window.clearTimeout(debounceTimer);
+    searchController?.abort();
+    searchController = null;
+    resultsEl.innerHTML = '';
+    resultsEl.style.display = 'none';
+    container.classList.remove('is-expanded');
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (restoreFocus) toggle.focus();
+  }
+
+  toggle.addEventListener('click', expandSearch);
+  closeButton.addEventListener('click', () => collapseSearch({ restoreFocus: true }));
+
+  container.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || panel.hidden) return;
+    event.preventDefault();
+    collapseSearch({ restoreFocus: true });
+  });
 
   input.addEventListener('input', () => {
     window.clearTimeout(debounceTimer);
+    searchController?.abort();
+    searchController = null;
     const query = input.value.trim();
     if (query.length < 3) {
+      resultsEl.innerHTML = '';
       resultsEl.style.display = 'none';
       return;
     }
     debounceTimer = window.setTimeout(() => doSearch(query), 400);
   });
 
-  // Cerrar resultados al hacer clic fuera
   document.addEventListener('click', (event) => {
-    if (!container.contains(event.target)) resultsEl.style.display = 'none';
+    if (!panel.hidden && !container.contains(event.target)) collapseSearch();
   });
 
   async function doSearch(query) {
-    if (searchInFlight) return;
-    searchInFlight = true;
+    searchController?.abort();
+    const controller = new AbortController();
+    searchController = controller;
     resultsEl.innerHTML = '<div class="map-search-result-item is-loading">Buscando…</div>';
     resultsEl.style.display = 'block';
 
@@ -190,11 +237,13 @@ function addSearchControl(mapElement, onResult) {
           Accept: 'application/json',
           'User-Agent': 'SGI-GeoreferencedIncidentManagement/1.0 (sgi@labtorres.me)',
         },
+        signal: controller.signal,
       });
 
       if (!response.ok) throw new Error('Error en la búsqueda');
 
       const data = await response.json();
+      if (panel.hidden || controller.signal.aborted) return;
       if (!Array.isArray(data) || data.length === 0) {
         resultsEl.innerHTML = '<div class="map-search-result-item is-empty">Sin resultados</div>';
         return;
@@ -210,18 +259,21 @@ function addSearchControl(mapElement, onResult) {
         .join('');
 
       resultsEl.querySelectorAll('.map-search-result-item').forEach((btn) => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', (event) => {
+          event.stopPropagation();
           const lat = parseFloat(btn.dataset.lat);
           const lon = parseFloat(btn.dataset.lon);
           resultsEl.style.display = 'none';
+          resultsEl.innerHTML = '';
           input.value = btn.textContent.trim();
           onResult(lat, lon, btn.textContent.trim());
         });
       });
-    } catch {
+    } catch (error) {
+      if (error.name === 'AbortError' || panel.hidden) return;
       resultsEl.innerHTML = '<div class="map-search-result-item is-error">Error al buscar</div>';
     } finally {
-      searchInFlight = false;
+      if (searchController === controller) searchController = null;
     }
   }
 }
