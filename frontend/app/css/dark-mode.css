@@ -758,6 +758,7 @@ body.dark-mode .ac-role-name {
 }
 
 /* --- Scrollbar --- */
+/* NOSONAR - scrollbar pseudo-elementos sin equivalente estandar */
 body.dark-mode ::-webkit-scrollbar-track {
   background: #1a1d23;
 }

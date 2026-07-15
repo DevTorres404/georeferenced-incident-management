@@ -780,7 +780,7 @@ function bindPriorityForm(incident) {
 
       incident.priority_id = updated.priority_id ?? nextPriorityId;
       incident.priority = updated.priority || {
-        ...(incident.priority || {}),
+        ...incident.priority,
         id: nextPriorityId,
         name: selectedLabel,
       };
@@ -887,7 +887,7 @@ async function executeStateTransition(incident, transition, comment, transitions
   const updated = response?.data || {};
   incident.state_id = updated.state_id ?? nextStateId;
   incident.state = updated.state || {
-    ...(incident.state || {}),
+    ...incident.state,
     id: nextStateId,
     name: transition.target_state_name || '-',
   };

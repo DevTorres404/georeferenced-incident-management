@@ -37,7 +37,7 @@ globalThis.SGINavigationStore = {
     if (!stateStr) return false;
     try {
       const state = JSON.parse(stateStr);
-      if (state && state.inProgress) {
+      if (state?.inProgress) {
         if (Date.now() - state.timestamp > 5000) {
           sessionStorage.removeItem(this.NAV_STATE_KEY);
           return false;
@@ -683,7 +683,7 @@ globalThis.requestBackend = requestBackend;
 globalThis.mutateBackend = mutateBackend;
 
 
-async function renderLayout(activeId = '') {
+async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI initialization with role-based routing, sidebar construction, notification polling, and event binding
   let user = ensureSessionOrRedirect();
   if (!user) return;
 
@@ -765,7 +765,7 @@ async function renderLayout(activeId = '') {
     sidebarEl.innerHTML = sidebarHtml;
     
     // Inicializar barras de desplazamiento (overlayScrollbars) porque el HTML es inyectado dinámicamente
-    if (globalThis.jQuery && globalThis.jQuery.fn.overlayScrollbars) {
+    if (globalThis.jQuery?.fn?.overlayScrollbars) {
       globalThis.jQuery('.sidebar').overlayScrollbars({
         className: 'os-theme-light',
         sizeAutoCapable: true,
@@ -819,13 +819,11 @@ async function renderLayout(activeId = '') {
       }
 
       // Evitar múltiples clics si ya se está navegando
-      if (globalThis.SGINavigationStore && globalThis.SGINavigationStore.isNavigationInProgress()) {
+      if (globalThis.SGINavigationStore?.isNavigationInProgress?.()) {
         return;
       }
 
-      if (globalThis.SGINavigationStore) {
-        globalThis.SGINavigationStore.startNavigation(href);
-      }
+      globalThis.SGINavigationStore?.startNavigation?.(href);
 
       normalizeMobileSidebar();
 
@@ -851,7 +849,7 @@ async function renderLayout(activeId = '') {
     link.addEventListener('click', (e) => {
       e.preventDefault();
 
-      if (globalThis.SGINavigationStore && globalThis.SGINavigationStore.isNavigationInProgress()) {
+      if (globalThis.SGINavigationStore?.isNavigationInProgress?.()) {
         return;
       }
 

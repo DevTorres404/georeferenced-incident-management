@@ -218,7 +218,7 @@ function updatePagination(totalItems) {
         globalThis.scrollTo({ top: 0, behavior: 'smooth' });
       });
     }
-    if (reference && reference.parentNode) {
+    if (reference?.parentNode) {
       reference.parentNode.insertBefore(btn, reference.nextSibling);
     }
   });

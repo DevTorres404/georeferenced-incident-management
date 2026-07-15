@@ -222,7 +222,6 @@ a:hover { color: var(--sgi-primary-hover); }
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
 

@@ -713,7 +713,7 @@ function validateDetails() {
   const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
   const detailsPanel = $('[data-step-panel="details"]');
   let detailsHint = document.getElementById('detailsStepHint');
-  if (category && category.name && /accidente|desastre|siniestro|vehicular|incendio/i.test(category.name)) {
+  if (category?.name && /accidente|desastre|siniestro|vehicular|incendio/i.test(category.name)) {
     if (!detailsHint && detailsPanel) {
       detailsHint = document.createElement('div');
       detailsHint.id = 'detailsStepHint';

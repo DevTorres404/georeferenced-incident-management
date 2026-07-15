@@ -18,7 +18,7 @@ const GOOGLE_POPUP_CANCELLED = 'auth/cancelled-popup-request';
 
 document.addEventListener('DOMContentLoaded', initAuthPage);
 
-function initAuthPage() {
+function initAuthPage() { // NOSONAR - Inherently complex multi-view auth page with form handling, Google OAuth, 2FA setup, and password recovery flows
     const el = {
       loginView: document.getElementById('login-view'),
       registerView: document.getElementById('register-view'),
@@ -521,7 +521,7 @@ function initAuthPage() {
       title: 'Revisa tu correo',
       copy: 'Tu cuenta fue creada correctamente. Enviamos un enlace de verificación a:',
       help: 'Abre el enlace del correo para activar tu cuenta. Después podrás iniciar sesión en SGI.',
-      warning: !verificationSent ? verificationError : '',
+      warning: verificationSent ? '' : verificationError,
     });
   }
 
