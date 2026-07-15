@@ -330,6 +330,79 @@
   }
 }
 
+/* ---- Asignacion de roles (modal) ---- */
+.assign-user-card {
+  padding: 1.25rem;
+  border: 1px solid var(--sgi-border);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #ffffff, var(--sgi-primary-soft));
+}
+
+.assign-user-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.assign-current-role {
+  border: 1px solid var(--sgi-border);
+}
+
+/* ---- Role badge colors ---- */
+.badge-danger {
+  background-color: var(--sgi-danger);
+}
+
+.badge-warning {
+  background-color: var(--sgi-warning);
+}
+
+.badge-success {
+  background-color: var(--sgi-success);
+}
+
+.badge-info {
+  background-color: var(--sgi-primary);
+}
+
+/* ---- Table row for inactive users ---- */
+.table-inactive {
+  opacity: 0.55;
+}
+
+.table-inactive:hover {
+  opacity: 0.75;
+}
+
+/* ---- Gap utility for flex layouts ---- */
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+/* ---- Min-width zero for text truncation ---- */
+.min-w-0 {
+  min-width: 0;
+}
+
+/* ---- Custom select with better height ---- */
+.custom-select {
+  min-height: 42px;
+  font-size: 0.9rem;
+}
+
+/* ---- Row gap for filter row ---- */
+@media (min-width: 768px) {
+  .g-3 > [class*="col-"] {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+}
+
 /* AdminLTE deja el título lateral visible al colapsar; se oculta para no deformar la barra. */
 body.sidebar-collapse .sgi-sidebar-section-label {
   display: none;
