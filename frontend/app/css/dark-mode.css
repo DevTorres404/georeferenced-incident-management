@@ -720,27 +720,112 @@ body.dark-mode .diff-table td {
 }
 
 /* --- Role-permissions --- */
-body.dark-mode .rp-role-item {
+/* Role list items (dynamic) */
+body.dark-mode .role-permission-item {
   background-color: var(--sgi-surface);
   border-color: var(--sgi-border);
   color: var(--sgi-text);
 }
-
-body.dark-mode .rp-role-item.active {
-  border-color: var(--sgi-primary);
+body.dark-mode .role-permission-item:hover {
   background-color: var(--sgi-primary-soft);
 }
-
-body.dark-mode .rp-permission-item {
-  border-bottom-color: var(--sgi-border);
+body.dark-mode .role-permission-item.active {
+  border-left-color: var(--sgi-primary);
+  background: linear-gradient(135deg, rgba(27, 169, 232, 0.18), rgba(27, 169, 232, 0.08));
+  color: var(--sgi-text);
+}
+body.dark-mode .role-permission-item small,
+body.dark-mode .role-permission-item .text-muted {
+  color: var(--sgi-text-muted) !important;
 }
 
-body.dark-mode .rp-permission-label {
+/* Overview section */
+body.dark-mode .role-permission-overview {
+  background:
+    radial-gradient(circle at top left, rgba(27, 169, 232, 0.2), transparent 36%),
+    linear-gradient(135deg, var(--sgi-primary-soft) 0%, #1e2a38 100%);
+  border-color: rgba(27, 169, 232, 0.25);
+}
+
+/* Stats boxes inside overview */
+body.dark-mode .role-permission-stats div {
+  background: rgba(26, 29, 35, 0.76);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .role-permission-stats span {
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .role-permission-stats strong {
   color: var(--sgi-text);
 }
 
-body.dark-mode .rp-permission-desc {
+/* Menu preview section */
+body.dark-mode .role-menu-preview {
+  background: rgba(26, 29, 35, 0.84);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .role-menu-preview-group {
+  border-top-color: var(--sgi-border);
+}
+body.dark-mode .role-menu-preview-group strong {
+  color: var(--sgi-text);
+}
+body.dark-mode .role-menu-preview-group span {
   color: var(--sgi-text-muted);
+}
+body.dark-mode .role-menu-preview-title {
+  color: var(--sgi-primary-hover);
+}
+
+/* Permission cards grid */
+body.dark-mode .permission-module {
+  background: transparent;
+  border-color: var(--sgi-border);
+}
+body.dark-mode .permission-module h4 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .permission-card {
+  background: rgba(26, 29, 35, 0.5);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .permission-card:hover {
+  border-color: var(--sgi-primary);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+body.dark-mode .permission-card.is-enabled {
+  border-color: rgba(27, 169, 232, 0.4);
+  background: linear-gradient(180deg, rgba(26, 29, 35, 0.7) 0%, rgba(26, 45, 66, 0.86) 100%);
+}
+body.dark-mode .permission-card .custom-control-label > span:first-child {
+  color: var(--sgi-text);
+}
+body.dark-mode .permission-card small.text-muted {
+  color: var(--sgi-text-muted) !important;
+}
+
+/* Permission toolbar */
+body.dark-mode .permission-toolbar {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+
+/* Navigation impact badges */
+body.dark-mode .permission-navigation-impact .badge {
+  background: rgba(27, 169, 232, 0.18);
+  color: var(--sgi-primary-hover);
+}
+
+/* Select all button in toolbar */
+body.dark-mode .btn-outline-secondary.js-toggle-module {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .btn-outline-secondary.js-toggle-module:hover {
+  background-color: var(--sgi-primary);
+  border-color: var(--sgi-primary);
+  color: #fff;
 }
 
 /* --- Access control --- */
