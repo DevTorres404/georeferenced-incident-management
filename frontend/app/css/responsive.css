@@ -647,10 +647,8 @@
     white-space: normal !important;
   }
 
-  /* Forzar que las tablas sin .table-responsive no se rompan */
-  .table {
-    display: block;
-    width: 100%;
+  /* Forzar que las tablas sin .table-responsive tengan scroll */
+  .table-responsive {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
