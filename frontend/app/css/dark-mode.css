@@ -474,6 +474,48 @@ body.dark-mode .incident-detail-value {
   color: var(--sgi-text);
 }
 
+body.dark-mode .incident-detail-map {
+  background: linear-gradient(160deg, rgba(26, 45, 66, 0.8) 0%, rgba(26, 29, 35, 0.9) 100%);
+}
+
+body.dark-mode .location-summary-band {
+  background: linear-gradient(160deg, rgba(26, 45, 66, 0.6) 0%, rgba(26, 29, 35, 0.7) 100%);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .coordinate-box {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .attachment-guidance {
+  background: linear-gradient(160deg, rgba(22, 163, 74, 0.12) 0%, rgba(26, 45, 66, 0.5) 100%);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .attachment-preview {
+  background: linear-gradient(160deg, rgba(22, 163, 74, 0.1) 0%, rgba(26, 45, 66, 0.4) 100%);
+}
+
+body.dark-mode .attachment-type-badge {
+  color: #34d399;
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+body.dark-mode .comentario-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .comentario-card strong {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .timeline-item-custom {
+  border-left-color: var(--sgi-border) !important;
+}
+
 /* --- Timeline --- */
 body.dark-mode .timeline-item {
   border-left-color: var(--sgi-border);

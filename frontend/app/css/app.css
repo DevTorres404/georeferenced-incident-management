@@ -6,7 +6,7 @@
 @import url("./pages/audit.css?v=3");
 @import url("./pages/dashboard.css?v=2");
 @import url("./pages/incidents.css?v=3");
-@import url("./pages/incident-detail.css?v=5");
+@import url("./pages/incident-detail.css?v=6");
 @import url("./pages/incident-create.css?v=5");
 @import url("./pages/map.css?v=7");
 @import url("./pages/assignment-management.css?v=3");
@@ -15,5 +15,5 @@
 @import url("./pages/reports.css?v=3");
 @import url("./pages/territorial-units.css?v=3");
 @import url("./pages/about.css?v=3");
-@import url("./responsive.css?v=3");
-@import url("./dark-mode.css?v=3");
+@import url("./responsive.css?v=4");
+@import url("./dark-mode.css?v=4");

@@ -343,6 +343,20 @@
     font-size: 0.7rem !important;
     padding: 5px 7px !important;
   }
+
+  /* Texto de ubicación en detalle: evitar que se superponga en mobile */
+  .incident-detail-map > code,
+  .incident-detail-map > small,
+  .incident-detail-map > strong {
+    max-width: 90%;
+    word-break: break-word;
+    text-align: center;
+  }
+
+  .coordinate-box code {
+    font-size: 0.82rem;
+    word-break: break-all;
+  }
 }
 
 /* ---- Wizard steps en mobile (incident-create) ---- */
