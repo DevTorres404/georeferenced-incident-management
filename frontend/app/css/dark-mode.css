@@ -498,9 +498,9 @@ body.dark-mode .attachment-preview {
 }
 
 body.dark-mode .attachment-type-badge {
-  color: #34d399;
-  background: rgba(22, 163, 74, 0.15);
-  border-color: rgba(22, 163, 74, 0.3);
+  color: #6ee7b7;
+  background: #064e3b;
+  border-color: #065f46;
 }
 
 body.dark-mode .comentario-card {

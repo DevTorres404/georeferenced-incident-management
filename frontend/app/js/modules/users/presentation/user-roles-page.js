@@ -1,6 +1,6 @@
 import { getUsersAndRoles, assignUserRole } from '../../roles/application/access-control-service.js?v=15';
 import { hidePageLoading, showPageLoading, escapeHtml } from '../../incidents/presentation/incidents-ui.js?v=16';
-import { handleBackendErrors, setFormAlert } from '../../../shared/validators/validation-utils.js?v=1';
+import { handleBackendErrors } from '../../../shared/validators/validation-utils.js?v=1';
 import { requestBackend } from '../../../infrastructure/backend-client.js?v=20';
 
 const CITIZEN_ROLE_CODE = 'CIUDADANO';
@@ -427,7 +427,7 @@ function getAvatarColor(name) {
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash = name.codePointAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
 }
