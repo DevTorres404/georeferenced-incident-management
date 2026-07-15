@@ -72,6 +72,23 @@ foreach (['tests/Unit', 'tests/Feature'] as $testDirectory) {
 }
 
 $startedAt = time();
+
+// Pre-run migrations in a single isolated connection.
+// RefreshDatabaseState::migrated is true at suite start (see tests/TestCase.php)
+// so RefreshDatabase never runs migrate:fresh — only uses BEGIN/ROLLBACK.
+// This avoids PostgreSQL deadlocks with multi-schema DROP TABLE CASCADE when
+// the Laravel app connection and the artisan connection share the same database.
+$migrateCommand = array_map(
+    escapeshellarg(...),
+    [PHP_BINARY, 'artisan', 'migrate:fresh', '--force', '--seed']
+);
+
+passthru(implode(' ', $migrateCommand), $migrateCode);
+
+if ($migrateCode !== 0) {
+    failAnalysis("migrate:fresh exited with status {$migrateCode}.", $reports);
+}
+
 $command = array_map(
     escapeshellarg(...),
     [PHP_BINARY, 'artisan', 'test', '--coverage-clover='.CLOVER_REPORT, '--log-junit='.JUNIT_REPORT]
