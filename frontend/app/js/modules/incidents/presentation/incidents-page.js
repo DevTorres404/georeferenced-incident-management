@@ -214,9 +214,10 @@ function initDataTable(state) {
             <a href="incident-detail.html?id=${id}" class="btn btn-sm btn-outline-primary shadow-sm mr-1" title="Ver detalle completo" style="border-radius:0.4rem;">
               <i class="fas fa-external-link-alt"></i>
             </a>
+            ${state.canDeleteIncident ? `
             <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" title="Eliminar" data-id="${id}" data-code="${code}" style="border-radius:0.4rem;">
               <i class="fas fa-trash"></i>
-            </button>
+            </button>` : ''}
           </div>`;
         },
       },
@@ -309,16 +310,16 @@ function renderStateFilters(state) {
       </div>
       <div class="inc-kpi-icon"><i class="fas fa-layer-group"></i></div>
     </div>
-    ${groups.map((group) => html`
-      <div class="inc-kpi-card filtro-btn" data-filtro="${group.filtro}">
-        <div class="inc-kpi-content">
-          <span class="inc-kpi-label">${group.label}</span>
-          <strong class="inc-kpi-number text-${group.color}" id="cnt-${group.id}">0</strong>
-        </div>
-        <div class="inc-kpi-icon text-${group.color}"><i class="${group.icon}"></i></div>
-      </div>
-    `).join('')}
   `;
+  container.insertAdjacentHTML('beforeend', groups.map((group) => `
+      <div class="inc-kpi-card filtro-btn" data-filtro="${escapeHtml(group.filtro)}">
+        <div class="inc-kpi-content">
+          <span class="inc-kpi-label">${escapeHtml(group.label)}</span>
+          <strong class="inc-kpi-number text-${escapeHtml(group.color)}" id="cnt-${escapeHtml(group.id)}">0</strong>
+        </div>
+        <div class="inc-kpi-icon text-${escapeHtml(group.color)}"><i class="${escapeHtml(group.icon)}"></i></div>
+      </div>
+    `).join(''));
 
   // Eliminar event listeners anteriores si existieran (la delegación en body/container evita duplicados si el container no se destruye, pero el container es fijo)
   // Para evitar registrar múltiples delegateEvents si la función se llama varias veces, primero removemos clonando, 
@@ -347,7 +348,7 @@ function buildStateGroups(states) {
     groups.push({ id: 'pendiente', filtro: 'pendiente', label: 'Pendientes', stateNames: initial.map((s) => s.name), color: 'warning', icon: 'fas fa-clock' });
   }
   if (inProgress.length) {
-    groups.push({ id: 'proceso', filtro: 'en proceso', label: 'En Proceso', stateNames: inProgress.map((s) => s.name), color: 'info', icon: 'fas fa-cogs' });
+    groups.push({ id: 'proceso', filtro: 'en_proceso', label: 'En Proceso', stateNames: inProgress.map((s) => s.name), color: 'info', icon: 'fas fa-cogs' });
   }
   if (final.length) {
     groups.push({ id: 'resuelta', filtro: 'resuelta', label: 'Resueltas', stateNames: final.map((s) => s.name), color: 'success', icon: 'fas fa-check-circle' });

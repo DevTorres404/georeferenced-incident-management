@@ -89,8 +89,10 @@
                                             class="wizard-step-button is-active" data-step-target="location">
                                             <span>1</span> <strong>Ubicación</strong> </button> <button type="button"
                                             class="wizard-step-button" data-step-target="evidence"> <span>2</span>
-                                            <strong>Evidencia <small class="text-muted font-weight-normal">(opcional)</small></strong> </button> <button type="button"
-                                            class="wizard-step-button" data-step-target="details"> <span>3</span>
+                                            <strong>Evidencia <small
+                                                    class="text-muted font-weight-normal">(opcional)</small></strong>
+                                        </button> <button type="button" class="wizard-step-button"
+                                            data-step-target="details"> <span>3</span>
                                             <strong>Detalles</strong> </button> <button type="button"
                                             class="wizard-step-button" data-step-target="review"> <span>4</span>
                                             <strong>Revision</strong> </button> </div>
@@ -129,15 +131,9 @@
                                                     class="form-control" id="fTerritorialParish" disabled>
                                                     <option value="">Seleccione parroquia</option>
                                                 </select> </div>
-                                            <div class="form-group col-12 d-none" id="territorialSectorGroup"> <label
-                                                    for="fTerritorialSector">Sector / Barrio</label> <select
-                                                    class="form-control" id="fTerritorialSector" disabled>
-                                                    <option value="">Seleccione sector o barrio</option>
-                                                </select> <small class="form-text text-muted">Opcional. Si no existe en
-                                                    el catalogo, puedes ingresarlo manualmente.</small> </div>
-                                            <div class="form-group col-12" data-manual-territory="sector"> <label
-                                                    for="fManualSector">Sector / Barrio</label> <input type="text"
-                                                    class="form-control" id="fManualSector" maxlength="120"
+                                            <div class="form-group col-12"> <label for="fManualSector">Sector /
+                                                    Barrio</label> <input type="text" class="form-control"
+                                                    id="fManualSector" maxlength="120"
                                                     placeholder="Escribe el sector o barrio"> <small
                                                     class="form-text text-muted">Opcional. Puedes ingresar barrio,
                                                     ciudadela, comuna o referencia local.</small> </div>
@@ -146,7 +142,8 @@
                                     <div class="wizard-panel d-none" data-step-panel="evidence">
                                         <h3>2. Evidencia fotografica</h3>
                                         <p>Sube al menos una foto clara del daño observado.</p> <input type="file"
-                                            class="d-none" id="fEvidence" accept="image/jpeg,image/png" multiple aria-label="Seleccionar archivos de evidencia">
+                                            class="d-none" id="fEvidence" accept="image/jpeg,image/png" multiple
+                                            aria-label="Seleccionar archivos de evidencia">
                                         <div class="evidence-dropzone" id="evidenceDropzone" role="button" tabindex="0">
                                             <div class="evidence-folder" aria-hidden="true">
                                                 <div class="evidence-folder-top"></div>
@@ -229,7 +226,7 @@
             </div>
         </div>
         <footer class="main-footer text-sm">
-            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gesti�n de Incidencias
+            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gestión de Incidencias
                 Georreferenciadas (SGI)</strong>
         </footer>
         <script src="/plugins/jquery/jquery.min.js"></script>

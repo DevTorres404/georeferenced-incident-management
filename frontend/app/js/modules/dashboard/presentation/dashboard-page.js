@@ -34,8 +34,14 @@ const STATE_COLORS = {
   'EN PROCESO': CHART_COLORS.info,
   RESUELTA: CHART_COLORS.success,
 };
+const dashboardCharts = {};
 
 document.addEventListener('DOMContentLoaded', initDashboardPage);
+window.addEventListener('pagehide', (event) => {
+  if (event.persisted) return;
+
+  destroyDashboardCharts();
+});
 
 async function initDashboardPage() {
   window.renderLayout?.('dashboard');
@@ -221,6 +227,7 @@ function renderRecentIncidents(incidents) {
 /* ── Charts ──────────────────────────────────────────────────────────────── */
 
 function renderCharts(metrics) {
+  destroyDashboardCharts();
   if (!window.Chart) return;
 
   renderDoughnut('graficoPorTipo', metrics.countsByCategory || {});
@@ -228,12 +235,17 @@ function renderCharts(metrics) {
   renderTrendChart(metrics.monthlyTrend || {});
 }
 
+function destroyDashboardCharts() {
+  Object.values(dashboardCharts).forEach((chart) => chart?.destroy?.());
+  Object.keys(dashboardCharts).forEach((key) => delete dashboardCharts[key]);
+}
+
 function renderDoughnut(canvasId, dataMap) {
   const canvas = document.getElementById(canvasId);
   const entries = Object.entries(dataMap);
   if (!canvas || !entries.length) return;
 
-  new Chart(canvas.getContext('2d'), {
+  dashboardCharts.categories = new window.Chart(canvas.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: entries.map(([label]) => formatCatalogLabel(label)),
@@ -279,7 +291,7 @@ function renderStateChart(countsByState) {
   const labels = ['Pendiente', 'En proceso', 'Resuelta'];
   const colors = [STATE_COLORS.PENDIENTE, STATE_COLORS['EN PROCESO'], STATE_COLORS.RESUELTA];
 
-  new Chart(canvas.getContext('2d'), {
+  dashboardCharts.states = new window.Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
       labels,
@@ -325,7 +337,7 @@ function renderTrendChart(trend) {
   const canvas = document.getElementById('graficoTendencia');
   if (!canvas) return;
 
-  new Chart(canvas.getContext('2d'), {
+  dashboardCharts.trend = new window.Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: trend.months || [],

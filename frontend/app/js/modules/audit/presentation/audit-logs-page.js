@@ -199,7 +199,7 @@ function renderPagination(meta) {
     </li>
     ${pages.map((page) => page === 'ellipsis'
       ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
-      : `<li class="page-item ${page === current ? 'active' : ''}">
+      : `<li class="page-item ${page === String(current) ? 'active' : ''}">
           <button type="button" class="page-link" data-page="${page}">${page}</button>
         </li>`).join('')}
     <li class="page-item ${current === last ? 'disabled' : ''}">
@@ -209,17 +209,17 @@ function renderPagination(meta) {
 
 function buildPageList(current, last) {
   if (last <= 7) {
-    return Array.from({ length: last }, (_, index) => index + 1);
+    return Array.from({ length: last }, (_, index) => String(index + 1));
   }
 
-  const pages = [1];
+  const pages = ['1'];
   const start = Math.max(current - 1, 2);
   const end = Math.min(current + 1, last - 1);
 
   if (start > 2) pages.push('ellipsis');
-  for (let page = start; page <= end; page += 1) pages.push(page);
+  for (let page = start; page <= end; page += 1) pages.push(String(page));
   if (end < last - 1) pages.push('ellipsis');
-  pages.push(last);
+  pages.push(String(last));
 
   return pages;
 }

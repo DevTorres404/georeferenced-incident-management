@@ -13,6 +13,7 @@ use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapPointData;
 use App\Incidents\Application\DTOs\NotificationData;
@@ -115,7 +116,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
         );
     }
 
-    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): IncidentListResultData
     {
         $query = Incident::query()->with(self::RELATIONS);
         $this->applyIncidentVisibilityScope($query, $userId);
@@ -135,11 +136,11 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface
             ->map(fn (Incident $incident) => $this->incidentSummaryMapper->fromModel($incident))
             ->all();
 
-        return [
-            'items' => $items,
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-        ];
+        return new IncidentListResultData(
+            items: $items,
+            recordsTotal: $recordsTotal,
+            recordsFiltered: $recordsFiltered,
+        );
     }
 
     public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array

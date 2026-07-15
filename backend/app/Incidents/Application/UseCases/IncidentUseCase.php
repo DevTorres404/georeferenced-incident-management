@@ -11,6 +11,7 @@ use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
+use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
@@ -26,7 +27,7 @@ use App\Shared\Application\Results\PaginatedResult;
 
 final class IncidentUseCase
 {
-    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): array
+    public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): IncidentListResultData
     {
         return $this->incidentRepository->dataTable($filters, $userId, $canManage, $start, $length);
     }

@@ -110,6 +110,14 @@ function initAuthPage() {
   let recoveryEmail = '';
   let recoveryCode = '';
   let pendingVerificationEmail = '';
+  let setupTwoFactorQr = null;
+
+  window.addEventListener('pagehide', (event) => {
+    if (event.persisted) return;
+
+    setupTwoFactorQr?.clear?.();
+    setupTwoFactorQr = null;
+  });
 
   bindEvents();
   setupValidationListeners(el.loginForm);
@@ -877,6 +885,8 @@ function initAuthPage() {
   }
 
   function renderMandatoryTwoFactorSetup(qrUrl, secret, qrLibraryReady) {
+    setupTwoFactorQr?.clear?.();
+    setupTwoFactorQr = null;
     el.setupTwoFactorQrContainer.textContent = '';
 
     const wrapper = document.createElement('div');
@@ -887,7 +897,7 @@ function initAuthPage() {
       qrBox.className = 'd-inline-block';
       wrapper.appendChild(qrBox);
 
-      new window.QRCode(qrBox, {
+      setupTwoFactorQr = new window.QRCode(qrBox, {
         text: qrUrl,
         width: 200,
         height: 200,

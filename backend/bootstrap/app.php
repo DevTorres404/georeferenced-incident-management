@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withBroadcasting(
         __DIR__.'/../routes/channels.php',
-        ['middleware' => ['api', 'auth:sanctum']]
+        ['middleware' => ['api', 'auth:sanctum', '2fa.admin']]
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(

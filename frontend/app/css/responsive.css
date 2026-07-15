@@ -3,11 +3,15 @@
    ========================================================================== */
 
 /* ---- Cards: padding más compacto en móvil ---- */
-@media (max-width: 991.98px) {
+@media (max-width: 991.98px), (hover: none), (pointer: coarse) {
   body .main-sidebar,
   body .main-sidebar::before,
   body.sidebar-mini.sidebar-collapse .main-sidebar,
-  body.sidebar-mini.sidebar-collapse .main-sidebar::before {
+  body.sidebar-mini.sidebar-collapse .main-sidebar::before,
+  body.sidebar-mini.sidebar-collapse .main-sidebar:hover,
+  body.sidebar-mini.sidebar-collapse .main-sidebar:hover::before,
+  body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused,
+  body.sidebar-mini.sidebar-collapse .main-sidebar.sidebar-focused::before {
     width: var(--sgi-sidebar-width) !important;
     margin-left: calc(-1 * var(--sgi-sidebar-width)) !important;
   }
@@ -15,8 +19,16 @@
   body.sidebar-open .main-sidebar,
   body.sidebar-open .main-sidebar::before,
   body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar,
-  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar::before {
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar::before,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar:hover,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar:hover::before,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar.sidebar-focused,
+  body.sidebar-mini.sidebar-collapse.sidebar-open .main-sidebar.sidebar-focused::before {
     margin-left: 0 !important;
+  }
+
+  body.sidebar-open #sidebar-overlay {
+    display: block;
   }
 
   body .content-wrapper,

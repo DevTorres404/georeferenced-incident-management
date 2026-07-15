@@ -204,7 +204,7 @@ function updatePagination(totalItems) {
   pageNums.forEach((page) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `notif-page-btn notif-page-num ${page === currentPage ? 'active' : ''}`;
+    btn.className = `notif-page-btn notif-page-num ${page === String(currentPage) ? 'active' : ''}`;
     if (page === 'ellipsis') {
       btn.className = 'notif-page-btn notif-page-num disabled';
       btn.textContent = '...';
@@ -213,7 +213,7 @@ function updatePagination(totalItems) {
       btn.dataset.page = String(page);
       btn.textContent = String(page);
       btn.addEventListener('click', () => {
-        currentPage = page;
+        currentPage = Number(page);
         renderList();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
@@ -231,17 +231,17 @@ function updatePagination(totalItems) {
 
 function buildPageList(current, last) {
   if (last <= 7) {
-    return Array.from({ length: last }, (_, index) => index + 1);
+    return Array.from({ length: last }, (_, index) => String(index + 1));
   }
 
-  const pages = [1];
+  const pages = ['1'];
   const start = Math.max(current - 1, 2);
   const end = Math.min(current + 1, last - 1);
 
   if (start > 2) pages.push('ellipsis');
-  for (let page = start; page <= end; page += 1) pages.push(page);
+  for (let page = start; page <= end; page += 1) pages.push(String(page));
   if (end < last - 1) pages.push('ellipsis');
-  pages.push(last);
+  pages.push(String(last));
 
   return pages;
 }

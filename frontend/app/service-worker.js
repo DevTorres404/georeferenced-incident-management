@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sgi-cache-v2';
+const CACHE_NAME = 'sgi-cache-v4';
 const STATIC_ASSETS = [
   '/css/app.css',
   '/dist/css/adminlte.min.css',
@@ -44,21 +44,28 @@ self.addEventListener('fetch', (event) => {
     !isApprovedStaticAsset
   ) return;
 
-  event.respondWith(
-    caches.match(url.pathname).then((cached) => {
-      const fetchPromise = fetch(request)
-        .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(url.pathname, clone);
-            });
-          }
-          return response;
-        })
-        .catch(() => cached);
+  const fetchAndCache = () => fetch(request).then((response) => {
+    if (response && response.status === 200) {
+      const clone = response.clone();
+      return caches.open(CACHE_NAME)
+        .then((cache) => cache.put(request, clone))
+        .then(() => response);
+    }
+    return response;
+  });
+  const matchOfflineFallback = () => caches.match(request).then((cached) => {
+    if (cached || !url.search) return cached;
+    return caches.match(url.pathname);
+  });
 
-      return cached || fetchPromise;
+  if (url.pathname === '/css/app.css') {
+    event.respondWith(fetchAndCache().catch(matchOfflineFallback));
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      return cached || fetchAndCache().catch(matchOfflineFallback);
     })
   );
 });
