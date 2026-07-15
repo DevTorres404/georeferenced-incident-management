@@ -289,6 +289,24 @@ function bindMainMapInteractions() {
       selectZone(zoneId, { fit: false, anchorPoint: event.point });
     }
   });
+
+  // Click en espacio vacío del mapa → cerrar detalle
+  state.map.on('click', (event) => {
+    if (!state.selectedZoneId) return;
+    const features = state.map.queryRenderedFeatures(event.point, {
+      layers: ['operational-zones-fill'],
+    });
+    if (!features.length) {
+      clearSelectedZone();
+    }
+  });
+
+  // Escape → cerrar detalle
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && state.selectedZoneId) {
+      clearSelectedZone();
+    }
+  });
 }
 
 function syncMapsData() {

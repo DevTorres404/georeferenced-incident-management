@@ -474,6 +474,48 @@ body.dark-mode .incident-detail-value {
   color: var(--sgi-text);
 }
 
+body.dark-mode .incident-detail-map {
+  background: linear-gradient(160deg, rgba(26, 45, 66, 0.8) 0%, rgba(26, 29, 35, 0.9) 100%);
+}
+
+body.dark-mode .location-summary-band {
+  background: linear-gradient(160deg, rgba(26, 45, 66, 0.6) 0%, rgba(26, 29, 35, 0.7) 100%);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .coordinate-box {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .attachment-guidance {
+  background: linear-gradient(160deg, rgba(22, 163, 74, 0.12) 0%, rgba(26, 45, 66, 0.5) 100%);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .attachment-preview {
+  background: linear-gradient(160deg, rgba(22, 163, 74, 0.1) 0%, rgba(26, 45, 66, 0.4) 100%);
+}
+
+body.dark-mode .attachment-type-badge {
+  color: #34d399;
+  background: rgba(22, 163, 74, 0.15);
+  border-color: rgba(22, 163, 74, 0.3);
+}
+
+body.dark-mode .comentario-card {
+  background-color: var(--sgi-surface);
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .comentario-card strong {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .timeline-item-custom {
+  border-left-color: var(--sgi-border) !important;
+}
+
 /* --- Timeline --- */
 body.dark-mode .timeline-item {
   border-left-color: var(--sgi-border);
@@ -595,23 +637,186 @@ body.dark-mode .about-stat-label {
   color: var(--sgi-text-muted);
 }
 
-/* --- Operational structure --- */
+/* --- Operational structure (new map+team page) --- */
+body.dark-mode .ops-summary-card {
+  background: linear-gradient(135deg, var(--sgi-surface) 0%, #1e2a38 100%);
+  border-color: var(--sgi-border);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+}
+body.dark-mode .ops-summary-card:hover {
+  border-color: var(--sgi-primary);
+}
+body.dark-mode .ops-summary-card::after {
+  background: radial-gradient(circle, rgba(27, 169, 232, 0.12) 0%, transparent 70%);
+}
+body.dark-mode .ops-summary-card strong {
+  color: var(--sgi-text);
+}
+body.dark-mode .ops-summary-card span {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .ops-map-canvas {
+  background: linear-gradient(180deg, rgba(27, 169, 232, 0.18), rgba(26, 29, 35, 0.92));
+}
+
+body.dark-mode .ops-map-detail__panel {
+  background: rgba(36, 39, 46, 0.96);
+  border-color: var(--sgi-border);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .ops-map-legend {
+  background: rgba(36, 39, 46, 0.96);
+  border-color: var(--sgi-border);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+body.dark-mode .ops-map-legend__item {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .ops-zone-detail-hero {
+  background: linear-gradient(145deg, rgba(27, 169, 232, 0.22), rgba(27, 169, 232, 0.08));
+  border-color: rgba(27, 169, 232, 0.2);
+}
+body.dark-mode .ops-zone-detail-hero h4 {
+  color: var(--sgi-text);
+}
+body.dark-mode .ops-zone-detail-hero p {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .ops-zone-detail-code {
+  background: rgba(26, 29, 35, 0.82);
+  border-color: var(--sgi-border);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .ops-zone-detail-close {
+  background: rgba(26, 29, 35, 0.82);
+  color: var(--sgi-text-muted);
+  box-shadow: inset 0 0 0 1px var(--sgi-border);
+}
+body.dark-mode .ops-zone-detail-close:hover {
+  background: var(--sgi-surface);
+  color: var(--sgi-text);
+}
+
+body.dark-mode .ops-zone-detail-metrics article {
+  background: rgba(36, 39, 46, 0.6);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .ops-zone-detail-metrics span {
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .ops-zone-detail-metrics strong {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .ops-zone-contact {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .ops-zone-contact span {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .ops-inline-pill {
+  background: rgba(27, 169, 232, 0.18);
+  color: var(--sgi-primary-hover);
+}
+
+body.dark-mode .ops-map-card-body.bg-light {
+  background-color: var(--sgi-background) !important;
+}
+
+body.dark-mode .ops-card-subtitle {
+  color: var(--sgi-text-muted);
+}
+
+body.dark-mode .ops-zone-detail-button.btn-outline-primary {
+  border-color: var(--sgi-primary);
+  color: var(--sgi-primary);
+}
+body.dark-mode .ops-zone-detail-button.btn-outline-primary:hover {
+  background-color: var(--sgi-primary);
+  color: #fff;
+}
+
+/* --- Operational structure old (legacy) --- */
 body.dark-mode .struct-zone-card {
   background-color: var(--sgi-surface);
   border-color: var(--sgi-border);
 }
-
 body.dark-mode .struct-zone-name {
   color: var(--sgi-text);
 }
-
 body.dark-mode .struct-member-item {
   border-bottom-color: var(--sgi-border);
   color: var(--sgi-text);
 }
-
 body.dark-mode .struct-member-item:hover {
   background-color: var(--sgi-primary-soft);
+}
+
+/* --- MapLibre popup dark mode --- */
+body.dark-mode .maplibregl-popup-content {
+  background: var(--sgi-surface);
+  color: var(--sgi-text);
+  border-color: var(--sgi-border);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+body.dark-mode .maplibregl-popup-tip {
+  border-top-color: var(--sgi-surface);
+}
+body.dark-mode .maplibregl-popup-close-button {
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .maplibregl-popup-close-button:hover {
+  color: var(--sgi-text);
+  background-color: transparent;
+}
+
+/* --- Managers modal (ops) --- */
+body.dark-mode .ops-managers-panel {
+  background: linear-gradient(180deg, rgba(26, 29, 35, 0.8) 0%, var(--sgi-primary-soft) 100%);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .ops-zone-manager-card {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .ops-zone-manager-card .text-muted {
+  color: var(--sgi-text-muted) !important;
+}
+body.dark-mode .ops-popup h6,
+body.dark-mode .ops-popup dd {
+  color: var(--sgi-text);
+}
+body.dark-mode .ops-popup p,
+body.dark-mode .ops-popup dt {
+  color: var(--sgi-text-muted);
+}
+
+/* --- Team tab (Gestión de Equipo) --- */
+body.dark-mode #changeSupervisorForm.bg-light,
+body.dark-mode #replaceOperatorForm.bg-light {
+  background-color: rgba(26, 29, 35, 0.5) !important;
+  border-color: var(--sgi-border) !important;
+}
+body.dark-mode .border-right {
+  border-right-color: var(--sgi-border) !important;
+}
+
+/* --- Tables sticky header --- */
+body.dark-mode .table-scrollable thead th {
+  background-color: var(--sgi-surface);
+}
+
+/* --- Ops misc dark fixes --- */
+body.dark-mode .ops-popup .badge-light {
+  background-color: rgba(26, 29, 35, 0.7) !important;
+  color: var(--sgi-text-muted) !important;
 }
 
 /* --- Zones and assignment management --- */
@@ -658,6 +863,20 @@ body.dark-mode .wg-kpi-value {
 
 body.dark-mode .wg-kpi-label {
   color: var(--sgi-text-muted);
+}
+
+/* --- Gestión de Asignaciones (tabla) --- */
+body.dark-mode .assignment-kpi {
+  background: linear-gradient(135deg, var(--sgi-surface) 0%, #1e2a38 100%);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .assignment-kpi:hover {
+  border-color: var(--sgi-primary);
+}
+
+body.dark-mode .assignment-zone-banner {
+  background: linear-gradient(135deg, rgba(20, 152, 212, 0.18) 0%, rgba(20, 152, 212, 0.08) 100%);
+  border-color: rgba(20, 152, 212, 0.25);
 }
 
 /* --- Notifications history --- */
@@ -720,27 +939,112 @@ body.dark-mode .diff-table td {
 }
 
 /* --- Role-permissions --- */
-body.dark-mode .rp-role-item {
+/* Role list items (dynamic) */
+body.dark-mode .role-permission-item {
   background-color: var(--sgi-surface);
   border-color: var(--sgi-border);
   color: var(--sgi-text);
 }
-
-body.dark-mode .rp-role-item.active {
-  border-color: var(--sgi-primary);
+body.dark-mode .role-permission-item:hover {
   background-color: var(--sgi-primary-soft);
 }
-
-body.dark-mode .rp-permission-item {
-  border-bottom-color: var(--sgi-border);
+body.dark-mode .role-permission-item.active {
+  border-left-color: var(--sgi-primary);
+  background: linear-gradient(135deg, rgba(27, 169, 232, 0.18), rgba(27, 169, 232, 0.08));
+  color: var(--sgi-text);
+}
+body.dark-mode .role-permission-item small,
+body.dark-mode .role-permission-item .text-muted {
+  color: var(--sgi-text-muted) !important;
 }
 
-body.dark-mode .rp-permission-label {
+/* Overview section */
+body.dark-mode .role-permission-overview {
+  background:
+    radial-gradient(circle at top left, rgba(27, 169, 232, 0.2), transparent 36%),
+    linear-gradient(135deg, var(--sgi-primary-soft) 0%, #1e2a38 100%);
+  border-color: rgba(27, 169, 232, 0.25);
+}
+
+/* Stats boxes inside overview */
+body.dark-mode .role-permission-stats div {
+  background: rgba(26, 29, 35, 0.76);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .role-permission-stats span {
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .role-permission-stats strong {
   color: var(--sgi-text);
 }
 
-body.dark-mode .rp-permission-desc {
+/* Menu preview section */
+body.dark-mode .role-menu-preview {
+  background: rgba(26, 29, 35, 0.84);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .role-menu-preview-group {
+  border-top-color: var(--sgi-border);
+}
+body.dark-mode .role-menu-preview-group strong {
+  color: var(--sgi-text);
+}
+body.dark-mode .role-menu-preview-group span {
   color: var(--sgi-text-muted);
+}
+body.dark-mode .role-menu-preview-title {
+  color: var(--sgi-primary-hover);
+}
+
+/* Permission cards grid */
+body.dark-mode .permission-module {
+  background: transparent;
+  border-color: var(--sgi-border);
+}
+body.dark-mode .permission-module h4 {
+  color: var(--sgi-text);
+}
+
+body.dark-mode .permission-card {
+  background: rgba(26, 29, 35, 0.5);
+  border-color: var(--sgi-border);
+}
+body.dark-mode .permission-card:hover {
+  border-color: var(--sgi-primary);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+}
+body.dark-mode .permission-card.is-enabled {
+  border-color: rgba(27, 169, 232, 0.4);
+  background: linear-gradient(180deg, rgba(26, 29, 35, 0.7) 0%, rgba(26, 45, 66, 0.86) 100%);
+}
+body.dark-mode .permission-card .custom-control-label > span:first-child {
+  color: var(--sgi-text);
+}
+body.dark-mode .permission-card small.text-muted {
+  color: var(--sgi-text-muted) !important;
+}
+
+/* Permission toolbar */
+body.dark-mode .permission-toolbar {
+  background: rgba(26, 29, 35, 0.6);
+  border-color: var(--sgi-border);
+}
+
+/* Navigation impact badges */
+body.dark-mode .permission-navigation-impact .badge {
+  background: rgba(27, 169, 232, 0.18);
+  color: var(--sgi-primary-hover);
+}
+
+/* Select all button in toolbar */
+body.dark-mode .btn-outline-secondary.js-toggle-module {
+  border-color: var(--sgi-border);
+  color: var(--sgi-text-muted);
+}
+body.dark-mode .btn-outline-secondary.js-toggle-module:hover {
+  background-color: var(--sgi-primary);
+  border-color: var(--sgi-primary);
+  color: #fff;
 }
 
 /* --- Access control --- */

@@ -6,6 +6,28 @@ import { requestBackend } from '../../../infrastructure/backend-client.js?v=20';
 const CITIZEN_ROLE_CODE = 'CIUDADANO';
 const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
 
+// ─── Role badge color map ───────────────────────────────────────────
+const ROLE_BADGE_COLORS = {
+  ADMIN: 'danger',
+  SUPERVISOR: 'warning',
+  OPERADOR: 'success',
+  CIUDADANO: 'secondary',
+};
+
+const ROLE_BADGE_DEFAULTS = {
+  executives: 'info',
+  citizens: 'secondary',
+  others: 'dark',
+};
+
+// ─── Role descriptions ──────────────────────────────────────────────
+const ROLE_DESCRIPTIONS = {
+  ADMIN: 'Acceso completo al sistema. Gesti&oacute;n de usuarios, roles, cat&aacute;logos y configuraci&oacute;n general.',
+  SUPERVISOR: 'Supervisi&oacute;n operativa por zona. Asignaci&oacute;n de incidentes y gesti&oacute;n del equipo de operadores.',
+  OPERADOR: 'Gesti&oacute;n de incidentes asignados. Actualizaci&oacute;n de estado, comentarios y evidencia.',
+  CIUDADANO: 'Reporte de incidentes como ciudadano. Solo puede ver y gestionar sus propios reportes.',
+};
+
 document.addEventListener('DOMContentLoaded', initUserRolesPage);
 
 async function initUserRolesPage() {
@@ -20,10 +42,15 @@ async function initUserRolesPage() {
     page: 1,
     perPage: 10,
     searchTerm: '',
-    roleGroup: 'all'
+    roleGroup: 'all',
+    // Modal state
+    selectedUserForRole: null,
   };
 
   bindActions(state);
+  bindAssignModal(state);
+  bindDeactivateModal(state);
+
   showPageLoading('Cargando usuarios', 'Consultando directorio de usuarios...');
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 3500);
 
@@ -40,6 +67,7 @@ async function initUserRolesPage() {
   }
 }
 
+// ─── Bind UI actions ────────────────────────────────────────────────
 function bindActions(state) {
   const searchInput = document.getElementById('user-search');
   if (searchInput) {
@@ -89,103 +117,203 @@ function bindActions(state) {
     });
   }
 
-  // Event delegation for assign buttons
+  // Event delegation: assign / deactivate buttons
   const tbody = document.getElementById('user-role-table');
   if (tbody) {
-    tbody.addEventListener('click', async (e) => {
-      if (e.target.closest('.btn-assign-role')) {
-        const btn = e.target.closest('.btn-assign-role');
-        const userId = btn.dataset.userId;
-        const select = document.getElementById(`role-select-${userId}`);
-        const roleCode = select.value;
-
-        if (!roleCode) {
-          setFormAlert(document.getElementById('access-alert'), 'Selecciona un rol válido', 'warning');
-          return;
+    tbody.addEventListener('click', (e) => {
+      const assignBtn = e.target.closest('.btn-assign-role');
+      if (assignBtn) {
+        const userId = assignBtn.dataset.userId;
+        const user = state.users.find((u) => u.id == userId);
+        if (user) {
+          state.selectedUserForRole = user;
+          openAssignModal(state);
         }
+        return;
+      }
 
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        try {
-          const response = await assignUserRole(userId, roleCode);
-          if (globalThis.showGlobalAlert) {
-            globalThis.showGlobalAlert('Rol asignado correctamente', 'success');
-          }
-          const userObj = state.users.find(u => u.id == userId);
-          if (userObj) {
-            const selectedRole = state.roles.find(r => r.code === roleCode);
-            const updatedUser = response?.data || {};
-            Object.assign(userObj, updatedUser, {
-              role: roleCode,
-              role_name: selectedRole?.name || updatedUser.role_name || roleCode,
-              roles: selectedRole ? [selectedRole] : updatedUser.roles || [],
-            });
-          }
-          applyFilters(state, { keepPage: true });
-        } catch (error) {
-          handleBackendErrors(error, null, document.getElementById('access-alert'));
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-check"></i>';
-        }
-      } else if (e.target.closest('.btn-deactivate-user')) {
-        const btn = e.target.closest('.btn-deactivate-user');
-        const userId = btn.dataset.userId;
-        
-        // Show the bootstrap modal instead of browser confirm
+      const deactivateBtn = e.target.closest('.btn-deactivate-user');
+      if (deactivateBtn) {
+        const userId = deactivateBtn.dataset.userId;
         document.getElementById('btnConfirmDeactivate').dataset.userId = userId;
         $('#modalDeactivateUser').modal('show');
-        
-      }
-    });
-  }
-
-  // Handle actual deactivation from the modal
-  const btnConfirmDeactivate = document.getElementById('btnConfirmDeactivate');
-  if (btnConfirmDeactivate) {
-    btnConfirmDeactivate.addEventListener('click', async (e) => {
-      const userId = e.target.closest('button').dataset.userId;
-      if (!userId) return;
-
-      const btn = e.target.closest('button');
-      btn.disabled = true;
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Desactivando...';
-      
-      try {
-        await requestBackend(`/users/${userId}`, { method: 'DELETE' });
-        
-        $('#modalDeactivateUser').modal('hide');
-        
-        if (globalThis.showGlobalAlert) {
-          globalThis.showGlobalAlert('Usuario desactivado exitosamente', 'success');
-        }
-        
-        // Remover usuario del estado
-        state.users = state.users.filter(u => u.id != userId);
-        applyFilters(state, { keepPage: true });
-      } catch (error) {
-        handleBackendErrors(error, null, document.getElementById('access-alert'));
-        $('#modalDeactivateUser').modal('hide');
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
       }
     });
   }
 }
 
+// ─── Assign role modal ──────────────────────────────────────────────
+function bindAssignModal(state) {
+  const roleSelect = document.getElementById('assignRoleSelect');
+  if (roleSelect) {
+    roleSelect.addEventListener('change', () => {
+      const code = roleSelect.value;
+      const desc = document.getElementById('assignRoleDescription');
+      const confirmBtn = document.getElementById('btnConfirmAssignRole');
+      confirmBtn.disabled = !code;
+
+      if (code && ROLE_DESCRIPTIONS[code]) {
+        desc.innerHTML = ROLE_DESCRIPTIONS[code];
+      } else if (code) {
+        const role = state.roles.find((r) => r.code === code);
+        desc.textContent = role?.description || 'Rol seleccionado.';
+      } else {
+        desc.textContent = 'Selecciona un rol para ver su descripción.';
+      }
+    });
+  }
+
+  document.getElementById('btnConfirmAssignRole')?.addEventListener('click', async () => {
+    const user = state.selectedUserForRole;
+    const roleCode = document.getElementById('assignRoleSelect').value;
+    if (!user || !roleCode) return;
+
+    const btn = document.getElementById('btnConfirmAssignRole');
+    btn.disabled = true;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Asignando...';
+
+    try {
+      const response = await assignUserRole(user.id, roleCode);
+      $('#modalAssignRole').modal('hide');
+
+      if (globalThis.showGlobalAlert) {
+        globalThis.showGlobalAlert('Rol asignado correctamente', 'success');
+      }
+
+      const selectedRole = state.roles.find((r) => r.code === roleCode);
+      const updatedUser = response?.data || {};
+      Object.assign(user, updatedUser, {
+        role: roleCode,
+        role_name: selectedRole?.name || updatedUser.role_name || roleCode,
+        roles: selectedRole ? [selectedRole] : updatedUser.roles || [],
+      });
+
+      applyFilters(state, { keepPage: true });
+    } catch (error) {
+      handleBackendErrors(error, null, document.getElementById('access-alert'));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  });
+}
+
+function openAssignModal(state) {
+  const user = state.selectedUserForRole;
+  if (!user) return;
+
+  const userName = user.name || user.username || user.email || 'Usuario';
+  const initial = userName.charAt(0).toUpperCase();
+  const email = user.email || '';
+  const isActive = user.is_active ?? user.activo ?? true;
+
+  // User avatar
+  const avatarEl = document.getElementById('assignUserAvatar');
+  avatarEl.textContent = initial;
+  avatarEl.style.backgroundColor = getAvatarColor(userName);
+
+  // User name and email
+  document.getElementById('assignUserName').textContent = userName;
+  document.getElementById('assignUserEmail').textContent = email;
+
+  // User status
+  const statusEl = document.getElementById('assignUserStatus');
+  statusEl.innerHTML = isActive
+    ? '<span class="badge badge-success badge-sm"><i class="fas fa-circle mr-1" style="font-size: 0.45rem; vertical-align: middle;"></i>Activo</span>'
+    : '<span class="badge badge-secondary"><i class="fas fa-circle mr-1" style="font-size: 0.45rem; vertical-align: middle;"></i>Inactivo</span>';
+
+  // Current role badge
+  const currentRoleCode = user.role || '';
+  const currentRoleName = user.role_name || 'Sin rol';
+  const badgeColor = getRoleBadgeColor(currentRoleCode);
+  document.getElementById('assignCurrentRoleBadge').className = `badge badge-${badgeColor} px-3 py-2 font-weight-bold`;
+  document.getElementById('assignCurrentRoleBadge').textContent = currentRoleName;
+
+  // Build role options
+  const select = document.getElementById('assignRoleSelect');
+  select.innerHTML = '<option value="">Seleccionar rol</option>';
+
+  const groups = state.roles.reduce((acc, role) => {
+    const group = getRoleGroup(role.code);
+    acc[group].push(role);
+    return acc;
+  }, { executives: [], citizens: [], others: [] });
+
+  const groupLabels = {
+    executives: 'Roles ejecutivos',
+    citizens: 'Ciudadanos',
+    others: 'Otros roles',
+  };
+
+  Object.entries(groups).forEach(([groupKey, roles]) => {
+    if (!roles.length) return;
+    const optgroup = document.createElement('optgroup');
+    optgroup.label = groupLabels[groupKey] || groupKey;
+
+    roles.forEach((role) => {
+      const option = document.createElement('option');
+      option.value = role.code;
+      option.textContent = role.name;
+      if (normalizeRoleCode(role.code) === normalizeRoleCode(currentRoleCode)) {
+        option.selected = true;
+      }
+      optgroup.appendChild(option);
+    });
+
+    select.appendChild(optgroup);
+  });
+
+  // Reset description and confirm button
+  document.getElementById('assignRoleDescription').textContent =
+    currentRoleCode
+      ? 'El rol actual est&aacute; preseleccionado. Elige otro si deseas cambiar.'
+      : 'Selecciona un rol para asignarlo al usuario.';
+  document.getElementById('btnConfirmAssignRole').disabled = false;
+
+  $('#modalAssignRole').modal('show');
+}
+
+// ─── Deactivate modal ───────────────────────────────────────────────
+function bindDeactivateModal(state) {
+  const btnConfirmDeactivate = document.getElementById('btnConfirmDeactivate');
+  if (!btnConfirmDeactivate) return;
+
+  btnConfirmDeactivate.addEventListener('click', async (e) => {
+    const userId = e.currentTarget.dataset.userId;
+    if (!userId) return;
+
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Desactivando...';
+
+    try {
+      await requestBackend(`/users/${userId}`, { method: 'DELETE' });
+      $('#modalDeactivateUser').modal('hide');
+
+      if (globalThis.showGlobalAlert) {
+        globalThis.showGlobalAlert('Usuario desactivado exitosamente', 'success');
+      }
+
+      state.users = state.users.filter((u) => u.id != userId);
+      applyFilters(state, { keepPage: true });
+    } catch (error) {
+      handleBackendErrors(error, null, document.getElementById('access-alert'));
+      $('#modalDeactivateUser').modal('hide');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
+// ─── Filtering & rendering ──────────────────────────────────────────
 function applyFilters(state, options = {}) {
   const term = state.searchTerm;
   state.filteredUsers = state.users.filter((user) => {
-    if (!userMatchesRoleGroup(user, state.roleGroup)) {
-      return false;
-    }
-
-    if (!term) {
-      return true;
-    }
+    if (!userMatchesRoleGroup(user, state.roleGroup)) return false;
+    if (!term) return true;
 
     const values = [
       user.name,
@@ -198,9 +326,7 @@ function applyFilters(state, options = {}) {
     return values.some((value) => String(value || '').toLowerCase().includes(term));
   });
 
-  if (!options.keepPage) {
-    state.page = 1;
-  }
+  if (!options.keepPage) state.page = 1;
   renderPaginatedUsers(state);
 }
 
@@ -225,82 +351,85 @@ function renderUsersTable(users, roles) {
   if (users.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center text-muted py-4">
-          <i class="fas fa-search d-block mb-2"></i>No se encontraron usuarios.
+        <td colspan="4" class="text-center text-muted py-4">
+          <i class="fas fa-search d-block mb-2" style="font-size: 1.5rem;"></i>
+          No se encontraron usuarios.
         </td>
       </tr>`;
     return;
   }
 
   let html = '';
-  users.forEach(user => {
-    const roleOptions = buildRoleOptions(roles, user.role);
+  users.forEach((user) => {
     const userName = user.name || user.username || user.email || 'Usuario';
-    const roleGroup = getRoleGroupLabel(user.role);
+    const initial = userName.charAt(0).toUpperCase();
+    const avatarColor = getAvatarColor(userName);
+    const badgeColor = getRoleBadgeColor(user.role);
+    const roleDisplay = user.role_name || user.role || 'Sin rol';
+    const roleGroupLabel = getRoleGroupLabel(user.role);
+    const isActive = user.is_active ?? user.activo ?? true;
 
     html += `
-      <tr>
+      <tr class="${isActive ? '' : 'table-inactive'}">
         <td>
           <div class="d-flex align-items-center">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mr-2" style="width: 32px; height: 32px; font-weight: bold;">
-              ${escapeHtml(userName).charAt(0).toUpperCase()}
+            <div class="ur-avatar rounded-circle text-white d-flex align-items-center justify-content-center mr-2 flex-shrink-0"
+                 style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem; background-color: ${avatarColor};">
+              ${escapeHtml(initial)}
             </div>
-            <div>
-              <p class="mb-0 font-weight-bold">${escapeHtml(userName)}</p>
+            <div class="min-w-0">
+              <p class="mb-0 font-weight-bold text-truncate" style="max-width: 200px;">${escapeHtml(userName)}</p>
+              <small class="text-muted">@${escapeHtml(user.username || '—')}</small>
             </div>
           </div>
         </td>
         <td>
-          <span class="text-muted">${escapeHtml(user.email || '-')}</span>
+          <span class="text-muted">${escapeHtml(user.email || '—')}</span>
         </td>
         <td>
-          <span class="badge badge-info">${escapeHtml(user.role_name || user.role || 'Sin rol')}</span>
-          <small class="d-block text-muted mt-1">${escapeHtml(roleGroup)}</small>
+          <div class="d-flex align-items-center flex-wrap gap-1">
+            <span class="badge badge-${badgeColor} px-3 py-2 font-weight-bold">${escapeHtml(roleDisplay)}</span>
+            <small class="text-muted d-block w-100 mt-1">${escapeHtml(roleGroupLabel)}</small>
+          </div>
         </td>
-        <td>
-          <select class="form-control form-control-sm" id="role-select-${user.id}">
-            <option value="">Seleccionar rol</option>
-            ${roleOptions}
-          </select>
+        <td class="text-center">
+          <div class="d-flex justify-content-center gap-1">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-assign-role font-weight-bold"
+                    data-user-id="${user.id}" title="Asignar rol">
+              <i class="fas fa-user-tag mr-1"></i>Rol
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user"
+                    data-user-id="${user.id}" title="Desactivar usuario">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
         </td>
-        <td class="text-center text-nowrap">
-          <button type="button" class="btn btn-sm btn-success btn-assign-role mb-1" data-user-id="${user.id}" title="Aplicar Rol">
-            <i class="fas fa-check"></i>
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user mb-1 ml-1" data-user-id="${user.id}" title="Desactivar/Eliminar usuario">
-            <i class="fas fa-trash-alt"></i>
-          </button>
-        </td>
-      </tr>
-    `;
+      </tr>`;
   });
 
   tbody.innerHTML = html;
 }
 
-function buildRoleOptions(roles, currentRoleCode) {
-  const groups = roles.reduce((acc, role) => {
-    const group = getRoleGroup(role.code);
-    acc[group].push(role);
-    return acc;
-  }, { executives: [], citizens: [], others: [] });
+// ─── Role helpers ───────────────────────────────────────────────────
+function getRoleBadgeColor(roleCode) {
+  const code = normalizeRoleCode(roleCode);
+  if (ROLE_BADGE_COLORS[code]) return ROLE_BADGE_COLORS[code];
 
-  return [
-    buildOptionGroup('Roles ejecutivos', groups.executives, currentRoleCode),
-    buildOptionGroup('Ciudadanos', groups.citizens, currentRoleCode),
-    buildOptionGroup('Otros roles', groups.others, currentRoleCode),
-  ].filter(Boolean).join('');
+  const group = getRoleGroup(code);
+  return ROLE_BADGE_DEFAULTS[group] || 'secondary';
 }
 
-function buildOptionGroup(label, roles, currentRoleCode) {
-  if (!roles.length) return '';
-
-  const options = roles.map((role) => {
-    const selected = normalizeRoleCode(currentRoleCode) === normalizeRoleCode(role.code) ? 'selected' : '';
-    return `<option value="${escapeHtml(role.code)}" ${selected}>${escapeHtml(role.name)}</option>`;
-  }).join('');
-
-  return `<optgroup label="${escapeHtml(label)}">${options}</optgroup>`;
+function getAvatarColor(name) {
+  const colors = [
+    '#1498D4', '#D9534F', '#D99A27', '#269B72',
+    '#7B61FF', '#E67E22', '#1ABC9C', '#3498DB',
+    '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
 }
 
 function setActiveRoleGroupButton(group) {
@@ -312,36 +441,22 @@ function setActiveRoleGroupButton(group) {
 }
 
 function userMatchesRoleGroup(user, group) {
-  if (group === 'citizens') {
-    return getRoleGroup(user.role) === 'citizens';
-  }
-
-  if (group === 'executives') {
-    return getRoleGroup(user.role) === 'executives';
-  }
-
+  if (group === 'citizens') return getRoleGroup(user.role) === 'citizens';
+  if (group === 'executives') return getRoleGroup(user.role) === 'executives';
   return true;
 }
 
 function getRoleGroup(roleCode) {
   const normalizedCode = normalizeRoleCode(roleCode);
-  if (normalizedCode === CITIZEN_ROLE_CODE) {
-    return 'citizens';
-  }
-  if (EXECUTIVE_ROLE_CODES.has(normalizedCode)) {
-    return 'executives';
-  }
+  if (normalizedCode === CITIZEN_ROLE_CODE) return 'citizens';
+  if (EXECUTIVE_ROLE_CODES.has(normalizedCode)) return 'executives';
   return 'others';
 }
 
 function getRoleGroupLabel(roleCode) {
   const group = getRoleGroup(roleCode);
-  if (group === 'citizens') {
-    return 'Ciudadanos';
-  }
-  if (group === 'executives') {
-    return 'Roles ejecutivos';
-  }
+  if (group === 'citizens') return 'Ciudadanos';
+  if (group === 'executives') return 'Roles ejecutivos';
   return 'Otros roles';
 }
 
@@ -349,19 +464,16 @@ function normalizeRoleCode(roleCode) {
   return String(roleCode || '').trim().toUpperCase();
 }
 
+// ─── Counters, pagination, summary ──────────────────────────────────
 function renderRoleCounters(users) {
   const citizens = users.filter((user) => getRoleGroup(user.role) === 'citizens').length;
   const executives = users.filter((user) => getRoleGroup(user.role) === 'executives').length;
 
   const citizenBadge = document.getElementById('citizen-count-badge');
-  if (citizenBadge) {
-    citizenBadge.textContent = String(citizens);
-  }
+  if (citizenBadge) citizenBadge.textContent = String(citizens);
 
   const executiveBadge = document.getElementById('executive-count-badge');
-  if (executiveBadge) {
-    executiveBadge.textContent = String(executives);
-  }
+  if (executiveBadge) executiveBadge.textContent = String(executives);
 }
 
 function renderPagination(state, total, totalPages, startIndex, count) {
@@ -370,7 +482,7 @@ function renderPagination(state, total, totalPages, startIndex, count) {
     if (total === 0) {
       summary.textContent = 'Sin usuarios para mostrar.';
     } else {
-      summary.textContent = `Mostrando ${startIndex + 1}-${startIndex + count} de ${total} usuarios`;
+      summary.textContent = `Mostrando ${startIndex + 1}–${startIndex + count} de ${total} usuarios`;
     }
   }
 
@@ -389,17 +501,18 @@ function renderPagination(state, total, totalPages, startIndex, count) {
         <i class="fas fa-chevron-left"></i>
       </button>
     </li>
-    ${pages.map((page) => page === 'ellipsis'
-      ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
-      : `<li class="page-item ${page === String(state.page) ? 'active' : ''}">
-          <button type="button" class="page-link" data-page="${page}">${page}</button>
-        </li>`).join('')}
+    ${pages.map((page) =>
+      page === 'ellipsis'
+        ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
+        : `<li class="page-item ${page === String(state.page) ? 'active' : ''}">
+            <button type="button" class="page-link" data-page="${page}">${page}</button>
+          </li>`
+    ).join('')}
     <li class="page-item ${state.page === totalPages ? 'disabled' : ''}">
       <button type="button" class="page-link" data-page="${state.page + 1}" aria-label="Siguiente">
         <i class="fas fa-chevron-right"></i>
       </button>
-    </li>
-  `;
+    </li>`;
 }
 
 function buildPageList(currentPage, totalPages) {

@@ -343,6 +343,20 @@
     font-size: 0.7rem !important;
     padding: 5px 7px !important;
   }
+
+  /* Texto de ubicación en detalle: evitar que se superponga en mobile */
+  .incident-detail-map > code,
+  .incident-detail-map > small,
+  .incident-detail-map > strong {
+    max-width: 90%;
+    word-break: break-word;
+    text-align: center;
+  }
+
+  .coordinate-box code {
+    font-size: 0.82rem;
+    word-break: break-all;
+  }
 }
 
 /* ---- Wizard steps en mobile (incident-create) ---- */
@@ -548,5 +562,132 @@
     max-width: 120px;
     white-space: normal;
     word-break: break-word;
+  }
+}
+
+/* ---- GLOBAL: todas las tablas responsives ---- */
+@media (max-width: 767.98px) {
+  /* Forzar scroll horizontal donde haga falta */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Celdas más compactas */
+  .table td,
+  .table th {
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  /* Botones de acción más chicos */
+  .table .btn {
+    padding: 0.2rem 0.4rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .table .btn i + span,
+  .table .btn span:not(.sr-only) {
+    display: none !important;
+  }
+
+  .table .btn i {
+    margin-right: 0 !important;
+  }
+
+  /* Badges en celdas más compactos */
+  .table td .badge {
+    font-size: 0.7rem !important;
+    padding: 0.2rem 0.35rem !important;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+  }
+
+  /* Paginación responsiva */
+  .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.15rem;
+  }
+
+  .pagination .page-link {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .table td,
+  .table th {
+    padding: 0.35rem 0.4rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .table td .badge {
+    font-size: 0.65rem !important;
+    padding: 0.15rem 0.3rem !important;
+  }
+
+  .table .btn {
+    padding: 0.15rem 0.3rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Asegurar que el contenido largo no se desborde */
+  .table td {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .table th {
+    white-space: normal !important;
+  }
+
+  /* Forzar que las tablas sin .table-responsive tengan scroll */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ---- Tablas no-Bootstrap (dash-table, reports-table, etc.) ---- */
+@media (max-width: 767.98px) {
+  .dash-table th,
+  .dash-table td,
+  .reports-table th,
+  .reports-table td {
+    padding: 0.4rem 0.5rem !important;
+    font-size: 0.8rem !important;
+  }
+
+  .dash-table .btn,
+  .reports-table .btn {
+    padding: 0.15rem 0.35rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .dash-table th,
+  .dash-table td,
+  .reports-table th,
+  .reports-table td {
+    padding: 0.3rem 0.35rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .dash-table-wrap,
+  .reports-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dash-table td:last-child .btn span,
+  .reports-table td:last-child .btn span {
+    display: none !important;
   }
 }
