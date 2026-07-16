@@ -694,24 +694,7 @@ export function validateEvidence() {
   return true;
 }
 
-export function validateDetails() {
-  let valid = true;
-  valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
-  valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
-  valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
-
-  // Validación cruzada: si hay categoría, subtipo debe ser coherente
-  const categoryId = String($('#fTipo')?.value || '').trim();
-  const subcategorySelect = $('#fSubtipo');
-  if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
-    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
-  }
-
-  valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
-  valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
-  valid = validateEmail('fCorreo') && valid;
-
-  // Hint: si la categoría sugiere evidencias obligatorias
+function showCategoryHint(categoryId) {
   const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
   const detailsPanel = $('[data-step-panel="details"]');
   let detailsHint = document.getElementById('detailsStepHint');
@@ -729,6 +712,26 @@ export function validateDetails() {
   } else if (detailsHint) {
     detailsHint.style.display = 'none';
   }
+}
+
+export function validateDetails() {
+  let valid = true;
+  valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
+  valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
+  valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
+
+  // Validación cruzada: si hay categoría, subtipo debe ser coherente
+  const categoryId = String($('#fTipo')?.value || '').trim();
+  const subcategorySelect = $('#fSubtipo');
+  if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
+    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
+  }
+
+  valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
+  valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
+  valid = validateEmail('fCorreo') && valid;
+
+  showCategoryHint(categoryId);
 
   return valid;
 }

@@ -43,7 +43,7 @@ export function normalizeCode(value) {
 }
 
 export function hasRoleAdmin(user) {
-  if (!user || !user.roles) return false;
+  if (!user?.roles) return false;
   return user.roles.some(r => {
     const code = typeof r === 'string' ? r : (r.code || r.codigo);
     return code === 'ADMIN';
@@ -77,7 +77,7 @@ export function switchView(viewName) {
     'profile-view': 'profile',
     'two-factor-view': 'two-factor',
     'setup-2fa-view': 'setup-2fa',
-    'forgot-password-view': 'forgot-password',
+    'forgot-password-view': 'forgot-password', // NOSONAR
   };
 
   Object.entries(viewMap).forEach(([id, name]) => {
@@ -779,19 +779,6 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
     return getAppPath('dashboard.html');
   }
 
-  function normalizeCode(value) {
-    if (typeof value === 'string') return value;
-    return value?.code || value?.codigo || '';
-  }
-
-  function hasRoleAdmin(user) {
-    if (!user || !user.roles) return false;
-    return user.roles.some(r => {
-      const code = typeof r === 'string' ? r : (r.code || r.codigo);
-      return code === 'ADMIN';
-    });
-  }
-
   function routeAfterAuth(user, notice = {}) {
     if (!user) return;
 
@@ -907,15 +894,6 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
     if (map.text) map.text.textContent = isLoading ? 'Procesando...' : map.label;
   }
 
-  function togglePasswordVisibility(input, button) {
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-
-    const icon = button.querySelector('i');
-    icon.classList.toggle('fa-eye', !isHidden);
-    icon.classList.toggle('fa-eye-slash', isHidden);
-  }
-
   async function initMandatorySetup2FA() {
     try {
       if (!el.setupTwoFactorQrContainer || !el.setupTwoFactorForm) return;
@@ -1013,16 +991,4 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
     el.setupTwoFactorQrContainer.appendChild(wrapper);
   }
 
-  function showAlert(target, message, type = 'danger') {
-    if (!target) return;
-    target.className = `alert alert-${type} py-2 mb-3 text-start small`;
-    target.textContent = message;
-    target.classList.remove('d-none');
-  }
-
-  function hideAlert(target) {
-    if (!target) return;
-    target.classList.add('d-none');
-    target.textContent = '';
-  }
 }

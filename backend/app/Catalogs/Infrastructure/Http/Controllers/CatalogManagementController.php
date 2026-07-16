@@ -106,7 +106,7 @@ class CatalogManagementController extends ApiController
      */
     public function update(Request $request, string $catalog, int $id): JsonResponse
     {
-        $record = $this->catalogManagementUseCase->find($catalog, $id);
+        $this->catalogManagementUseCase->find($catalog, $id);
         $data = $request->validate($this->rules($catalog, $id));
         $record = $this->catalogManagementUseCase->update($catalog, $id, $data);
 
