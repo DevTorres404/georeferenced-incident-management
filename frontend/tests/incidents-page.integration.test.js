@@ -155,7 +155,7 @@ describe('Integration — incidents-page', () => {
       listStates.mockResolvedValue({ data: sampleStates });
       listPriorities.mockResolvedValue({ data: samplePriorities });
 
-      localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }], permissions: [] }));
+      localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }], permissions: ['incidents.create'] }));
       const { initIncidentsPage } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
       await initIncidentsPage();
       await flushMicrotasks();
@@ -182,32 +182,39 @@ describe('Integration — incidents-page', () => {
       );
       listStates.mockResolvedValue({ data: sampleStates });
       listPriorities.mockResolvedValue({ data: samplePriorities });
-      localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }], permissions: [] }));
+      localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }], permissions: ['incidents.create'] }));
 
       const { initIncidentsPage } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
       await initIncidentsPage();
       await flushMicrotasks();
 
-      expect(document.getElementById('btnCreateIncident').style.display).not.toBe('none');
+      expect(document.getElementById('btnCreateIncident').hidden).toBe(false);
       expect(document.getElementById('btnViewMap').style.display).not.toBe('none');
 
       const context = document.getElementById('incidentScopeContext');
       expect(context.textContent).toContain('Vista administrativa nacional');
     });
 
-    it('hides create button for users without incidents.create permission', async () => {
+    it.each([
+      ['CIUDADANO', [{ codigo: 'incidents.create' }], true],
+      ['SUPERVISOR', [], false],
+      ['OPERADOR', [], false],
+    ])('applies create permission to the %s main and empty-state CTAs', async (role, permissions, allowed) => {
       const { listStates, listPriorities } = await import(
         '../app/js/modules/incidents/application/incidents-service.js'
       );
       listStates.mockResolvedValue({ data: sampleStates });
       listPriorities.mockResolvedValue({ data: samplePriorities });
-      localStorage.setItem('user_data', JSON.stringify({ id: 2, roles: [{ code: 'VIEWER' }], permissions: [] }));
+      localStorage.setItem('user_data', JSON.stringify({ id: 2, roles: [{ code: role }], permissions }));
 
       const { initIncidentsPage } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
       await initIncidentsPage();
       await flushMicrotasks();
 
-      expect(document.getElementById('btnCreateIncident').style.display).toBe('none');
+      expect(document.getElementById('btnCreateIncident').hidden).toBe(!allowed);
+      const config = globalThis.$.mock.results[0].value.DataTable.mock.calls[0][0];
+      expect(config.language.sEmptyTable.includes('incident-create.html')).toBe(allowed);
+      expect(config.language.sEmptyTable).toContain('No hay incidencias disponibles');
     });
 
     it('renders error row when listStates fails', async () => {
@@ -601,7 +608,8 @@ describe('Integration — incidents-page', () => {
     it('userHasPermission checks direct and role permissions', async () => {
       const { userHasPermission } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
       expect(userHasPermission({ permissions: ['incidents.delete'] }, 'incidents.delete')).toBe(true);
-      expect(userHasPermission({ roles: [{ code: 'ADMIN' }] }, 'incidents.delete')).toBe(true);
+      expect(userHasPermission({ roles: [{ permissions: [{ codigo: 'incidents.delete' }] }] }, 'incidents.delete')).toBe(true);
+      expect(userHasPermission({ roles: [{ code: 'ADMIN' }] }, 'incidents.delete')).toBe(false);
       expect(userHasPermission({ permissions: [] }, 'incidents.delete')).toBe(false);
     });
   });

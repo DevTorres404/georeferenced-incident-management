@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { showMainLoader, hideMainLoader } from '../app/js/layout/loader.js';
 
-vi.mock('../app/js/core/auth-session.js', () => ({
+vi.mock('../app/js/core/auth-session.js', async (importOriginal) => ({
+  ...await importOriginal(),
   clearSession: vi.fn(),
 }));
 

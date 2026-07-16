@@ -179,6 +179,7 @@ describe('incident-create-page — wizard lifecycle', () => {
     vi.resetModules();
     vi.clearAllMocks();
     localStorage.clear();
+    localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: 'ADMIN' }], permissions: ['incidents.create'] }));
     document.body.innerHTML = WIZARD_DOM;
     vi.stubGlobal('renderLayout', vi.fn());
     vi.stubGlobal('crypto', { randomUUID: () => '00000000-0000-0000-0000-000000000001' });

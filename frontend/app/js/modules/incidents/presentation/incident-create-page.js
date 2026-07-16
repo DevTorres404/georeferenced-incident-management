@@ -4,6 +4,7 @@ import { getCatalogOverview } from '../../catalogs/application/catalogs-service.
 import { createIncident, uploadIncidentAttachment } from '../application/incidents-service.js?v=15';
 import { handleBackendErrors, setFieldError, clearFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 import { createCoordinatePicker } from '../../../shared/components/coordinate-picker.js?v=4';
+import { hasPermission } from '../../../core/auth-session.js?v=16';
 import {
   getTerritorialChildren,
   listTerritorialCantons,
@@ -147,7 +148,7 @@ function bindAutoSave() {
 // ────────────────────────────────────────────────
 
 export async function initCreateIncident() {
-  globalThis.renderLayout?.('incident-create');
+  if (!(await authorizeIncidentCreation())) return;
 
   hydrateContactEmail();
 
@@ -195,6 +196,21 @@ export async function initCreateIncident() {
       zoom: INCIDENT_CREATE_INITIAL_ZOOM,
     });
   });
+}
+
+async function authorizeIncidentCreation() {
+  try {
+    if (typeof globalThis.renderLayout === 'function') {
+      await globalThis.renderLayout('incident-create');
+      if (hasPermission('incidents.create')) return true;
+      // renderLayout already redirected to the default page.
+      return false;
+    }
+  } catch (err) {
+    console.warn('authorizeIncidentCreation: renderLayout failed', err);
+  }
+
+  return false;
 }
 
 document.addEventListener('DOMContentLoaded', () => { initCreateIncident(); });

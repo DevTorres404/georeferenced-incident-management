@@ -138,7 +138,8 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   requestRaw: mockRaw,
 }));
 
-vi.mock('../app/js/core/auth-session.js', () => ({
+vi.mock('../app/js/core/auth-session.js', async (importOriginal) => ({
+  ...await importOriginal(),
   clearSession: vi.fn(() => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user_data');

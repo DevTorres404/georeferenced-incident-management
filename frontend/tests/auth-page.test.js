@@ -4,6 +4,7 @@ vi.mock('../../../core/auth-session.js', () => ({
   isEmailVerified: vi.fn(),
   suggestUsername: vi.fn(),
   updateUser: vi.fn(),
+  userHasPermission: vi.fn((user, code) => user?.permissions?.includes(code) || false),
 }));
 
 vi.mock('../../../shared/validators/validation-utils.js', () => ({
@@ -158,6 +159,17 @@ describe('auth-page — helper functions', () => {
     it('returns false for user with no roles', async () => {
       const { hasRoleAdmin } = await import('../app/js/modules/auth/presentation/auth-page.js');
       expect(hasRoleAdmin({})).toBe(false);
+    });
+  });
+
+  describe('getPostAuthPage', () => {
+    it.each([
+      ['dashboard capability', ['dashboard.view'], 'dashboard.html'],
+      ['create capability without dashboard', ['incidents.create'], 'incident-create.html'],
+      ['both capabilities', ['dashboard.view', 'incidents.create'], 'dashboard.html'],
+    ])('routes %s by capability', async (_label, permissions, expected) => {
+      const { getPostAuthPage } = await import('../app/js/modules/auth/presentation/auth-page.js');
+      expect(getPostAuthPage({ permissions })).toBe(expected);
     });
   });
 

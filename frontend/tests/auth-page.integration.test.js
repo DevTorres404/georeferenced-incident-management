@@ -18,6 +18,7 @@ const { authServiceMock, authSessionMock, valUtilsMock } = vi.hoisted(() => {
     isEmailVerified: vi.fn(() => false),
     suggestUsername: vi.fn(() => 'suggested_user'),
     updateUser: vi.fn(),
+    userHasPermission: vi.fn((user, code) => user?.permissions?.includes(code) || false),
   };
   const vUt = {
     handleBackendErrors: vi.fn(),
