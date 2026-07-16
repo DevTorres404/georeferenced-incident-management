@@ -45,4 +45,19 @@ class IncidentException extends Exception
     {
         return new self('La incidencia no pertenece a una zona operativa asignada al supervisor.', 403);
     }
+
+    public static function priorityRequiredForState(): self
+    {
+        return new self('Debes asignar una prioridad a la incidencia antes de cambiar su estado.', 422);
+    }
+
+    public static function priorityRequiredForAssignment(): self
+    {
+        return new self('La incidencia debe tener una prioridad asignada antes de asignar un operador.', 422);
+    }
+
+    public static function stateRequiredForAssignment(): self
+    {
+        return new self('La incidencia debe tener un estado asignado antes de asignar un operador.', 422);
+    }
 }

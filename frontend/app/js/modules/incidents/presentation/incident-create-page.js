@@ -92,6 +92,41 @@ export function hasDraft() {
   try { return localStorage.getItem(DRAFT_STORAGE_KEY) !== null; } catch { return false; }
 }
 
+async function restoreDraftTerritorial() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+
+    const provinceId = data['fTerritorialProvince'];
+    if (!provinceId) return;
+
+    const provinceEl = $('#fTerritorialProvince');
+    if (provinceEl) {
+      provinceEl.value = String(provinceId);
+      await populateTerritorialLevel('province');
+    }
+
+    const cantonId = data['fTerritorialCanton'];
+    if (!cantonId || !provinceId) return;
+
+    const cantonEl = $('#fTerritorialCanton');
+    if (cantonEl) {
+      cantonEl.value = String(cantonId);
+      await populateTerritorialLevel('canton');
+    }
+
+    const parishId = data['fTerritorialParish'];
+    if (!parishId || !cantonId) return;
+
+    const parishEl = $('#fTerritorialParish');
+    if (parishEl) {
+      parishEl.value = String(parishId);
+      await populateTerritorialLevel('parish');
+    }
+  } catch { /* no crítico */ }
+}
+
 function bindAutoSave() {
   const debouncedSave = (() => {
     let timer = null;
@@ -136,6 +171,7 @@ export async function initCreateIncident() {
     catalogs = await getCatalogOverview();
     populateCatalogs();
     await populateTerritorialProvinces();
+    await restoreDraftTerritorial();
   } catch (error) {
     showErrorAlert(error.message || 'No se pudieron cargar los datos iniciales.');
   } finally {
@@ -432,7 +468,7 @@ export function buildApproximateAddress(result) {
 }
 
 export async function selectTerritorialFromAddress(address) {
-  const provinceName = address.state || address.region;
+  const provinceName = address.state || address.region || address.plot;
   const cantonName = address.county || address.city || address.town || address.municipality;
   const parishName = address.city_district || address.suburb || address.village || address.neighbourhood;
 
@@ -694,24 +730,7 @@ export function validateEvidence() {
   return true;
 }
 
-export function validateDetails() {
-  let valid = true;
-  valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
-  valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
-  valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
-
-  // Validación cruzada: si hay categoría, subtipo debe ser coherente
-  const categoryId = String($('#fTipo')?.value || '').trim();
-  const subcategorySelect = $('#fSubtipo');
-  if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
-    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
-  }
-
-  valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
-  valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
-  valid = validateEmail('fCorreo') && valid;
-
-  // Hint: si la categoría sugiere evidencias obligatorias
+function showCategoryHint(categoryId) {
   const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
   const detailsPanel = $('[data-step-panel="details"]');
   let detailsHint = document.getElementById('detailsStepHint');
@@ -729,6 +748,26 @@ export function validateDetails() {
   } else if (detailsHint) {
     detailsHint.style.display = 'none';
   }
+}
+
+export function validateDetails() {
+  let valid = true;
+  valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
+  valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
+  valid = validateSelect('fTipo', 'Selecciona el tipo de incidencia.') && valid;
+
+  // Validación cruzada: si hay categoría, subtipo debe ser coherente
+  const categoryId = String($('#fTipo')?.value || '').trim();
+  const subcategorySelect = $('#fSubtipo');
+  if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
+    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid;
+  }
+
+  valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid;
+  valid = validateTextMax('fDescripcion', 1000, 'La descripción no debe superar 1000 caracteres.') && valid;
+  valid = validateEmail('fCorreo') && valid;
+
+  showCategoryHint(categoryId);
 
   return valid;
 }
@@ -1107,5 +1146,10 @@ export function formatFileSize(bytes) {
 
 export function createClientId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  if (globalThis.crypto?.getRandomValues) {
+    const array = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(array);
+    return `${Date.now()}-${array[0].toString(16)}`;
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`; // NOSONAR
 }

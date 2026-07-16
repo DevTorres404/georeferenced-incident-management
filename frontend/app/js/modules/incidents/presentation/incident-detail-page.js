@@ -131,6 +131,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               <select class="custom-select custom-select-sm border-warning" id="estadoDirecto"
                       aria-label="Cambiar estado de la incidencia"></select>
             </div>
+            <small class="text-muted d-none ml-1" id="statePriorityHint">
+              <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
+            </small>
           ` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
@@ -422,7 +425,26 @@ export function renderStateSelector(incident, transitions) {
   const select = document.getElementById('estadoDirecto');
   if (!select) return;
 
+  const hasPriority = !!(incident.priority_id || incident.priority?.id);
   const currentStateName = formatCatalogLabel(incident.state?.name || '-');
+
+  if (!hasPriority) {
+    select.innerHTML = `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`;
+    select.disabled = true;
+    select.title = 'Debes asignar una prioridad antes de cambiar el estado';
+
+    const hint = document.getElementById('statePriorityHint');
+    if (hint) {
+      hint.classList.remove('d-none');
+    }
+    return;
+  }
+
+  const hint = document.getElementById('statePriorityHint');
+  if (hint) {
+    hint.classList.add('d-none');
+  }
+
   const availableTransitions = getAvailableStateTransitions(incident, transitions);
   select.innerHTML = [
     `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`,
@@ -1144,8 +1166,12 @@ function resolveAttachmentUrl(attachment) {
     return rawPath;
   }
 
-  const normalizedPath = rawPath.replace(/^\/+/, '');
-  const configuredBaseUrl = String(
+  let normalizedPath = rawPath;
+  while (normalizedPath.startsWith('/')) {
+    normalizedPath = normalizedPath.slice(1);
+  }
+
+  let configuredBaseUrl = String(
     globalThis.SGI_ATTACHMENTS_BASE_URL
       || globalThis.SGI_STORAGE_BASE_URL
       || deriveStorageBaseUrl()
@@ -1155,13 +1181,20 @@ function resolveAttachmentUrl(attachment) {
     return '';
   }
 
-  return `${configuredBaseUrl.replace(/\/+$/, '')}/${normalizedPath}`;
+  while (configuredBaseUrl.endsWith('/')) {
+    configuredBaseUrl = configuredBaseUrl.slice(0, -1);
+  }
+  return `${configuredBaseUrl}/${normalizedPath}`;
 }
 
 function deriveStorageBaseUrl() {
   if (typeof API_URL !== 'string' || !API_URL) return '';
 
-  const normalizedApiUrl = API_URL.replace(/\/+$/, '');
+  let normalizedApiUrl = API_URL;
+  while (normalizedApiUrl.endsWith('/')) {
+    normalizedApiUrl = normalizedApiUrl.slice(0, -1);
+  }
+  
   if (normalizedApiUrl.endsWith('/api')) {
     return `${normalizedApiUrl.slice(0, -4)}/storage`;
   }

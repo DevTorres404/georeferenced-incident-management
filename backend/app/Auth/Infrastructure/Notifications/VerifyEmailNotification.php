@@ -22,7 +22,7 @@ class VerifyEmailNotification extends QueuedMailNotification
             Carbon::now()->addMinutes(60 * 24),
             [
                 'id' => $notifiable->getKey(),
-                'hash' => sha1($notifiable->getEmailForVerification()),
+                'hash' => hash('sha256', (string) $notifiable->getEmailForVerification()),
             ]
         );
 

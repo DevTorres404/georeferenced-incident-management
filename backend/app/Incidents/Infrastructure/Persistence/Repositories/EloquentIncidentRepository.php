@@ -570,6 +570,14 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 ->lockForUpdate()
                 ->findOrFail($incidentId);
 
+            if (! $incident->priority_id) {
+                throw IncidentException::priorityRequiredForAssignment();
+            }
+
+            if (! $incident->state_id) {
+                throw IncidentException::stateRequiredForAssignment();
+            }
+
             $this->ensureUserCanAssignIncident($userId, $incident);
 
             $desiredAssignments = [
@@ -698,6 +706,11 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     public function changeState(int $incidentId, int $userId, ChangeStateInputData $data): \App\Incidents\Domain\Entities\Incident
     {
         $incident = Incident::findOrFail($incidentId);
+
+        if (! $incident->priority_id) {
+            throw IncidentException::priorityRequiredForState();
+        }
+
         $previousStateId = $incident->state_id;
         $previousState = State::find($previousStateId);
         $newState = State::findOrFail($data->stateId);

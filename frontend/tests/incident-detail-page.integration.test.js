@@ -348,7 +348,7 @@ describe('Integration — incident-detail-page', () => {
           <select class="custom-select custom-select-sm border-warning" id="estadoDirecto"></select>
         </div>`;
 
-      renderStateSelector({ state_id: 1, state: { name: 'Nueva' } }, sampleTransitions);
+      renderStateSelector({ state_id: 1, state: { name: 'Nueva' }, priority_id: 1, priority: { id: 1, name: 'Alta' } }, sampleTransitions);
       const select = document.getElementById('estadoDirecto');
       expect(select).not.toBeNull();
       expect(select.options.length).toBe(3);
