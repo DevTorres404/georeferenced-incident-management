@@ -1,3 +1,4 @@
+import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
 import {
   assignIncidentOperators,
   getIncident,
@@ -56,6 +57,7 @@ export async function initAssignmentManagementPage() {
   // Refrescar incidencias y operadores cuando llega una notificación de cambio de estado/asignación
   globalThis.addEventListener('sgi:notification-created', () => {
     if (document.visibilityState === 'hidden') return;
+    clearApiCache();
     Promise.all([
       listIncidents({ per_page: 100 }),
       listAssignmentOperators(),
@@ -389,7 +391,8 @@ export async function submitAssignment(state) {
 
     globalThis.jQuery?.('#assignmentModal').modal('hide');
 
-    // Recargar incidencias y operadores desde el backend
+    // Recargar incidencias y operadores desde el backend (sin caché)
+    clearApiCache();
     const [incidentsResponse, operatorsResponse] = await Promise.all([
       listIncidents({ per_page: 100 }),
       listAssignmentOperators(),
