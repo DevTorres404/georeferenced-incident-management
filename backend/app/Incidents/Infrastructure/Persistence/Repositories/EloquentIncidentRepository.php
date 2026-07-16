@@ -146,26 +146,19 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         );
     }
 
-    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array
+    public function countByState(IncidentFiltersData $filters, int $userId, bool $canManage): array
     {
         $query = Incident::query();
         $this->applyIncidentVisibilityScope($query, $userId);
         $this->applyFilterCriteria($query, $filters, $userId);
 
-        $result = $query
+        $results = $query
             ->join('core.states as s', 's.id', '=', 'core.incidents.state_id')
-            ->selectRaw('
-                COUNT(CASE WHEN s.is_initial_state AND NOT s.is_final_state THEN 1 END) as pendiente,
-                COUNT(CASE WHEN NOT s.is_initial_state AND NOT s.is_final_state THEN 1 END) as en_proceso,
-                COUNT(CASE WHEN s.is_final_state THEN 1 END) as resuelta
-            ')
-            ->first();
+            ->selectRaw('s.id, COUNT(*) as count')
+            ->groupBy('s.id')
+            ->get();
 
-        return [
-            'pendiente' => (int) ($result->pendiente ?? 0),
-            'en_proceso' => (int) ($result->en_proceso ?? 0),
-            'resuelta' => (int) ($result->resuelta ?? 0),
-        ];
+        return $results->pluck('count', 'id')->all();
     }
 
     public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array
@@ -756,12 +749,28 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             $previousStateId,
             $newState,
             $isClosing,
+            $isReopening,
             $releasesAssignments
         ): array {
-            $incident->update([
+            $updateData = [
                 'state_id' => $data->stateId,
-                'resolution_date' => $newState->is_final_state ? now() : null,
-            ]);
+            ];
+
+            if ($isReopening) {
+                $updateData['reopened_at'] = now();
+                $updateData['previous_resolution_date'] = $incident->resolution_date;
+                $updateData['resolution_date'] = null;
+            } else {
+                if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {
+                    $updateData['rejected_at'] = $incident->rejected_at ?? now();
+                } elseif ($newState->is_final_state) {
+                    $updateData['resolution_date'] = $incident->resolution_date ?? now();
+                } else {
+                    $updateData['resolution_date'] = null;
+                }
+            }
+
+            $incident->update($updateData);
 
             IncidentState::create([
                 'incident_id' => $incident->id,
@@ -1634,7 +1643,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
             $incident->update([
                 'state_id' => $request->requested_state_id,
-                'resolution_date' => null,
+                'resolution_date' => $incident->resolution_date ?? now(),
             ]);
 
             IncidentState::create([

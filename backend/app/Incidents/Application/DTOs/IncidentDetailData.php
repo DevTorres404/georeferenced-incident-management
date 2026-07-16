@@ -20,7 +20,11 @@ final class IncidentDetailData implements JsonSerializable
         public readonly ?string $address,
         public readonly ?string $latitude,
         public readonly ?string $longitude,
+        public readonly ?string $dueDate,
         public readonly ?string $resolutionDate,
+        public readonly ?string $reopenedAt,
+        public readonly ?string $previousResolutionDate,
+        public readonly ?string $rejectedAt,
         public readonly ?string $createdAt,
         public readonly int $reporterUserId,
         public readonly ?int $assigneeUserId,
@@ -28,17 +32,17 @@ final class IncidentDetailData implements JsonSerializable
         public readonly ?StateSummaryData $state,
         public readonly ?CategorySummaryData $category,
         public readonly ?CategorySummaryData $subcategory,
-            public readonly ?PrioritySummaryData $priority,
-            public readonly ?TerritorialUnitSummaryData $territorialUnit = null,
-            public readonly ?array $reporter = null,
-            public readonly ?array $assignedOperator = null,
-            public readonly ?array $sla = null,
-            public readonly array $history = [],
-            public readonly array $comments = [],
-            public readonly array $attachments = [],
-            public readonly array $assignments = []
-        ) {
-        }
+        public readonly ?PrioritySummaryData $priority,
+        public readonly ?TerritorialUnitSummaryData $territorialUnit = null,
+        public readonly ?array $reporter = null,
+        public readonly ?UserSummaryData $assignedOperator = null,
+        public readonly ?array $sla = null,
+        public readonly array $history = [],
+        public readonly array $comments = [],
+        public readonly array $attachments = [],
+        public readonly array $assignments = []
+    ) {
+    }
     
         public function jsonSerialize(): array
         {
@@ -52,6 +56,10 @@ final class IncidentDetailData implements JsonSerializable
                 'latitude' => $this->latitude,
                 'longitude' => $this->longitude,
                 'resolution_date' => $this->resolutionDate,
+                'reopened_at' => $this->reopenedAt,
+                'previous_resolution_date' => $this->previousResolutionDate,
+                'rejected_at' => $this->rejectedAt,
+                'assigned_operator' => $this->assignedOperator,
                 'created_at' => $this->createdAt,
                 'reporter_user_id' => $this->reporterUserId,
                 'assignee_user_id' => $this->assigneeUserId,

@@ -121,6 +121,7 @@ class IncidentController extends ApiController
             'mine' => ['nullable', 'boolean'],
             'assigned_to_me' => ['nullable', 'boolean'],
             'state_filter' => ['nullable', 'string', 'max:50'],
+            'state_id' => ['nullable', 'integer'],
             'priority_filter' => ['nullable', 'integer'],
             'pending_state_request' => ['nullable', 'boolean'],
         ]);
@@ -136,6 +137,7 @@ class IncidentController extends ApiController
 
         $filtersDto = new IncidentFiltersData(
             stateFilter: $validated['state_filter'] ?? null,
+            stateId: $validated['state_id'] ?? null,
             priorityId: $validated['priority_filter'] ?? null,
             mine: $validated['mine'] ?? null,
             assignedToMe: $validated['assigned_to_me'] ?? null,
@@ -182,7 +184,7 @@ class IncidentController extends ApiController
         );
 
         return response()->json([
-            'data' => $this->incidentUseCase->countByStateCategory($filters, $user->id, $this->canManage($user)),
+            'data' => $this->incidentUseCase->countByState($filters, $user->id, $this->canManage($user)),
         ]);
     }
 
@@ -451,7 +453,7 @@ class IncidentController extends ApiController
         }
 
         $data = $request->validate([
-            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov,zip'],
+            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png'],
         ]);
 
         try {

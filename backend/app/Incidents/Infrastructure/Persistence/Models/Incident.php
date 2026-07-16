@@ -37,6 +37,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'longitude',
     'reported_by_id',
     'resolution_date',
+    'reopened_at',
+    'previous_resolution_date',
+    'rejected_at',
 ])]
 class Incident extends Model
 {
@@ -51,6 +54,9 @@ class Incident extends Model
             'longitude'         => 'decimal:8',
             'due_date'          => 'datetime',
             'resolution_date'   => 'datetime',
+            'reopened_at'       => 'datetime',
+            'previous_resolution_date' => 'datetime',
+            'rejected_at'       => 'datetime',
         ];
     }
 

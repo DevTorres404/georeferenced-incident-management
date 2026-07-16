@@ -19,6 +19,7 @@ final class IncidentHistoryEntryMapper
             previousStateName: $history->relationLoaded('previousState') ? $history->previousState?->name : null,
             newStateId: (int) $history->new_state_id,
             newStateName: $history->relationLoaded('newState') ? $history->newState?->name : null,
+            newStateColor: $history->relationLoaded('newState') ? $history->newState?->color : null,
             userId: (int) $history->user_id,
             comment: $history->comment,
             createdAt: $history->created_at?->toIso8601String(),

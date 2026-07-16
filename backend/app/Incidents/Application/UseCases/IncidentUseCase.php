@@ -36,9 +36,9 @@ final class IncidentUseCase
         return $this->incidentRepository->dataTable($filters, $userId, $canManage, $start, $length);
     }
 
-    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array
+    public function countByState(IncidentFiltersData $filters, int $userId, bool $canManage): array
     {
-        return $this->incidentRepository->countByStateCategory($filters, $userId, $canManage);
+        return $this->incidentRepository->countByState($filters, $userId, $canManage);
     }
 
     public function __construct(

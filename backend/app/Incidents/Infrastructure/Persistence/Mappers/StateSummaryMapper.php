@@ -12,6 +12,7 @@ final class StateSummaryMapper
         return new StateSummaryData(
             id: (int) $state->id,
             name: $state->name,
+            color: $state->color,
             allowsEdition: (bool) $state->allows_edition,
             isFinalState: (bool) $state->is_final_state
         );

@@ -80,14 +80,6 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         $result = [];
         foreach ($states as $state) {
             $name = $state->name;
-            if (in_array($name, ['NUEVA', 'PENDIENTE'])) {
-                $name = 'Pendiente';
-            } elseif (in_array($name, ['EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION'])) {
-                $name = 'En proceso';
-            } elseif (in_array($name, ['RESUELTA', 'CERRADA'])) {
-                $name = 'Resuelta';
-            }
-
             if (! isset($result[$name])) {
                 $result[$name] = 0;
             }
@@ -100,61 +92,47 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
     public function getMonthlyTrend(int $userId, int $months = 6): array
     {
         $monthsData = [];
-
+        $labels = [];
+        $monthKeys = [];
         for ($i = $months - 1; $i >= 0; $i--) {
             $date = Carbon::now()->startOfMonth()->subMonths($i);
             $key = $date->format('Y-m');
-            $monthsData[$key] = [
-                'label' => mb_convert_case($date->translatedFormat('M'), MB_CASE_TITLE, 'UTF-8'),
-                'registered' => 0,
-                'resolved' => 0,
-            ];
+            $monthKeys[] = $key;
+            $labels[] = mb_convert_case($date->translatedFormat('M'), MB_CASE_TITLE, 'UTF-8');
         }
 
-        $createdTrend = $this->visibleIncidentQuery($userId)
-            ->select(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
-            ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
-            ->groupBy(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM')"))
-            ->get();
-
-        foreach ($createdTrend as $row) {
-            if (isset($monthsData[$row->month])) {
-                $monthsData[$row->month]['registered'] = (int) $row->count;
-            }
-        }
-
-        $resolvedTrend = $this->visibleIncidentQuery($userId)
-            ->select(DB::raw("TO_CHAR(resolution_date, 'YYYY-MM') as month"), DB::raw('COUNT(*) as count'))
+        $trend = $this->visibleIncidentQuery($userId)
             ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
-            ->whereIn('core.states.name', ['RESUELTA', 'CERRADA'])
-            ->whereNotNull('resolution_date')
-            ->where('resolution_date', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
-            ->groupBy(DB::raw("TO_CHAR(resolution_date, 'YYYY-MM')"))
+            ->select(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM') as month"), 'core.states.name as state', DB::raw('COUNT(*) as count'))
+            ->where('core.incidents.created_at', '>=', Carbon::now()->startOfMonth()->subMonths($months - 1))
+            ->groupBy(DB::raw("TO_CHAR(core.incidents.created_at, 'YYYY-MM')"), 'core.states.name')
             ->get();
 
-        foreach ($resolvedTrend as $row) {
-            if (isset($monthsData[$row->month])) {
-                $monthsData[$row->month]['resolved'] = (int) $row->count;
+        $seriesData = [];
+        $allStates = $trend->pluck('state')->unique();
+
+        foreach ($allStates as $state) {
+            $seriesData[$state] = array_fill(0, $months, 0);
+        }
+
+        foreach ($trend as $row) {
+            $monthIndex = array_search($row->month, $monthKeys);
+            if ($monthIndex !== false) {
+                $seriesData[$row->state][$monthIndex] = (int) $row->count;
             }
         }
 
-        $labels = [];
-        $registered = [];
-        $resolved = [];
-        $pending = [];
-
-        foreach ($monthsData as $key => $data) {
-            $labels[] = $data['label'];
-            $registered[] = $data['registered'];
-            $resolved[] = $data['resolved'];
-            $pending[] = max($data['registered'] - $data['resolved'], 0);
+        $series = [];
+        foreach ($seriesData as $state => $data) {
+            $series[] = [
+                'name' => $state,
+                'data' => $data,
+            ];
         }
 
         return [
             'months' => $labels,
-            'registered' => $registered,
-            'resolved' => $resolved,
-            'pending' => $pending,
+            'series' => $series,
         ];
     }
 

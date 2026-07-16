@@ -34,7 +34,7 @@ interface IncidentRepositoryInterface
     /**
      * @return array{pendiente: int, en_proceso: int, resuelta: int}
      */
-    public function countByStateCategory(IncidentFiltersData $filters, int $userId, bool $canManage): array;
+    public function countByState(IncidentFiltersData $filters, int $userId, bool $canManage): array;
 
     /**
      * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>

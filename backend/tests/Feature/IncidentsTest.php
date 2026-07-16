@@ -402,9 +402,16 @@ class IncidentsTest extends TestCase
                 && ! $event->comment->isInternal
         );
 
+        $priority = \App\Incidents\Infrastructure\Persistence\Models\Priority::firstOrFail();
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priority->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
-                'user_id' => $operator['user']->id,
+                'primary_user_id' => $operator['user']->id,
+                'support_user_ids' => [],
             ])->assertCreated()
             ->assertJsonPath('data.current_assignee_user_id', $operator['user']->id);
 
