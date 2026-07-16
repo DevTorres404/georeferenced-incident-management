@@ -24,7 +24,8 @@ final class IncidentSummaryData implements JsonSerializable
         public readonly ?string $resolutionDate = null,
         public readonly ?string $createdAt = null,
         public readonly ?string $dueDate = null,
-        public readonly array $assignments = []
+        public readonly array $assignments = [],
+        public readonly bool $hasPendingStateRequest = false,
     ) {
     }
 
@@ -50,6 +51,7 @@ final class IncidentSummaryData implements JsonSerializable
             'created_at' => $this->createdAt,
             'due_date' => $this->dueDate,
             'assignments' => $this->assignments,
+            'has_pending_state_request' => $this->hasPendingStateRequest,
         ];
     }
 }

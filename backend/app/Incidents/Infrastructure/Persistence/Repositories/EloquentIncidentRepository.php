@@ -97,7 +97,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
-        $query = Incident::query()->with(self::RELATIONS);
+        $query = Incident::query()->with(self::RELATIONS)->withExists('pendingStateChangeRequests');
         $this->applySorting($query, $filters);
         $this->applyIncidentVisibilityScope($query, $userId);
 
@@ -123,7 +123,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): IncidentListResultData
     {
-        $query = Incident::query()->with(self::RELATIONS);
+        $query = Incident::query()->with(self::RELATIONS)->withExists('pendingStateChangeRequests');
         $this->applyIncidentVisibilityScope($query, $userId);
 
         $recordsTotal = (clone $query)->count();
@@ -1208,14 +1208,23 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     private function applyFilterCriteria($query, IncidentFiltersData $filters, int $userId): void
     {
         if ($filters->stateFilter !== null) {
-            $stateIds = match ($filters->stateFilter) {
-                'pendiente' => State::where('is_initial_state', true)->where('is_active', true)->pluck('id')->all(),
-                'en_proceso' => State::where('is_initial_state', false)->where('is_final_state', false)->where('is_active', true)->pluck('id')->all(),
-                'resuelta' => State::where('is_final_state', true)->where('is_active', true)->pluck('id')->all(),
-                default => [],
-            };
-            if (count($stateIds) > 0) {
-                $query->whereIn('state_id', $stateIds);
+            if ($filters->stateFilter === 'pending_review') {
+                $query->whereExists(function ($existsQuery) {
+                    $existsQuery->selectRaw(1)
+                        ->from('state_change_requests')
+                        ->whereColumn('state_change_requests.incident_id', 'core.incidents.id')
+                        ->where('state_change_requests.status', 'pending');
+                });
+            } else {
+                $stateIds = match ($filters->stateFilter) {
+                    'pendiente' => State::where('is_initial_state', true)->where('is_active', true)->pluck('id')->all(),
+                    'en_proceso' => State::where('is_initial_state', false)->where('is_final_state', false)->where('is_active', true)->pluck('id')->all(),
+                    'resuelta' => State::where('is_final_state', true)->where('is_active', true)->pluck('id')->all(),
+                    default => [],
+                };
+                if (count($stateIds) > 0) {
+                    $query->whereIn('state_id', $stateIds);
+                }
             }
         } elseif ($filters->stateIds !== null && count($filters->stateIds) > 0) {
             $query->whereIn('state_id', $filters->stateIds);
@@ -1252,6 +1261,15 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 $searchQuery->where('code', 'ILIKE', "%{$search}%")
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if ($filters->pendingStateRequest === true) {
+            $query->whereExists(function ($existsQuery) {
+                $existsQuery->selectRaw(1)
+                    ->from('state_change_requests')
+                    ->whereColumn('state_change_requests.incident_id', 'core.incidents.id')
+                    ->where('state_change_requests.status', 'pending');
             });
         }
     }

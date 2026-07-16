@@ -78,7 +78,8 @@ final class IncidentSummaryMapper
                     })
                     ->values()
                     ->all()
-                : []
+                : [],
+            hasPendingStateRequest: $incident->pending_state_change_requests_exists ?? false,
         );
     }
 }

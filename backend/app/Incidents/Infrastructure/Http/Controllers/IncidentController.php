@@ -122,6 +122,7 @@ class IncidentController extends ApiController
             'assigned_to_me' => ['nullable', 'boolean'],
             'state_filter' => ['nullable', 'string', 'max:50'],
             'priority_filter' => ['nullable', 'integer'],
+            'pending_state_request' => ['nullable', 'boolean'],
         ]);
 
         $draw = (int) $validated['draw'];
@@ -141,6 +142,7 @@ class IncidentController extends ApiController
             search: $searchValue,
             sortBy: $sortBy,
             sortDirection: $orderDirection,
+            pendingStateRequest: $validated['pending_state_request'] ?? null,
         );
 
         $result = $this->incidentUseCase->dataTable($filtersDto, $user->id, $this->canManage($user), $start, $length);

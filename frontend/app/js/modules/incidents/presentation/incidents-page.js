@@ -31,6 +31,7 @@ export async function initIncidentsPage() {
     priorityNameToId: {},
     activeStateFilter: 'todos',
     activePriorityFilter: 'todas',
+    activePendingStateRequest: false,
     activeSearchQuery: readStoredSearch(),
     activeScopeFilter: 'role',
     canDeleteIncident: false,
@@ -132,6 +133,10 @@ function initDataTable(state) {
         params.set('priority_filter', String(state.activePriorityFilter));
       }
 
+      if (state.activePendingStateRequest) {
+        params.set('pending_state_request', '1');
+      }
+
       request(`/incidents/datatable?${params.toString()}`)
         .then((response) => {
           callback({
@@ -184,10 +189,14 @@ function initDataTable(state) {
       },
       {
         data: 'state',
-        render: (data) => {
+        render: (data, type, row) => {
+          if (type === 'sort' || type === 'type') return data;
           const label = formatCatalogLabel(data);
           const badge = getStateBadgeClass(data);
-          return `<span class="badge ${badge} shadow-sm">${escapeHtml(label)}</span>`;
+          const pendingIcon = row?.has_pending_state_request
+            ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>`
+            : '';
+          return `<span class="badge ${badge} shadow-sm">${escapeHtml(label)}</span>${pendingIcon}`;
         },
       },
       {
@@ -321,6 +330,17 @@ function renderStateFilters(state) {
       </div>
     `).join(''));
 
+  // Filtro "En revisión" para solicitudes de cambio de estado pendientes
+  container.insertAdjacentHTML('beforeend', `
+      <div class="inc-kpi-card filtro-btn${state.activePendingStateRequest ? ' active' : ''}" data-filtro="pending_review">
+        <div class="inc-kpi-content">
+          <span class="inc-kpi-label">En revisión</span>
+          <strong class="inc-kpi-number text-warning" id="cnt-pending-review">0</strong>
+        </div>
+        <div class="inc-kpi-icon text-warning"><i class="fas fa-clock"></i></div>
+      </div>
+  `);
+
   // Eliminar event listeners anteriores si existieran (la delegación en body/container evita duplicados si el container no se destruye, pero el container es fijo)
   // Para evitar registrar múltiples delegateEvents si la función se llama varias veces, primero removemos clonando, 
   // o simplemente usamos una delegación global en la inicialización.
@@ -329,7 +349,14 @@ function renderStateFilters(state) {
     delegateEvent(container, '.filtro-btn', 'click', (e, button) => {
       container.querySelectorAll('.filtro-btn').forEach((item) => item.classList.remove('active'));
       button.classList.add('active');
-      state.activeStateFilter = String(button.dataset.filtro || '').toLowerCase();
+      const filtro = String(button.dataset.filtro || '').toLowerCase();
+      if (filtro === 'pending_review') {
+        state.activePendingStateRequest = true;
+        state.activeStateFilter = 'todos';
+      } else {
+        state.activePendingStateRequest = false;
+        state.activeStateFilter = filtro;
+      }
       if (state.dataTable) {
         state.dataTable.ajax.reload();
       }

@@ -157,6 +157,17 @@ class Incident extends Model
         return $this->asignaciones();
     }
 
+    public function stateChangeRequests(): HasMany
+    {
+        return $this->hasMany(StateChangeRequest::class, 'incident_id')
+            ->orderBy('created_at', 'desc');
+    }
+
+    public function pendingStateChangeRequests(): HasMany
+    {
+        return $this->stateChangeRequests()->where('status', 'pending');
+    }
+
     public function comments(): HasMany
     {
         return $this->hasMany(IncidentComment::class, 'incident_id')

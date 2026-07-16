@@ -236,7 +236,7 @@ export function renderTable(state) {
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
         <td><span class="badge ${getPriorityBadgeClass(incident.priority?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
-        <td><span class="badge ${getStateBadgeClass(incident.state?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span></td>
+        <td><span class="badge ${getStateBadgeClass(incident.state?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
         <td>${escapeHtml(incident.zone_name || 'Sin zona')}</td>
         <td>${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
         <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
@@ -318,6 +318,7 @@ function renderAssignmentModal(state) {
       <div class="d-flex gap-2 mt-1">
         <span class="${priorityBadge} px-2 py-1">${escapeHtml(priorityLabel)}</span>
         <span class="${stateBadge} px-2 py-1">${escapeHtml(stateLabel)}</span>
+        ${incident.has_pending_state_request ? `<span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}
       </div>
     `;
   }
