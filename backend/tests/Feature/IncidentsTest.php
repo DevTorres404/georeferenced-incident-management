@@ -857,25 +857,33 @@ class IncidentsTest extends TestCase
         $citizen = $this->authenticateAs('CIUDADANO', 'citizen-rejected-reopen@incidencias.local');
         $admin = $this->authenticateAs('ADMIN', 'admin-rejected-reopen@incidencias.local');
         $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-rejected-reopen@incidencias.local');
-        $formerOperator = $this->authenticateAs('OPERADOR', 'former-rejected-reopen@incidencias.local');
-        $newOperator = $this->authenticateAs('OPERADOR', 'new-rejected-reopen@incidencias.local');
+        $primary = $this->authenticateAs('OPERADOR', 'primary-rejected-reopen@incidencias.local');
+        $support = $this->authenticateAs('OPERADOR', 'support-rejected-reopen@incidencias.local');
         $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
         $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
         $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
         $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        OperatorProfile::query()
+            ->whereIn('user_id', [$primary['user']->id, $support['user']->id])
+            ->update(['max_active_incidents' => 1, 'max_workload_points' => 10, 'active' => true]);
+
         $incident = $this->createIncidentInState(
             'INC-REJECTED-REOPEN',
             $rejectedState->id,
             $citizen['user']->id
         );
-        $formerAssignment = IncidentAssignment::query()->create([
+        $this->assignIncidentToOperator($incident, $primary['user']->id, $supervisor['user']->id);
+        IncidentAssignment::query()->create([
             'incident_id' => $incident->id,
-            'user_id' => $formerOperator['user']->id,
+            'user_id' => $support['user']->id,
             'assigned_by_id' => $supervisor['user']->id,
-            'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
-            'active' => false,
-            'unassignment_date' => now()->subDay(),
+            'assignment_role' => IncidentAssignment::ROLE_SUPPORT,
+            'active' => true,
         ]);
+        $staleAssignmentIds = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->pluck('id');
 
         $this->actingAsUser($supervisor['user'])
             ->patchJson("/api/incidents/{$incident->id}/state", [
@@ -883,27 +891,63 @@ class IncidentsTest extends TestCase
                 'comment' => 'The rejection requires a new review.',
             ])->assertOk();
 
-        $this->assertFalse($formerAssignment->fresh()->active);
+        $releasedAssignments = IncidentAssignment::query()
+            ->whereIn('id', $staleAssignmentIds)
+            ->get();
+        $this->assertCount(2, $releasedAssignments);
+        $this->assertTrue($releasedAssignments->every(
+            fn (IncidentAssignment $assignment): bool => ! $assignment->active
+                && $assignment->unassignment_date !== null
+        ));
+        $this->assertSame(1, $releasedAssignments
+            ->pluck('unassignment_date')
+            ->map(fn ($date): string => $date->format('Y-m-d H:i:s.u'))
+            ->unique()
+            ->count());
+        $this->assertNull($incident->fresh()->current_assigned_id);
+        $this->assertSame(0, IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->count());
+        $this->assertSame(0, Notification::query()
+            ->whereIn('user_id', [$primary['user']->id, $support['user']->id])
+            ->where('incident_id', $incident->id)
+            ->where('title', 'Incidencia reabierta')
+            ->count());
+        $this->assertSame(1, Notification::query()
+            ->where('user_id', $citizen['user']->id)
+            ->where('incident_id', $incident->id)
+            ->where('title', 'Cambio de estado')
+            ->where('message', 'ILIKE', '%Reabierta%')
+            ->count());
+
         $this->actingAsUser($supervisor['user'])
             ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $reviewState->id,
             ])->assertOk();
         $this->actingAsUser($supervisor['user'])
             ->postJson("/api/incidents/{$incident->id}/assignments", [
-                'user_id' => $newOperator['user']->id,
+                'primary_user_id' => $primary['user']->id,
+                'support_user_ids' => [$support['user']->id],
             ])->assertCreated();
+
+        $this->assertSame(2, IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->whereNotIn('id', $staleAssignmentIds)
+            ->count());
+        $this->assertSame($primary['user']->id, $incident->fresh()->current_assigned_id);
+
         $this->actingAsUser($supervisor['user'])
             ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $inProgressState->id,
             ])->assertOk()
             ->assertJsonPath('data.state_id', $inProgressState->id);
 
-        $this->assertFalse($formerAssignment->fresh()->active);
-        $this->assertDatabaseHas('core.incident_assignments', [
-            'incident_id' => $incident->id,
-            'user_id' => $newOperator['user']->id,
-            'active' => true,
-        ]);
+        $this->assertSame(0, IncidentAssignment::query()
+            ->whereIn('id', $staleAssignmentIds)
+            ->where('active', true)
+            ->count());
 
         $adminIncident = $this->createIncidentInState(
             'INC-ADMIN-REOPEN-R',

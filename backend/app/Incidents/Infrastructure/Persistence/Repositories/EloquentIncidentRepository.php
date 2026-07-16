@@ -154,11 +154,11 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
         $result = $query
             ->join('core.states as s', 's.id', '=', 'core.incidents.state_id')
-            ->selectRaw("
+            ->selectRaw('
                 COUNT(CASE WHEN s.is_initial_state AND NOT s.is_final_state THEN 1 END) as pendiente,
                 COUNT(CASE WHEN NOT s.is_initial_state AND NOT s.is_final_state THEN 1 END) as en_proceso,
                 COUNT(CASE WHEN s.is_final_state THEN 1 END) as resuelta
-            ")
+            ')
             ->first();
 
         return [
@@ -745,14 +745,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $previousState = State::find($previousStateId);
         $newState = State::findOrFail($data->stateId);
 
-        $isClosing = in_array(strtoupper((string) $newState->name), ['CERRADA', 'CLOSED'], true);
+        $normalizedNewState = strtoupper((string) $newState->name);
+        $isClosing = in_array($normalizedNewState, ['CERRADA', 'CLOSED'], true);
+        $isReopening = in_array($normalizedNewState, ['REABIERTA', 'REOPENED'], true);
+        $releasesAssignments = $isClosing || $isReopening;
         $assignedOperatorIds = DB::transaction(function () use (
             $incident,
             $data,
             $userId,
             $previousStateId,
             $newState,
-            $isClosing
+            $isClosing,
+            $releasesAssignments
         ): array {
             $incident->update([
                 'state_id' => $data->stateId,
@@ -768,22 +772,31 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             ]);
 
             $operatorIds = [];
-            if ($isClosing) {
-                $operatorIds = IncidentAssignment::query()
+            if ($releasesAssignments) {
+                $activeAssignments = IncidentAssignment::query()
                     ->where('incident_id', $incident->id)
                     ->where('active', true)
                     ->lockForUpdate()
-                    ->pluck('user_id')
-                    ->map(fn ($operatorId): int => (int) $operatorId)
-                    ->all();
+                    ->get(['user_id']);
+
+                if ($isClosing) {
+                    $operatorIds = $activeAssignments
+                        ->pluck('user_id')
+                        ->map(fn ($operatorId): int => (int) $operatorId)
+                        ->all();
+                }
+
+                $unassignmentDate = now();
 
                 IncidentAssignment::query()
                     ->where('incident_id', $incident->id)
                     ->where('active', true)
                     ->update([
                         'active' => false,
-                        'unassignment_date' => now(),
+                        'unassignment_date' => $unassignmentDate,
                     ]);
+
+                $incident->forceFill(['current_assigned_id' => null])->save();
             }
 
             return $operatorIds;
@@ -814,7 +827,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             );
         }
 
-        if (! $changedByOperator || $isClosing) {
+        if (! $isReopening && (! $changedByOperator || $isClosing)) {
             $this->notifyAssignedOperatorsForStateChange(
                 $incident,
                 $newState,
@@ -1112,8 +1125,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         Incident $incident,
         State $newState,
         ?array $operatorIds = null
-    ): void
-    {
+    ): void {
         $operatorIds ??= IncidentAssignment::query()
             ->where('incident_id', $incident->id)
             ->where('active', true)
@@ -1581,8 +1593,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         int $requestId,
         int $reviewerUserId,
         ?string $comment
-    ): void
-    {
+    ): void {
         $eventData = DB::transaction(function () use ($incidentId, $requestId, $reviewerUserId, $comment): array {
             $incident = Incident::query()
                 ->with('state')
