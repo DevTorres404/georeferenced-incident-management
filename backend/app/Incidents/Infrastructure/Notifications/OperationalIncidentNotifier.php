@@ -20,6 +20,61 @@ final class OperationalIncidentNotifier
         private readonly AdminNotifier $adminNotifier
     ) {}
 
+    public function notifyStateChangeRequested(Incident $incident, int $requestedByUserId, string $reason): int
+    {
+        $requestedBy = User::query()->find($requestedByUserId);
+        $requestedByName = $requestedBy?->getNombreCompletoAttribute() ?? "Usuario #{$requestedByUserId}";
+        $requestedState = $incident->relationLoaded('requestedState')
+            ? $incident->requestedState
+            : null;
+        $stateLabel = $requestedState?->name ?? 'nuevo estado';
+
+        $title = 'Solicitud de cambio de estado';
+        $message = "El operador {$requestedByName} solicita cambiar el estado de la incidencia {$incident->code} a {$stateLabel}. Motivo: {$reason}.";
+        $type = 'STATE_CHANGE_REQUESTED';
+
+        $supervisorUserIds = $this->supervisorUserIdsForIncident($incident);
+
+        if ($supervisorUserIds !== []) {
+            return $this->userNotifier->notifyMany(
+                $supervisorUserIds,
+                $title,
+                $message,
+                $type,
+                (int) $incident->id,
+                true
+            );
+        }
+
+        $this->adminNotifier->notify($title, $message, $type, [], (int) $incident->id);
+
+        return 0;
+    }
+
+    public function notifyStateChangeApproved(Incident $incident, int $operatorUserId): void
+    {
+        $this->userNotifier->notify(
+            $operatorUserId,
+            'Cambio de estado aprobado',
+            "Tu solicitud de cambio de estado para la incidencia {$incident->code} fue aprobada. El estado fue actualizado.",
+            'STATE_CHANGE_APPROVED',
+            (int) $incident->id,
+            false
+        );
+    }
+
+    public function notifyStateChangeRejected(Incident $incident, int $operatorUserId, string $reason): void
+    {
+        $this->userNotifier->notify(
+            $operatorUserId,
+            'Cambio de estado rechazado',
+            "Tu solicitud de cambio de estado para la incidencia {$incident->code} fue rechazada. Motivo: {$reason}.",
+            'STATE_CHANGE_REJECTED',
+            (int) $incident->id,
+            false
+        );
+    }
+
     public function notifyOperators(): int
     {
         $created = 0;

@@ -60,4 +60,29 @@ class IncidentException extends Exception
     {
         return new self('La incidencia debe tener un estado asignado antes de asignar un operador.', 422);
     }
+
+    public static function stateChangeRequestPending(): self
+    {
+        return new self('Ya existe una solicitud de cambio de estado pendiente para esta incidencia.', 422);
+    }
+
+    public static function stateChangeRequestNotFound(): self
+    {
+        return new self('La solicitud de cambio de estado no existe.', 404);
+    }
+
+    public static function stateChangeRequestAlreadyReviewed(): self
+    {
+        return new self('Esta solicitud de cambio de estado ya fue revisada.', 422);
+    }
+
+    public static function stateChangeRequestForbidden(): self
+    {
+        return new self('No tienes permisos para revisar esta solicitud de cambio de estado.', 403);
+    }
+
+    public static function operatorCannotChangeState(): self
+    {
+        return new self('Los operadores no pueden cambiar el estado directamente. Deben solicitar el cambio a un supervisor.', 403);
+    }
 }

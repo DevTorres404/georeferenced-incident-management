@@ -1,9 +1,15 @@
 import {
   addIncidentComment,
+  approveStateChangeRequest,
   changeIncidentState,
   getIncident,
+  getPendingStateChangeRequests,
+  getStateChangeRequests,
   listPriorities,
   listStateTransitions,
+  listStates,
+  rejectStateChangeRequest,
+  requestStateChange,
   updateIncident,
   uploadIncidentAttachment,
 } from '../application/incidents-service.js?v=17';
@@ -32,6 +38,10 @@ let commentFallbackTimer = null;
 let commentRefreshInFlight = false;
 let detailRealtimeSubscription = null;
 let cachedTransitions = [];
+let pendingStateRequests = [];
+let availableStates = [];
+let pendingStateRequest = null;
+let pendingReviewRequest = null;
 
 globalThis.addEventListener('pagehide', () => {
   commentSubscription?.cleanup?.();
@@ -57,10 +67,14 @@ export async function initIncidentDetailPage() {
   try {
     const canChangeState = hasPermission('incidents.edit');
     const canAssignPriority = canManagePriority();
-    const [incidentResponse, transitionsResponse, prioritiesResponse] = await Promise.all([
+    const isOperatorUser = !canChangeState && isOperator();
+
+    const [incidentResponse, transitionsResponse, prioritiesResponse, statesResponse, requestsResponse] = await Promise.all([
       getIncident(incidentId),
       canChangeState ? listStateTransitions() : Promise.resolve({ data: [] }),
       canAssignPriority ? listPriorities() : Promise.resolve({ data: [] }),
+      isOperatorUser ? listStates() : Promise.resolve({ data: [] }),
+      canChangeState ? getStateChangeRequests(incidentId) : Promise.resolve({ data: [] }),
     ]);
     const incident = incidentResponse?.data;
 
@@ -74,6 +88,14 @@ export async function initIncidentDetailPage() {
       'pageTitle',
       `<i class="fas fa-file-alt text-primary mr-2"></i>Detalle - ${escapeHtml(incident.code || `#${incident.id}`)}`
     );
+
+    if (isOperatorUser) {
+      availableStates = Array.isArray(statesResponse?.data) ? statesResponse.data : [];
+    }
+
+    pendingStateRequests = Array.isArray(requestsResponse?.data)
+      ? requestsResponse.data.filter((r) => r.status === 'pending')
+      : [];
 
     renderIncidentDetail(
       container,
@@ -134,6 +156,11 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             <small class="text-muted d-none ml-1" id="statePriorityHint">
               <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
             </small>
+          ` : ''}
+          ${!canChangeState && isOperator() ? `
+            <button class="btn btn-sm btn-outline-warning" id="btnSolicitarCambioEstado">
+              <i class="fas fa-paper-plane mr-1"></i>Solicitar cambio de estado
+            </button>
           ` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
@@ -348,6 +375,18 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   if (canChangeState) {
     cachedTransitions = transitions;
     bindStateChangeControl(incident, transitions);
+  }
+
+  // Bind para operador: solicitar cambio de estado
+  const requestBtn = document.getElementById('btnSolicitarCambioEstado');
+  if (requestBtn) {
+    requestBtn.addEventListener('click', () => openRequestStateModal(incident, availableStates));
+  }
+
+  // Seccion de solicitudes pendientes para supervisor
+  if (pendingStateRequests.length > 0) {
+    container.innerHTML += renderPendingStateRequests(pendingStateRequests);
+    bindReviewRequestButtons(incident);
   }
 }
 
@@ -813,6 +852,8 @@ function bindPriorityForm(incident) {
         badge.className = `badge ${getPriorityBadgeClass(incident.priority?.name || '')} px-2 py-1`;
       }
 
+      renderStateSelector(incident, cachedTransitions);
+
       globalThis.jQuery?.('#modalPrioridad').modal('hide');
       showGlobalAlert('Prioridad actualizada correctamente.', 'success');
     } catch (error) {
@@ -1256,6 +1297,158 @@ function canManagePriority() {
   });
 }
 
+function isOperator() {
+  const user = readCurrentUser();
+  if (!user || !Array.isArray(user.roles)) return false;
+  return user.roles.some((role) => {
+    const code = normalizeCode(role);
+    return code === 'OPERADOR';
+  });
+}
+
+function openRequestStateModal(incident, states) {
+  const select = document.getElementById('solicitudNuevoEstado');
+  const motivo = document.getElementById('solicitudMotivo');
+  if (!select || !motivo) return;
+
+  const currentStateId = Number(incident.state_id);
+  const filteredStates = (Array.isArray(states) ? states : [])
+    .filter((s) => Number(s.id) !== currentStateId);
+
+  select.innerHTML = [
+    '<option value="">Seleccione un estado...</option>',
+    ...filteredStates.map((s) =>
+      `<option value="${s.id}">${escapeHtml(formatCatalogLabel(s.name))}</option>`
+    ),
+  ].join('');
+
+  motivo.value = '';
+  pendingStateRequest = { incident };
+
+  globalThis.jQuery?.('#modalSolicitarEstado').modal('show');
+}
+
+function renderPendingStateRequests(requests) {
+  return `
+    <div class="card card-outline card-warning mt-3">
+      <div class="card-header">
+        <h3 class="card-title">
+          <i class="fas fa-clock mr-2"></i>Solicitudes de cambio pendientes
+          <span class="badge badge-warning ml-2">${requests.length}</span>
+        </h3>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Solicitante</th>
+                <th>Estado solicitado</th>
+                <th>Razon</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${requests.map((r) => {
+                const requesterName = r.requested_by
+                  ? [r.requested_by.first_name, r.requested_by.last_name].filter(Boolean).join(' ')
+                  : 'Usuario';
+                return `
+                  <tr>
+                    <td>${escapeHtml(requesterName)}</td>
+                    <td><span class="badge badge-info">${escapeHtml(formatCatalogLabel(r.requested_state?.name || '-'))}</span></td>
+                    <td>${escapeHtml(r.reason || '-')}</td>
+                    <td><small>${escapeHtml(formatDateTime(r.created_at))}</small></td>
+                    <td>
+                      <button class="btn btn-sm btn-success mr-1" data-action="approve-request" data-request-id="${r.id}">
+                        <i class="fas fa-check mr-1"></i>Aprobar
+                      </button>
+                      <button class="btn btn-sm btn-danger" data-action="reject-request" data-request-id="${r.id}">
+                        <i class="fas fa-times mr-1"></i>Rechazar
+                      </button>
+                    </td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function bindReviewRequestButtons(incident) {
+  document.querySelectorAll('[data-action="approve-request"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const requestId = Number(btn.dataset.requestId);
+      const request = pendingStateRequests.find((r) => Number(r.id) === requestId);
+      if (request) openApproveModal(incident, request);
+    });
+  });
+
+  document.querySelectorAll('[data-action="reject-request"]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const requestId = Number(btn.dataset.requestId);
+      const request = pendingStateRequests.find((r) => Number(r.id) === requestId);
+      if (request) openRejectModal(incident, request);
+    });
+  });
+}
+
+function openApproveModal(incident, request) {
+  const header = document.getElementById('modalRevisarHeader');
+  const title = document.getElementById('modalRevisarTitulo');
+  const summary = document.getElementById('modalRevisarResumen');
+  const approveBtn = document.getElementById('btnConfirmarAprobar');
+  const rejectBtn = document.getElementById('btnConfirmarRechazar');
+  const commentInput = document.getElementById('modalRevisarComentario');
+  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) return;
+
+  header.className = 'modal-header bg-success text-white';
+  title.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar solicitud de cambio';
+  summary.innerHTML = renderReviewSummary(request);
+  commentInput.value = '';
+  approveBtn.classList.remove('d-none');
+  rejectBtn.classList.add('d-none');
+
+  pendingReviewRequest = { incident, request, action: 'approve' };
+  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show');
+}
+
+function openRejectModal(incident, request) {
+  const header = document.getElementById('modalRevisarHeader');
+  const title = document.getElementById('modalRevisarTitulo');
+  const summary = document.getElementById('modalRevisarResumen');
+  const approveBtn = document.getElementById('btnConfirmarAprobar');
+  const rejectBtn = document.getElementById('btnConfirmarRechazar');
+  const commentInput = document.getElementById('modalRevisarComentario');
+  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) return;
+
+  header.className = 'modal-header bg-danger text-white';
+  title.innerHTML = '<i class="fas fa-times mr-2"></i>Rechazar solicitud de cambio';
+  summary.innerHTML = renderReviewSummary(request);
+  commentInput.value = '';
+  approveBtn.classList.add('d-none');
+  rejectBtn.classList.remove('d-none');
+
+  pendingReviewRequest = { incident, request, action: 'reject' };
+  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show');
+}
+
+function renderReviewSummary(request) {
+  const requesterName = request.requested_by
+    ? [request.requested_by.first_name, request.requested_by.last_name].filter(Boolean).join(' ')
+    : 'Usuario';
+
+  return `
+    <div class="small">
+      <p><strong>Solicitante:</strong> ${escapeHtml(requesterName)}</p>
+      <p><strong>Estado solicitado:</strong> <span class="badge badge-info">${escapeHtml(formatCatalogLabel(request.requested_state?.name || '-'))}</span></p>
+      <p><strong>Razon:</strong><br>${escapeHtml(request.reason || 'Sin especificar')}</p>
+      <p><strong>Fecha:</strong> ${escapeHtml(formatDateTime(request.created_at))}</p>
+    </div>`;
+}
+
 function readCurrentUser() {
   try {
     return JSON.parse(localStorage.getItem('user_data') || 'null');
@@ -1268,3 +1461,80 @@ function normalizeCode(value) {
   if (typeof value === 'string') return value.trim().toUpperCase();
   return String(value?.code || value?.codigo || value?.name || value?.nombre || '').trim().toUpperCase();
 }
+
+// ── Module-level event bindings (run once) ──
+
+// Bind enviar solicitud button
+document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', async () => {
+  if (!pendingStateRequest) return;
+  const { incident } = pendingStateRequest;
+  const stateId = Number(document.getElementById('solicitudNuevoEstado')?.value);
+  const reason = document.getElementById('solicitudMotivo')?.value.trim();
+
+  if (!stateId) {
+    showGlobalAlert('Seleccione un estado destino.', 'warning');
+    return;
+  }
+  if (!reason) {
+    showGlobalAlert('Ingrese el motivo de la solicitud.', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btnEnviarSolicitudEstado');
+  if (btn) btn.disabled = true;
+
+  try {
+    await requestStateChange(incident.id, { state_id: stateId, reason });
+    globalThis.jQuery?.('#modalSolicitarEstado').modal('hide');
+    showGlobalAlert('Solicitud enviada correctamente.', 'success');
+    pendingStateRequest = null;
+  } catch (error) {
+    showGlobalAlert(error.message || 'No se pudo enviar la solicitud.', 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+// Bind aprobar button in review modal
+document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async () => {
+  if (!pendingReviewRequest || pendingReviewRequest.action !== 'approve') return;
+  const { incident, request } = pendingReviewRequest;
+  const comment = document.getElementById('modalRevisarComentario')?.value.trim() || '';
+
+  const btn = document.getElementById('btnConfirmarAprobar');
+  if (btn) btn.disabled = true;
+
+  try {
+    await approveStateChangeRequest(incident.id, request.id, { comment: comment || undefined });
+    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
+    showGlobalAlert('Solicitud aprobada correctamente. El estado se ha actualizado.', 'success');
+    pendingReviewRequest = null;
+    await initIncidentDetailPage();
+  } catch (error) {
+    showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});
+
+// Bind rechazar button in review modal
+document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async () => {
+  if (!pendingReviewRequest || pendingReviewRequest.action !== 'reject') return;
+  const { incident, request } = pendingReviewRequest;
+  const comment = document.getElementById('modalRevisarComentario')?.value.trim() || '';
+
+  const btn = document.getElementById('btnConfirmarRechazar');
+  if (btn) btn.disabled = true;
+
+  try {
+    await rejectStateChangeRequest(incident.id, request.id, { comment: comment || undefined });
+    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
+    showGlobalAlert('Solicitud rechazada correctamente.', 'success');
+    pendingReviewRequest = null;
+    await initIncidentDetailPage();
+  } catch (error) {
+    showGlobalAlert(error.message || 'No se pudo rechazar la solicitud.', 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+});

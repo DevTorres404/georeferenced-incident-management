@@ -98,6 +98,17 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/incidents/{incident}/state', [IncidentController::class, 'changeState'])
             ->middleware('permission:incidents.edit');
 
+        Route::post('/incidents/{incident}/state-requests', [IncidentController::class, 'requestStateChange'])
+            ->middleware('permission:incidents.view');
+        Route::get('/incidents/{incident}/state-requests', [IncidentController::class, 'getStateChangeRequests'])
+            ->middleware('permission:incidents.view');
+        Route::patch('/incidents/{incident}/state-requests/{stateRequest}/approve', [IncidentController::class, 'approveStateChange'])
+            ->middleware('permission:incidents.edit');
+        Route::patch('/incidents/{incident}/state-requests/{stateRequest}/reject', [IncidentController::class, 'rejectStateChange'])
+            ->middleware('permission:incidents.edit');
+        Route::get('/state-requests/pending', [IncidentController::class, 'pendingStateChangeRequests'])
+            ->middleware('permission:incidents.edit');
+
         Route::middleware('permission:notifications.view')->group(function () {
             Route::get('/notifications', [NotificationController::class, 'index']);
             Route::get('/notifications/unread/count', [NotificationController::class, 'unreadCount']);

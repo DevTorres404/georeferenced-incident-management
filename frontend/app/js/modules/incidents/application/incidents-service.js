@@ -84,6 +84,35 @@ async function listPriorities() {
   return request('/catalogs/priorities');
 }
 
+async function requestStateChange(incidentId, payload) {
+  return request(`/incidents/${incidentId}/state-requests`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function approveStateChangeRequest(incidentId, requestId, payload = {}) {
+  return request(`/incidents/${incidentId}/state-requests/${requestId}/approve`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function rejectStateChangeRequest(incidentId, requestId, payload = {}) {
+  return request(`/incidents/${incidentId}/state-requests/${requestId}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+async function getStateChangeRequests(incidentId) {
+  return request(`/incidents/${incidentId}/state-requests`);
+}
+
+async function getPendingStateChangeRequests() {
+  return request('/state-requests/pending');
+}
+
 const incidentsService = {
   listIncidents,
   createIncident,
@@ -98,22 +127,32 @@ const incidentsService = {
   listStateTransitions,
   listAssignmentOperators,
   listPriorities,
+  requestStateChange,
+  approveStateChangeRequest,
+  rejectStateChangeRequest,
+  getStateChangeRequests,
+  getPendingStateChangeRequests,
 };
 
 globalThis.SGIGIncidentsService = incidentsService;
 
 export {
   addIncidentComment,
+  approveStateChangeRequest,
   assignIncidentOperators,
   changeIncidentState,
   createIncident,
   deleteIncident,
   getIncident,
+  getPendingStateChangeRequests,
+  getStateChangeRequests,
   listAssignmentOperators,
   listIncidents,
   listPriorities,
   listStates,
   listStateTransitions,
+  rejectStateChangeRequest,
+  requestStateChange,
   updateIncident,
   uploadIncidentAttachment,
 };
