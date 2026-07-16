@@ -81,6 +81,13 @@ const NAV_ITEMS = [
         route: 'operational-structure.html',
         permission: 'operations.view',
       },
+      {
+        id: 'my-team',
+        label: 'Mi equipo',
+        icon: 'fa-users',
+        route: 'my-team.html',
+        permission: 'operations.view_team',
+      },
     ],
   },
   {
@@ -125,6 +132,7 @@ const PAGE_ACCESS = {
   'incident-create': { permission: 'incidents.create' },
   'assignment-management': { permission: 'incidents.assign' },
   'operational-structure': { permission: 'operations.view' },
+  'my-team': { permission: 'operations.view_team' },
   'role-permissions': { permission: 'users.manage_roles' },
   'user-roles': { permission: 'users.manage_roles' },
   reports: { permission: 'reportes.ver' },

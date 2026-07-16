@@ -8,6 +8,7 @@ use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
 use App\Operations\Infrastructure\Http\Controllers\OperationalStructureController;
+use App\Operations\Infrastructure\Http\Controllers\TeamController;
 use App\TerritorialUnits\Infrastructure\Http\Controllers\TerritorialUnitController;
 use App\Users\Infrastructure\Http\Controllers\AccessControlController;
 use App\Users\Infrastructure\Http\Controllers\UserController;
@@ -150,6 +151,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             Route::patch('operators/{operatorUserId}/profile', [OperationalStructureController::class, 'updateOperatorProfile'])
                 ->middleware('permission:operations.manage');
         });
+
+        Route::get('/team/operators', [TeamController::class, 'operators'])
+            ->middleware('permission:operations.view_team');
 
         Route::middleware('permission:catalogs.manage')->group(function () {
             Route::get('/admin/catalogs/{catalog}', [CatalogManagementController::class, 'index']);
