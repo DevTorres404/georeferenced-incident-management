@@ -68,13 +68,14 @@ export async function initIncidentDetailPage() {
     const canChangeState = hasPermission('incidents.edit');
     const canAssignPriority = canManagePriority();
     const isOperatorUser = !canChangeState && isOperator();
+    const shouldLoadRequests = canChangeState || isOperatorUser;
 
     const [incidentResponse, transitionsResponse, prioritiesResponse, statesResponse, requestsResponse] = await Promise.all([
       getIncident(incidentId),
       canChangeState ? listStateTransitions() : Promise.resolve({ data: [] }),
       canAssignPriority ? listPriorities() : Promise.resolve({ data: [] }),
       isOperatorUser ? listStates() : Promise.resolve({ data: [] }),
-      canChangeState ? getStateChangeRequests(incidentId) : Promise.resolve({ data: [] }),
+      shouldLoadRequests ? getStateChangeRequests(incidentId) : Promise.resolve({ data: [] }),
     ]);
     const incident = incidentResponse?.data;
 
@@ -157,11 +158,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
             </small>
           ` : ''}
-          ${!canChangeState && isOperator() ? `
-            <button class="btn btn-sm btn-outline-warning" id="btnSolicitarCambioEstado">
-              <i class="fas fa-paper-plane mr-1"></i>Solicitar cambio de estado
-            </button>
-          ` : ''}
+          ${!canChangeState && isOperator() ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
           </a>
@@ -378,13 +375,10 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   }
 
   // Bind para operador: solicitar cambio de estado
-  const requestBtn = document.getElementById('btnSolicitarCambioEstado');
-  if (requestBtn) {
-    requestBtn.addEventListener('click', () => openRequestStateModal(incident, availableStates));
-  }
+  bindOperatorStateButton(incident);
 
   // Seccion de solicitudes pendientes para supervisor
-  if (pendingStateRequests.length > 0) {
+  if (canChangeState && pendingStateRequests.length > 0) {
     container.innerHTML += renderPendingStateRequests(pendingStateRequests);
     bindReviewRequestButtons(incident);
   }
@@ -853,6 +847,7 @@ function bindPriorityForm(incident) {
       }
 
       renderStateSelector(incident, cachedTransitions);
+      updateOperatorStateButton(incident);
 
       globalThis.jQuery?.('#modalPrioridad').modal('hide');
       showGlobalAlert('Prioridad actualizada correctamente.', 'success');
@@ -1329,6 +1324,68 @@ function openRequestStateModal(incident, states) {
   globalThis.jQuery?.('#modalSolicitarEstado').modal('show');
 }
 
+function renderOperatorStateButton(incident) {
+  const hasPriority = !!(incident.priority_id || incident.priority?.id);
+  const pendingRequest = pendingStateRequests.find(r => r.status === 'pending');
+
+  if (pendingRequest) {
+    return `
+      <button class="btn btn-sm btn-outline-warning disabled" style="cursor: not-allowed;" title="Ya hay una solicitud pendiente">
+        <i class="fas fa-hourglass-half mr-1"></i>Solicitud de estado pendiente
+      </button>
+    `;
+  }
+
+  if (!hasPriority) {
+    return `
+      <div class="d-inline-block" tabindex="0" data-toggle="tooltip" title="Debes asignar una prioridad antes de solicitar un cambio de estado">
+        <button class="btn btn-sm btn-outline-warning" disabled style="pointer-events: none;">
+          <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <button class="btn btn-sm btn-outline-warning" id="btnSolicitarCambioEstado">
+      <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
+    </button>
+  `;
+}
+
+function bindOperatorStateButton(incident) {
+  const requestBtn = document.getElementById('btnSolicitarCambioEstado');
+  if (requestBtn) {
+    requestBtn.addEventListener('click', () => openRequestStateModal(incident, availableStates));
+  }
+}
+
+function updateOperatorStateButton(incident) {
+  const container = document.getElementById('operatorStateButtonContainer');
+  if (container) {
+    container.innerHTML = renderOperatorStateButton(incident);
+    bindOperatorStateButton(incident);
+  }
+}
+
+function removePendingRequestRow(requestId) {
+  const row = document.getElementById(`row-solicitud-${requestId}`);
+  if (row) {
+    row.remove();
+  }
+  
+  // If no more requests, remove the whole panel
+  if (pendingStateRequests.length === 0) {
+    const tableContainer = document.querySelector('.table-responsive');
+    if (tableContainer) {
+      const card = tableContainer.closest('.card');
+      if (card) {
+        card.remove();
+      }
+    }
+  }
+}
+
 function renderPendingStateRequests(requests) {
   return `
     <div class="card card-outline card-warning mt-3">
@@ -1485,10 +1542,18 @@ document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', a
   if (btn) btn.disabled = true;
 
   try {
-    await requestStateChange(incident.id, { state_id: stateId, reason });
+    const result = await requestStateChange(incident.id, { state_id: stateId, reason });
     globalThis.jQuery?.('#modalSolicitarEstado').modal('hide');
-    showGlobalAlert('Solicitud enviada correctamente.', 'success');
+    showGlobalAlert('Solicitud enviada correctamente. El supervisor será notificado.', 'success');
     pendingStateRequest = null;
+
+    // Update operator button to show pending state
+    if (result?.data) {
+      pendingStateRequests = [result.data, ...pendingStateRequests];
+    } else {
+      pendingStateRequests = [{ status: 'pending', requested_state_id: stateId }];
+    }
+    updateOperatorStateButton(incident);
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo enviar la solicitud.', 'danger');
   } finally {
@@ -1510,7 +1575,17 @@ document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async 
     globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
     showGlobalAlert('Solicitud aprobada correctamente. El estado se ha actualizado.', 'success');
     pendingReviewRequest = null;
-    await initIncidentDetailPage();
+
+    // Dynamically update the state after approval
+    pendingStateRequests = pendingStateRequests.filter((r) => Number(r.id) !== Number(request.id));
+    if (request.requested_state_id || request.requestedStateId) {
+      const newStateId = request.requested_state_id ?? request.requestedStateId;
+      const newStateName = request.requested_state_name ?? request.requestedStateName ?? request.requested_state?.name ?? '-';
+      incident.state_id = newStateId;
+      incident.state = { ...incident.state, id: newStateId, name: newStateName };
+      updateStatePresentation(incident, cachedTransitions);
+    }
+    removePendingRequestRow(request.id);
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger');
   } finally {
@@ -1532,7 +1607,10 @@ document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async
     globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
     showGlobalAlert('Solicitud rechazada correctamente.', 'success');
     pendingReviewRequest = null;
-    await initIncidentDetailPage();
+
+    // Remove the rejected request from the list
+    pendingStateRequests = pendingStateRequests.filter((r) => Number(r.id) !== Number(request.id));
+    removePendingRequestRow(request.id);
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo rechazar la solicitud.', 'danger');
   } finally {

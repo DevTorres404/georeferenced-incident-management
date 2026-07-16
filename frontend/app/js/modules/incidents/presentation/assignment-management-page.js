@@ -52,6 +52,22 @@ export async function initAssignmentManagementPage() {
   } finally {
     hidePageLoading();
   }
+
+  // Refrescar incidencias y operadores cuando llega una notificación de cambio de estado/asignación
+  globalThis.addEventListener('sgi:notification-created', () => {
+    if (document.visibilityState === 'hidden') return;
+    Promise.all([
+      listIncidents({ per_page: 100 }),
+      listAssignmentOperators(),
+    ]).then(([incidentsResponse, operatorsResponse]) => {
+      state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
+      state.filteredIncidents = [...state.incidents];
+      state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
+      populateFilters(state);
+      renderKpis(state.filteredIncidents, state.operators);
+      renderTable(state);
+    }).catch(() => { /* silencioso — no interrumpir al usuario */ });
+  });
 }
 
 function bindStaticEvents(state) {
@@ -371,8 +387,12 @@ export async function submitAssignment(state) {
       support_user_ids: supportUserIds,
     });
 
-    const incidentsResponse = await listIncidents({ per_page: 100 });
+    const [incidentsResponse, operatorsResponse] = await Promise.all([
+      listIncidents({ per_page: 100 }),
+      listAssignmentOperators(),
+    ]);
     state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
+    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
     applyFilters(state);
     globalThis.jQuery?.('#assignmentModal').modal('hide');
     showGlobalAlert('Asignación actualizada correctamente.', 'success');
