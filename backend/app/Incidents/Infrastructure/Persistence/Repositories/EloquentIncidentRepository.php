@@ -773,6 +773,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 message: "La incidencia {$incident->code} fue actualizada por un operador.",
                 type: 'STATUS_CHANGE'
             );
+        } else {
+            $this->notifyAssignedOperatorsForStateChange($incident, $newState);
         }
 
         $this->notifySupervisorsForStateChange($incident, $newState);
@@ -1059,6 +1061,41 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             ),
             default => null,
         };
+    }
+
+    private function notifyAssignedOperatorsForStateChange(Incident $incident, State $newState): void
+    {
+        $operatorIds = \App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->pluck('user_id')
+            ->toArray();
+
+        if (empty($operatorIds)) {
+            return;
+        }
+
+        $normalizedState = strtoupper(str_replace(' ', '_', $newState->name));
+
+        if ($normalizedState === 'REABIERTA') {
+            $title = 'Incidencia reabierta';
+            $message = "La incidencia {$incident->code} fue reabierta por el supervisor. Por favor, revisela nuevamente.";
+            $type = 'STATUS_CHANGE';
+        } else {
+            $title = 'Cambio de estado';
+            $message = "La incidencia {$incident->code} cambio su estado a {$newState->name}.";
+            $type = 'STATUS_CHANGE';
+        }
+
+        foreach ($operatorIds as $operatorId) {
+            $this->createNotification(
+                userId: (int) $operatorId,
+                title: $title,
+                message: $message,
+                type: $type,
+                incidentId: (int) $incident->id
+            );
+        }
     }
 
     /**

@@ -160,7 +160,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
             </small>
           ` : ''}
-          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) !== 'RESUELTA' && normalizeCode(incident.state?.name) !== 'CERRADA' ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
+          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
           </a>
@@ -1368,9 +1368,13 @@ function bindOperatorStateButton(incident) {
 
 function updateOperatorStateButton(incident) {
   const container = document.getElementById('operatorStateButtonContainer');
-  if (container) {
+  if (!container) return;
+
+  if (normalizeCode(incident.state?.name) === 'EN_PROGRESO') {
     container.innerHTML = renderOperatorStateButton(incident);
     bindOperatorStateButton(incident);
+  } else {
+    container.remove();
   }
 }
 
@@ -1415,15 +1419,14 @@ function renderPendingStateRequests(requests) {
             </thead>
             <tbody>
               ${requests.map((r) => {
-                const requesterName = r.requested_by
-                  ? [r.requested_by.first_name, r.requested_by.last_name].filter(Boolean).join(' ')
-                  : 'Usuario';
+                const requesterName = r.requestedByUserName || r.requested_by_user_name || 'Usuario';
+                const stateName = r.requestedStateName || r.requested_state_name || '-';
                 return `
                   <tr>
                     <td>${escapeHtml(requesterName)}</td>
-                    <td><span class="badge badge-info">${escapeHtml(formatCatalogLabel(r.requested_state?.name || '-'))}</span></td>
+                    <td><span class="badge badge-info">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
                     <td>${escapeHtml(r.reason || '-')}</td>
-                    <td><small>${escapeHtml(formatDateTime(r.created_at))}</small></td>
+                    <td><small>${escapeHtml(formatDateTime(r.created_at || r.createdAt))}</small></td>
                     <td>
                       <button class="btn btn-sm btn-success mr-1" data-action="approve-request" data-request-id="${r.id}">
                         <i class="fas fa-check mr-1"></i>Aprobar
