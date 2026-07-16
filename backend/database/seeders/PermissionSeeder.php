@@ -39,6 +39,7 @@ class PermissionSeeder extends Seeder
             ['code' => 'users.manage_roles', 'name' => 'Gestionar roles y permisos', 'description' => 'Permite administrar las pantallas de Roles y permisos y Usuarios y roles.', 'module' => 'users'],
 
             ['code' => 'operations.view', 'name' => 'Ver cobertura operativa', 'description' => 'Permite acceder al mapa y ficha de Cobertura Operativa segun la zona autorizada.', 'module' => 'operations'],
+            ['code' => 'operations.view_team', 'name' => 'Ver equipo de trabajo', 'description' => 'Permite consultar los operadores asignados directamente al supervisor autenticado.', 'module' => 'operations'],
             ['code' => 'operations.manage', 'name' => 'Gestionar cobertura operativa', 'description' => 'Permite cambiar supervisores, operadores, limites y encargados de zona.', 'module' => 'operations'],
 
             ['code' => 'catalogs.manage', 'name' => 'Gestionar catalogos', 'description' => 'Permite administrar catalogos maestros, incluidas prioridades y sus pesos.', 'module' => 'catalogs'],
@@ -68,7 +69,6 @@ class PermissionSeeder extends Seeder
                 'dashboard.view',
                 'incidents.view',
                 'incidents.detail',
-                'incidents.create',
                 'incidents.map',
                 'incidents.edit',
                 'incidents.assign',
@@ -79,7 +79,7 @@ class PermissionSeeder extends Seeder
                 'comments.create',
                 'comments.internal',
                 'users.view',
-                'operations.view',
+                'operations.view_team',
                 'reportes.ver',
                 'reportes.exportar',
                 'catalogs.manage',
