@@ -83,6 +83,30 @@ $startedAt = time();
 // it within their own transaction. A pre-seeded database would cause
 // unexpected results (duplicate keys, wrong counts) because tests operate
 // on top of committed seed data.
+// Drop all application schemas via direct PDO before migrate:fresh.
+// db:wipe only targets public schema tables, leaving auth/core/audit intact
+// when the container persists its tmpfs between runs.
+try {
+    $dsn = sprintf(
+        'pgsql:host=%s;port=%d;dbname=%s',
+        getenv('DB_HOST') ?: 'backend-test-db',
+        (int) (getenv('DB_PORT') ?: 5432),
+        getenv('DB_DATABASE') ?: 'incident_management_system_testing'
+    );
+    $pdo = new PDO(
+        $dsn,
+        getenv('DB_USERNAME') ?: 'user_im',
+        getenv('DB_PASSWORD') ?: 'pass_im',
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $pdo->exec('DROP SCHEMA IF EXISTS auth CASCADE');
+    $pdo->exec('DROP SCHEMA IF EXISTS core CASCADE');
+    $pdo->exec('DROP SCHEMA IF EXISTS audit CASCADE');
+    $pdo = null;
+} catch (PDOException $e) {
+    failAnalysis("Schema cleanup failed: {$e->getMessage()}", $reports);
+}
+
 $migrateCommand = array_map(
     escapeshellarg(...),
     [PHP_BINARY, 'artisan', 'migrate:fresh', '--force']
