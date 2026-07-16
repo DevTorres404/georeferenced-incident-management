@@ -199,6 +199,21 @@ body.dark-mode .modal-header.bg-danger .close.text-white {
   color: #fff !important;
 }
 
+/* --- Assign Role Modal --- */
+body.dark-mode .assign-user-card {
+  background: linear-gradient(160deg, var(--sgi-surface), var(--sgi-primary-soft));
+  border-color: var(--sgi-border);
+}
+
+body.dark-mode .assign-user-card h5 {
+  color: var(--sgi-text) !important;
+}
+
+body.dark-mode .assign-current-role.bg-light {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--sgi-border) !important;
+}
+
 /* --- Text utilities --- */
 body.dark-mode .text-main {
   color: var(--sgi-text) !important;
@@ -803,9 +818,15 @@ body.dark-mode #changeSupervisorForm.bg-light,
 body.dark-mode #replaceOperatorForm.bg-light {
   background-color: rgba(26, 29, 35, 0.5) !important;
   border-color: var(--sgi-border) !important;
+  color: var(--sgi-text) !important;
 }
 body.dark-mode .border-right {
   border-right-color: var(--sgi-border) !important;
+}
+body.dark-mode #supervisorInfoContainer .bg-white,
+body.dark-mode #operatorsListContainer .bg-white {
+  background-color: var(--sgi-surface) !important;
+  border-color: var(--sgi-border) !important;
 }
 
 /* --- Tables sticky header --- */

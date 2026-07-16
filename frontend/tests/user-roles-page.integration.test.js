@@ -266,11 +266,11 @@ describe('user-roles-page — integration', () => {
       await initUserRolesPage();
 
       const assignButtons = document.querySelectorAll('.btn-assign-role');
-      expect(assignButtons).toHaveLength(3);
+      expect(assignButtons).toHaveLength(6);
       expect(assignButtons[0].dataset.userId).toBe('1');
 
       const deactivateButtons = document.querySelectorAll('.btn-deactivate-user');
-      expect(deactivateButtons).toHaveLength(3);
+      expect(deactivateButtons).toHaveLength(6);
     });
 
     it('applies table-inactive class for inactive users', async () => {

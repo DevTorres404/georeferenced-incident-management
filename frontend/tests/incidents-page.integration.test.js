@@ -55,9 +55,9 @@ const FIXTURE = `
 `;
 
 const sampleStates = [
-  { name: 'Nueva', is_initial_state: true, is_final_state: false },
-  { name: 'En Progreso', is_initial_state: false, is_final_state: false },
-  { name: 'Resuelta', is_initial_state: false, is_final_state: true },
+  { id: 1, code: 'NUEVA', name: 'Nueva', is_initial_state: true, is_final_state: false },
+  { id: 2, code: 'EN_PROGRESO', name: 'En Progreso', is_initial_state: false, is_final_state: false },
+  { id: 3, code: 'RESUELTA', name: 'Resuelta', is_initial_state: false, is_final_state: true },
 ];
 
 const samplePriorities = [
@@ -138,7 +138,7 @@ describe('Integration — incidents-page', () => {
       expect(typeof mod.initIncidentsPage).toBe('function');
       expect(typeof mod.buildPriorityLookup).toBe('function');
       expect(typeof mod.normalizePriorityFilter).toBe('function');
-      expect(typeof mod.buildStateGroups).toBe('function');
+
       expect(typeof mod.readStoredSearch).toBe('function');
       expect(typeof mod.storeSearch).toBe('function');
       expect(typeof mod.userHasPermission).toBe('function');
@@ -165,9 +165,9 @@ describe('Integration — incidents-page', () => {
       expect(listPriorities).toHaveBeenCalled();
 
       const kpiGrid = document.querySelector('.inc-kpi-grid');
-      expect(kpiGrid.innerHTML).toContain('Pendientes');
-      expect(kpiGrid.innerHTML).toContain('En Proceso');
-      expect(kpiGrid.innerHTML).toContain('Resueltas');
+      expect(kpiGrid.innerHTML).toContain('Nueva');
+      expect(kpiGrid.innerHTML).toContain('En progreso');
+      expect(kpiGrid.innerHTML).toContain('Resuelta');
 
       const scopeFilters = document.getElementById('incidentScopeFilters');
       expect(scopeFilters.innerHTML).toContain('Todas');
@@ -407,7 +407,7 @@ describe('Integration — incidents-page', () => {
     it('state filter click updates active filter and reloads DataTable', async () => {
       const dt = await initWithRequestMock();
 
-      const pendienteBtn = document.querySelector('.filtro-btn[data-filtro="pendiente"]');
+      const pendienteBtn = document.querySelector('.filtro-btn[data-filtro="1"]');
       expect(pendienteBtn).not.toBeNull();
       pendienteBtn.click();
       await flushMicrotasks();
@@ -588,15 +588,6 @@ describe('Integration — incidents-page', () => {
     it('buildPriorityLookup builds normalized map', async () => {
       const { buildPriorityLookup } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
       expect(buildPriorityLookup([{ name: 'Crítica', id: 1 }])).toEqual({ critica: 1 });
-    });
-
-    it('buildStateGroups groups states correctly', async () => {
-      const { buildStateGroups } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      const groups = buildStateGroups(sampleStates);
-      expect(groups).toHaveLength(3);
-      expect(groups[0].filtro).toBe('pendiente');
-      expect(groups[1].filtro).toBe('en_proceso');
-      expect(groups[2].filtro).toBe('resuelta');
     });
 
     it('storeSearch / readStoredSearch round-trips', async () => {

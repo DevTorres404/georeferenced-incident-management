@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -47,15 +47,18 @@
                             <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Resumen general del estado y
                                 distribución de incidencias.</p>
                         </div>
+                        <div class="col-sm-6 d-flex justify-content-sm-end align-items-center mt-3 mt-sm-0">
+                            <a href="incident-map.html" class="btn btn-primary shadow-sm">
+                                <i class="fas fa-map-marked-alt mr-1"></i> Ver Mapa
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div> <!-- Contenido -->
             <div class="content">
-                <div class="container-fluid"> <!-- ===== KPIs ===== -->
-                    <div class="dash-kpi-grid" id="kpiRow"> <!-- Renderizados por JS --> </div>
                     <!-- ===== FILA 2: Charts + Prioridad ===== -->
                     <div class="row mt-4"> <!-- Gráfico de Tipos -->
-                        <div class="col-lg-5 col-md-12">
+                        <div class="col-lg-7 col-md-6">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
                                     <h2 class="h3"><i class="fas fa-chart-pie"></i>Incidencias por Tipo</h2> <button type="button"
@@ -65,19 +68,8 @@
                                 <div class="dash-chart-body"> <canvas id="graficoPorTipo"
                                         style="max-height:280px;"></canvas> </div>
                             </div>
-                        </div> <!-- Gráfico de Estado -->
-                        <div class="col-lg-4 col-md-6">
-                            <div class="dash-chart-card mb-4">
-                                <div class="dash-chart-header">
-                                    <h2 class="h3"><i class="fas fa-chart-bar"></i>Por Estado</h2> <button type="button"
-                                        class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
-                                        <i class="fas fa-minus"></i> </button>
-                                </div>
-                                <div class="dash-chart-body"> <canvas id="graficoPorEstado"
-                                        style="max-height:280px;"></canvas> </div>
-                            </div>
                         </div> <!-- Prioridad -->
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-5 col-md-6">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
                                     <h2 class="h3"><i class="fas fa-exclamation-triangle"></i>Por Prioridad</h2> <button
@@ -104,7 +96,7 @@
                         <div class="col-lg-4">
                             <div class="dash-info-stack" id="infoStack"> <!-- Renderizadas por JS --> </div>
                         </div>
-                    </div> <!-- ===== FILA 4: Tabla + Mapa ===== -->
+                    </div> <!-- ===== FILA 4: Tabla + Estado ===== -->
                     <div class="row"> <!-- Tabla ultimas incidencias -->
                         <div class="col-lg-8">
                             <div class="dash-table-card mb-4">
@@ -130,35 +122,18 @@
                                     </table>
                                 </div>
                             </div>
-                        </div>                         <!-- Mapa -->
+                        </div>                         <!-- Gráfico de Estado Ampliado -->
                         <div class="col-lg-4">
-                            <a href="incident-map.html" class="dash-map-card mb-4 d-block text-decoration-none">
-                                <div class="dash-map-header">
-                                    <h3><i class="fas fa-map-marked-alt"></i>Distribución Geográfica</h3>
-                                    <span class="dash-map-badge">
-                                        <i class="fas fa-external-link-alt mr-1"></i>Ir al mapa
-                                    </span>
+                            <div class="dash-chart-card mb-4" style="height: 100%;">
+                                <div class="dash-chart-header">
+                                    <h2 class="h3"><i class="fas fa-chart-bar text-primary"></i>Por Estado</h2> <button type="button"
+                                        class="btn btn-sm btn-outline-secondary border-0" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i> </button>
                                 </div>
-                                <div class="dash-map-body">
-                                    <div id="dashMapPreview" class="dash-map-preview"></div>
-                                    <div class="dash-map-row">
-                                        <div class="dash-map-figure">
-                                            <i class="fas fa-map-marked-alt"></i>
-                                        </div>
-                                        <div class="dash-map-meta">
-                                            <strong>Mapa Georreferenciado</strong>
-                                            <span>Explora todas las incidencias ubicadas en el mapa interactivo</span>
-                                        </div>
-                                    </div>
-                                    <div class="dash-map-legend"> <span class="dash-map-legend-item"> <span
-                                                class="dash-map-legend-dot"
-                                                style="background:#6c757d;"></span>Pendiente </span> <span
-                                            class="dash-map-legend-item"> <span class="dash-map-legend-dot"
-                                                style="background:#0ea5e9;"></span>En Proceso </span> <span
-                                            class="dash-map-legend-item"> <span class="dash-map-legend-dot"
-                                                style="background:#28a745;"></span>Resuelta </span> </div>
+                                <div class="dash-chart-body d-flex flex-column justify-content-center" style="min-height: 350px;">
+                                    <canvas id="graficoPorEstado" style="max-height: 320px;"></canvas>
                                 </div>
-                            </a>
+                            </div>
                         </div>
                     </div>
                 </div><!-- /.container-fluid -->
@@ -177,7 +152,7 @@
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
     <script type="module" src="/js/layout/layout.js?v=40"></script>
-    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=23"></script>
+    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=26"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         var container = document.getElementById('dashMapPreview');
@@ -194,8 +169,8 @@
             style: 'https://tiles.openfreemap.org/styles/liberty',
             center: [-78.4678, -1.8312],
             zoom: 5.5,
-            interactive: false,
-            attributionControl: false,
+            interactive: true,
+            attributionControl: true,
             fadeDuration: 0,
           });
 

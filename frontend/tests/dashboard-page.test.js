@@ -119,39 +119,6 @@ describe('dashboard-page.js — DOM rendering', () => {
     document.body.innerHTML = '';
   });
 
-  describe('renderKPIs', () => {
-    it('renders KPI cards into kpiRow', async () => {
-      const { renderKPIs } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
-      const kpis = { total: 100, pending: 30, progress: 20, resolved: 50 };
-      renderKPIs(kpis);
-      const row = document.getElementById('kpiRow');
-      expect(row.innerHTML).toContain('Total Incidencias');
-      expect(row.innerHTML).toContain('100');
-      expect(row.innerHTML).toContain('Pendientes');
-      expect(row.innerHTML).toContain('30');
-      expect(row.innerHTML).toContain('En Proceso');
-      expect(row.innerHTML).toContain('20');
-      expect(row.innerHTML).toContain('Resueltas');
-      expect(row.innerHTML).toContain('50');
-    });
-
-    it('handles missing kpiRow gracefully', async () => {
-      document.body.innerHTML = '';
-      const { renderKPIs } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
-      expect(() => renderKPIs({})).not.toThrow();
-    });
-  });
-
-  describe('showKpiSkeletons', () => {
-    it('renders skeleton HTML', async () => {
-      const { showKpiSkeletons } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
-      showKpiSkeletons();
-      const row = document.getElementById('kpiRow');
-      expect(row.innerHTML).toContain('skeleton-line');
-      expect(row.innerHTML).toContain('dash-kpi-skeleton');
-    });
-  });
-
   describe('renderPriorityBars', () => {
     it('renders bar HTML for priority counts', async () => {
       const { renderPriorityBars } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');

@@ -25,6 +25,12 @@ vi.mock('../app/js/modules/dashboard/application/dashboard-service.js', () => ({
   getDashboardMetrics: vi.fn(),
 }));
 
+vi.mock('../app/js/modules/map/application/map-service.js', () => ({
+  listIncidentMapPoints: vi.fn(() => Promise.resolve([
+    { id: 1, latitude: -1.83, longitude: -78.46, title: 'Map Point 1', priority: { name: 'ALTA' } }
+  ])),
+}));
+
 function flushMicrotasks() {
   return new Promise((resolve) => globalThis.setTimeout(resolve, 0));
 }
@@ -112,8 +118,6 @@ describe('dashboard-page — integration', () => {
     it('all exported functions and constants exist', async () => {
       const mod = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
       expect(typeof mod.initDashboardPage).toBe('function');
-      expect(typeof mod.renderKPIs).toBe('function');
-      expect(typeof mod.showKpiSkeletons).toBe('function');
       expect(typeof mod.renderPriorityBars).toBe('function');
       expect(typeof mod.priorityColor).toBe('function');
       expect(typeof mod.renderInfoCards).toBe('function');
@@ -132,22 +136,9 @@ describe('dashboard-page — integration', () => {
       await initWithSampleMetrics();
 
       expect(globalThis.renderLayout).toHaveBeenCalledWith('dashboard');
-      expect(document.getElementById('kpiRow').innerHTML).toContain('150');
       expect(document.getElementById('barrasPrioridad').innerHTML).toContain('CRITICA');
       expect(document.getElementById('infoStack').innerHTML).toContain('Quito');
       expect(document.getElementById('tablaUltimasBody').innerHTML).toContain('INC-001');
-    });
-
-    it('renders KPI skeletons synchronously before metrics resolve', async () => {
-      const { getDashboardMetrics } = await import('../app/js/modules/dashboard/application/dashboard-service.js');
-      getDashboardMetrics.mockReturnValue(new Promise(() => {}));
-
-      const { showKpiSkeletons } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
-      showKpiSkeletons();
-
-      const kpiRow = document.getElementById('kpiRow');
-      expect(kpiRow.innerHTML).toContain('dash-kpi-skeleton');
-      expect(kpiRow.innerHTML).toContain('skeleton-line');
     });
 
     it('calls showPageLoading and hidePageLoading on success', async () => {
@@ -183,42 +174,7 @@ describe('dashboard-page — integration', () => {
       await initDashboardPage();
       await flushMicrotasks();
 
-      expect(document.getElementById('kpiRow').innerHTML).toContain('150');
-    });
-  });
-
-  // ─── 3. KPI cards rendering ─────────────────────────────────
-
-  describe('3. KPI cards rendering', () => {
-    it('renders all four KPI cards with correct values', async () => {
-      await initWithSampleMetrics();
-      const html = document.getElementById('kpiRow').innerHTML;
-
-      expect(html).toContain('Total Incidencias');
-      expect(html).toContain('150');
-      expect(html).toContain('Pendientes');
-      expect(html).toContain('45');
-      expect(html).toContain('En Proceso');
-      expect(html).toContain('30');
-      expect(html).toContain('Resueltas');
-      expect(html).toContain('75');
-    });
-
-    it('renders as 0 when KPIs are missing', async () => {
-      const { renderKPIs } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
-      renderKPIs({});
-      const html = document.getElementById('kpiRow').innerHTML;
-      expect(html).toContain('0');
-      expect(html).toContain('Total Incidencias');
-    });
-
-    it('renders links to incidents page via dash-kpi-card', async () => {
-      await initWithSampleMetrics();
-      const links = document.getElementById('kpiRow').querySelectorAll('a.dash-kpi-card');
-      expect(links.length).toBe(4);
-      links.forEach((link) => {
-        expect(link.getAttribute('href')).toBe('incidents.html');
-      });
+      expect(document.getElementById('barrasPrioridad').innerHTML).toContain('CRITICA');
     });
   });
 

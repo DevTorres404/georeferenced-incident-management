@@ -1,11 +1,12 @@
 import { $, hide, showErrorAlert } from '../../../presentation/dom-utils.js?v=14';
+
 import { getDashboardMetrics } from '../application/dashboard-service.js?v=14';
 import {
   escapeHtml,
   formatCatalogLabel,
   formatShortDate,
-  getPriorityBadgeClass,
-  getStateBadgeClass,
+  getPriorityHexColor,
+  getStateHexColor,
   hidePageLoading,
   showPageLoading,
 } from '../../incidents/presentation/incidents-ui.js?v=16';
@@ -47,12 +48,10 @@ export async function initDashboardPage() {
   globalThis.renderLayout?.('dashboard');
 
   showPageLoading('Cargando panel', 'Consultando métricas...');
-  showKpiSkeletons();
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const metrics = await getDashboardMetrics();
-    renderKPIs(metrics.kpis || {});
     renderPriorityBars(metrics.countsByPriority || {}, metrics.kpis?.total || 0);
     renderInfoCards(metrics);
     renderRecentIncidents(metrics.recentIncidents || []);
@@ -63,43 +62,6 @@ export async function initDashboardPage() {
     globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
-}
-
-/* ── KPIs ────────────────────────────────────────────────────────────────── */
-
-export function renderKPIs(kpis) {
-  const grid = $('#kpiRow');
-  if (!grid) return;
-
-  const items = [
-    { value: kpis.total || 0, label: 'Total Incidencias', icon: 'fa-clipboard-list', accent: 'info' },
-    { value: kpis.pending || 0, label: 'Pendientes', icon: 'fa-clock', accent: 'warning' },
-    { value: kpis.progress || 0, label: 'En Proceso', icon: 'fa-spinner', accent: 'primary' },
-    { value: kpis.resolved || 0, label: 'Resueltas', icon: 'fa-check-circle', accent: 'success' },
-  ];
-
-  grid.innerHTML = items.map((item) => `
-    <a href="incidents.html" class="dash-kpi-card" data-accent="${item.accent}">
-      <div class="dash-kpi-content">
-        <span class="dash-kpi-label">${escapeHtml(item.label)}</span>
-        <span class="dash-kpi-number">${Number(item.value || 0)}</span>
-      </div>
-      <i class="fas ${item.icon} dash-kpi-icon text-${item.accent}"></i>
-    </a>`).join('');
-}
-
-export function showKpiSkeletons() {
-  const grid = $('#kpiRow');
-  if (!grid) return;
-
-  grid.innerHTML = Array.from({ length: 4 }, () => `
-    <div class="dash-kpi-card dash-kpi-skeleton" aria-hidden="true">
-      <div class="dash-kpi-content">
-        <span class="skeleton-line skeleton-line--short">&nbsp;</span>
-        <span class="skeleton-line skeleton-line--long">&nbsp;</span>
-      </div>
-      <i class="fas fa-circle skeleton-icon"></i>
-    </div>`).join('');
 }
 
 /* ── Priority Bars ───────────────────────────────────────────────────────── */
@@ -212,8 +174,8 @@ export function renderRecentIncidents(incidents) {
         <td><span class="dash-table-code">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
         <td class="dash-table-title" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin título')}</td>
         <td>${escapeHtml(category)}</td>
-        <td><span class="badge ${getPriorityBadgeClass(priority)}">${escapeHtml(priority)}</span></td>
-        <td><span class="badge ${getStateBadgeClass(state)}">${escapeHtml(state)}</span></td>
+        <td><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(priority)}; color: #fff">${escapeHtml(priority)}</span></td>
+        <td><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(state)}; color: #fff">${escapeHtml(state)}</span></td>
         <td style="white-space:nowrap;">${escapeHtml(formatShortDate(incident.created_at))}</td>
         <td>
           <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-outline-primary" title="Ver detalle">
@@ -288,13 +250,13 @@ function renderStateChart(countsByState) {
   const canvas = document.getElementById('graficoPorEstado');
   if (!canvas) return;
 
-  const labels = ['Pendiente', 'En proceso', 'Resuelta'];
-  const colors = [STATE_COLORS.PENDIENTE, STATE_COLORS['EN PROCESO'], STATE_COLORS.RESUELTA];
+  const labels = Object.keys(countsByState);
+  const colors = labels.map(label => getStateHexColor(label));
 
   dashboardCharts.states = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
-      labels,
+      labels: labels.map(formatCatalogLabel),
       datasets: [{
         label: 'Incidencias',
         data: labels.map((label) => Number(countsByState[label] || 0)),
@@ -337,15 +299,15 @@ function renderTrendChart(trend) {
   const canvas = document.getElementById('graficoTendencia');
   if (!canvas) return;
 
+  const datasets = (trend.series || []).map(serie => {
+    return buildDataset(formatCatalogLabel(serie.name), serie.data, getStateHexColor(serie.name));
+  });
+
   dashboardCharts.trend = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: trend.months || [],
-      datasets: [
-        buildDataset('Registradas', trend.registered || [], CHART_COLORS.info),
-        buildDataset('Resueltas', trend.resolved || [], CHART_COLORS.success),
-        buildDataset('Pendientes', trend.pending || [], CHART_COLORS.warning),
-      ],
+      datasets: datasets,
     },
     options: {
       responsive: true,
@@ -413,4 +375,65 @@ export function topEntry(values) {
   const entries = Object.entries(values);
   if (!entries.length) return null;
   return entries.sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+}
+
+/* ── Map Previews ────────────────────────────────────────────────────────── */
+
+export function renderMapMarkers(incidents) {
+  const map = globalThis.__sgiDashMap;
+  if (!map || typeof globalThis.maplibregl === 'undefined') {
+    // If map is not initialized yet, try again shortly
+    setTimeout(() => renderMapMarkers(incidents), 500);
+    return;
+  }
+
+  if (globalThis.__sgiDashMarkers) {
+    globalThis.__sgiDashMarkers.forEach((m) => m.remove());
+  }
+  globalThis.__sgiDashMarkers = [];
+
+  const bounds = new globalThis.maplibregl.LngLatBounds();
+  let hasValidCoordinates = false;
+
+  incidents.forEach((incident) => {
+    if (!incident.latitude || !incident.longitude) return;
+    hasValidCoordinates = true;
+
+    const popupHtml = `
+      <div style="font-family: 'Source Sans Pro', sans-serif;">
+        <strong style="display:block; margin-bottom: 5px;">${escapeHtml(incident.title || 'Sin título')}</strong>
+        <p style="margin: 0 0 10px 0; font-size: 0.85em; color: #6c757d;">
+          ${escapeHtml(incident.code || '#' + incident.id)} &middot; ${escapeHtml(incident.category?.name || 'Categoría')}
+        </p>
+        <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-primary d-block text-center" style="text-decoration:none;">
+          <i class="fas fa-eye mr-1"></i> Ver Detalle
+        </a>
+      </div>
+    `;
+
+    const el = document.createElement('div');
+    el.style.width = '18px';
+    el.style.height = '18px';
+    el.style.backgroundColor = priorityColor(incident.priority?.name);
+    el.style.borderRadius = '50%';
+    el.style.border = '2px solid white';
+    el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    el.style.cursor = 'pointer';
+
+    const marker = new globalThis.maplibregl.Marker({ element: el })
+      .setLngLat([Number(incident.longitude), Number(incident.latitude)])
+      .setPopup(new globalThis.maplibregl.Popup({ offset: 12 }).setHTML(popupHtml))
+      .addTo(map);
+
+    globalThis.__sgiDashMarkers.push(marker);
+    bounds.extend([Number(incident.longitude), Number(incident.latitude)]);
+  });
+
+  if (hasValidCoordinates) {
+    try {
+      map.fitBounds(bounds, { padding: 40, maxZoom: 15 });
+    } catch (e) {
+      console.warn('Map fitBounds failed:', e);
+    }
+  }
 }

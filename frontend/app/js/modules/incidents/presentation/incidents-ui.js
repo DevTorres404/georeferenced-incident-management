@@ -81,6 +81,15 @@ function getPriorityBadgeClass(priorityName) {
   return map[value] || 'badge-secondary';
 }
 
+function getPriorityHexColor(priorityName) {
+  const value = String(priorityName || '').toUpperCase();
+  if (value.includes('CRIT') || value.includes('CRÍT')) return '#dc3545';
+  if (value.includes('ALTA')) return '#fd7e14';
+  if (value.includes('MEDIA')) return '#0dcaf0';
+  if (value.includes('BAJA')) return '#198754';
+  return '#6c757d';
+}
+
 function getStateBadgeClass(stateName) {
   const value = String(stateName || '').toUpperCase();
   const map = {
@@ -94,6 +103,18 @@ function getStateBadgeClass(stateName) {
   };
 
   return map[value] || 'badge-secondary';
+}
+
+function getStateHexColor(stateName) {
+  const normalized = String(stateName || '').toUpperCase().replace(/_/g, ' ');
+  if (normalized === 'NUEVA' || normalized === 'PENDIENTE') return '#90A4AE';
+  if (normalized === 'EN REVISION') return '#2196F3';
+  if (normalized === 'EN PROGRESO' || normalized === 'EN ATENCION') return '#FFC107';
+  if (normalized === 'RESUELTA') return '#8BC34A';
+  if (normalized === 'CERRADA') return '#4CAF50';
+  if (normalized === 'RECHAZADA') return '#F44336';
+  if (normalized === 'REABIERTA') return '#FF9800';
+  return '#6c757d';
 }
 
 function countByState(incidents, names) {
@@ -141,7 +162,9 @@ export {
   formatDateTime,
   formatShortDate,
   getPriorityBadgeClass,
+  getPriorityHexColor,
   getStateBadgeClass,
+  getStateHexColor,
   showGlobalAlert,
   showPageLoading,
   hidePageLoading,

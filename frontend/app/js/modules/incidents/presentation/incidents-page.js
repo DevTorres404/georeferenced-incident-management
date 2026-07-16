@@ -5,12 +5,12 @@ import {
   escapeHtml,
   formatCatalogLabel,
   formatShortDate,
-  getPriorityBadgeClass,
-  getStateBadgeClass,
+  getPriorityHexColor,
+  getStateHexColor,
   showGlobalAlert,
   hidePageLoading,
   showPageLoading,
-} from './incidents-ui.js?v=16';
+} from './incidents-ui.js?v=2';
 import { html, delegateEvent } from '../../../presentation/dom-utils.js?v=2';
 
 export { userHasPermission };
@@ -131,7 +131,7 @@ function initDataTable(state) {
       }
 
       if (state.activeStateFilter !== 'todos') {
-        params.set('state_filter', state.activeStateFilter);
+        params.set('state_id', state.activeStateFilter);
       }
 
       if (state.activePriorityFilter !== 'todas') {
@@ -167,7 +167,49 @@ function initDataTable(state) {
         render: (data, type, row) => {
           if (type === 'sort' || type === 'type') return data;
           const code = escapeHtml(data || `#${row.id}`);
-          return `<div class="table-ticket-code">${code}</div>`;
+          const title = escapeHtml(row.title || 'Sin título');
+          const category = escapeHtml(formatCatalogLabel(row.category));
+          const priorityLabel = formatCatalogLabel(row.priority);
+          const priorityColor = row.priority_color || getPriorityHexColor(row.priority);
+          const stateLabel = formatCatalogLabel(row.state);
+          const stateColor = row.state_color || getStateHexColor(row.state);
+          const territory = escapeHtml(row.territory || '-');
+          const date = escapeHtml(formatShortDate(row.created_at));
+          const pendingIcon = row?.has_pending_state_request
+            ? `<span class="badge badge-warning shadow-sm ml-1"><i class="fas fa-clock mr-1"></i>En revisión</span>`
+            : '';
+
+          return `
+            <div class="d-none d-md-block table-ticket-code">${code}</div>
+            
+            <div class="d-block d-md-none">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <span class="table-ticket-code font-weight-bold">${code}</span>
+                <div>
+                  <span class="badge shadow-sm" style="background-color: ${stateColor}; color: #fff">${escapeHtml(stateLabel)}</span>
+                  ${pendingIcon}
+                </div>
+              </div>
+              <h6 class="font-weight-bold mb-1 text-truncate" style="max-width: 100%;">${title}</h6>
+              <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                <span class="badge shadow-sm" style="background-color: ${priorityColor}; color: #fff">${escapeHtml(priorityLabel)}</span>
+                <small class="text-muted"><i class="fas fa-folder mr-1"></i>${category}</small>
+              </div>
+              <div class="d-flex flex-column mb-2">
+                <small class="text-muted text-truncate"><i class="fas fa-map-marker-alt mr-1 text-primary" style="opacity:0.6;"></i>${territory}</small>
+                <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i>${date}</small>
+              </div>
+              <div class="d-flex justify-content-end gap-2 border-top pt-2 mt-2">
+                <a href="incident-detail.html?id=${row.id}" class="btn btn-sm btn-outline-primary shadow-sm" style="border-radius:0.4rem;">
+                  <i class="fas fa-external-link-alt mr-1"></i>Ver detalle
+                </a>
+                ${state.canDeleteIncident ? `
+                <button class="btn btn-sm btn-outline-danger shadow-sm js-delete-incident" data-id="${row.id}" data-code="${code}" style="border-radius:0.4rem;">
+                  <i class="fas fa-trash"></i>
+                </button>` : ''}
+              </div>
+            </div>
+          `;
         },
       },
       {
@@ -186,10 +228,10 @@ function initDataTable(state) {
       },
       {
         data: 'priority',
-        render: (data) => {
+        render: (data, type, row) => {
           const label = formatCatalogLabel(data);
-          const badge = getPriorityBadgeClass(data);
-          return `<span class="badge ${badge} shadow-sm">${escapeHtml(label)}</span>`;
+          const color = row.priority_color || getPriorityHexColor(data);
+          return `<span class="badge shadow-sm" style="background-color: ${color}; color: #fff">${escapeHtml(label)}</span>`;
         },
       },
       {
@@ -197,11 +239,11 @@ function initDataTable(state) {
         render: (data, type, row) => {
           if (type === 'sort' || type === 'type') return data;
           const label = formatCatalogLabel(data);
-          const badge = getStateBadgeClass(data);
+          const color = row.state_color || getStateHexColor(data);
           const pendingIcon = row?.has_pending_state_request
             ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>`
             : '';
-          return `<span class="badge ${badge} shadow-sm">${escapeHtml(label)}</span>${pendingIcon}`;
+          return `<span class="badge shadow-sm" style="background-color: ${color}; color: #fff">${escapeHtml(label)}</span>${pendingIcon}`;
         },
       },
       {
@@ -238,7 +280,13 @@ function initDataTable(state) {
     ],
     columnDefs: [
       { targets: 0, className: 'text-left' },
-      { targets: 7, className: 'text-center', orderable: false, searchable: false },
+      { targets: 1, className: 'd-none d-md-table-cell' },
+      { targets: 2, className: 'd-none d-md-table-cell' },
+      { targets: 3, className: 'd-none d-md-table-cell' },
+      { targets: 4, className: 'd-none d-md-table-cell' },
+      { targets: 5, className: 'd-none d-md-table-cell' },
+      { targets: 6, className: 'd-none d-md-table-cell' },
+      { targets: 7, className: 'text-center d-none d-md-table-cell', orderable: false, searchable: false },
     ],
     order: [[6, 'desc']],
     pageLength: 10,
@@ -313,10 +361,9 @@ function renderStateFilters(state) {
   const container = document.querySelector('.inc-kpi-grid');
   if (!container) return;
 
-  const groups = buildStateGroups(state.states);
   const total = state.states.length > 0 ? null : 0;
 
-  container.innerHTML = `
+  let htmlStr = `
     <div class="inc-kpi-card active filtro-btn" data-filtro="todos">
       <div class="inc-kpi-content">
         <span class="inc-kpi-label">Todas las Incidencias</span>
@@ -325,36 +372,46 @@ function renderStateFilters(state) {
       <div class="inc-kpi-icon"><i class="fas fa-layer-group"></i></div>
     </div>
   `;
-  container.insertAdjacentHTML('beforeend', groups.map((group) => `
-      <div class="inc-kpi-card filtro-btn" data-filtro="${escapeHtml(group.filtro)}">
-        <div class="inc-kpi-content">
-          <span class="inc-kpi-label">${escapeHtml(group.label)}</span>
-          <strong class="inc-kpi-number text-${escapeHtml(group.color)}" id="cnt-${escapeHtml(group.id)}">0</strong>
-        </div>
-        <div class="inc-kpi-icon text-${escapeHtml(group.color)}"><i class="${escapeHtml(group.icon)}"></i></div>
-      </div>
-    `).join(''));
 
-  // Filtro "En revisión" para solicitudes de cambio de estado pendientes
-  container.insertAdjacentHTML('beforeend', `
+  state.states.forEach((s) => {
+    let icon = 'fas fa-circle';
+    if (s.is_initial_state) icon = 'fas fa-exclamation-circle';
+    else if (s.is_final_state) icon = 'fas fa-check-circle';
+    else icon = 'fas fa-cogs';
+
+    const normalizedName = String(s.name || '').toUpperCase().replace(/_/g, ' ');
+    if (normalizedName === 'EN REVISION') icon = 'fas fa-search';
+    if (normalizedName === 'RECHAZADA') icon = 'fas fa-times-circle';
+
+    htmlStr += `
+      <div class="inc-kpi-card filtro-btn" data-filtro="${escapeHtml(s.id)}">
+        <div class="inc-kpi-content">
+          <span class="inc-kpi-label">${escapeHtml(formatCatalogLabel(s.name))}</span>
+          <strong class="inc-kpi-number" style="color: ${escapeHtml(s.color || '#6c757d')}" id="cnt-state-${escapeHtml(s.id)}">0</strong>
+        </div>
+        <div class="inc-kpi-icon" style="color: ${escapeHtml(s.color || '#6c757d')}"><i class="${icon}"></i></div>
+      </div>
+    `;
+  });
+
+  // Filtro "En revisión" (solicitudes pendientes)
+  htmlStr += `
       <div class="inc-kpi-card filtro-btn${state.activePendingStateRequest ? ' active' : ''}" data-filtro="pending_review">
         <div class="inc-kpi-content">
-          <span class="inc-kpi-label">En revisión</span>
+          <span class="inc-kpi-label">Cambios pendientes</span>
           <strong class="inc-kpi-number text-warning" id="cnt-pending-review">0</strong>
         </div>
         <div class="inc-kpi-icon text-warning"><i class="fas fa-clock"></i></div>
       </div>
-  `);
+  `;
 
-  // Eliminar event listeners anteriores si existieran (la delegación en body/container evita duplicados si el container no se destruye, pero el container es fijo)
-  // Para evitar registrar múltiples delegateEvents si la función se llama varias veces, primero removemos clonando, 
-  // o simplemente usamos una delegación global en la inicialización.
-  // Dado que renderStateFilters se llama una sola vez en initIncidentsPage, registrar el delegateEvent aquí está bien.
+  container.innerHTML = htmlStr;
+
   if (!container.dataset.eventsBound) {
     delegateEvent(container, '.filtro-btn', 'click', (e, button) => {
       container.querySelectorAll('.filtro-btn').forEach((item) => item.classList.remove('active'));
       button.classList.add('active');
-      const filtro = String(button.dataset.filtro || '').toLowerCase();
+      const filtro = String(button.dataset.filtro || '');
       if (filtro === 'pending_review') {
         state.activePendingStateRequest = true;
         state.activeStateFilter = 'todos';
@@ -368,25 +425,6 @@ function renderStateFilters(state) {
     });
     container.dataset.eventsBound = 'true';
   }
-}
-
-export function buildStateGroups(states) {
-  const groups = [];
-  const initial = states.filter((s) => s.is_initial_state);
-  const inProgress = states.filter((s) => !s.is_initial_state && !s.is_final_state);
-  const final = states.filter((s) => s.is_final_state);
-
-  if (initial.length) {
-    groups.push({ id: 'pendiente', filtro: 'pendiente', label: 'Pendientes', stateNames: initial.map((s) => s.name), color: 'warning', icon: 'fas fa-clock' });
-  }
-  if (inProgress.length) {
-    groups.push({ id: 'proceso', filtro: 'en_proceso', label: 'En Proceso', stateNames: inProgress.map((s) => s.name), color: 'info', icon: 'fas fa-cogs' });
-  }
-  if (final.length) {
-    groups.push({ id: 'resuelta', filtro: 'resuelta', label: 'Resueltas', stateNames: final.map((s) => s.name), color: 'success', icon: 'fas fa-check-circle' });
-  }
-
-  return groups;
 }
 
 function bindSearchInput(state) {
@@ -565,11 +603,12 @@ function openDeleteModal(state, incidentId, code) {
 }
 
 function updateKpiCounters(kpiCounts) {
-  const total = (kpiCounts.pendiente || 0) + (kpiCounts.en_proceso || 0) + (kpiCounts.resuelta || 0);
+  let total = 0;
+  for (const [code, count] of Object.entries(kpiCounts)) {
+    total += count;
+    setText(`cnt-state-${code}`, count);
+  }
   setText('cnt-todos', total);
-  setText('cnt-pendiente', kpiCounts.pendiente ?? 0);
-  setText('cnt-proceso', kpiCounts.en_proceso ?? 0);
-  setText('cnt-resuelta', kpiCounts.resuelta ?? 0);
 }
 
 function renderErrorRow(message) {

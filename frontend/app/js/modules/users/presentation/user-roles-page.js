@@ -383,26 +383,40 @@ export function renderUsersTable(users, roles) {
                  style="width: 36px; height: 36px; font-weight: 700; font-size: 0.9rem; background-color: ${avatarColor};">
               ${escapeHtml(initial)}
             </div>
-            <div class="min-w-0">
-              <p class="mb-0 font-weight-bold text-truncate" style="max-width: 200px;">${escapeHtml(userName)}</p>
-              <small class="text-muted">@${escapeHtml(user.username || '—')}</small>
+            <div class="min-w-0 flex-grow-1" style="max-width: 100%;">
+              <p class="mb-0 font-weight-bold text-truncate">${escapeHtml(userName)}</p>
+              <small class="text-muted d-block text-truncate">@${escapeHtml(user.username || '—')}</small>
+              <small class="text-muted d-block d-md-none text-truncate mt-1"><i class="fas fa-envelope mr-1"></i>${escapeHtml(user.email || '—')}</small>
+              <div class="d-block d-md-none mt-1 text-truncate">
+                <span class="badge badge-${badgeColor} px-2 py-1 font-weight-bold">${escapeHtml(roleDisplay)}</span>
+              </div>
             </div>
           </div>
+          <div class="d-flex d-md-none justify-content-end gap-2 mt-2 pt-2 border-top">
+            <button type="button" class="btn btn-sm btn-outline-primary btn-assign-role font-weight-bold"
+                    data-user-id="${user.id}" title="Asignar rol">
+              <i class="fas fa-user-tag"></i><span class="d-none d-sm-inline ml-1">Rol</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user"
+                    data-user-id="${user.id}" title="Desactivar usuario">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
         </td>
-        <td>
+        <td class="d-none d-md-table-cell">
           <span class="text-muted">${escapeHtml(user.email || '—')}</span>
         </td>
-        <td>
+        <td class="d-none d-md-table-cell">
           <div class="d-flex align-items-center flex-wrap gap-1">
             <span class="badge badge-${badgeColor} px-3 py-2 font-weight-bold">${escapeHtml(roleDisplay)}</span>
             <small class="text-muted d-block w-100 mt-1">${escapeHtml(roleGroupLabel)}</small>
           </div>
         </td>
-        <td class="text-center">
+        <td class="text-center d-none d-md-table-cell">
           <div class="d-flex justify-content-center gap-1">
             <button type="button" class="btn btn-sm btn-outline-primary btn-assign-role font-weight-bold"
                     data-user-id="${user.id}" title="Asignar rol">
-              <i class="fas fa-user-tag mr-1"></i>Rol
+              <i class="fas fa-user-tag"></i><span class="d-none d-sm-inline ml-1">Rol</span>
             </button>
             <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user"
                     data-user-id="${user.id}" title="Desactivar usuario">

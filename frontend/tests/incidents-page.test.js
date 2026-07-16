@@ -71,30 +71,6 @@ describe('incidents-page.js — pure functions', () => {
     });
   });
 
-  describe('buildStateGroups', () => {
-    it('groups states into pending/in-progress/resolved', async () => {
-      const { buildStateGroups } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      const states = [
-        { name: 'Nueva', is_initial_state: true },
-        { name: 'En Progreso', is_initial_state: false, is_final_state: false },
-        { name: 'Resuelta', is_initial_state: false, is_final_state: true },
-      ];
-      const groups = buildStateGroups(states);
-      expect(groups).toHaveLength(3);
-      expect(groups[0].filtro).toBe('pendiente');
-      expect(groups[0].stateNames).toEqual(['Nueva']);
-      expect(groups[1].filtro).toBe('en_proceso');
-      expect(groups[1].stateNames).toEqual(['En Progreso']);
-      expect(groups[2].filtro).toBe('resuelta');
-      expect(groups[2].stateNames).toEqual(['Resuelta']);
-    });
-
-    it('returns empty array for empty input', async () => {
-      const { buildStateGroups } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      expect(buildStateGroups([])).toEqual([]);
-    });
-  });
-
   describe('readStoredSearch / storeSearch', () => {
     beforeEach(() => {
       sessionStorage.clear();

@@ -27,7 +27,10 @@ import {
   formatDateTime,
   formatShortDate,
   getPriorityBadgeClass,
+  getPriorityHexColor,
   getStateBadgeClass,
+  getStateHexColor,
+  hidePageLoading,
   showGlobalAlert,
 } from './incidents-ui.js?v=14';
 
@@ -134,39 +137,41 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
 
   container.innerHTML = `
     <div class="row mb-3">
-      <div class="col-12 d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
-        <div>
-          <a href="incidents.html" class="btn btn-sm btn-outline-secondary mr-2">
-            <i class="fas fa-arrow-left mr-1"></i>Volver
+      <div class="col-12 d-flex flex-column flex-md-row justify-content-md-between align-items-start align-items-md-center" style="gap:12px;">
+        <div class="d-flex flex-wrap align-items-center" style="gap:8px;">
+          <a href="incidents.html" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left mr-1"></i><span class="d-none d-sm-inline">Volver</span>
           </a>
-          <span class="badge badge-dark mr-1" style="font-size:0.95rem;padding:6px 10px;">${escapeHtml(incident.code || `#${incident.id}`)}</span>
-          <span class="badge estado-badge-grande ${getStateBadgeClass(stateName)}" id="badgeEstadoDetalle">${escapeHtml(stateName)}</span>
+          <span class="badge badge-dark" style="font-size:0.95rem;padding:6px 10px;">${escapeHtml(incident.code || `#${incident.id}`)}</span>
+          <span class="badge estado-badge-grande" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff" id="badgeEstadoDetalle">${escapeHtml(stateName)}</span>
         </div>
-        <div>
+        <div class="d-flex flex-wrap align-items-center" style="gap:8px; width: 100%;">
           ${canAssignPriority ? `
-            <button class="btn btn-sm btn-outline-primary mr-1" id="btnAsignarPrioridad">
+            <button class="btn btn-sm btn-outline-primary flex-grow-1 flex-md-grow-0" id="btnAsignarPrioridad">
               <i class="fas fa-layer-group mr-1"></i>Asignar Prioridad
             </button>
           ` : ''}
           ${canChangeState ? `
-            <div class="input-group input-group-sm d-inline-flex align-middle mr-1" style="width:auto;min-width:210px;">
-              <div class="input-group-prepend" id="stateHistoryTooltip" data-toggle="tooltip" data-html="true"
-                   data-placement="bottom" title="${historyTooltip}">
-                <span class="input-group-text bg-warning border-warning text-dark" aria-hidden="true">
-                  <i class="fas fa-sync-alt"></i>
-                </span>
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center flex-grow-1 flex-md-grow-0" style="gap:8px;">
+              <div class="input-group input-group-sm" style="width:auto;min-width:210px;flex-grow:1;">
+                <div class="input-group-prepend" id="stateHistoryTooltip" data-toggle="tooltip" data-html="true"
+                     data-placement="bottom" title="${historyTooltip}">
+                  <span class="input-group-text bg-warning border-warning text-dark" aria-hidden="true">
+                    <i class="fas fa-sync-alt"></i>
+                  </span>
+                </div>
+                <label for="estadoDirecto" class="sr-only">Cambiar estado</label>
+                <select class="custom-select custom-select-sm border-warning" id="estadoDirecto"
+                        aria-label="Cambiar estado de la incidencia"></select>
               </div>
-              <label for="estadoDirecto" class="sr-only">Cambiar estado</label>
-              <select class="custom-select custom-select-sm border-warning" id="estadoDirecto"
-                      aria-label="Cambiar estado de la incidencia"></select>
+              <small class="text-muted d-none" id="statePriorityHint" style="line-height:1.2;">
+                <i class="fas fa-info-circle mr-1"></i>Asigna prioridad
+              </small>
             </div>
-            <small class="text-muted d-none ml-1" id="statePriorityHint">
-              <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
-            </small>
           ` : ''}
-          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
-          ${canCreateIncident ? `<a href="incident-create.html" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus mr-1"></i>Nueva Incidencia
+          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="flex-grow-1 flex-md-grow-0">${renderOperatorStateButton(incident)}</div>` : ''}
+          ${canCreateIncident ? `<a href="incident-create.html" class="btn btn-sm btn-primary flex-grow-1 flex-md-grow-0">
+            <i class="fas fa-plus mr-1"></i><span class="d-none d-sm-inline">Nueva</span><span class="d-inline d-sm-none">Nueva Incidencia</span>
           </a>` : ''}
         </div>
       </div>
@@ -191,10 +196,10 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                 <p>${escapeHtml(subcategoryName)}</p>
 
                 <p class="detalle-label">Prioridad</p>
-                <p><span class="badge ${getPriorityBadgeClass(priorityName)} px-2 py-1" id="badgePrioridadDetalle">${escapeHtml(priorityName)}</span></p>
+                <p><span class="badge px-2 py-1" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff" id="badgePrioridadDetalle">${escapeHtml(priorityName)}</span></p>
 
                 <p class="detalle-label">Estado</p>
-                <p><span class="badge ${getStateBadgeClass(stateName)} px-2 py-1" id="badgeEstadoResumen">${escapeHtml(stateName)}</span></p>
+                <p><span class="badge px-2 py-1" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff" id="badgeEstadoResumen">${escapeHtml(stateName)}</span></p>
               </div>
               <div class="col-sm-6">
                 <p class="detalle-label">Código</p>
@@ -203,8 +208,27 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                 <p class="detalle-label">Fecha de registro</p>
                 <p><i class="fas fa-calendar mr-1 text-muted"></i>${escapeHtml(formatShortDate(incident.created_at))}</p>
 
-                <p class="detalle-label">Fecha de resolución</p>
-                <p><i class="fas fa-calendar-check mr-1 text-muted"></i>${escapeHtml(formatShortDate(incident.resolution_date))}</p>
+                <div id="containerResolutionDate" class="${incident.rejected_at ? 'd-none' : ''}">
+                  <p class="detalle-label">Fecha de resolución</p>
+                  <p><i class="fas fa-calendar-check mr-1 text-muted"></i><span id="labelResolutionDate">${escapeHtml(formatShortDate(incident.resolution_date))}</span></p>
+                </div>
+
+                <div id="containerRejectionDate" class="${!incident.rejected_at ? 'd-none' : ''}">
+                  <p class="detalle-label text-danger">Fecha de rechazo</p>
+                  <p><i class="fas fa-times-circle mr-1 text-danger"></i><span id="labelRejectionDate">${escapeHtml(formatShortDate(incident.rejected_at))}</span></p>
+                </div>
+
+                <div id="reopenDatesContainer">
+                  ${incident.reopened_at ? `
+                  <p class="detalle-label text-warning mt-2">Fecha de reapertura</p>
+                  <p><i class="fas fa-redo mr-1 text-warning"></i>${escapeHtml(formatShortDate(incident.reopened_at))}</p>
+                  ` : ''}
+
+                  ${incident.previous_resolution_date ? `
+                  <p class="detalle-label text-secondary mt-2">Resolución anterior</p>
+                  <p><i class="fas fa-history mr-1 text-secondary"></i>${escapeHtml(formatShortDate(incident.previous_resolution_date))}</p>
+                  ` : ''}
+                </div>
               </div>
             </div>
             <hr>
@@ -256,7 +280,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             <h3 class="card-title"><i class="fas fa-comments mr-2"></i>Comentarios</h3>
             <span class="badge badge-secondary ml-2" id="commentsCount">${comments.length}</span>
           </div>
-          <div class="card-body" id="listadoComentarios">
+          <div class="card-body" id="listadoComentarios" style="max-height: 400px; overflow-y: auto;">
             ${renderComments(comments)}
           </div>
           <div class="card-footer">
@@ -296,10 +320,11 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                       type="file"
                       class="custom-file-input"
                       id="attachmentFile"
-                      accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.mp4,.mov,.zip,application/pdf,image/*,video/quicktime,video/mp4,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/zip"
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                     >
-                    <label class="custom-file-label" for="attachmentFile" id="attachmentFileLabel">Seleccione un archivo...</label>
+                    <label class="custom-file-label" for="attachmentFile" id="attachmentFileLabel">Seleccione una imagen...</label>
                   </div>
+                  <small class="text-muted d-block mt-1">Formatos permitidos: JPG, JPEG, PNG (Máx 10MB).</small>
                   <small class="text-danger d-none mt-1" id="attachmentFileError"></small>
                 </div>
                 <div class="col-md-4 mt-3 mt-md-0">
@@ -322,7 +347,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
           <div class="card-header">
             <h3 class="card-title"><i class="fas fa-history mr-2"></i>Historial de Cambios</h3>
           </div>
-          <div class="card-body p-0">
+          <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
             <div class="p-3" id="timelineHistorial">
               ${renderHistory(history)}
             </div>
@@ -989,14 +1014,55 @@ function updateStatePresentation(incident, transitions) {
 
   if (headerBadge) {
     headerBadge.textContent = stateName;
-    headerBadge.className = `badge estado-badge-grande ${getStateBadgeClass(incident.state?.name || '')}`;
+    headerBadge.className = 'badge estado-badge-grande';
+    headerBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name);
+    headerBadge.style.color = '#fff';
   }
   if (summaryBadge) {
     summaryBadge.textContent = stateName;
-    summaryBadge.className = `badge ${getStateBadgeClass(incident.state?.name || '')} px-2 py-1`;
+    summaryBadge.className = 'badge px-2 py-1';
+    summaryBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name);
+    summaryBadge.style.color = '#fff';
   }
   if (timeline) {
     timeline.innerHTML = renderHistory(incident.history);
+  }
+
+  const containerResolutionDate = document.getElementById('containerResolutionDate');
+  const labelResolutionDate = document.getElementById('labelResolutionDate');
+  const containerRejectionDate = document.getElementById('containerRejectionDate');
+  const labelRejectionDate = document.getElementById('labelRejectionDate');
+  const reopenDatesContainer = document.getElementById('reopenDatesContainer');
+
+  if (containerResolutionDate) {
+    containerResolutionDate.className = incident.rejected_at ? 'd-none' : '';
+  }
+  if (labelResolutionDate) {
+    labelResolutionDate.textContent = formatShortDate(incident.resolution_date);
+  }
+
+  if (containerRejectionDate) {
+    containerRejectionDate.className = incident.rejected_at ? '' : 'd-none';
+  }
+  if (labelRejectionDate) {
+    labelRejectionDate.textContent = formatShortDate(incident.rejected_at);
+  }
+
+  if (reopenDatesContainer) {
+    let reopenHtml = '';
+    if (incident.reopened_at) {
+      reopenHtml += `
+        <p class="detalle-label text-warning mt-2">Fecha de reapertura</p>
+        <p><i class="fas fa-redo mr-1 text-warning"></i>${escapeHtml(formatShortDate(incident.reopened_at))}</p>
+      `;
+    }
+    if (incident.previous_resolution_date) {
+      reopenHtml += `
+        <p class="detalle-label text-secondary mt-2">Resolución anterior</p>
+        <p><i class="fas fa-history mr-1 text-secondary"></i>${escapeHtml(formatShortDate(incident.previous_resolution_date))}</p>
+      `;
+    }
+    reopenDatesContainer.innerHTML = reopenHtml;
   }
 
   setText('historyMetric', incident.history.length);
@@ -1122,7 +1188,7 @@ export function renderHistory(history) {
         <strong>${escapeHtml(action)}</strong>
         <br>
         <small><i class="fas fa-user mr-1 text-muted"></i>${escapeHtml(author)}</small>
-        <span class="badge ${getStateBadgeClass(stateName)} float-right">${escapeHtml(stateName)}</span>
+        <span class="badge float-right" style="background-color: ${entry.new_state_color || getStateHexColor(stateName)}; color: #fff;">${escapeHtml(stateName)}</span>
       </div>`;
   }).join('');
 }

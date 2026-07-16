@@ -4,6 +4,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   request: vi.fn(),
   requestAfter: vi.fn(),
+  clearApiCache: vi.fn(),
 }));
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
@@ -370,7 +371,7 @@ describe('assignment-management-page.js — integration', () => {
       expect(primarySelect.options.length).toBe(OPERATORS.length);
 
       const checkboxes = document.querySelectorAll('#supportOperatorsList input[type="checkbox"]');
-      expect(checkboxes.length).toBe(OPERATORS.length);
+      expect(checkboxes.length).toBe(OPERATORS.length - 1);
 
       primarySelect.value = '10';
       document.getElementById('btnSaveAssignment').click();
