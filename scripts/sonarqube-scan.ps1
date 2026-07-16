@@ -327,7 +327,13 @@ try {
     # Ensure coverage directory exists so Docker volume mount doesn't fail
     $Null = New-Item -ItemType Directory -Path (Join-Path $VitestRoot 'coverage') -Force 2>&1
     $VitestExit = 0
-    $VitestOutput = @(& npm --prefix $VitestRoot run test:js:coverage 2>&1)
+    $PreviousPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $VitestOutput = @(& npm --prefix $VitestRoot run test:js:coverage 2>&1)
+    } finally {
+        $ErrorActionPreference = $PreviousPreference
+    }
     $VitestOutput | Out-File -FilePath $JsCoverageLog -Encoding utf8 -Force
     if ($LASTEXITCODE -ne 0) { $VitestExit = $LASTEXITCODE }
     Write-Host ($VitestOutput -join "`n")
