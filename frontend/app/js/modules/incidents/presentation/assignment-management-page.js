@@ -259,6 +259,36 @@ async function openAssignmentModal(state, incidentId) {
   try {
     const response = await getIncident(incidentId);
     state.selectedIncident = response?.data || null;
+    const incident = state.selectedIncident;
+
+    // Validar que la incidencia tenga prioridad y estado antes de asignar operador
+    if (incident) {
+      const workflowWarning = document.getElementById('assignmentWorkflowWarning');
+      const saveButton = document.getElementById('btnSaveAssignment');
+      const primarySelect = document.getElementById('primaryOperatorSelect');
+
+      const missingPriority = !incident.priority_id && !incident.priority?.id;
+      const missingState = !incident.state_id && !incident.state?.id;
+
+      if (missingPriority || missingState) {
+        const parts = [];
+        if (missingPriority) parts.push('asignar una prioridad');
+        if (missingState) parts.push('definir un estado');
+        const message = `Esta incidencia aún no tiene ${parts.join(' ni ')}. <a href="incident-detail.html?id=${incident.id}" class="alert-link">Ve al detalle</a> para completarlo antes de asignar un operador.`;
+
+        if (workflowWarning) {
+          workflowWarning.innerHTML = message;
+          workflowWarning.classList.remove('d-none');
+        }
+        if (saveButton) saveButton.disabled = true;
+        if (primarySelect) primarySelect.disabled = true;
+      } else {
+        if (workflowWarning) workflowWarning.classList.add('d-none');
+        if (saveButton) saveButton.disabled = false;
+        if (primarySelect) primarySelect.disabled = false;
+      }
+    }
+
     renderAssignmentModal(state);
     globalThis.jQuery?.('#assignmentModal').modal('show');
   } catch (error) {
@@ -278,9 +308,17 @@ function renderAssignmentModal(state) {
 
   const summary = document.getElementById('assignmentModalSummary');
   if (summary) {
+    const priorityLabel = formatCatalogLabel(incident.priority?.name || 'Sin definir');
+    const stateLabel = formatCatalogLabel(incident.state?.name || 'Sin definir');
+    const priorityBadge = `badge ${getPriorityBadgeClass(incident.priority?.name || '')}`;
+    const stateBadge = `badge ${getStateBadgeClass(incident.state?.name || '')}`;
     summary.innerHTML = `
       <div class="font-weight-bold mb-1">${escapeHtml(incident.code || `#${incident.id}`)} · ${escapeHtml(incident.title || 'Incidencia')}</div>
-      <div class="text-muted small">${escapeHtml(incident.zone_name || incident.territorial_unit?.full_path || 'Sin territorio')}</div>
+      <div class="text-muted small mb-1">${escapeHtml(incident.zone_name || incident.territorial_unit?.full_path || 'Sin territorio')}</div>
+      <div class="d-flex gap-2 mt-1">
+        <span class="${priorityBadge} px-2 py-1">${escapeHtml(priorityLabel)}</span>
+        <span class="${stateBadge} px-2 py-1">${escapeHtml(stateLabel)}</span>
+      </div>
     `;
   }
 

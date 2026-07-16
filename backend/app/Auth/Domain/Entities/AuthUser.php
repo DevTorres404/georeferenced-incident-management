@@ -43,7 +43,7 @@ final class AuthUser implements JsonSerializable
 
     public function emailVerificationHash(): string
     {
-        return sha1($this->email);
+        return hash('sha256', (string) $this->email);
     }
 
     public function isGoogleLinkedToAnotherUser(?AuthIdentity $identity): bool

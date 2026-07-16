@@ -92,6 +92,41 @@ export function hasDraft() {
   try { return localStorage.getItem(DRAFT_STORAGE_KEY) !== null; } catch { return false; }
 }
 
+async function restoreDraftTerritorial() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+
+    const provinceId = data['fTerritorialProvince'];
+    if (!provinceId) return;
+
+    const provinceEl = $('#fTerritorialProvince');
+    if (provinceEl) {
+      provinceEl.value = String(provinceId);
+      await populateTerritorialLevel('province');
+    }
+
+    const cantonId = data['fTerritorialCanton'];
+    if (!cantonId || !provinceId) return;
+
+    const cantonEl = $('#fTerritorialCanton');
+    if (cantonEl) {
+      cantonEl.value = String(cantonId);
+      await populateTerritorialLevel('canton');
+    }
+
+    const parishId = data['fTerritorialParish'];
+    if (!parishId || !cantonId) return;
+
+    const parishEl = $('#fTerritorialParish');
+    if (parishEl) {
+      parishEl.value = String(parishId);
+      await populateTerritorialLevel('parish');
+    }
+  } catch { /* no crítico */ }
+}
+
 function bindAutoSave() {
   const debouncedSave = (() => {
     let timer = null;
@@ -136,6 +171,7 @@ export async function initCreateIncident() {
     catalogs = await getCatalogOverview();
     populateCatalogs();
     await populateTerritorialProvinces();
+    await restoreDraftTerritorial();
   } catch (error) {
     showErrorAlert(error.message || 'No se pudieron cargar los datos iniciales.');
   } finally {
@@ -432,7 +468,7 @@ export function buildApproximateAddress(result) {
 }
 
 export async function selectTerritorialFromAddress(address) {
-  const provinceName = address.state || address.region;
+  const provinceName = address.state || address.region || address.plot;
   const cantonName = address.county || address.city || address.town || address.municipality;
   const parishName = address.city_district || address.suburb || address.village || address.neighbourhood;
 
