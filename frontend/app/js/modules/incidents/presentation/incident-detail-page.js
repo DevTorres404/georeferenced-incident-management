@@ -159,7 +159,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               <i class="fas fa-info-circle mr-1"></i>Asigna una prioridad antes de cambiar el estado
             </small>
           ` : ''}
-          ${!canChangeState && isOperator() ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
+          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) !== 'RESUELTA' && normalizeCode(incident.state?.name) !== 'CERRADA' ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
           <a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
           </a>
@@ -1309,12 +1309,22 @@ function openRequestStateModal(incident, states) {
   if (!select || !motivo) return;
 
   const currentStateId = Number(incident.state_id);
-  const filteredStates = (Array.isArray(states) ? states : [])
-    .filter((s) => Number(s.id) !== currentStateId);
+  
+  const uniqueStates = [];
+  const seenNames = new Set();
+  
+  (Array.isArray(states) ? states : []).forEach((s) => {
+    if (Number(s.id) === currentStateId) return;
+    const code = normalizeCode(s.name);
+    if (code === 'RESUELTA' && !seenNames.has(code)) {
+      seenNames.add(code);
+      uniqueStates.push(s);
+    }
+  });
 
   select.innerHTML = [
     '<option value="">Seleccione un estado...</option>',
-    ...filteredStates.map((s) =>
+    ...uniqueStates.map((s) =>
       `<option value="${s.id}">${escapeHtml(formatCatalogLabel(s.name))}</option>`
     ),
   ].join('');

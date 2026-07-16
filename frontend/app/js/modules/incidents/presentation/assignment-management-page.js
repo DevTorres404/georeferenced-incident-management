@@ -352,7 +352,10 @@ function renderAssignmentModal(state) {
 
   const supportList = document.getElementById('supportOperatorsList');
   if (supportList) {
-    supportList.innerHTML = state.operators.map((operator) => {
+    const currentPrimaryIdNum = Number(currentPrimaryId);
+    supportList.innerHTML = state.operators
+      .filter((operator) => Number(operator.user_id) !== currentPrimaryIdNum)
+      .map((operator) => {
       const checked = currentSupportIds.has(String(operator.user_id)) ? 'checked' : '';
       const disabled = !operator.available && !checked ? 'disabled' : '';
       const disabledClass = disabled ? 'disabled' : '';
