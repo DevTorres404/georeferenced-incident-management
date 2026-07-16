@@ -122,7 +122,8 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const comments = Array.isArray(incident.comments) ? incident.comments : [];
   const history = Array.isArray(incident.history) ? incident.history : [];
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
-  const canChangeState = hasPermission('incidents.edit');
+  const isOperatorRole = isOperator();
+  const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
   const canAssignPriority = canManagePriority();
   const hasValidCoordinates = hasCoordinates(incident);
   const historyTooltip = renderRecentStateChangesTooltip(history);
@@ -166,6 +167,8 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
         </div>
       </div>
     </div>
+
+    ${canChangeState && pendingStateRequests.length > 0 ? renderPendingStateRequests(pendingStateRequests) : ''}
 
     <div class="row">
       <div class="col-lg-8">
@@ -380,7 +383,6 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
 
   // Seccion de solicitudes pendientes para supervisor
   if (canChangeState && pendingStateRequests.length > 0) {
-    container.innerHTML += renderPendingStateRequests(pendingStateRequests);
     bindReviewRequestButtons(incident);
   }
 }
@@ -1304,33 +1306,26 @@ function isOperator() {
 }
 
 function openRequestStateModal(incident, states) {
-  const select = document.getElementById('solicitudNuevoEstado');
   const motivo = document.getElementById('solicitudMotivo');
-  if (!select || !motivo) return;
+  if (!motivo) return;
 
   const currentStateId = Number(incident.state_id);
   
-  const uniqueStates = [];
-  const seenNames = new Set();
-  
+  let targetState = null;
   (Array.isArray(states) ? states : []).forEach((s) => {
     if (Number(s.id) === currentStateId) return;
-    const code = normalizeCode(s.name);
-    if (code === 'RESUELTA' && !seenNames.has(code)) {
-      seenNames.add(code);
-      uniqueStates.push(s);
+    if (normalizeCode(s.name) === 'RESUELTA') {
+      targetState = s;
     }
   });
 
-  select.innerHTML = [
-    '<option value="">Seleccione un estado...</option>',
-    ...uniqueStates.map((s) =>
-      `<option value="${s.id}">${escapeHtml(formatCatalogLabel(s.name))}</option>`
-    ),
-  ].join('');
+  if (!targetState) {
+    showGlobalAlert('No se pudo encontrar el estado de resolución habilitado.', 'warning');
+    return;
+  }
 
   motivo.value = '';
-  pendingStateRequest = { incident };
+  pendingStateRequest = { incident, targetStateId: targetState.id };
 
   globalThis.jQuery?.('#modalSolicitarEstado').modal('show');
 }
@@ -1505,16 +1500,15 @@ function openRejectModal(incident, request) {
 }
 
 function renderReviewSummary(request) {
-  const requesterName = request.requested_by
-    ? [request.requested_by.first_name, request.requested_by.last_name].filter(Boolean).join(' ')
-    : 'Usuario';
+  const requesterName = request.requestedByUserName || request.requested_by_user_name || 'Usuario';
+  const stateName = request.requestedStateName || request.requested_state_name || '-';
 
   return `
     <div class="small">
       <p><strong>Solicitante:</strong> ${escapeHtml(requesterName)}</p>
-      <p><strong>Estado solicitado:</strong> <span class="badge badge-info">${escapeHtml(formatCatalogLabel(request.requested_state?.name || '-'))}</span></p>
+      <p><strong>Estado solicitado:</strong> <span class="badge badge-info">${escapeHtml(formatCatalogLabel(stateName))}</span></p>
       <p><strong>Razon:</strong><br>${escapeHtml(request.reason || 'Sin especificar')}</p>
-      <p><strong>Fecha:</strong> ${escapeHtml(formatDateTime(request.created_at))}</p>
+      <p><strong>Fecha:</strong> ${escapeHtml(formatDateTime(request.created_at || request.createdAt))}</p>
     </div>`;
 }
 
@@ -1535,15 +1529,10 @@ function normalizeCode(value) {
 
 // Bind enviar solicitud button
 document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', async () => {
-  if (!pendingStateRequest) return;
-  const { incident } = pendingStateRequest;
-  const stateId = Number(document.getElementById('solicitudNuevoEstado')?.value);
+  if (!pendingStateRequest || !pendingStateRequest.targetStateId) return;
+  const { incident, targetStateId } = pendingStateRequest;
+  const stateId = targetStateId;
   const reason = document.getElementById('solicitudMotivo')?.value.trim();
-
-  if (!stateId) {
-    showGlobalAlert('Seleccione un estado destino.', 'warning');
-    return;
-  }
   if (!reason) {
     showGlobalAlert('Ingrese el motivo de la solicitud.', 'warning');
     return;
