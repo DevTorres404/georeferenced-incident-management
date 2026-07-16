@@ -669,13 +669,29 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 ->orderBy('assignment_date')
                 ->get();
 
+            // Solo notificar a usuarios cuya asignación sea nueva o haya cambiado de rol,
+            // no a los que ya estaban asignados con el mismo rol (ej: operador principal
+            // que sigue siendo principal en esta actualización)
             foreach ($freshAssignments as $assignment) {
+                $operatorUserId = (int) $assignment->user_id;
+                $wasPreviouslyAssigned = $activeAssignments->has($operatorUserId);
+                $previousRole = $wasPreviouslyAssigned
+                    ? $activeAssignments[$operatorUserId]->assignment_role
+                    : null;
+
+                $isNewOrChanged = ! $wasPreviouslyAssigned
+                    || $previousRole !== $assignment->assignment_role;
+
+                if (! $isNewOrChanged) {
+                    continue;
+                }
+
                 $message = $assignment->assignment_role === IncidentAssignment::ROLE_PRIMARY
                     ? "Se te asigno la incidencia {$incident->code} como responsable principal."
                     : "Se te asigno la incidencia {$incident->code} como operador de apoyo.";
 
                 $this->createNotification(
-                    userId: (int) $assignment->user_id,
+                    userId: $operatorUserId,
                     title: 'Incidencia asignada',
                     message: $message,
                     type: 'INCIDENT_ASSIGNED',
