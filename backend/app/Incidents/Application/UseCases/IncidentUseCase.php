@@ -19,10 +19,10 @@ use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Application\Ports\IncidentStateChangeNotifierPort;
 use App\Incidents\Domain\Entities\Incident;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
-use App\Incidents\Infrastructure\Notifications\OperationalIncidentNotifier;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Application\Ports\FileStoragePort;
 use App\Shared\Application\Ports\TransactionManagerPort;
@@ -44,7 +44,7 @@ final class IncidentUseCase
         private IncidentRepositoryInterface $incidentRepository,
         private FileStoragePort $fileStoragePort,
         private TransactionManagerPort $transactionManager,
-        private ?OperationalIncidentNotifier $notifier = null,
+        private IncidentStateChangeNotifierPort $stateChangeNotifier,
     ) {}
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
@@ -160,68 +160,81 @@ final class IncidentUseCase
             throw IncidentException::operatorCannotChangeState();
         }
 
-        $pending = $this->incidentRepository->findPendingStateChangeRequest($incidentId);
+        return $this->transactionManager->run(function () use ($incidentId, $userId, $data): StateChangeRequestData {
+            $incident = $this->incidentRepository->loadForUpdate($incidentId);
+            if (strtoupper((string) $incident->state?->name) !== 'EN_PROGRESO') {
+                throw IncidentException::stateChangeRequestInvalidSourceState();
+            }
 
-        if ($pending !== null) {
-            throw IncidentException::stateChangeRequestPending();
-        }
+            $requestedStateName = $this->incidentRepository->stateNameById($data->stateId);
+            if (strtoupper((string) $requestedStateName) !== 'RESUELTA') {
+                throw IncidentException::stateChangeRequestInvalidTargetState();
+            }
 
-        $result = $this->incidentRepository->createStateChangeRequest($incidentId, $userId, $data);
+            if (! $this->incidentRepository->hasActiveAssignment($incidentId, $userId)) {
+                throw IncidentException::stateChangeRequestRequiresActiveAssignment();
+            }
 
-        if ($this->notifier !== null) {
-            $this->notifier->notifyStateChangeRequested(
-                $this->buildIncidentModel($incidentId),
+            if ($this->incidentRepository->findPendingStateChangeRequest($incidentId) !== null) {
+                throw IncidentException::stateChangeRequestPending();
+            }
+
+            $result = $this->incidentRepository->createStateChangeRequest($incidentId, $userId, $data);
+
+            $this->stateChangeNotifier->notifyStateChangeRequested(
+                $incidentId,
                 $userId,
+                $result->requestedStateName,
                 $data->reason
             );
-        }
 
-        return $result;
+            return $result;
+        });
     }
 
-    public function approveStateChange(int $requestId, int $userId, array $roleCodes, ?string $comment): void
+    public function approveStateChange(int $incidentId, int $requestId, int $userId, array $roleCodes, ?string $comment): void
     {
         if (! in_array('SUPERVISOR', $roleCodes, true) && ! in_array('ADMIN', $roleCodes, true)) {
             throw IncidentException::stateChangeRequestForbidden();
         }
 
-        $request = $this->incidentRepository->findStateChangeRequestById($requestId);
+        $this->transactionManager->run(function () use ($incidentId, $requestId, $userId, $comment): void {
+            $request = $this->incidentRepository->findStateChangeRequestById($requestId);
 
-        if ($request === null) {
-            throw IncidentException::stateChangeRequestNotFound();
-        }
+            if ($request === null || $request->incidentId !== $incidentId) {
+                throw IncidentException::stateChangeRequestNotFound();
+            }
 
-        $this->incidentRepository->approveStateChangeRequest($requestId, $userId, $comment);
+            $this->incidentRepository->approveStateChangeRequest($incidentId, $requestId, $userId, $comment);
 
-        if ($this->notifier !== null) {
-            $this->notifier->notifyStateChangeApproved(
-                $this->buildIncidentModel($request->incidentId),
+            $this->stateChangeNotifier->notifyStateChangeApproved(
+                $request->incidentId,
                 $request->requestedByUserId
             );
-        }
+        });
     }
 
-    public function rejectStateChange(int $requestId, int $userId, array $roleCodes, ?string $comment): void
+    public function rejectStateChange(int $incidentId, int $requestId, int $userId, array $roleCodes, ?string $comment): void
     {
         if (! in_array('SUPERVISOR', $roleCodes, true) && ! in_array('ADMIN', $roleCodes, true)) {
             throw IncidentException::stateChangeRequestForbidden();
         }
 
-        $request = $this->incidentRepository->findStateChangeRequestById($requestId);
+        $this->transactionManager->run(function () use ($incidentId, $requestId, $userId, $comment): void {
+            $request = $this->incidentRepository->findStateChangeRequestById($requestId);
 
-        if ($request === null) {
-            throw IncidentException::stateChangeRequestNotFound();
-        }
+            if ($request === null || $request->incidentId !== $incidentId) {
+                throw IncidentException::stateChangeRequestNotFound();
+            }
 
-        $this->incidentRepository->rejectStateChangeRequest($requestId, $userId, $comment);
+            $this->incidentRepository->rejectStateChangeRequest($requestId, $userId, $comment);
 
-        if ($this->notifier !== null) {
-            $this->notifier->notifyStateChangeRejected(
-                $this->buildIncidentModel($request->incidentId),
+            $this->stateChangeNotifier->notifyStateChangeRejected(
+                $request->incidentId,
                 $request->requestedByUserId,
                 $comment ?? 'Solicitud rechazada.'
             );
-        }
+        });
     }
 
     /**
@@ -234,10 +247,5 @@ final class IncidentUseCase
         }
 
         return $this->incidentRepository->pendingStateChangeRequestsForUser($userId);
-    }
-
-    private function buildIncidentModel(int $incidentId): \App\Incidents\Infrastructure\Persistence\Models\Incident
-    {
-        return \App\Incidents\Infrastructure\Persistence\Models\Incident::findOrFail($incidentId);
     }
 }

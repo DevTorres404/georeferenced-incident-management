@@ -25,8 +25,10 @@ use App\Auth\Infrastructure\Services\LaravelUserNotificationAdapter;
 use App\Auth\Infrastructure\Storage\RustFsProfilePhotoStorageAdapter;
 use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
 use App\Catalogs\Infrastructure\Persistence\Repositories\EloquentCatalogRepository;
+use App\Incidents\Application\Ports\IncidentStateChangeNotifierPort;
 use App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Infrastructure\Notifications\OperationalIncidentNotifier;
 use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentMetricsRepository;
 use App\Incidents\Infrastructure\Persistence\Repositories\EloquentIncidentRepository;
 use App\Incidents\Infrastructure\Storage\LaravelFileStorageAdapter;
@@ -82,6 +84,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(TransactionManagerPort::class, LaravelTransactionManagerAdapter::class);
         $this->app->bind(DateTimeProviderPort::class, LaravelDateTimeProviderAdapter::class);
         $this->app->bind(TwoFactorAuthPort::class, GoogleTwoFactorAuthAdapter::class);
+        $this->app->bind(IncidentStateChangeNotifierPort::class, OperationalIncidentNotifier::class);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Application\Ports\IncidentStateChangeNotifierPort;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Entities\Incident;
 use App\Incidents\Domain\Entities\IncidentState;
@@ -24,6 +25,7 @@ class IncidentUseCaseTest extends TestCase
     private IncidentRepositoryInterface $incidentRepository;
     private FileStoragePort $fileStoragePort;
     private TransactionManagerPort $transactionManager;
+    private IncidentStateChangeNotifierPort $stateChangeNotifier;
     private IncidentUseCase $useCase;
 
     protected function setUp(): void
@@ -39,11 +41,13 @@ class IncidentUseCaseTest extends TestCase
             ->andReturnUsing(function ($closure) {
                 return $closure();
             });
+        $this->stateChangeNotifier = Mockery::mock(IncidentStateChangeNotifierPort::class);
 
         $this->useCase = new IncidentUseCase(
             $this->incidentRepository,
             $this->fileStoragePort,
-            $this->transactionManager
+            $this->transactionManager,
+            $this->stateChangeNotifier
         );
     }
 
@@ -238,6 +242,21 @@ class IncidentUseCaseTest extends TestCase
             reviewedAt: null,
         );
 
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with($incidentId)
+            ->once()
+            ->andReturn($this->incidentWithState($incidentId, 'EN_PROGRESO'));
+
+        $this->incidentRepository->shouldReceive('stateNameById')
+            ->with(3)
+            ->once()
+            ->andReturn('RESUELTA');
+
+        $this->incidentRepository->shouldReceive('hasActiveAssignment')
+            ->with($incidentId, $userId)
+            ->once()
+            ->andReturn(true);
+
         $this->incidentRepository->shouldReceive('findPendingStateChangeRequest')
             ->with($incidentId)
             ->once()
@@ -247,6 +266,10 @@ class IncidentUseCaseTest extends TestCase
             ->with($incidentId, $userId, $data)
             ->once()
             ->andReturn($expected);
+
+        $this->stateChangeNotifier->shouldReceive('notifyStateChangeRequested')
+            ->with($incidentId, $userId, 'Resuelta', 'Task completed')
+            ->once();
 
         $result = $this->useCase->requestStateChange($incidentId, $userId, $roleCodes, $data);
 
@@ -284,6 +307,13 @@ class IncidentUseCaseTest extends TestCase
             reviewedAt: null,
         );
 
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with(10)
+            ->once()
+            ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
+        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('RESUELTA');
+        $this->incidentRepository->shouldReceive('hasActiveAssignment')->with(10, 5)->once()->andReturn(true);
+
         $this->incidentRepository->shouldReceive('findPendingStateChangeRequest')
             ->with(10)
             ->once()
@@ -293,6 +323,63 @@ class IncidentUseCaseTest extends TestCase
         $this->expectExceptionMessage('Ya existe una solicitud de cambio de estado pendiente');
 
         $this->useCase->requestStateChange(10, 5, ['OPERADOR'], $data);
+    }
+
+    public function test_request_state_change_requires_en_progreso(): void
+    {
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with(10)
+            ->once()
+            ->andReturn($this->incidentWithState(10, 'EN_REVISION'));
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('Solo se puede solicitar la resolucion de una incidencia en progreso.');
+
+        $this->useCase->requestStateChange(
+            10,
+            5,
+            ['OPERADOR'],
+            new RequestStateChangeInputData(stateId: 3, reason: 'Done')
+        );
+    }
+
+    public function test_request_state_change_requires_resuelta_target(): void
+    {
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with(10)
+            ->once()
+            ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
+        $this->incidentRepository->shouldReceive('stateNameById')->with(5)->once()->andReturn('CERRADA');
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('Los operadores solo pueden solicitar el estado RESUELTA.');
+
+        $this->useCase->requestStateChange(
+            10,
+            5,
+            ['OPERADOR'],
+            new RequestStateChangeInputData(stateId: 5, reason: 'Done')
+        );
+    }
+
+    public function test_request_state_change_requires_active_assignment(): void
+    {
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with(10)
+            ->once()
+            ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
+        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('RESUELTA');
+        $this->incidentRepository->shouldReceive('hasActiveAssignment')->with(10, 5)->once()->andReturn(false);
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('Debes tener una asignacion activa en la incidencia');
+
+        $this->useCase->requestStateChange(
+            10,
+            5,
+            ['OPERADOR'],
+            new RequestStateChangeInputData(stateId: 3, reason: 'Done')
+        );
     }
 
     public function test_approve_state_change_succeeds_for_supervisor(): void
@@ -324,11 +411,14 @@ class IncidentUseCaseTest extends TestCase
             ->andReturn($requestData);
 
         $this->incidentRepository->shouldReceive('approveStateChangeRequest')
-            ->with($requestId, $userId, $comment)
+            ->with(10, $requestId, $userId, $comment)
             ->once();
 
-        // Should not throw
-        $this->useCase->approveStateChange($requestId, $userId, $roleCodes, $comment);
+        $this->stateChangeNotifier->shouldReceive('notifyStateChangeApproved')
+            ->with(10, 5)
+            ->once();
+
+        $this->useCase->approveStateChange(10, $requestId, $userId, $roleCodes, $comment);
         $this->assertTrue(true);
     }
 
@@ -337,7 +427,7 @@ class IncidentUseCaseTest extends TestCase
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('No tienes permisos para revisar esta solicitud');
 
-        $this->useCase->approveStateChange(1, 5, ['OPERADOR'], 'Ok');
+        $this->useCase->approveStateChange(10, 1, 5, ['OPERADOR'], 'Ok');
     }
 
     public function test_approve_state_change_fails_if_not_found(): void
@@ -350,7 +440,7 @@ class IncidentUseCaseTest extends TestCase
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('La solicitud de cambio de estado no existe.');
 
-        $this->useCase->approveStateChange(999, 3, ['SUPERVISOR'], null);
+        $this->useCase->approveStateChange(10, 999, 3, ['SUPERVISOR'], null);
     }
 
     public function test_reject_state_change_succeeds_for_supervisor(): void
@@ -385,7 +475,11 @@ class IncidentUseCaseTest extends TestCase
             ->with($requestId, $userId, $comment)
             ->once();
 
-        $this->useCase->rejectStateChange($requestId, $userId, $roleCodes, $comment);
+        $this->stateChangeNotifier->shouldReceive('notifyStateChangeRejected')
+            ->with(10, 5, $comment)
+            ->once();
+
+        $this->useCase->rejectStateChange(10, $requestId, $userId, $roleCodes, $comment);
         $this->assertTrue(true);
     }
 
@@ -394,6 +488,49 @@ class IncidentUseCaseTest extends TestCase
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('No tienes permisos para revisar esta solicitud');
 
-        $this->useCase->rejectStateChange(1, 5, ['OPERADOR'], 'No');
+        $this->useCase->rejectStateChange(10, 1, 5, ['OPERADOR'], 'No');
+    }
+
+    public function test_approve_state_change_rejects_request_from_another_incident(): void
+    {
+        $request = new StateChangeRequestData(
+            id: 1,
+            incidentId: 11,
+            requestedByUserId: 5,
+            requestedByUserName: 'Operator',
+            requestedStateId: 3,
+            requestedStateName: 'Resuelta',
+            reason: 'Done',
+            status: 'pending',
+            reviewedByUserId: null,
+            reviewedByUserName: null,
+            reviewerComment: null,
+            createdAt: '2026-01-01T00:00:00+00:00',
+            reviewedAt: null,
+        );
+
+        $this->incidentRepository->shouldReceive('findStateChangeRequestById')
+            ->with(1)
+            ->once()
+            ->andReturn($request);
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('La solicitud de cambio de estado no existe.');
+
+        $this->useCase->approveStateChange(10, 1, 3, ['SUPERVISOR'], null);
+    }
+
+    private function incidentWithState(int $incidentId, string $stateName): Incident
+    {
+        return new Incident(
+            id: $incidentId,
+            code: "INC-{$incidentId}",
+            title: 'Incident',
+            description: 'Description',
+            reporterUserId: 1,
+            assigneeUserId: null,
+            stateId: 1,
+            state: new IncidentState(id: 1, name: $stateName, allowsEdition: false, isFinal: false)
+        );
     }
 }

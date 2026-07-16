@@ -45,6 +45,8 @@ interface IncidentRepositoryInterface
 
     public function load(int $incidentId, bool $withHistory = true): Incident;
 
+    public function loadForUpdate(int $incidentId): Incident;
+
     public function loadDetail(int $incidentId): IncidentDetailData;
 
     public function findTransition(int $fromStateId, int $toStateId): ?IncidentTransition;
@@ -76,9 +78,13 @@ interface IncidentRepositoryInterface
 
     public function findPendingStateChangeRequest(int $incidentId): ?StateChangeRequestData;
 
+    public function stateNameById(int $stateId): ?string;
+
+    public function hasActiveAssignment(int $incidentId, int $userId): bool;
+
     public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData;
 
-    public function approveStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void;
+    public function approveStateChangeRequest(int $incidentId, int $requestId, int $reviewerUserId, ?string $comment): void;
 
     public function rejectStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void;
 

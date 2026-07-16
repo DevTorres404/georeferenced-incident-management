@@ -3,6 +3,7 @@
 namespace App\Incidents\Infrastructure\Notifications;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Application\Ports\IncidentStateChangeNotifierPort;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
@@ -13,30 +14,31 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-final class OperationalIncidentNotifier
+final class OperationalIncidentNotifier implements IncidentStateChangeNotifierPort
 {
     public function __construct(
         private readonly UserNotifier $userNotifier,
         private readonly AdminNotifier $adminNotifier
     ) {}
 
-    public function notifyStateChangeRequested(Incident $incident, int $requestedByUserId, string $reason): int
-    {
+    public function notifyStateChangeRequested(
+        int $incidentId,
+        int $requestedByUserId,
+        string $requestedStateName,
+        string $reason
+    ): void {
+        $incident = Incident::query()->findOrFail($incidentId);
         $requestedBy = User::query()->find($requestedByUserId);
         $requestedByName = $requestedBy?->getNombreCompletoAttribute() ?? "Usuario #{$requestedByUserId}";
-        $requestedState = $incident->relationLoaded('requestedState')
-            ? $incident->requestedState
-            : null;
-        $stateLabel = $requestedState?->name ?? 'nuevo estado';
 
         $title = 'Solicitud de cambio de estado';
-        $message = "El operador {$requestedByName} solicita cambiar el estado de la incidencia {$incident->code} a {$stateLabel}. Motivo: {$reason}.";
-        $type = 'STATE_CHANGE_REQUESTED';
+        $message = "El operador {$requestedByName} solicita cambiar el estado de la incidencia {$incident->code} a {$requestedStateName}. Motivo: {$reason}.";
+        $type = 'STATUS_CHANGE';
 
         $supervisorUserIds = $this->supervisorUserIdsForIncident($incident);
 
         if ($supervisorUserIds !== []) {
-            return $this->userNotifier->notifyMany(
+            $this->userNotifier->notifyMany(
                 $supervisorUserIds,
                 $title,
                 $message,
@@ -44,32 +46,34 @@ final class OperationalIncidentNotifier
                 (int) $incident->id,
                 true
             );
+
+            return;
         }
 
         $this->adminNotifier->notify($title, $message, $type, [], (int) $incident->id);
-
-        return 0;
     }
 
-    public function notifyStateChangeApproved(Incident $incident, int $operatorUserId): void
+    public function notifyStateChangeApproved(int $incidentId, int $requestedByUserId): void
     {
+        $incident = Incident::query()->findOrFail($incidentId);
         $this->userNotifier->notify(
-            $operatorUserId,
+            $requestedByUserId,
             'Cambio de estado aprobado',
             "Tu solicitud de cambio de estado para la incidencia {$incident->code} fue aprobada. El estado fue actualizado.",
-            'STATE_CHANGE_APPROVED',
+            'STATUS_CHANGE',
             (int) $incident->id,
             false
         );
     }
 
-    public function notifyStateChangeRejected(Incident $incident, int $operatorUserId, string $reason): void
+    public function notifyStateChangeRejected(int $incidentId, int $requestedByUserId, string $reason): void
     {
+        $incident = Incident::query()->findOrFail($incidentId);
         $this->userNotifier->notify(
-            $operatorUserId,
+            $requestedByUserId,
             'Cambio de estado rechazado',
             "Tu solicitud de cambio de estado para la incidencia {$incident->code} fue rechazada. Motivo: {$reason}.",
-            'STATE_CHANGE_REJECTED',
+            'STATUS_CHANGE',
             (int) $incident->id,
             false
         );
