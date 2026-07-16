@@ -18,67 +18,67 @@ class StateSeeder extends Seeder
         // ──────────────────────────────────────────────
         $states = [
             [
-                'name'              => 'NUEVA',
-                'description'       => 'Incidencia recién reportada, pendiente de revisión',
-                'color'             => '#3B82F6',
-                'is_initial_state'  => true,
-                'is_final_state'    => false,
-                'allows_edition'    => true,
-                'order'             => 1,
+                'name' => 'NUEVA',
+                'description' => 'Incidencia recién reportada, pendiente de revisión',
+                'color' => '#90A4AE',
+                'is_initial_state' => true,
+                'is_final_state' => false,
+                'allows_edition' => true,
+                'order' => 1,
             ],
             [
-                'name'              => 'EN_REVISION',
-                'description'       => 'Siendo evaluada por un supervisor',
-                'color'             => '#F59E0B',
-                'is_initial_state'  => false,
-                'is_final_state'    => false,
-                'allows_edition'    => true,
-                'order'             => 2,
+                'name' => 'EN_REVISION',
+                'description' => 'Siendo evaluada por un supervisor',
+                'color' => '#2196F3',
+                'is_initial_state' => false,
+                'is_final_state' => false,
+                'allows_edition' => true,
+                'order' => 2,
             ],
             [
-                'name'              => 'EN_PROGRESO',
-                'description'       => 'Asignada a un operador y en proceso de resolución',
-                'color'             => '#8B5CF6',
-                'is_initial_state'  => false,
-                'is_final_state'    => false,
-                'allows_edition'    => false,
-                'order'             => 3,
+                'name' => 'EN_PROGRESO',
+                'description' => 'Asignada a un operador y en proceso de resolución',
+                'color' => '#FFC107',
+                'is_initial_state' => false,
+                'is_final_state' => false,
+                'allows_edition' => false,
+                'order' => 3,
             ],
             [
-                'name'              => 'RESUELTA',
-                'description'       => 'El operador ha completado la resolución',
-                'color'             => '#10B981',
-                'is_initial_state'  => false,
-                'is_final_state'    => false,
-                'allows_edition'    => false,
-                'order'             => 4,
+                'name' => 'RESUELTA',
+                'description' => 'El operador ha completado la resolución',
+                'color' => '#8BC34A',
+                'is_initial_state' => false,
+                'is_final_state' => false,
+                'allows_edition' => false,
+                'order' => 4,
             ],
             [
-                'name'              => 'CERRADA',
-                'description'       => 'Confirmada como resuelta satisfactoriamente',
-                'color'             => '#6B7280',
-                'is_initial_state'  => false,
-                'is_final_state'    => true,
-                'allows_edition'    => false,
-                'order'             => 5,
+                'name' => 'CERRADA',
+                'description' => 'Confirmada como resuelta satisfactoriamente',
+                'color' => '#4CAF50',
+                'is_initial_state' => false,
+                'is_final_state' => true,
+                'allows_edition' => false,
+                'order' => 5,
             ],
             [
-                'name'              => 'RECHAZADA',
-                'description'       => 'No procede o duplicada',
-                'color'             => '#EF4444',
-                'is_initial_state'  => false,
-                'is_final_state'    => true,
-                'allows_edition'    => false,
-                'order'             => 6,
+                'name' => 'RECHAZADA',
+                'description' => 'No procede o duplicada',
+                'color' => '#F44336',
+                'is_initial_state' => false,
+                'is_final_state' => true,
+                'allows_edition' => false,
+                'order' => 6,
             ],
             [
-                'name'              => 'REABIERTA',
-                'description'       => 'Reabierta por supervisión después del cierre',
-                'color'             => '#F97316',
-                'is_initial_state'  => false,
-                'is_final_state'    => false,
-                'allows_edition'    => true,
-                'order'             => 7,
+                'name' => 'REABIERTA',
+                'description' => 'Reabierta por un supervisor o administrador debido a una resolución insatisfactoria.',
+                'color' => '#FF9800',
+                'is_initial_state' => false,
+                'is_final_state' => false,
+                'allows_edition' => true,
+                'order' => 7,
             ],
         ];
 
@@ -120,25 +120,27 @@ class StateSeeder extends Seeder
 
             // CERRADA → REABIERTA (Supervisión reabre para nueva revisión)
             ['origen' => 'CERRADA',     'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],
+            // RECHAZADA → REABIERTA (Supervisión reconsidera el rechazo)
+            ['origen' => 'RECHAZADA',   'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],
 
             // REABIERTA → EN_REVISION (Se vuelve a revisar)
             ['origen' => 'REABIERTA',   'destino' => 'EN_REVISION',  'comment' => false, 'roles' => ['ADMIN', 'SUPERVISOR']],
         ];
 
         foreach ($transitions as $t) {
-            $origenId  = State::where('name', $t['origen'])->value('id');
+            $origenId = State::where('name', $t['origen'])->value('id');
             $destinoId = State::where('name', $t['destino'])->value('id');
 
             if ($origenId && $destinoId) {
                 StateTransition::updateOrCreate(
                     [
-                        'source_state_id'  => $origenId,
+                        'source_state_id' => $origenId,
                         'target_state_id' => $destinoId,
                     ],
                     [
                         'requires_comment' => $t['comment'],
-                        'allowed_roles'    => $t['roles'],
-                        'is_active'        => true,
+                        'allowed_roles' => $t['roles'],
+                        'is_active' => true,
                     ]
                 );
             }

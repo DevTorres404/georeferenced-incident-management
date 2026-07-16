@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\UseCases;
 
+use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StateChangeRequestData;
@@ -19,13 +20,18 @@ use App\Shared\Application\Ports\FileStoragePort;
 use App\Shared\Application\Ports\TransactionManagerPort;
 use Mockery;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 class IncidentUseCaseTest extends TestCase
 {
     private IncidentRepositoryInterface $incidentRepository;
+
     private FileStoragePort $fileStoragePort;
+
     private TransactionManagerPort $transactionManager;
+
     private IncidentStateChangeNotifierPort $stateChangeNotifier;
+
     private IncidentUseCase $useCase;
 
     protected function setUp(): void
@@ -34,13 +40,13 @@ class IncidentUseCaseTest extends TestCase
 
         $this->incidentRepository = Mockery::mock(IncidentRepositoryInterface::class);
         $this->fileStoragePort = Mockery::mock(FileStoragePort::class);
-        
+
         // Simular que el TransactionManager simplemente ejecuta el closure (sin ir a BD)
         $this->transactionManager = Mockery::mock(TransactionManagerPort::class);
         $this->transactionManager->shouldReceive('run')
             ->andReturnUsing(function ($closure) {
                 return $closure();
-            });
+            })->byDefault();
         $this->stateChangeNotifier = Mockery::mock(IncidentStateChangeNotifierPort::class);
 
         $this->useCase = new IncidentUseCase(
@@ -94,7 +100,7 @@ class IncidentUseCaseTest extends TestCase
         // 2. Act & Assert
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('La incident ya no permite edicion en su estado actual.');
-        
+
         $this->useCase->update($incidentId, $data);
     }
 
@@ -105,13 +111,13 @@ class IncidentUseCaseTest extends TestCase
         $userId = 2;
         $fileData = new UploadedFileData('test.jpg', 'image/jpeg', 100, '/tmp/test.jpg');
         $storedFile = new StoredFileData('test.jpg', 'path/to/test.jpg', 'image/jpeg', 100, 'hash');
-        
+
         $this->fileStoragePort->shouldReceive('storeIncidentFile')
             ->with($incidentId, $fileData)
             ->once()
             ->andReturn($storedFile);
 
-        $attachmentMock = new \App\Incidents\Application\DTOs\AttachmentData(
+        $attachmentMock = new AttachmentData(
             id: 1,
             incidentId: $incidentId,
             userId: $userId,
@@ -143,7 +149,7 @@ class IncidentUseCaseTest extends TestCase
         $userId = 2;
         $roleCodes = ['OPERATOR'];
         $data = new ChangeStateInputData(stateId: 3, comment: null);
-        
+
         $state = new IncidentState(id: 1, name: 'Open', allowsEdition: true, isFinal: false);
         $incident = new Incident(
             id: $incidentId,
@@ -170,7 +176,7 @@ class IncidentUseCaseTest extends TestCase
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('La transicion de estado no esta permitida.');
 
-        $this->useCase->changeState($incidentId, $userId, $roleCodes, $data);
+        $this->useCase->changeState($incidentId, $userId, $roleCodes, false, $data);
     }
 
     public function test_change_state_throws_if_transition_forbidden_for_role(): void
@@ -180,7 +186,7 @@ class IncidentUseCaseTest extends TestCase
         $userId = 2;
         $roleCodes = ['OPERATOR'];
         $data = new ChangeStateInputData(stateId: 3, comment: null);
-        
+
         $state = new IncidentState(id: 1, name: 'Open', allowsEdition: true, isFinal: false);
         $incident = new Incident(
             id: $incidentId,
@@ -214,7 +220,132 @@ class IncidentUseCaseTest extends TestCase
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('Tu rol no puede ejecutar esta transicion.');
 
-        $this->useCase->changeState($incidentId, $userId, $roleCodes, $data);
+        $this->useCase->changeState($incidentId, $userId, $roleCodes, false, $data);
+    }
+
+    public function test_change_state_rejects_blank_comment_when_transition_requires_it(): void
+    {
+        $incidentId = 1;
+        $userId = 2;
+        $incident = $this->incidentWithState($incidentId, 'CERRADA');
+        $transition = new IncidentTransition(
+            fromStateId: 1,
+            toStateId: 5,
+            requiresComment: true,
+            allowedRoleCodes: ['ADMIN', 'SUPERVISOR']
+        );
+
+        $this->incidentRepository->shouldReceive('load')
+            ->with($incidentId, false)
+            ->times(8)
+            ->andReturn($incident);
+        $this->incidentRepository->shouldReceive('findTransition')
+            ->with(1, 5)
+            ->times(8)
+            ->andReturn($transition);
+        $this->incidentRepository->shouldReceive('stateNameById')
+            ->with(5)
+            ->times(8)
+            ->andReturn('REABIERTA');
+        $this->incidentRepository->shouldReceive('changeState')
+            ->with(1, 2, Mockery::on(
+                fn (ChangeStateInputData $data): bool => $data->comment === "\u{200B}Visible reason\u{200B}"
+            ))
+            ->once()
+            ->andReturn($incident);
+
+        foreach ([null, '', '   ', "\u{00A0}", "\u{2002}\u{2028}", "\u{200B}", "\xC3\x28"] as $comment) {
+            try {
+                $this->useCase->changeState(
+                    $incidentId,
+                    $userId,
+                    ['ADMIN'],
+                    true,
+                    new ChangeStateInputData(stateId: 5, comment: $comment)
+                );
+
+                $this->fail('A required transition comment cannot be blank.');
+            } catch (IncidentException $exception) {
+                $this->assertSame('Esta transicion requiere comment.', $exception->getMessage());
+            }
+        }
+
+        $this->assertSame(
+            $incident,
+            $this->useCase->changeState(
+                $incidentId,
+                $userId,
+                ['ADMIN'],
+                true,
+                new ChangeStateInputData(stateId: 5, comment: "\u{200B}Visible reason\u{200B}")
+            )
+        );
+    }
+
+    public function test_change_state_requires_reopen_permission_only_for_reopened_target(): void
+    {
+        $incident = $this->incidentWithState(1, 'CERRADA');
+        $reopeningTransition = new IncidentTransition(
+            fromStateId: 1,
+            toStateId: 5,
+            requiresComment: false,
+            allowedRoleCodes: ['ADMIN']
+        );
+        $unrelatedTransition = new IncidentTransition(
+            fromStateId: 1,
+            toStateId: 3,
+            requiresComment: false,
+            allowedRoleCodes: ['ADMIN']
+        );
+
+        $this->incidentRepository->shouldReceive('load')->with(1, false)->twice()->andReturn($incident);
+        $this->incidentRepository->shouldReceive('findTransition')->with(1, 5)->once()->andReturn($reopeningTransition);
+        $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($unrelatedTransition);
+        $this->incidentRepository->shouldReceive('stateNameById')->with(5)->once()->andReturn('REABIERTA');
+        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('EN_REVISION');
+        $this->incidentRepository->shouldReceive('changeState')
+            ->with(1, 2, Mockery::on(fn (ChangeStateInputData $data): bool => $data->stateId === 3))
+            ->once()
+            ->andReturn($incident);
+
+        try {
+            $this->useCase->changeState(1, 2, ['ADMIN'], false, new ChangeStateInputData(5, 'Reason'));
+            $this->fail('Reopening without incidents.reopen must be forbidden.');
+        } catch (IncidentException $exception) {
+            $this->assertSame('Tu rol no puede ejecutar esta transicion.', $exception->getMessage());
+        }
+
+        $this->assertSame(
+            $incident,
+            $this->useCase->changeState(1, 2, ['ADMIN'], false, new ChangeStateInputData(3))
+        );
+    }
+
+    public function test_change_state_runs_repository_persistence_inside_transaction_and_propagates_failure(): void
+    {
+        $incident = $this->incidentWithState(1, 'EN_REVISION');
+        $transition = new IncidentTransition(
+            fromStateId: 1,
+            toStateId: 3,
+            requiresComment: false,
+            allowedRoleCodes: ['ADMIN']
+        );
+
+        $this->transactionManager->shouldReceive('run')
+            ->once()
+            ->andReturnUsing(fn ($operation) => $operation());
+        $this->incidentRepository->shouldReceive('load')->with(1, false)->once()->andReturn($incident);
+        $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($transition);
+        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('EN_PROGRESO');
+        $this->incidentRepository->shouldReceive('changeState')
+            ->with(1, 2, Mockery::type(ChangeStateInputData::class))
+            ->once()
+            ->andThrow(new RuntimeException('Notification persistence failed.'));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Notification persistence failed.');
+
+        $this->useCase->changeState(1, 2, ['ADMIN'], false, new ChangeStateInputData(3));
     }
 
     // ── State Change Requests ──────────────────────────

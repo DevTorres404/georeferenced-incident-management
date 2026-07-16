@@ -13,6 +13,7 @@ use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
+use App\Incidents\Application\DTOs\IncidentMapPointData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\RequestStateChangeInputData;
@@ -53,7 +54,7 @@ final class IncidentUseCase
     }
 
     /**
-     * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>
+     * @return array<int, IncidentMapPointData>
      */
     public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array
     {
@@ -114,24 +115,42 @@ final class IncidentUseCase
         return $this->incidentRepository->assignmentOperatorOptions($userId);
     }
 
-    public function changeState(int $incidentId, int $userId, array $roleCodes, ChangeStateInputData $data): Incident
-    {
-        $incident = $this->incidentRepository->load($incidentId, false);
-        $transition = $this->incidentRepository->findTransition($incident->stateId, $data->stateId);
+    public function changeState(
+        int $incidentId,
+        int $userId,
+        array $roleCodes,
+        bool $canReopen,
+        ChangeStateInputData $data
+    ): Incident {
+        return $this->transactionManager->run(function () use (
+            $incidentId,
+            $userId,
+            $roleCodes,
+            $canReopen,
+            $data
+        ): Incident {
+            $incident = $this->incidentRepository->load($incidentId, false);
+            $transition = $this->incidentRepository->findTransition($incident->stateId, $data->stateId);
 
-        if (! $transition) {
-            throw IncidentException::transitionNotAllowed();
-        }
+            if (! $transition) {
+                throw IncidentException::transitionNotAllowed();
+            }
 
-        if (! $transition->isAllowedForRoles($roleCodes)) {
-            throw IncidentException::transitionForbidden();
-        }
+            if (! $transition->isAllowedForRoles($roleCodes)) {
+                throw IncidentException::transitionForbidden();
+            }
 
-        if ($transition->requiresComment && empty($data->comment)) {
-            throw IncidentException::transitionRequiresComment();
-        }
+            $targetStateName = $this->incidentRepository->stateNameById($data->stateId);
+            if (strtoupper((string) $targetStateName) === 'REABIERTA' && ! $canReopen) {
+                throw IncidentException::transitionForbidden();
+            }
 
-        return $this->incidentRepository->changeState($incidentId, $userId, $data);
+            if ($transition->requiresComment && $this->isBlankComment($data->comment)) {
+                throw IncidentException::transitionRequiresComment();
+            }
+
+            return $this->incidentRepository->changeState($incidentId, $userId, $data);
+        });
     }
 
     public function notifications(int $userId, NotificationFiltersData $filters): PaginatedResult
@@ -247,5 +266,14 @@ final class IncidentUseCase
         }
 
         return $this->incidentRepository->pendingStateChangeRequestsForUser($userId);
+    }
+
+    private function isBlankComment(?string $comment): bool
+    {
+        if ($comment === null) {
+            return true;
+        }
+
+        return preg_match('/^[\s\p{Z}\p{Cf}]*$/u', $comment) !== 0;
     }
 }
