@@ -898,6 +898,7 @@ function bindStateChangeControl(incident, transitions) {
     directSelect.disabled = true;
     try {
       await executeStateTransition(incident, transition, '', transitions);
+      renderStateSelector(incident, transitions);
     } catch (error) {
       renderStateSelector(incident, transitions);
       showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
