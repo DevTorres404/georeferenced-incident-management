@@ -18,6 +18,8 @@ use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapPointData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
+use App\Incidents\Application\DTOs\RequestStateChangeInputData;
+use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\IncidentTransition;
@@ -35,6 +37,7 @@ use App\Incidents\Infrastructure\Persistence\Mappers\IncidentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentSummaryMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentTransitionMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\NotificationMapper;
+use App\Incidents\Infrastructure\Persistence\Mappers\StateChangeRequestMapper;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
@@ -43,6 +46,7 @@ use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
+use App\Incidents\Infrastructure\Persistence\Models\StateChangeRequest;
 use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
@@ -87,12 +91,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         private AttachmentMapper $attachmentMapper,
         private AssignmentMapper $assignmentMapper,
         private NotificationMapper $notificationMapper,
+        private StateChangeRequestMapper $stateChangeRequestMapper,
         private UserNotifier $userNotifier
     ) {}
 
     public function paginate(IncidentFiltersData $filters, int $userId, bool $canManage): PaginatedResult
     {
-        $query = Incident::query()->with(self::RELATIONS);
+        $query = Incident::query()->with(self::RELATIONS)->withExists('pendingStateChangeRequests');
         $this->applySorting($query, $filters);
         $this->applyIncidentVisibilityScope($query, $userId);
 
@@ -118,7 +123,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function dataTable(IncidentFiltersData $filters, int $userId, bool $canManage, int $start, int $length): IncidentListResultData
     {
-        $query = Incident::query()->with(self::RELATIONS);
+        $query = Incident::query()->with(self::RELATIONS)->withExists('pendingStateChangeRequests');
         $this->applyIncidentVisibilityScope($query, $userId);
 
         $recordsTotal = (clone $query)->count();
@@ -664,13 +669,29 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 ->orderBy('assignment_date')
                 ->get();
 
+            // Solo notificar a usuarios cuya asignación sea nueva o haya cambiado de rol,
+            // no a los que ya estaban asignados con el mismo rol (ej: operador principal
+            // que sigue siendo principal en esta actualización)
             foreach ($freshAssignments as $assignment) {
+                $operatorUserId = (int) $assignment->user_id;
+                $wasPreviouslyAssigned = $activeAssignments->has($operatorUserId);
+                $previousRole = $wasPreviouslyAssigned
+                    ? $activeAssignments[$operatorUserId]->assignment_role
+                    : null;
+
+                $isNewOrChanged = ! $wasPreviouslyAssigned
+                    || $previousRole !== $assignment->assignment_role;
+
+                if (! $isNewOrChanged) {
+                    continue;
+                }
+
                 $message = $assignment->assignment_role === IncidentAssignment::ROLE_PRIMARY
                     ? "Se te asigno la incidencia {$incident->code} como responsable principal."
                     : "Se te asigno la incidencia {$incident->code} como operador de apoyo.";
 
                 $this->createNotification(
-                    userId: (int) $assignment->user_id,
+                    userId: $operatorUserId,
                     title: 'Incidencia asignada',
                     message: $message,
                     type: 'INCIDENT_ASSIGNED',
@@ -752,6 +773,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 message: "La incidencia {$incident->code} fue actualizada por un operador.",
                 type: 'STATUS_CHANGE'
             );
+        } else {
+            $this->notifyAssignedOperatorsForStateChange($incident, $newState);
         }
 
         $this->notifySupervisorsForStateChange($incident, $newState);
@@ -1040,6 +1063,41 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         };
     }
 
+    private function notifyAssignedOperatorsForStateChange(Incident $incident, State $newState): void
+    {
+        $operatorIds = \App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->pluck('user_id')
+            ->toArray();
+
+        if (empty($operatorIds)) {
+            return;
+        }
+
+        $normalizedState = strtoupper(str_replace(' ', '_', $newState->name));
+
+        if ($normalizedState === 'REABIERTA') {
+            $title = 'Incidencia reabierta';
+            $message = "La incidencia {$incident->code} fue reabierta por el supervisor. Por favor, revisela nuevamente.";
+            $type = 'STATUS_CHANGE';
+        } else {
+            $title = 'Cambio de estado';
+            $message = "La incidencia {$incident->code} cambio su estado a {$newState->name}.";
+            $type = 'STATUS_CHANGE';
+        }
+
+        foreach ($operatorIds as $operatorId) {
+            $this->createNotification(
+                userId: (int) $operatorId,
+                title: $title,
+                message: $message,
+                type: $type,
+                incidentId: (int) $incident->id
+            );
+        }
+    }
+
     /**
      * @return array{0: string, 1: string, 2: string}
      */
@@ -1203,14 +1261,23 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     private function applyFilterCriteria($query, IncidentFiltersData $filters, int $userId): void
     {
         if ($filters->stateFilter !== null) {
-            $stateIds = match ($filters->stateFilter) {
-                'pendiente' => State::where('is_initial_state', true)->where('is_active', true)->pluck('id')->all(),
-                'en_proceso' => State::where('is_initial_state', false)->where('is_final_state', false)->where('is_active', true)->pluck('id')->all(),
-                'resuelta' => State::where('is_final_state', true)->where('is_active', true)->pluck('id')->all(),
-                default => [],
-            };
-            if (count($stateIds) > 0) {
-                $query->whereIn('state_id', $stateIds);
+            if ($filters->stateFilter === 'pending_review') {
+                $query->whereExists(function ($existsQuery) {
+                    $existsQuery->selectRaw(1)
+                        ->from('state_change_requests')
+                        ->whereColumn('state_change_requests.incident_id', 'core.incidents.id')
+                        ->where('state_change_requests.status', 'pending');
+                });
+            } else {
+                $stateIds = match ($filters->stateFilter) {
+                    'pendiente' => State::where('is_initial_state', true)->where('is_active', true)->pluck('id')->all(),
+                    'en_proceso' => State::where('is_initial_state', false)->where('is_final_state', false)->where('is_active', true)->pluck('id')->all(),
+                    'resuelta' => State::where('is_final_state', true)->where('is_active', true)->pluck('id')->all(),
+                    default => [],
+                };
+                if (count($stateIds) > 0) {
+                    $query->whereIn('state_id', $stateIds);
+                }
             }
         } elseif ($filters->stateIds !== null && count($filters->stateIds) > 0) {
             $query->whereIn('state_id', $filters->stateIds);
@@ -1247,6 +1314,15 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 $searchQuery->where('code', 'ILIKE', "%{$search}%")
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if ($filters->pendingStateRequest === true) {
+            $query->whereExists(function ($existsQuery) {
+                $existsQuery->selectRaw(1)
+                    ->from('state_change_requests')
+                    ->whereColumn('state_change_requests.incident_id', 'core.incidents.id')
+                    ->where('state_change_requests.status', 'pending');
             });
         }
     }
@@ -1402,6 +1478,135 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $stateName = strtoupper((string) ($incident->state?->name ?? ''));
 
         return in_array($stateName, ['NUEVA', 'PENDIENTE', 'PENDING'], true);
+    }
+
+    public function findPendingStateChangeRequest(int $incidentId): ?StateChangeRequestData
+    {
+        $request = StateChangeRequest::query()
+            ->where('incident_id', $incidentId)
+            ->where('status', 'pending')
+            ->with(['requestedBy', 'requestedState', 'reviewedBy'])
+            ->first();
+
+        if (! $request) {
+            return null;
+        }
+
+        return $this->stateChangeRequestMapper->fromModel($request);
+    }
+
+    public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData
+    {
+        return DB::transaction(function () use ($incidentId, $userId, $data): StateChangeRequestData {
+            $request = StateChangeRequest::create([
+                'incident_id' => $incidentId,
+                'requested_by_user_id' => $userId,
+                'requested_state_id' => $data->stateId,
+                'reason' => $data->reason,
+                'status' => 'pending',
+            ]);
+
+            $request->load(['requestedBy', 'requestedState', 'reviewedBy']);
+
+            return $this->stateChangeRequestMapper->fromModel($request);
+        });
+    }
+
+    public function approveStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void
+    {
+        DB::transaction(function () use ($requestId, $reviewerUserId, $comment): void {
+            $request = StateChangeRequest::query()
+                ->lockForUpdate()
+                ->with('incident')
+                ->findOrFail($requestId);
+
+            if ($request->status !== 'pending') {
+                throw IncidentException::stateChangeRequestAlreadyReviewed();
+            }
+
+            $incident = $request->incident;
+            $previousStateId = (int) $incident->state_id;
+
+            $incident->update([
+                'state_id' => $request->requested_state_id,
+                'resolution_date' => null,
+            ]);
+
+            IncidentState::create([
+                'incident_id' => $incident->id,
+                'previous_state_id' => $previousStateId,
+                'new_state_id' => $request->requested_state_id,
+                'user_id' => $reviewerUserId,
+                'comment' => $comment ?? 'Cambio de estado aprobado por supervisor.',
+            ]);
+
+            $request->update([
+                'status' => 'approved',
+                'reviewed_by_user_id' => $reviewerUserId,
+                'reviewer_comment' => $comment,
+                'reviewed_at' => now(),
+            ]);
+        });
+    }
+
+    public function rejectStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void
+    {
+        DB::transaction(function () use ($requestId, $reviewerUserId, $comment): void {
+            $request = StateChangeRequest::query()
+                ->lockForUpdate()
+                ->findOrFail($requestId);
+
+            if ($request->status !== 'pending') {
+                throw IncidentException::stateChangeRequestAlreadyReviewed();
+            }
+
+            $request->update([
+                'status' => 'rejected',
+                'reviewed_by_user_id' => $reviewerUserId,
+                'reviewer_comment' => $comment,
+                'reviewed_at' => now(),
+            ]);
+        });
+    }
+
+    public function findStateChangeRequestById(int $requestId): ?StateChangeRequestData
+    {
+        $request = StateChangeRequest::query()
+            ->with(['requestedBy', 'requestedState', 'reviewedBy'])
+            ->find($requestId);
+
+        if (! $request) {
+            return null;
+        }
+
+        return $this->stateChangeRequestMapper->fromModel($request);
+    }
+
+    /**
+     * @return array<int, StateChangeRequestData>
+     */
+    public function pendingStateChangeRequestsForUser(int $userId): array
+    {
+        $zoneIds = $this->activeZoneIdsForUser($userId);
+
+        if ($zoneIds === []) {
+            return [];
+        }
+
+        $requests = StateChangeRequest::query()
+            ->where('status', 'pending')
+            ->whereHas('incident', function ($query) use ($zoneIds): void {
+                $query->where(function ($territoryQuery) use ($zoneIds): void {
+                    $this->applyZoneFilterToTerritoryQuery($territoryQuery, $zoneIds);
+                });
+            })
+            ->with(['incident', 'requestedBy', 'requestedState', 'reviewedBy'])
+            ->latest('created_at')
+            ->get();
+
+        return $requests
+            ->map(fn (StateChangeRequest $request): StateChangeRequestData => $this->stateChangeRequestMapper->fromModel($request))
+            ->all();
     }
 
     private function generarCodigo(): string

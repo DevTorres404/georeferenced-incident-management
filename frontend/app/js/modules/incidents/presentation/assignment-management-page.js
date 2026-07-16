@@ -1,3 +1,4 @@
+import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
 import {
   assignIncidentOperators,
   getIncident,
@@ -52,6 +53,23 @@ export async function initAssignmentManagementPage() {
   } finally {
     hidePageLoading();
   }
+
+  // Refrescar incidencias y operadores cuando llega una notificación de cambio de estado/asignación
+  globalThis.addEventListener('sgi:notification-created', () => {
+    if (document.visibilityState === 'hidden') return;
+    clearApiCache();
+    Promise.all([
+      listIncidents({ per_page: 100 }),
+      listAssignmentOperators(),
+    ]).then(([incidentsResponse, operatorsResponse]) => {
+      state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
+      state.filteredIncidents = [...state.incidents];
+      state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
+      populateFilters(state);
+      renderKpis(state.filteredIncidents, state.operators);
+      renderTable(state);
+    }).catch(() => { /* silencioso — no interrumpir al usuario */ });
+  });
 }
 
 function bindStaticEvents(state) {
@@ -236,7 +254,7 @@ export function renderTable(state) {
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
         <td><span class="badge ${getPriorityBadgeClass(incident.priority?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
-        <td><span class="badge ${getStateBadgeClass(incident.state?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span></td>
+        <td><span class="badge ${getStateBadgeClass(incident.state?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
         <td>${escapeHtml(incident.zone_name || 'Sin zona')}</td>
         <td>${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
         <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
@@ -318,6 +336,7 @@ function renderAssignmentModal(state) {
       <div class="d-flex gap-2 mt-1">
         <span class="${priorityBadge} px-2 py-1">${escapeHtml(priorityLabel)}</span>
         <span class="${stateBadge} px-2 py-1">${escapeHtml(stateLabel)}</span>
+        ${incident.has_pending_state_request ? `<span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}
       </div>
     `;
   }
@@ -333,7 +352,10 @@ function renderAssignmentModal(state) {
 
   const supportList = document.getElementById('supportOperatorsList');
   if (supportList) {
-    supportList.innerHTML = state.operators.map((operator) => {
+    const currentPrimaryIdNum = Number(currentPrimaryId);
+    supportList.innerHTML = state.operators
+      .filter((operator) => Number(operator.user_id) !== currentPrimaryIdNum)
+      .map((operator) => {
       const checked = currentSupportIds.has(String(operator.user_id)) ? 'checked' : '';
       const disabled = !operator.available && !checked ? 'disabled' : '';
       const disabledClass = disabled ? 'disabled' : '';
@@ -370,10 +392,26 @@ export async function submitAssignment(state) {
       support_user_ids: supportUserIds,
     });
 
-    const incidentsResponse = await listIncidents({ per_page: 100 });
-    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
-    applyFilters(state);
     globalThis.jQuery?.('#assignmentModal').modal('hide');
+
+    // Recargar incidencias y operadores desde el backend (sin caché)
+    clearApiCache();
+    const [incidentsResponse, operatorsResponse] = await Promise.all([
+      listIncidents({ per_page: 100 }),
+      listAssignmentOperators(),
+    ]);
+    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
+    state.filteredIncidents = [...state.incidents];
+    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
+    populateFilters(state);
+    renderKpis(state.filteredIncidents, state.operators);
+    renderTable(state);
+
+    // Disparar evento global para que otras partes de la app también se enteren
+    globalThis.dispatchEvent(new CustomEvent('sgi:notification-created', {
+      detail: { type: 'INCIDENT_ASSIGNED' },
+    }));
+
     showGlobalAlert('Asignación actualizada correctamente.', 'success');
   } catch (error) {
     showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger');

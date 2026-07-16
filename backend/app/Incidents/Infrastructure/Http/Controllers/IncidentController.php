@@ -10,6 +10,7 @@ use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\IncidentSummaryData;
+use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
@@ -18,6 +19,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
+use App\Incidents\Infrastructure\Persistence\Models\StateChangeRequest;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
@@ -120,6 +122,7 @@ class IncidentController extends ApiController
             'assigned_to_me' => ['nullable', 'boolean'],
             'state_filter' => ['nullable', 'string', 'max:50'],
             'priority_filter' => ['nullable', 'integer'],
+            'pending_state_request' => ['nullable', 'boolean'],
         ]);
 
         $draw = (int) $validated['draw'];
@@ -139,6 +142,7 @@ class IncidentController extends ApiController
             search: $searchValue,
             sortBy: $sortBy,
             sortDirection: $orderDirection,
+            pendingStateRequest: $validated['pending_state_request'] ?? null,
         );
 
         $result = $this->incidentUseCase->dataTable($filtersDto, $user->id, $this->canManage($user), $start, $length);
@@ -590,6 +594,208 @@ class IncidentController extends ApiController
         } catch (IncidentException $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode());
         }
+    }
+
+    /**
+     * Solicitar cambio de estado.
+     *
+     * Un operador solicita un cambio de estado que debe ser aprobado por un supervisor.
+     *
+     * @group Estados de incidencia
+     *
+     * @authenticated
+     *
+     * @urlParam incident int required El ID de la incidencia. Example: 5
+     *
+     * @bodyParam state_id int required El ID del estado solicitado. Example: 2
+     * @bodyParam reason string required Motivo de la solicitud. Example: La reparación fue completada exitosamente.
+     */
+    public function requestStateChange(Request $request, Incident $incident): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident)) {
+            return $this->forbid();
+        }
+
+        $data = $request->validate([
+            'state_id' => ['required', 'integer', Rule::exists(State::class, 'id')],
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $roles = $user->roles()->pluck('code')->all();
+
+        $dto = new RequestStateChangeInputData(
+            stateId: $data['state_id'],
+            reason: $data['reason'],
+        );
+
+        try {
+            $result = $this->incidentUseCase->requestStateChange(
+                $incident->id,
+                $user->id,
+                $roles,
+                $dto,
+            );
+
+            return response()->json([
+                'message' => 'Solicitud de cambio de estado registrada correctamente.',
+                'data' => $result,
+            ], 201);
+        } catch (IncidentException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        }
+    }
+
+    /**
+     * Aprobar cambio de estado.
+     *
+     * Un supervisor aprueba la solicitud de cambio de estado de un operador.
+     *
+     * @group Estados de incidencia
+     *
+     * @authenticated
+     *
+     * @urlParam incident int required El ID de la incidencia. Example: 5
+     * @urlParam stateRequest int required El ID de la solicitud. Example: 1
+     *
+     * @bodyParam comment string Comentario opcional. Example: Cambio aprobado, proceda.
+     */
+    public function approveStateChange(Request $request, Incident $incident, int $stateRequest): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident) || ! $this->can($user, 'incidents.edit')) {
+            return $this->forbid();
+        }
+
+        $data = $request->validate([
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $roles = $user->roles()->pluck('code')->all();
+
+        try {
+            $this->incidentUseCase->approveStateChange(
+                $stateRequest,
+                $user->id,
+                $roles,
+                $data['comment'] ?? null,
+            );
+
+            return response()->json([
+                'message' => 'Solicitud de cambio de estado aprobada correctamente.',
+            ]);
+        } catch (IncidentException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        }
+    }
+
+    /**
+     * Rechazar cambio de estado.
+     *
+     * Un supervisor rechaza la solicitud de cambio de estado de un operador.
+     *
+     * @group Estados de incidencia
+     *
+     * @authenticated
+     *
+     * @urlParam incident int required El ID de la incidencia. Example: 5
+     * @urlParam stateRequest int required El ID de la solicitud. Example: 1
+     *
+     * @bodyParam comment string Motivo del rechazo. Example: Se requiere inspección adicional.
+     */
+    public function rejectStateChange(Request $request, Incident $incident, int $stateRequest): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident) || ! $this->can($user, 'incidents.edit')) {
+            return $this->forbid();
+        }
+
+        $data = $request->validate([
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $roles = $user->roles()->pluck('code')->all();
+
+        try {
+            $this->incidentUseCase->rejectStateChange(
+                $stateRequest,
+                $user->id,
+                $roles,
+                $data['comment'] ?? null,
+            );
+
+            return response()->json([
+                'message' => 'Solicitud de cambio de estado rechazada.',
+            ]);
+        } catch (IncidentException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->getCode());
+        }
+    }
+
+    /**
+     * Solicitudes pendientes.
+     *
+     * Devuelve las solicitudes de cambio de estado pendientes para las zonas del supervisor.
+     *
+     * @group Estados de incidencia
+     *
+     * @authenticated
+     */
+    public function pendingStateChangeRequests(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $roles = $user->roles()->pluck('code')->all();
+
+        return response()->json([
+            'data' => $this->incidentUseCase->getPendingStateChangeRequests($user->id, $roles),
+        ]);
+    }
+
+    /**
+     * Solicitudes de una incidencia.
+     *
+     * Devuelve todas las solicitudes de cambio de estado de una incidencia.
+     *
+     * @group Estados de incidencia
+     *
+     * @authenticated
+     *
+     * @urlParam incident int required El ID de la incidencia. Example: 5
+     */
+    public function getStateChangeRequests(Request $request, Incident $incident): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident)) {
+            return $this->forbid();
+        }
+
+        $requests = StateChangeRequest::query()
+            ->where('incident_id', $incident->id)
+            ->with(['requestedBy', 'requestedState', 'reviewedBy'])
+            ->latest('created_at')
+            ->get()
+            ->map(fn (StateChangeRequest $request) => [
+                'id' => (int) $request->id,
+                'incident_id' => (int) $request->incident_id,
+                'requested_by_user_id' => (int) $request->requested_by_user_id,
+                'requested_by_user_name' => $request->requestedBy?->getNombreCompletoAttribute() ?? "Usuario #{$request->requested_by_user_id}",
+                'requested_state_id' => (int) $request->requested_state_id,
+                'requested_state_name' => $request->requestedState?->name ?? "Estado #{$request->requested_state_id}",
+                'reason' => $request->reason,
+                'status' => $request->status,
+                'reviewed_by_user_id' => $request->reviewed_by_user_id ? (int) $request->reviewed_by_user_id : null,
+                'reviewed_by_user_name' => $request->reviewed_by_user_id
+                    ? ($request->reviewedBy?->getNombreCompletoAttribute() ?? "Usuario #{$request->reviewed_by_user_id}")
+                    : null,
+                'reviewer_comment' => $request->reviewer_comment,
+                'created_at' => $request->created_at?->toIso8601String(),
+                'reviewed_at' => $request->reviewed_at?->toIso8601String(),
+            ])
+            ->all();
+
+        return response()->json([
+            'data' => $requests,
+        ]);
     }
 
     private function mapDataTableColumnToSortField(?int $columnIndex): ?string

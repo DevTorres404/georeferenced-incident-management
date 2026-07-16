@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -126,6 +126,55 @@
                         class="btn btn-secondary" data-dismiss="modal">Cerrar</button> </div>
             </div>
         </div>
+    </div>
+    <div class="modal fade" id="modalSolicitarEstado" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title"><i class="fas fa-paper-plane mr-2"></i>Solicitar cambio de estado</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+
+            <div class="form-group">
+              <label for="solicitudMotivo">Motivo de la solicitud</label>
+              <textarea id="solicitudMotivo" class="form-control" rows="3" maxlength="2000" placeholder="Explique por que necesita cambiar el estado..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light border" data-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-warning" id="btnEnviarSolicitudEstado">
+              <i class="fas fa-paper-plane mr-1"></i>Enviar solicitud
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="modalRevisarSolicitud" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header" id="modalRevisarHeader">
+            <h5 class="modal-title" id="modalRevisarTitulo">Revisar solicitud</h5>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3" id="modalRevisarResumen"></div>
+            <div class="form-group">
+              <label for="modalRevisarComentario">Comentario (opcional)</label>
+              <textarea id="modalRevisarComentario" class="form-control" rows="2" maxlength="2000" placeholder="Agregue un comentario..."></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light border" data-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-success" id="btnConfirmarAprobar">
+              <i class="fas fa-check mr-1"></i>Aprobar
+            </button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarRechazar">
+              <i class="fas fa-times mr-1"></i>Rechazar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
     <script src="/plugins/jquery/jquery.min.js"></script>
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

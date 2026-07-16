@@ -16,6 +16,8 @@ use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
+use App\Incidents\Application\DTOs\RequestStateChangeInputData;
+use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\Incident;
@@ -71,4 +73,19 @@ interface IncidentRepositoryInterface
     public function markAsRead(int $notificationId, int $userId): NotificationData;
 
     public function markAllAsRead(int $userId): void;
+
+    public function findPendingStateChangeRequest(int $incidentId): ?StateChangeRequestData;
+
+    public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData;
+
+    public function approveStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void;
+
+    public function rejectStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void;
+
+    public function findStateChangeRequestById(int $requestId): ?StateChangeRequestData;
+
+    /**
+     * @return array<int, StateChangeRequestData>
+     */
+    public function pendingStateChangeRequestsForUser(int $userId): array;
 }

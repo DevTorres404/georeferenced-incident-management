@@ -212,6 +212,8 @@ function renderMarkers() {
           properties: {
             ...point,
             _priority_name: normalizePriorityName(point.priority),
+            state_name: point.state?.name || '',
+            priority_name: point.priority?.name || '',
           },
         };
       })
@@ -296,6 +298,9 @@ function renderMarkers() {
     state.map.on('click', 'incidents-points', (e) => {
       if (!e.features.length) return;
       const point = e.features[0].properties;
+      if (typeof console?.warn === 'function' && !point.state_name && !point.state?.name) {
+        console.warn('[SGI Mapa] El punto no tiene estado:', point.id, point.code);
+      }
       new globalThis.maplibregl.Popup({ offset: 18 })
         .setLngLat(e.lngLat)
         .setHTML(buildPopupHtml(point))
@@ -329,7 +334,11 @@ function renderList() {
     return;
   }
 
-  list.innerHTML = state.points.map((point) => `
+  list.innerHTML = state.points.map((point) => {
+    const stateName = point.state_name || point.state?.name || point.state?.nombre || '';
+    const priorityName = point.priority_name || point.priority?.name || point.priority?.nombre || '';
+
+    return `
     <button type="button" class="list-group-item list-group-item-action js-focus-incident" data-incident-id="${escapeHtml(point.id)}">
       <div class="d-flex align-items-start justify-content-between">
         <div>
@@ -337,14 +346,14 @@ function renderList() {
           <div class="text-main">${escapeHtml(point.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(point.address || point.city?.name || 'Sin dirección registrada')}</small>
         </div>
-        <span class="badge ${getPriorityBadgeClass(point.priority?.name)}">${escapeHtml(formatLabel(point.priority?.name || '-'))}</span>
+        <span class="badge ${getPriorityBadgeClass(priorityName)}">${escapeHtml(formatLabel(priorityName) || '-')}</span>
       </div>
       <div class="mt-2">
-        <span class="badge badge-light">${escapeHtml(formatLabel(point.state?.name || 'Sin estado'))}</span>
-        <span class="badge badge-light">${escapeHtml(formatLabel(point.category?.name || 'Sin categoría'))}</span>
+        <span class="badge badge-light">${escapeHtml(formatLabel(stateName) || 'Sin estado')}</span>
+        <span class="badge badge-light">${escapeHtml(formatLabel(point.category?.name || point.category_name || 'Sin categoría'))}</span>
       </div>
     </button>
-  `).join('');
+  `}).join('');
 }
 
 function focusPoint(point) {
@@ -374,13 +383,17 @@ function focusPoint(point) {
 }
 
 function buildPopupHtml(point) {
+  // Extraer nombre de estado y prioridad desde múltiples formatos posibles
+  const stateName = point.state_name || point.state?.name || point.state?.nombre || '';
+  const priorityName = point.priority_name || point.priority?.name || point.priority?.nombre || '';
+
   return `
     <div class="incident-map-popup">
       <strong>${escapeHtml(point.code || `#${point.id}`)}</strong>
       <p>${escapeHtml(point.title || 'Sin título')}</p>
       <dl>
-        <dt>Estado</dt><dd>${escapeHtml(formatLabel(point.state?.name || '-'))}</dd>
-        <dt>Prioridad</dt><dd>${escapeHtml(formatLabel(point.priority?.name || '-'))}</dd>
+        <dt>Estado</dt><dd>${escapeHtml(formatLabel(stateName) || '-')}</dd>
+        <dt>Prioridad</dt><dd>${escapeHtml(formatLabel(priorityName) || '-')}</dd>
         <dt>Ubicación</dt><dd>${escapeHtml(point.address || point.city?.name || '-')}</dd>
       </dl>
       <a class="btn btn-sm btn-primary btn-block" href="incident-detail.html?id=${encodeURIComponent(point.id)}">

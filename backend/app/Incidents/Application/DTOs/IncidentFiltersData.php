@@ -20,6 +20,7 @@ final class IncidentFiltersData
         public readonly ?int $perPage = null,
         public readonly ?string $sortBy = null,
         public readonly ?string $sortDirection = null,
+        public readonly ?bool $pendingStateRequest = null,
     ) {
     }
 }

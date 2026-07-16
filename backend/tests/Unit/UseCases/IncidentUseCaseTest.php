@@ -3,6 +3,8 @@
 namespace Tests\Unit\UseCases;
 
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\RequestStateChangeInputData;
+use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Entities\Incident;
@@ -209,5 +211,189 @@ class IncidentUseCaseTest extends TestCase
         $this->expectExceptionMessage('Tu rol no puede ejecutar esta transicion.');
 
         $this->useCase->changeState($incidentId, $userId, $roleCodes, $data);
+    }
+
+    // ── State Change Requests ──────────────────────────
+
+    public function test_request_state_change_succeeds_for_operator(): void
+    {
+        $incidentId = 10;
+        $userId = 5;
+        $roleCodes = ['OPERADOR'];
+        $data = new RequestStateChangeInputData(stateId: 3, reason: 'Task completed');
+
+        $expected = new StateChangeRequestData(
+            id: 1,
+            incidentId: $incidentId,
+            requestedByUserId: $userId,
+            requestedByUserName: 'Test User',
+            requestedStateId: 3,
+            requestedStateName: 'Resuelta',
+            reason: 'Task completed',
+            status: 'pending',
+            reviewedByUserId: null,
+            reviewedByUserName: null,
+            reviewerComment: null,
+            createdAt: '2026-01-01T00:00:00+00:00',
+            reviewedAt: null,
+        );
+
+        $this->incidentRepository->shouldReceive('findPendingStateChangeRequest')
+            ->with($incidentId)
+            ->once()
+            ->andReturn(null);
+
+        $this->incidentRepository->shouldReceive('createStateChangeRequest')
+            ->with($incidentId, $userId, $data)
+            ->once()
+            ->andReturn($expected);
+
+        $result = $this->useCase->requestStateChange($incidentId, $userId, $roleCodes, $data);
+
+        $this->assertSame($expected, $result);
+        $this->assertSame('pending', $result->status);
+    }
+
+    public function test_request_state_change_fails_if_not_operator(): void
+    {
+        $data = new RequestStateChangeInputData(stateId: 3, reason: 'Done');
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('Los operadores no pueden cambiar el estado directamente.');
+
+        $this->useCase->requestStateChange(10, 5, ['SUPERVISOR'], $data);
+    }
+
+    public function test_request_state_change_fails_if_pending_exists(): void
+    {
+        $data = new RequestStateChangeInputData(stateId: 3, reason: 'Done');
+
+        $existingPending = new StateChangeRequestData(
+            id: 99,
+            incidentId: 10,
+            requestedByUserId: 5,
+            requestedByUserName: 'Test',
+            requestedStateId: 3,
+            requestedStateName: 'Resuelta',
+            reason: 'Previous request',
+            status: 'pending',
+            reviewedByUserId: null,
+            reviewedByUserName: null,
+            reviewerComment: null,
+            createdAt: '2026-01-01T00:00:00+00:00',
+            reviewedAt: null,
+        );
+
+        $this->incidentRepository->shouldReceive('findPendingStateChangeRequest')
+            ->with(10)
+            ->once()
+            ->andReturn($existingPending);
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('Ya existe una solicitud de cambio de estado pendiente');
+
+        $this->useCase->requestStateChange(10, 5, ['OPERADOR'], $data);
+    }
+
+    public function test_approve_state_change_succeeds_for_supervisor(): void
+    {
+        $requestId = 1;
+        $userId = 3;
+        $roleCodes = ['SUPERVISOR'];
+        $comment = 'Approved';
+
+        $requestData = new StateChangeRequestData(
+            id: $requestId,
+            incidentId: 10,
+            requestedByUserId: 5,
+            requestedByUserName: 'Operator',
+            requestedStateId: 3,
+            requestedStateName: 'Resuelta',
+            reason: 'Task completed',
+            status: 'pending',
+            reviewedByUserId: null,
+            reviewedByUserName: null,
+            reviewerComment: null,
+            createdAt: '2026-01-01T00:00:00+00:00',
+            reviewedAt: null,
+        );
+
+        $this->incidentRepository->shouldReceive('findStateChangeRequestById')
+            ->with($requestId)
+            ->once()
+            ->andReturn($requestData);
+
+        $this->incidentRepository->shouldReceive('approveStateChangeRequest')
+            ->with($requestId, $userId, $comment)
+            ->once();
+
+        // Should not throw
+        $this->useCase->approveStateChange($requestId, $userId, $roleCodes, $comment);
+        $this->assertTrue(true);
+    }
+
+    public function test_approve_state_change_fails_for_operator(): void
+    {
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('No tienes permisos para revisar esta solicitud');
+
+        $this->useCase->approveStateChange(1, 5, ['OPERADOR'], 'Ok');
+    }
+
+    public function test_approve_state_change_fails_if_not_found(): void
+    {
+        $this->incidentRepository->shouldReceive('findStateChangeRequestById')
+            ->with(999)
+            ->once()
+            ->andReturn(null);
+
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('La solicitud de cambio de estado no existe.');
+
+        $this->useCase->approveStateChange(999, 3, ['SUPERVISOR'], null);
+    }
+
+    public function test_reject_state_change_succeeds_for_supervisor(): void
+    {
+        $requestId = 2;
+        $userId = 3;
+        $roleCodes = ['ADMIN'];
+        $comment = 'Needs more info';
+
+        $requestData = new StateChangeRequestData(
+            id: $requestId,
+            incidentId: 10,
+            requestedByUserId: 5,
+            requestedByUserName: 'Operator',
+            requestedStateId: 3,
+            requestedStateName: 'Resuelta',
+            reason: 'Task completed',
+            status: 'pending',
+            reviewedByUserId: null,
+            reviewedByUserName: null,
+            reviewerComment: null,
+            createdAt: '2026-01-01T00:00:00+00:00',
+            reviewedAt: null,
+        );
+
+        $this->incidentRepository->shouldReceive('findStateChangeRequestById')
+            ->with($requestId)
+            ->once()
+            ->andReturn($requestData);
+
+        $this->incidentRepository->shouldReceive('rejectStateChangeRequest')
+            ->with($requestId, $userId, $comment)
+            ->once();
+
+        $this->useCase->rejectStateChange($requestId, $userId, $roleCodes, $comment);
+        $this->assertTrue(true);
+    }
+
+    public function test_reject_state_change_fails_for_operator(): void
+    {
+        $this->expectException(IncidentException::class);
+        $this->expectExceptionMessage('No tienes permisos para revisar esta solicitud');
+
+        $this->useCase->rejectStateChange(1, 5, ['OPERADOR'], 'No');
     }
 }
