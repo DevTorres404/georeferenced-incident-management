@@ -259,6 +259,23 @@ describe('auth-session', () => {
     expect(readUser()).toBeNull();
   });
 
+  it.each([
+    ['ADMIN', [{ code: 'incidents.create' }], true],
+    ['CIUDADANO', [{ codigo: 'incidents.create' }], true],
+    ['SUPERVISOR', [], false],
+    ['OPERADOR', [], false],
+  ])('checks incidents.create for %s without role bypasses', async (role, permissions, expected) => {
+    const { userHasPermission } = await import('../app/js/core/auth-session.js');
+    expect(userHasPermission({ roles: [{ code: role }], permissions }, 'INCIDENTS.CREATE')).toBe(expected);
+  });
+
+  it('supports nested permissions and fails closed without an explicit permission', async () => {
+    const { userHasPermission } = await import('../app/js/core/auth-session.js');
+    expect(userHasPermission({ roles: [{ permissions: [{ codigo: 'incidents.create' }] }] }, 'incidents.create')).toBe(true);
+    expect(userHasPermission({ roles: [{ code: 'ADMIN' }] }, 'incidents.create')).toBe(false);
+    expect(userHasPermission(null, 'incidents.create')).toBe(false);
+  });
+
   it('updateUser stores user and returns it', async () => {
     const { updateUser } = await import('../app/js/core/auth-session.js');
     const user = { name: 'updated' };

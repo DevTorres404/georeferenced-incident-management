@@ -195,6 +195,47 @@ describe('incident-create-page — integration', () => {
   // ── 2. Module init ────────────────────────────────────
 
   describe('module initialization', () => {
+    it.each(['SUPERVISOR', 'OPERADOR'])('denies %s before draft, catalog, territory, or map initialization', async (role) => {
+      vi.clearAllMocks();
+      localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: role }], permissions: [] }));
+      localStorage.setItem('SGI_incident_draft', JSON.stringify({ fTitulo: 'untouched' }));
+      const mod = await import('../app/js/modules/incidents/presentation/incident-create-page.js');
+
+      await mod.initCreateIncident();
+
+      expect(globalThis.renderLayout).toHaveBeenCalledWith('incident-create');
+      expect(getCatalogOverview).not.toHaveBeenCalled();
+      expect(listTerritorialProvinces).not.toHaveBeenCalled();
+      expect(createCoordinatePicker).not.toHaveBeenCalled();
+      expect(localStorage.getItem('SGI_incident_draft')).toContain('untouched');
+      // renderLayout handles the redirect internally; no hardcoded override needed.
+    });
+
+    it('awaits refreshed CIUDADANO authorization before feature initialization', async () => {
+      vi.clearAllMocks();
+      let finishRefresh;
+      globalThis.renderLayout.mockImplementation(() => new Promise((resolve) => {
+        finishRefresh = () => {
+          localStorage.setItem('user_data', JSON.stringify({
+            roles: [{ code: 'CIUDADANO' }],
+            permissions: [{ codigo: 'incidents.create' }],
+          }));
+          resolve();
+        };
+      }));
+      const mod = await import('../app/js/modules/incidents/presentation/incident-create-page.js');
+      const initialization = mod.initCreateIncident();
+
+      expect(getCatalogOverview).not.toHaveBeenCalled();
+      expect(createCoordinatePicker).not.toHaveBeenCalled();
+      finishRefresh();
+      await initialization;
+
+      expect(getCatalogOverview).toHaveBeenCalled();
+      expect(listTerritorialProvinces).toHaveBeenCalled();
+      expect(createCoordinatePicker).toHaveBeenCalled();
+    });
+
     it('sets up the wizard with step 0 visible', async () => {
       const mod = await createModule();
       expect(document.querySelector('[data-step-panel="location"]').classList.contains('d-none')).toBe(false);
