@@ -75,6 +75,7 @@ export async function initIncidentDetailPage() {
     const isOperatorRole = isOperator();
     const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
     const canAssignPriority = canManagePriority();
+    const canAssign = hasPermission('incidents.assign');
     const isOperatorUser = isOperatorRole;
     const shouldLoadRequests = canChangeState || isOperatorUser;
 
@@ -132,6 +133,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const isOperatorRole = isOperator();
   const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
   const canAssignPriority = canManagePriority();
+  const canAssign = hasPermission('incidents.assign');
   const hasValidCoordinates = hasCoordinates(incident);
   const historyTooltip = renderRecentStateChangesTooltip(history);
 
@@ -170,6 +172,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             </div>
           ` : ''}
           ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="flex-grow-1 flex-md-grow-0">${renderOperatorStateButton(incident)}</div>` : ''}
+          ${canAssign ? `<a href="assignment-management.html" class="btn btn-sm btn-outline-info flex-grow-1 flex-md-grow-0">
+            <i class="fas fa-users mr-1"></i>Gestionar asignaciones
+          </a>` : ''}
           ${canCreateIncident ? `<a href="incident-create.html" class="btn btn-sm btn-primary flex-grow-1 flex-md-grow-0">
             <i class="fas fa-plus mr-1"></i><span class="d-none d-sm-inline">Nueva</span><span class="d-inline d-sm-none">Nueva Incidencia</span>
           </a>` : ''}
