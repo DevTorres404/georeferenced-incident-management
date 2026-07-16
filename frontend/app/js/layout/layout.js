@@ -1,5 +1,5 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
-import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=5';
+import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=6';
 import { buildTopbarHtml } from './topbar.js?v=21';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../infrastructure/backend-client.js?v=21';
 import {

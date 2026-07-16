@@ -81,6 +81,14 @@ const NAV_ITEMS = [
         route: 'operational-structure.html',
         permission: 'operations.view',
       },
+    ],
+  },
+  {
+    id: 'zonal-coverage',
+    label: 'Cobertura zonal',
+    icon: 'fa-map-marked-alt',
+    permission: 'operations.view_team',
+    children: [
       {
         id: 'my-team',
         label: 'Mi equipo',
