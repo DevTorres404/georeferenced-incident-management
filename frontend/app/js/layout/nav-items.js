@@ -17,6 +17,13 @@ const NAV_ITEMS = [
         permission: 'dashboard.view',
       },
       {
+        id: 'my-team',
+        label: 'Mi equipo',
+        icon: 'fa-users',
+        route: 'my-team.html',
+        permission: 'operations.view_team',
+      },
+      {
         id: 'reports',
         label: 'Reportes y estadísticas',
         icon: 'fa-chart-bar',
@@ -80,21 +87,6 @@ const NAV_ITEMS = [
         icon: 'fa-draw-polygon',
         route: 'operational-structure.html',
         permission: 'operations.view',
-      },
-    ],
-  },
-  {
-    id: 'zonal-coverage',
-    label: 'Cobertura zonal',
-    icon: 'fa-map-marked-alt',
-    permission: 'operations.view_team',
-    children: [
-      {
-        id: 'my-team',
-        label: 'Mi equipo',
-        icon: 'fa-users',
-        route: 'my-team.html',
-        permission: 'operations.view_team',
       },
     ],
   },
