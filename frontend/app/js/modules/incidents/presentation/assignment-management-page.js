@@ -17,7 +17,7 @@ import {
 
 document.addEventListener('DOMContentLoaded', initAssignmentManagementPage);
 
-async function initAssignmentManagementPage() {
+export async function initAssignmentManagementPage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('assignment-management');
   }
@@ -138,7 +138,7 @@ function updateSubtitleForSupervisor(zoneName) {
     : 'Supervisa y distribuye incidencias entre responsables principales y apoyos.';
 }
 
-function fillSelect(id, values) {
+export function fillSelect(id, values) {
   const select = document.getElementById(id);
   if (!select) return;
 
@@ -155,7 +155,7 @@ function fillOperatorSelect(operators) {
   )).join('');
 }
 
-function applyFilters(state) {
+export function applyFilters(state) {
   const search = String(document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
   const priority = String(document.getElementById('filterPriority')?.value || '').trim().toLowerCase();
   const incidentState = String(document.getElementById('filterState')?.value || '').trim().toLowerCase();
@@ -179,7 +179,7 @@ function applyFilters(state) {
   renderTable(state);
 }
 
-function renderKpis(incidents, operators) {
+export function renderKpis(incidents, operators) {
   const target = document.getElementById('assignmentKpis');
   if (!target) return;
 
@@ -204,7 +204,7 @@ function renderKpis(incidents, operators) {
   `).join('');
 }
 
-function renderTable(state) {
+export function renderTable(state) {
   const tbody = document.getElementById('assignmentTableBody');
   if (!tbody) return;
 
@@ -311,7 +311,7 @@ function renderAssignmentModal(state) {
   }
 }
 
-async function submitAssignment(state) {
+export async function submitAssignment(state) {
   if (!state.selectedIncident) return;
 
   const primaryUserId = Number(document.getElementById('primaryOperatorSelect')?.value || 0);
@@ -344,7 +344,7 @@ async function submitAssignment(state) {
   }
 }
 
-function renderError(message) {
+export function renderError(message) {
   const tbody = document.getElementById('assignmentTableBody');
   if (!tbody) return;
 
@@ -356,11 +356,11 @@ function renderError(message) {
     </tr>`;
 }
 
-function uniqueValues(values) {
+export function uniqueValues(values) {
   return Array.from(new Set(values.filter(Boolean).map((value) => String(value).trim()))).sort((a, b) => a.localeCompare(b));
 }
 
-function readSessionUser() {
+export function readSessionUser() {
   try {
     const raw = globalThis.localStorage?.getItem('user_data');
     return raw ? JSON.parse(raw) : null;
@@ -369,7 +369,7 @@ function readSessionUser() {
   }
 }
 
-function userHasRole(user, roleCode) {
+export function userHasRole(user, roleCode) {
   if (!user || !Array.isArray(user.roles)) return false;
 
   return user.roles.some((role) => {
@@ -378,19 +378,19 @@ function userHasRole(user, roleCode) {
   });
 }
 
-function includesNormalized(value, expected) {
+export function includesNormalized(value, expected) {
   return String(value || '').toLowerCase().includes(expected);
 }
 
-function isResolvedState(value) {
+export function isResolvedState(value) {
   const normalized = String(value || '').toLowerCase();
   return normalized.includes('resuelta') || normalized.includes('cerrada') || normalized.includes('cancelada') || normalized.includes('rechazada');
 }
 
-function buildOperatorOptionLabel(operator) {
+export function buildOperatorOptionLabel(operator) {
   return `${operator.full_name || operator.email || `Operador #${operator.user_id}`} · ${buildOperatorCapacityLabel(operator)}`;
 }
 
-function buildOperatorCapacityLabel(operator) {
+export function buildOperatorCapacityLabel(operator) {
   return `${operator.active_incidents}/${operator.max_active_incidents} activas · ${operator.workload_points}/${operator.max_workload_points} pts`;
 }

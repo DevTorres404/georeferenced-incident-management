@@ -3,25 +3,25 @@ import { hidePageLoading, showPageLoading, escapeHtml } from '../../incidents/pr
 import { handleBackendErrors } from '../../../shared/validators/validation-utils.js?v=1';
 import { requestBackend } from '../../../infrastructure/backend-client.js?v=20';
 
-const CITIZEN_ROLE_CODE = 'CIUDADANO';
-const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
+export const CITIZEN_ROLE_CODE = 'CIUDADANO';
+export const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR']);
 
 // ─── Role badge color map ───────────────────────────────────────────
-const ROLE_BADGE_COLORS = {
+export const ROLE_BADGE_COLORS = {
   ADMIN: 'danger',
   SUPERVISOR: 'warning',
   OPERADOR: 'success',
   CIUDADANO: 'secondary',
 };
 
-const ROLE_BADGE_DEFAULTS = {
+export const ROLE_BADGE_DEFAULTS = {
   executives: 'info',
   citizens: 'secondary',
   others: 'dark',
 };
 
 // ─── Role descriptions ──────────────────────────────────────────────
-const ROLE_DESCRIPTIONS = {
+export const ROLE_DESCRIPTIONS = {
   ADMIN: 'Acceso completo al sistema. Gesti&oacute;n de usuarios, roles, cat&aacute;logos y configuraci&oacute;n general.',
   SUPERVISOR: 'Supervisi&oacute;n operativa por zona. Asignaci&oacute;n de incidentes y gesti&oacute;n del equipo de operadores.',
   OPERADOR: 'Gesti&oacute;n de incidentes asignados. Actualizaci&oacute;n de estado, comentarios y evidencia.',
@@ -315,7 +315,7 @@ function bindDeactivateModal(state) {
 }
 
 // ─── Filtering & rendering ──────────────────────────────────────────
-function applyFilters(state, options = {}) {
+export function applyFilters(state, options = {}) {
   const term = state.searchTerm;
   state.filteredUsers = state.users.filter((user) => {
     if (!userMatchesRoleGroup(user, state.roleGroup)) return false;
@@ -336,7 +336,7 @@ function applyFilters(state, options = {}) {
   renderPaginatedUsers(state);
 }
 
-function renderPaginatedUsers(state) {
+export function renderPaginatedUsers(state) {
   const total = state.filteredUsers.length;
   const totalPages = Math.max(Math.ceil(total / state.perPage), 1);
   state.page = Math.min(Math.max(state.page, 1), totalPages);
@@ -350,7 +350,7 @@ function renderPaginatedUsers(state) {
   renderRoleCounters(state.users);
 }
 
-function renderUsersTable(users, roles) {
+export function renderUsersTable(users, roles) {
   const tbody = document.getElementById('user-role-table');
   if (!tbody) return;
 
@@ -417,7 +417,7 @@ function renderUsersTable(users, roles) {
 }
 
 // ─── Role helpers ───────────────────────────────────────────────────
-function getRoleBadgeColor(roleCode) {
+export function getRoleBadgeColor(roleCode) {
   const code = normalizeRoleCode(roleCode);
   if (ROLE_BADGE_COLORS[code]) return ROLE_BADGE_COLORS[code];
 
@@ -425,7 +425,7 @@ function getRoleBadgeColor(roleCode) {
   return ROLE_BADGE_DEFAULTS[group] || 'secondary';
 }
 
-function getAvatarColor(name) {
+export function getAvatarColor(name) {
   const colors = [
     '#1498D4', '#D9534F', '#D99A27', '#269B72',
     '#7B61FF', '#E67E22', '#1ABC9C', '#3498DB',
@@ -438,7 +438,7 @@ function getAvatarColor(name) {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function setActiveRoleGroupButton(group) {
+export function setActiveRoleGroupButton(group) {
   document.querySelectorAll('[data-role-group]').forEach((button) => {
     const isActive = button.dataset.roleGroup === group;
     button.classList.toggle('active', isActive);
@@ -446,32 +446,32 @@ function setActiveRoleGroupButton(group) {
   });
 }
 
-function userMatchesRoleGroup(user, group) {
+export function userMatchesRoleGroup(user, group) {
   if (group === 'citizens') return getRoleGroup(user.role) === 'citizens';
   if (group === 'executives') return getRoleGroup(user.role) === 'executives';
   return true;
 }
 
-function getRoleGroup(roleCode) {
+export function getRoleGroup(roleCode) {
   const normalizedCode = normalizeRoleCode(roleCode);
   if (normalizedCode === CITIZEN_ROLE_CODE) return 'citizens';
   if (EXECUTIVE_ROLE_CODES.has(normalizedCode)) return 'executives';
   return 'others';
 }
 
-function getRoleGroupLabel(roleCode) {
+export function getRoleGroupLabel(roleCode) {
   const group = getRoleGroup(roleCode);
   if (group === 'citizens') return 'Ciudadanos';
   if (group === 'executives') return 'Roles ejecutivos';
   return 'Otros roles';
 }
 
-function normalizeRoleCode(roleCode) {
+export function normalizeRoleCode(roleCode) {
   return String(roleCode || '').trim().toUpperCase();
 }
 
 // ─── Counters, pagination, summary ──────────────────────────────────
-function renderRoleCounters(users) {
+export function renderRoleCounters(users) {
   const citizens = users.filter((user) => getRoleGroup(user.role) === 'citizens').length;
   const executives = users.filter((user) => getRoleGroup(user.role) === 'executives').length;
 
@@ -482,7 +482,7 @@ function renderRoleCounters(users) {
   if (executiveBadge) executiveBadge.textContent = String(executives);
 }
 
-function renderPagination(state, total, totalPages, startIndex, count) {
+export function renderPagination(state, total, totalPages, startIndex, count) {
   const summary = document.getElementById('users-pagination-summary');
   if (summary) {
     if (total === 0) {
@@ -521,7 +521,7 @@ function renderPagination(state, total, totalPages, startIndex, count) {
     </li>`;
 }
 
-function buildPageList(currentPage, totalPages) {
+export function buildPageList(currentPage, totalPages) {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => String(index + 1));
   }
@@ -538,8 +538,10 @@ function buildPageList(currentPage, totalPages) {
   return pages;
 }
 
-function renderTotalBadge(totalUsers, filteredUsers) {
+export function renderTotalBadge(totalUsers, filteredUsers) {
   const badge = document.getElementById('user-total-badge');
   if (!badge) return;
   badge.textContent = String(totalUsers);
 }
+
+export { initUserRolesPage, openAssignModal, bindActions, bindAssignModal, bindDeactivateModal };

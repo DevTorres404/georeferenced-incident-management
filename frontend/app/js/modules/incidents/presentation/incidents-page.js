@@ -17,7 +17,7 @@ const INCIDENT_SEARCH_STORAGE_KEY = 'SGI_incidents_search';
 
 document.addEventListener('DOMContentLoaded', initIncidentsPage);
 
-async function initIncidentsPage() {
+export async function initIncidentsPage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('incidents');
   }
@@ -73,7 +73,7 @@ async function initIncidentsPage() {
   });
 }
 
-function buildPriorityLookup(priorities) {
+export function buildPriorityLookup(priorities) {
   const map = {};
   (priorities || []).forEach((p) => {
     const key = normalizePriorityFilter(String(p.name || ''));
@@ -82,7 +82,7 @@ function buildPriorityLookup(priorities) {
   return map;
 }
 
-function normalizePriorityFilter(value) {
+export function normalizePriorityFilter(value) {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
@@ -338,7 +338,7 @@ function renderStateFilters(state) {
   }
 }
 
-function buildStateGroups(states) {
+export function buildStateGroups(states) {
   const groups = [];
   const initial = states.filter((s) => s.is_initial_state);
   const inProgress = states.filter((s) => !s.is_initial_state && !s.is_final_state);
@@ -383,7 +383,7 @@ function restoreSearchInput(state) {
   }
 }
 
-function readStoredSearch() {
+export function readStoredSearch() {
   try {
     return sessionStorage.getItem(INCIDENT_SEARCH_STORAGE_KEY) || '';
   } catch {
@@ -391,7 +391,7 @@ function readStoredSearch() {
   }
 }
 
-function storeSearch(query) {
+export function storeSearch(query) {
   try {
     sessionStorage.setItem(INCIDENT_SEARCH_STORAGE_KEY, query);
   } catch {
@@ -465,7 +465,7 @@ function userHasRole(user, roleCode) {
   });
 }
 
-function userHasPermission(user, permissionCode) {
+export function userHasPermission(user, permissionCode) {
   if (!user) return false;
   if (userHasRole(user, 'ADMIN')) return true;
 

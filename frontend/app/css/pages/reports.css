@@ -108,6 +108,15 @@
   border: 1px solid rgba(20, 152, 212, 0.08);
 }
 
+body.dark-mode .reports-brief-card {
+  background: linear-gradient(135deg, var(--sgi-surface) 0%, rgba(20, 152, 212, 0.15) 100%);
+}
+
+body.dark-mode .reports-brief-item {
+  background: var(--sgi-background);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
 .reports-brief-item-empty {
   grid-column: 1 / -1;
 }

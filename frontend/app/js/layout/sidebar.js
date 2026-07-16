@@ -1,12 +1,13 @@
 import { escapeHtml } from '../shared/sanitizer.js?v=20';
 
 export function buildSidebarHtml(menuItems, activeId) {
+  const items = Array.isArray(menuItems) ? menuItems : [];
   return `
     <div class="sidebar">
       <div class="sgi-sidebar-section-label">Navegación</div>
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" role="menu" data-accordion="false">
-          ${menuItems.map((item) => renderMenuItem(item, activeId)).join('')}
+          ${items.map((item) => renderMenuItem(item, activeId)).join('')}
         </ul>
       </nav>
     </div>

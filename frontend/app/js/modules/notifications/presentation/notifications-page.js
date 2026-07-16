@@ -1,7 +1,7 @@
 import { escapeHtml } from '../../../shared/sanitizer.js?v=20';
 import { hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16';
 
-const PER_PAGE = 15;
+export const PER_PAGE = 15;
 let currentPage = 1;
 let currentFilter = 'all';
 let allNotifications = [];
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', initNotificationsPage);
 globalThis.addEventListener('sgi:notification-created', handleRealtimeNotification);
 globalThis.addEventListener('sgi:notifications-refreshed', handleNotificationsRefresh);
 
-async function initNotificationsPage() {
+export async function initNotificationsPage() {
   globalThis.renderLayout?.('notifications');
 
   showPageLoading('Cargando notificaciones', 'Obteniendo historial...');
@@ -175,7 +175,7 @@ function createNotificationElement(notification) {
   return el;
 }
 
-function filterNotifications(notifications, filter) {
+export function filterNotifications(notifications, filter) {
   if (filter === 'unread') return notifications.filter((n) => !n.is_read && !n.isRead);
   if (filter === 'read') return notifications.filter((n) => n.is_read || n.isRead);
   return notifications;
@@ -200,6 +200,7 @@ function updatePagination(totalItems) {
 
   const pageNums = buildPageList(currentPage, totalPages);
   const reference = pagination ? pagination.querySelector('.notif-page-info') : null;
+  const referenceNext = reference?.nextSibling ?? null;
 
   pageNums.forEach((page) => {
     const btn = document.createElement('button');
@@ -219,7 +220,7 @@ function updatePagination(totalItems) {
       });
     }
     if (reference?.parentNode) {
-      reference.parentNode.insertBefore(btn, reference.nextSibling);
+      reference.parentNode.insertBefore(btn, referenceNext);
     }
   });
 
@@ -229,7 +230,7 @@ function updatePagination(totalItems) {
   if (btnNext) btnNext.disabled = currentPage >= totalPages;
 }
 
-function buildPageList(current, last) {
+export function buildPageList(current, last) {
   if (last <= 7) {
     return Array.from({ length: last }, (_, index) => String(index + 1));
   }
@@ -292,7 +293,7 @@ function bindActions() {
   });
 }
 
-function getIconClass(type) {
+export function getIconClass(type) {
   const value = String(type || '').toLowerCase();
   if (value.includes('assigned') || value.includes('asign')) return 'fa-user-check';
   if (value.includes('status') || value.includes('cambio')) return 'fa-sync-alt';
@@ -304,7 +305,7 @@ function getIconClass(type) {
   return 'fa-info-circle';
 }
 
-function getTypeClass(type) {
+export function getTypeClass(type) {
   const value = String(type || '').toLowerCase();
   if (value.includes('assigned') || value.includes('asign')) return 'type-assigned';
   if (value.includes('closed') || value.includes('resolved') || value.includes('resuelta')) return 'type-closed';
@@ -317,7 +318,7 @@ function getTypeClass(type) {
   return 'type-info';
 }
 
-function formatDateTime(value) {
+export function formatDateTime(value) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return '';
   const day = String(date.getDate()).padStart(2, '0');

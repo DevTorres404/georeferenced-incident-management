@@ -12,7 +12,7 @@ import {
   setupValidationListeners,
 } from '../../../shared/validators/validation-utils.js?v=1';
 
-const CHART_COLORS = {
+export const CHART_COLORS = {
   primary: '#0ea5e9',
   success: '#10b981',
   warning: '#f59e0b',
@@ -24,7 +24,7 @@ const CHART_COLORS = {
   palette: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1', '#14b8a6', '#ec4899'],
 };
 
-const CHART_DEFAULTS = {
+export const CHART_DEFAULTS = {
   responsive: true,
   maintainAspectRatio: true,
   legend: { position: 'bottom', labels: { boxWidth: 12, fontSize: 11, padding: 16, usePointStyle: true } },
@@ -48,7 +48,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', initReportsPage);
 
-async function initReportsPage() {
+export async function initReportsPage() {
   globalThis.renderLayout?.('reports');
 
   bindActions();
@@ -124,12 +124,12 @@ function populateSelect(id, values) {
   select.value = currentValue;
 }
 
-function uniqueSortedValues(values) {
+export function uniqueSortedValues(values) {
   return Array.from(new Set(values.filter(Boolean).map((value) => String(value).trim())))
     .sort((left, right) => left.localeCompare(right, 'es', { sensitivity: 'base' }));
 }
 
-function resetFilters() {
+export function resetFilters() {
   const form = document.getElementById('filtroReporte');
   form?.reset();
   clearFieldError(document.getElementById('fFechaInicial'));
@@ -137,7 +137,7 @@ function resetFilters() {
   applyCurrentFilters();
 }
 
-function applyCurrentFilters() {
+export function applyCurrentFilters() {
   if (!validateFilters()) {
     return;
   }
@@ -179,7 +179,7 @@ function getFilters() {
   };
 }
 
-function matchesFilters(incident, filters) {
+export function matchesFilters(incident, filters) {
   const createdAt = parseDate(incident.created_at);
   const category = String(incident.category?.name || '');
   const stateName = String(incident.state?.name || '');
@@ -328,7 +328,7 @@ function buildAnalytics(incidents, totalUniverse) {
   };
 }
 
-function normalizeMonthlyTrend(monthlyBuckets) {
+export function normalizeMonthlyTrend(monthlyBuckets) {
   const sortedKeys = Array.from(monthlyBuckets.keys()).sort((a, b) => a.localeCompare(b));
   return {
     months: sortedKeys.map((key) => formatMonthLabel(key)),
@@ -821,30 +821,30 @@ function exportPrintableReport() {
   globalThis.print();
 }
 
-function escapeCsvValue(value) {
+export function escapeCsvValue(value) {
   const normalized = String(value ?? '').replace(/"/g, '""');
   return `"${normalized}"`;
 }
 
-function parseDate(value) {
+export function parseDate(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function startOfDay(value) {
+export function startOfDay(value) {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
   return date;
 }
 
-function endOfDay(value) {
+export function endOfDay(value) {
   const date = new Date(value);
   date.setHours(23, 59, 59, 999);
   return date;
 }
 
-function normalizeText(value) {
+export function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -852,15 +852,15 @@ function normalizeText(value) {
     .toUpperCase();
 }
 
-function normalizeState(value) {
+export function normalizeState(value) {
   return normalizeText(value).replace(/\s+/g, '_');
 }
 
-function equalsNormalized(left, right) {
+export function equalsNormalized(left, right) {
   return normalizeText(left) === normalizeText(right);
 }
 
-function includesNormalized(value, expected) {
+export function includesNormalized(value, expected) {
   return normalizeText(value).includes(normalizeText(expected));
 }
 
@@ -884,24 +884,24 @@ function matchesStateCategory(stateCode, validCodes) {
   return validCodes.includes(stateCode) || validCodes.includes(stateCode.replace(/_/g, ' '));
 }
 
-function monthKey(date) {
+export function monthKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   return `${year}-${month}`;
 }
 
-function formatMonthLabel(value) {
+export function formatMonthLabel(value) {
   const [year, month] = String(value).split('-');
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString('es-EC', { month: 'short', year: 'numeric' });
 }
 
-function daysBetween(start, end) {
+export function daysBetween(start, end) {
   const diff = end.getTime() - start.getTime();
   return Math.max(diff / (1000 * 60 * 60 * 24), 0);
 }
 
-function territoryTail(path) {
+export function territoryTail(path) {
   const parts = String(path || '')
     .split('/')
     .map((segment) => segment.trim())
@@ -909,7 +909,7 @@ function territoryTail(path) {
   return parts.length ? parts[parts.length - 1] : 'Sin territorio';
 }
 
-function getTopEntry(collection) {
+export function getTopEntry(collection) {
   const entries = Object.entries(collection || {}).sort((left, right) => Number(right[1]) - Number(left[1]));
   if (!entries.length) return null;
 
@@ -919,7 +919,7 @@ function getTopEntry(collection) {
   };
 }
 
-function buildRangeLabel(filters) {
+export function buildRangeLabel(filters) {
   const values = [];
   if (filters.startDate) values.push(`desde ${filters.startDate}`);
   if (filters.endDate) values.push(`hasta ${filters.endDate}`);

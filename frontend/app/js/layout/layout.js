@@ -1052,3 +1052,29 @@ document.addEventListener('DOMContentLoaded', function initAccessibility() {
     } catch { /* localStorage unavailable */ }
   });
 })();
+
+export {
+  canAccessItem,
+  escapeHtml,
+  filterAuthorizedMenuItems,
+  flattenMenuItems,
+  formatRelativeTime,
+  formatRoleLabel,
+  formatUserRoles,
+  getNotificationIconClass,
+  getNotificationTypeClass,
+  html,
+  isSessionExpired,
+  loadNavbarNotifications,
+  logoutManually,
+  normalizeMobileSidebar,
+  normalizePermissionCode,
+  normalizeRoleCode,
+  refreshSessionUserOrRedirect,
+  renderLayout,
+  safeUrl,
+  scheduleInactivityLogout,
+  showGlobalAlert,
+  showLayoutMessage,
+  startInactivityWatcher,
+};

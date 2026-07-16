@@ -2,7 +2,7 @@ import { escapeHtml } from '../../../shared/sanitizer.js?v=20';
 import { hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16';
 import { listAuditLogs } from '../application/audit-log-service.js?v=1';
 
-const EVENT_LABELS = {
+export const EVENT_LABELS = {
   created: { label: 'Creado', badge: 'badge-success' },
   updated: { label: 'Actualizado', badge: 'badge-info' },
   deleted: { label: 'Eliminado', badge: 'badge-danger' },
@@ -19,13 +19,13 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', initAuditLogsPage);
 
-async function initAuditLogsPage() {
+export async function initAuditLogsPage() {
   globalThis.renderLayout?.('audit-logs');
   bindFilters();
   await loadAuditLogs();
 }
 
-function bindFilters() {
+export function bindFilters() {
   document.getElementById('audit-filter-form')?.addEventListener('submit', async (event) => {
     event.preventDefault();
     state.page = 1;
@@ -50,14 +50,14 @@ function bindFilters() {
   });
 }
 
-function readFilters() {
+export function readFilters() {
   state.table = document.getElementById('audit-table-filter')?.value.trim() || '';
   state.tableId = document.getElementById('audit-record-filter')?.value.trim() || '';
   state.event = document.getElementById('audit-event-filter')?.value || '';
   state.perPage = Number(document.getElementById('audit-per-page')?.value || 25);
 }
 
-function resetFilters() {
+export function resetFilters() {
   state.page = 1;
   state.perPage = 25;
   state.table = '';
@@ -70,7 +70,7 @@ function resetFilters() {
   setValue('audit-per-page', '25');
 }
 
-async function loadAuditLogs() {
+export async function loadAuditLogs() {
   showPageLoading('Cargando auditoría', 'Consultando registros...');
   hideAlert();
 
@@ -98,7 +98,7 @@ async function loadAuditLogs() {
   }
 }
 
-function renderAuditLogs(logs) {
+export function renderAuditLogs(logs) {
   const tbody = document.getElementById('audit-log-table-body');
   if (!tbody) return;
 
@@ -172,20 +172,20 @@ function renderChanges(log) {
     </details>`;
 }
 
-function parseValues(value) {
+export function parseValues(value) {
   if (!value) return {};
   if (typeof value === 'object') return value;
   try { return JSON.parse(value); } catch { return {}; }
 }
 
-function formatDiffValue(value) {
+export function formatDiffValue(value) {
   if (value === null || value === undefined) return '-';
   if (typeof value === 'boolean') return value ? 'Si' : 'No';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }
 
-function renderPagination(meta) {
+export function renderPagination(meta) {
   const pagination = document.getElementById('audit-pagination');
   if (!pagination) return;
 
@@ -207,7 +207,7 @@ function renderPagination(meta) {
     </li>`;
 }
 
-function buildPageList(current, last) {
+export function buildPageList(current, last) {
   if (last <= 7) {
     return Array.from({ length: last }, (_, index) => String(index + 1));
   }
@@ -224,12 +224,12 @@ function buildPageList(current, last) {
   return pages;
 }
 
-function eventBadge(event) {
+export function eventBadge(event) {
   const config = EVENT_LABELS[event] || { label: event || 'Evento', badge: 'badge-secondary' };
   return `<span class="badge ${config.badge}">${escapeHtml(config.label)}</span>`;
 }
 
-function formatAuditableType(value) {
+export function formatAuditableType(value) {
   const name = String(value || '').split('\\').pop();
   const labels = {
     Incident: 'Incidencia',
@@ -239,7 +239,7 @@ function formatAuditableType(value) {
   return labels[name] || name || 'Registro';
 }
 
-function stringifyValues(value) {
+export function stringifyValues(value) {
   if (!value) return '';
 
   if (typeof value === 'string') {
@@ -249,7 +249,7 @@ function stringifyValues(value) {
   return JSON.stringify(value, null, 2);
 }
 
-function formatDateTime(value) {
+export function formatDateTime(value) {
   const date = new Date(value || '');
   if (Number.isNaN(date.getTime())) return '-';
 

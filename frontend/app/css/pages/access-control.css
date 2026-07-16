@@ -305,12 +305,13 @@
   margin: 0.25rem 0 0.15rem;
 }
 
-.permission-navigation-impact .badge {
+.permission-navigation-impact .badge.badge-info {
   max-width: 100%;
   border-radius: 999px;
-  background: rgba(20, 152, 212, 0.12);
-  color: var(--sgi-primary-hover);
-  font-weight: 700;
+  background: var(--sgi-primary-soft) !important;
+  border: 1px solid var(--sgi-border) !important;
+  color: var(--sgi-text) !important;
+  font-weight: 600;
   white-space: normal;
   text-align: left;
 }

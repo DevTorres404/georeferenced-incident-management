@@ -107,7 +107,7 @@ class CatalogManagementController extends ApiController
     public function update(Request $request, string $catalog, int $id): JsonResponse
     {
         $record = $this->catalogManagementUseCase->find($catalog, $id);
-        $data = $request->validate($this->rules($catalog, $record));
+        $data = $request->validate($this->rules($catalog, $id));
         $record = $this->catalogManagementUseCase->update($catalog, $id, $data);
 
         $this->notifyCatalogChange($request, $catalog);
@@ -138,10 +138,8 @@ class CatalogManagementController extends ApiController
         ]);
     }
 
-    private function rules(string $catalog, ?Model $record = null): array
+    private function rules(string $catalog, ?int $id = null): array
     {
-        $id = $record?->getKey();
-
         return match ($catalog) {
             'categories' => [
                 'name' => ['required', 'string', 'max:100', Rule::unique(Category::class, 'name')->ignore($id)],

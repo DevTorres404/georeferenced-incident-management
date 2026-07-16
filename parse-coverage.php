@@ -1,0 +1,1 @@
+<?php $xml = simplexml_load_file('backend/build/logs/clover.xml'); foreach ($xml->xpath('//file') as $f) { $loc = (int)$f->metrics['statements']; $cov = (int)$f->metrics['coveredstatements']; if ($loc > 0 && ($cov / $loc) < 0.8) { echo sprintf('%d/%d (%.1f%%) - %s', $cov, $loc, ($cov / $loc) * 100, $f['name']) . PHP_EOL; } }

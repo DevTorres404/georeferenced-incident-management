@@ -41,7 +41,7 @@ globalThis.addEventListener('pagehide', () => {
   stopCommentFallback();
 });
 
-async function initIncidentDetailPage() {
+export async function initIncidentDetailPage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('incident-detail');
   }
@@ -394,7 +394,7 @@ function renderIncidentMap(incident) {
   map.on('load', () => map.resize());
 }
 
-function hasCoordinates(incident) {
+export function hasCoordinates(incident) {
   const latitude = Number(incident?.latitude);
   const longitude = Number(incident?.longitude);
 
@@ -406,7 +406,7 @@ function hasCoordinates(incident) {
     && longitude <= -75;
 }
 
-function territoryLabel(incident) {
+export function territoryLabel(incident) {
   const territorialUnit = incident?.territorial_unit || incident?.territorialUnit;
 
   return formatCatalogLabel(
@@ -418,7 +418,7 @@ function territoryLabel(incident) {
   );
 }
 
-function renderStateSelector(incident, transitions) {
+export function renderStateSelector(incident, transitions) {
   const select = document.getElementById('estadoDirecto');
   if (!select) return;
 
@@ -438,7 +438,7 @@ function renderStateSelector(incident, transitions) {
     : 'No hay transiciones disponibles para su rol';
 }
 
-function getAvailableStateTransitions(incident, transitions) {
+export function getAvailableStateTransitions(incident, transitions) {
   const seenTargets = new Set();
 
   return transitions.filter((transition) => {
@@ -454,7 +454,7 @@ function getAvailableStateTransitions(incident, transitions) {
   });
 }
 
-function isTransitionAllowedForCurrentUser(transition) {
+export function isTransitionAllowedForCurrentUser(transition) {
   const allowedRoles = Array.isArray(transition.allowed_roles)
     ? transition.allowed_roles.map(normalizeCode).filter(Boolean)
     : [];
@@ -948,7 +948,7 @@ function showStateChangeConfirmation(stateName) {
   showGlobalAlert(message, 'success');
 }
 
-function renderComments(comments) {
+export function renderComments(comments) {
   if (!comments.length) {
     return '<p class="text-muted text-center py-3"><i class="fas fa-comment-slash mr-2"></i>Sin comentarios aún.</p>';
   }
@@ -972,7 +972,7 @@ function renderComments(comments) {
   }).join('');
 }
 
-function renderAttachments(attachments) {
+export function renderAttachments(attachments) {
   if (!attachments.length) {
     return `
       <div class="text-center text-muted py-4 border rounded bg-light">
@@ -1035,7 +1035,7 @@ function renderAttachmentCard(attachment) {
     </article>`;
 }
 
-function renderHistory(history) {
+export function renderHistory(history) {
   if (!history.length) {
     return '<p class="text-muted text-center py-4 mb-0"><i class="fas fa-stream mr-2"></i>Sin historial disponible.</p>';
   }
@@ -1111,7 +1111,7 @@ function renderError(container, message) {
     </div>`;
 }
 
-function calculateDays(value) {
+export function calculateDays(value) {
   const start = new Date(value || '');
   if (Number.isNaN(start.getTime())) return 0;
   return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
@@ -1187,7 +1187,7 @@ function formatAttachmentTypeLabel(mimeType, fileName) {
   return 'Archivo';
 }
 
-function formatFileSize(value) {
+export function formatFileSize(value) {
   const bytes = Number(value);
   if (!Number.isFinite(bytes) || bytes < 0) return 'Tamano no disponible';
   if (bytes < 1024) return `${bytes} B`;

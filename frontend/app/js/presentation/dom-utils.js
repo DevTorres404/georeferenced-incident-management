@@ -30,7 +30,7 @@ export function showErrorAlert(message) {
     show(alert);
     setTimeout(() => hide(alert), 5000);
   } else {
-    alert(message);
+    globalThis.alert(message);
   }
 }
 
