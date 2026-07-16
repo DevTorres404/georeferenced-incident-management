@@ -31,6 +31,8 @@ vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
   formatShortDate: (v) => v || '-',
   getPriorityBadgeClass: vi.fn(() => 'badge-warning'),
   getStateBadgeClass: vi.fn(() => 'badge-secondary'),
+  getStateHexColor: vi.fn(() => '#000000'),
+  getPriorityHexColor: vi.fn(() => '#000000'),
   showGlobalAlert: vi.fn(),
   hidePageLoading: vi.fn(),
   showPageLoading: vi.fn(),

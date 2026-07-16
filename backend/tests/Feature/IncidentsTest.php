@@ -2046,6 +2046,41 @@ class IncidentsTest extends TestCase
         ]);
     }
 
+    public function test_incident_rejection_sets_rejected_at_and_clears_resolution_date(): void
+    {
+        $this->seedCoreData();
+
+        $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-rejection-date@incidencias.local');
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
+
+        $incident = Incident::create([
+            'code' => 'INC-REJECT-DATE',
+            'title' => 'Test Rejection Date',
+            'description' => 'Verify rejected_at is set.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => $inProgressState->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $supervisor['user']->id,
+        ]);
+
+        $this->assignIncidentToOperator($incident, $supervisor['user']->id, $supervisor['user']->id);
+
+        $response = $this->actingAsUser($supervisor['user'])
+            ->postJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $rejectedState->id,
+                'reason' => 'Test rejection',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.state_id', $rejectedState->id);
+
+        $incident->refresh();
+        $this->assertNotNull($incident->rejected_at);
+        $this->assertNull($incident->resolution_date);
+    }
+
     private function assignUserToZone(int $userId, string $zoneName): void
     {
         UserTerritory::query()

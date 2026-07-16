@@ -16,6 +16,8 @@ vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
   formatShortDate: (v) => (v ? new Date(v).toLocaleDateString('es-EC') : '-'),
   getPriorityBadgeClass: vi.fn(() => 'badge-secondary'),
   getStateBadgeClass: vi.fn(() => 'badge-secondary'),
+  getStateHexColor: vi.fn((state) => 'color-' + state),
+  getPriorityHexColor: vi.fn((priority) => 'color-' + priority),
   hidePageLoading: vi.fn(),
   showPageLoading: vi.fn(),
 }));
@@ -32,9 +34,11 @@ const sampleMetrics = {
   countsByState: { Pendiente: 45, 'En proceso': 30, Resuelta: 75 },
   monthlyTrend: {
     months: ['Ene', 'Feb', 'Mar'],
-    registered: [50, 60, 40],
-    resolved: [25, 30, 20],
-    pending: [25, 30, 20],
+    series: [
+      { name: 'Registradas', data: [50, 60, 40] },
+      { name: 'Resueltas', data: [25, 30, 20] },
+      { name: 'Pendientes', data: [25, 30, 20] },
+    ],
   },
 };
 
@@ -146,11 +150,11 @@ describe('dashboard-page — chart functions', () => {
       .toEqual(CATEGORY_PALETTE.slice(0, catCount));
 
     expect(configs[1].data.datasets[0].backgroundColor)
-      .toEqual([STATE_COLORS.PENDIENTE, STATE_COLORS['EN PROCESO'], STATE_COLORS.RESUELTA]);
+      .toEqual(['color-Pendiente', 'color-En proceso', 'color-Resuelta']);
 
-    expect(configs[2].data.datasets[0].borderColor).toBe(CHART_COLORS.info);
-    expect(configs[2].data.datasets[1].borderColor).toBe(CHART_COLORS.success);
-    expect(configs[2].data.datasets[2].borderColor).toBe(CHART_COLORS.warning);
+    expect(configs[2].data.datasets[0].borderColor).toBe('color-Registradas');
+    expect(configs[2].data.datasets[1].borderColor).toBe('color-Resueltas');
+    expect(configs[2].data.datasets[2].borderColor).toBe('color-Pendientes');
   });
 
   it('destroys previous chart instances on re-render', async () => {

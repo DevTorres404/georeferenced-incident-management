@@ -230,7 +230,7 @@ function initDataTable(state) {
         data: 'priority',
         render: (data, type, row) => {
           const label = formatCatalogLabel(data);
-          const color = row.priority_color || getPriorityHexColor(data);
+          const color = (row && row.priority_color) || getPriorityHexColor(data);
           return `<span class="badge shadow-sm" style="background-color: ${color}; color: #fff">${escapeHtml(label)}</span>`;
         },
       },
@@ -239,7 +239,7 @@ function initDataTable(state) {
         render: (data, type, row) => {
           if (type === 'sort' || type === 'type') return data;
           const label = formatCatalogLabel(data);
-          const color = row.state_color || getStateHexColor(data);
+          const color = row?.state_color || getStateHexColor(data);
           const pendingIcon = row?.has_pending_state_request
             ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>`
             : '';

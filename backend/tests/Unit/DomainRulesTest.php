@@ -91,7 +91,7 @@ class DomainRulesTest extends TestCase
 
         $this->assertTrue($user->hasVerifiedEmail());
         $this->assertTrue($user->isTwoFactorEnabled());
-        $this->assertSame(sha1('damian@example.com'), $user->emailVerificationHash());
+        $this->assertSame(hash('sha256', 'damian@example.com'), $user->emailVerificationHash());
         $this->assertFalse($user->isGoogleLinkedToAnotherUser($sameUserIdentity));
         $this->assertTrue($user->isGoogleLinkedToAnotherUser($otherUserIdentity));
     }
