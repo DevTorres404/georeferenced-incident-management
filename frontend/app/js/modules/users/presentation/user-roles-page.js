@@ -35,6 +35,12 @@ async function initUserRolesPage() {
     globalThis.renderLayout('user-roles');
   }
 
+  // Bootstrap 4 agrega role='dialog' dinamicamente al .modal, pero role='document'
+  // en .modal-dialog debe agregarse manualmente (Web:S6819 / SonarQube)
+  $('#modalAssignRole').on('show.bs.modal', function () {
+    $('.modal-dialog', this).attr('role', 'document');
+  });
+
   const state = {
     users: [],
     roles: [],

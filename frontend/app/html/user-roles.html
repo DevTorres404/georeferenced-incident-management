@@ -147,8 +147,9 @@
     </div>
 
     <!-- Modal Asignar Rol -->
-    <div class="modal fade" id="modalAssignRole" tabindex="-1" role="dialog" aria-hidden="true"> <!-- NOSONAR - Bootstrap 4 requiere role=dialog para el JS del modal -->
-        <div class="modal-dialog modal-dialog-centered" role="document"> <!-- NOSONAR - Bootstrap 4 requiere role=document para el patrón ARIA del modal -->
+    <div class="modal fade" id="modalAssignRole" tabindex="-1" aria-hidden="true">
+        <!-- role="document" se agrega via JS (Bootstrap 4 agrega role="dialog" dinamicamente) -->
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title font-weight-bold"><i class="fas fa-user-tag mr-2"></i>Asignar rol</h5>
