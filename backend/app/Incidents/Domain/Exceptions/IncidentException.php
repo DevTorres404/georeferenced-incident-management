@@ -66,6 +66,21 @@ class IncidentException extends Exception
         return new self('Ya existe una solicitud de cambio de estado pendiente para esta incidencia.', 422);
     }
 
+    public static function stateChangeRequestInvalidSourceState(): self
+    {
+        return new self('Solo se puede solicitar la resolucion de una incidencia en progreso.', 422);
+    }
+
+    public static function stateChangeRequestInvalidTargetState(): self
+    {
+        return new self('Los operadores solo pueden solicitar el estado RESUELTA.', 422);
+    }
+
+    public static function stateChangeRequestRequiresActiveAssignment(): self
+    {
+        return new self('Debes tener una asignacion activa en la incidencia para solicitar su resolucion.', 403);
+    }
+
     public static function stateChangeRequestNotFound(): self
     {
         return new self('La solicitud de cambio de estado no existe.', 404);
@@ -84,5 +99,10 @@ class IncidentException extends Exception
     public static function operatorCannotChangeState(): self
     {
         return new self('Los operadores no pueden cambiar el estado directamente. Deben solicitar el cambio a un supervisor.', 403);
+    }
+
+    public static function closedIncidentAssignmentNotAllowed(): self
+    {
+        return new self('No se pueden asignar operadores a una incidencia cerrada.', 422);
     }
 }

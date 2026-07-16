@@ -23,7 +23,7 @@ class PermissionSeeder extends Seeder
             ['code' => 'incidents.delete', 'name' => 'Eliminar incidencias', 'description' => 'Permite eliminar incidencias cuando la politica lo autorice.', 'module' => 'incidents'],
             ['code' => 'incidents.assign', 'name' => 'Gestionar asignaciones', 'description' => 'Permite usar la pantalla de Gestion de Asignaciones y asignar incidencias a operadores.', 'module' => 'incidents'],
             ['code' => 'incidents.close', 'name' => 'Resolver incidencias', 'description' => 'Permite marcar incidencias como resueltas.', 'module' => 'incidents'],
-            ['code' => 'incidents.reopen', 'name' => 'Reabrir incidencias', 'description' => 'Permite reabrir incidencias previamente resueltas.', 'module' => 'incidents'],
+            ['code' => 'incidents.reopen', 'name' => 'Reabrir incidencias', 'description' => 'Permite reabrir incidencias previamente cerradas.', 'module' => 'incidents'],
 
             ['code' => 'profile.view', 'name' => 'Ver perfil propio', 'description' => 'Permite acceder a la pantalla Mi perfil.', 'module' => 'profile'],
 

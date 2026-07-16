@@ -38,7 +38,7 @@ describe('A. incidents-ui.js — pure functions', () => {
       expect(formatCatalogLabel('NUEVA')).toBe('Nueva');
       expect(formatCatalogLabel('PENDIENTE')).toBe('Pendiente');
       expect(formatCatalogLabel('RESUELTA')).toBe('Resuelta');
-      expect(formatCatalogLabel('CERRADA')).toBe('Resuelta');
+      expect(formatCatalogLabel('CERRADA')).toBe('Cerrada');
       expect(formatCatalogLabel('RECHAZADA')).toBe('Rechazada');
     });
 

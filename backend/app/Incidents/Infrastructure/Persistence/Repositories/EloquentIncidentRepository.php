@@ -61,11 +61,9 @@ use Illuminate\Support\Str;
 final class EloquentIncidentRepository implements IncidentRepositoryInterface // NOSONAR - Infrastructure repository implementing a domain interface; public methods match the repository contract and support methods are private
 {
     private const INACTIVE_WORKLOAD_STATE_NAMES = [
-        'RESUELTA',
         'CERRADA',
         'CANCELADA',
         'RECHAZADA',
-        'RESOLVED',
         'CLOSED',
         'CANCELLED',
         'REJECTED',
@@ -374,6 +372,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         return $this->incidentMapper->fromModel($incident->load($relations));
     }
 
+    public function loadForUpdate(int $incidentId): \App\Incidents\Domain\Entities\Incident
+    {
+        $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
+
+        return $this->incidentMapper->fromModel($incident->load(self::RELATIONS));
+    }
+
     public function loadDetail(int $incidentId): IncidentDetailData
     {
         $incident = Incident::with([
@@ -583,6 +588,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 throw IncidentException::stateRequiredForAssignment();
             }
 
+            if (in_array(strtoupper((string) $incident->state?->name), ['CERRADA', 'CLOSED'], true)) {
+                throw IncidentException::closedIncidentAssignmentNotAllowed();
+            }
+
             $this->ensureUserCanAssignIncident($userId, $incident);
 
             $desiredAssignments = [
@@ -736,7 +745,15 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $previousState = State::find($previousStateId);
         $newState = State::findOrFail($data->stateId);
 
-        DB::transaction(function () use ($incident, $data, $userId, $previousStateId, $newState) {
+        $isClosing = in_array(strtoupper((string) $newState->name), ['CERRADA', 'CLOSED'], true);
+        $assignedOperatorIds = DB::transaction(function () use (
+            $incident,
+            $data,
+            $userId,
+            $previousStateId,
+            $newState,
+            $isClosing
+        ): array {
             $incident->update([
                 'state_id' => $data->stateId,
                 'resolution_date' => $newState->is_final_state ? now() : null,
@@ -749,6 +766,27 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'user_id' => $userId,
                 'comment' => $data->comment,
             ]);
+
+            $operatorIds = [];
+            if ($isClosing) {
+                $operatorIds = IncidentAssignment::query()
+                    ->where('incident_id', $incident->id)
+                    ->where('active', true)
+                    ->lockForUpdate()
+                    ->pluck('user_id')
+                    ->map(fn ($operatorId): int => (int) $operatorId)
+                    ->all();
+
+                IncidentAssignment::query()
+                    ->where('incident_id', $incident->id)
+                    ->where('active', true)
+                    ->update([
+                        'active' => false,
+                        'unassignment_date' => now(),
+                    ]);
+            }
+
+            return $operatorIds;
         });
 
         [$title, $message, $type] = $this->stateNotificationPayload(
@@ -766,15 +804,22 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             incidentId: $incidentId
         );
 
-        if ($this->isOperatorUserId($userId)) {
+        $changedByOperator = $this->isOperatorUserId($userId);
+        if ($changedByOperator) {
             $this->notifyZoneSupervisorsForIncident(
                 incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Actualizacion del operador',
                 message: "La incidencia {$incident->code} fue actualizada por un operador.",
                 type: 'STATUS_CHANGE'
             );
-        } else {
-            $this->notifyAssignedOperatorsForStateChange($incident, $newState);
+        }
+
+        if (! $changedByOperator || $isClosing) {
+            $this->notifyAssignedOperatorsForStateChange(
+                $incident,
+                $newState,
+                $isClosing ? $assignedOperatorIds : null
+            );
         }
 
         $this->notifySupervisorsForStateChange($incident, $newState);
@@ -1063,13 +1108,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         };
     }
 
-    private function notifyAssignedOperatorsForStateChange(Incident $incident, State $newState): void
+    private function notifyAssignedOperatorsForStateChange(
+        Incident $incident,
+        State $newState,
+        ?array $operatorIds = null
+    ): void
     {
-        $operatorIds = \App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment::query()
+        $operatorIds ??= IncidentAssignment::query()
             ->where('incident_id', $incident->id)
             ->where('active', true)
             ->pluck('user_id')
-            ->toArray();
+            ->map(fn ($operatorId): int => (int) $operatorId)
+            ->all();
 
         if (empty($operatorIds)) {
             return;
@@ -1495,6 +1545,20 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         return $this->stateChangeRequestMapper->fromModel($request);
     }
 
+    public function stateNameById(int $stateId): ?string
+    {
+        return State::query()->whereKey($stateId)->value('name');
+    }
+
+    public function hasActiveAssignment(int $incidentId, int $userId): bool
+    {
+        return IncidentAssignment::query()
+            ->where('incident_id', $incidentId)
+            ->where('user_id', $userId)
+            ->where('active', true)
+            ->exists();
+    }
+
     public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData
     {
         return DB::transaction(function () use ($incidentId, $userId, $data): StateChangeRequestData {
@@ -1512,20 +1576,50 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         });
     }
 
-    public function approveStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void
+    public function approveStateChangeRequest(
+        int $incidentId,
+        int $requestId,
+        int $reviewerUserId,
+        ?string $comment
+    ): void
     {
-        DB::transaction(function () use ($requestId, $reviewerUserId, $comment): void {
+        $eventData = DB::transaction(function () use ($incidentId, $requestId, $reviewerUserId, $comment): array {
+            $incident = Incident::query()
+                ->with('state')
+                ->lockForUpdate()
+                ->findOrFail($incidentId);
             $request = StateChangeRequest::query()
                 ->lockForUpdate()
-                ->with('incident')
+                ->with('requestedState')
                 ->findOrFail($requestId);
+
+            if ((int) $request->incident_id !== $incidentId) {
+                throw IncidentException::stateChangeRequestNotFound();
+            }
 
             if ($request->status !== 'pending') {
                 throw IncidentException::stateChangeRequestAlreadyReviewed();
             }
 
-            $incident = $request->incident;
+            if (strtoupper((string) $incident->state?->name) !== 'EN_PROGRESO') {
+                throw IncidentException::stateChangeRequestInvalidSourceState();
+            }
+
+            if (strtoupper((string) $request->requestedState?->name) !== 'RESUELTA') {
+                throw IncidentException::stateChangeRequestInvalidTargetState();
+            }
+
+            $workflowIsValid = StateTransition::query()
+                ->where('source_state_id', $incident->state_id)
+                ->where('target_state_id', $request->requested_state_id)
+                ->where('is_active', true)
+                ->exists();
+            if (! $workflowIsValid) {
+                throw IncidentException::transitionNotAllowed();
+            }
+
             $previousStateId = (int) $incident->state_id;
+            $previousStateName = $incident->state?->name;
 
             $incident->update([
                 'state_id' => $request->requested_state_id,
@@ -1546,7 +1640,27 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'reviewer_comment' => $comment,
                 'reviewed_at' => now(),
             ]);
+
+            return [
+                'incident_id' => (int) $incident->id,
+                'new_state_id' => (int) $request->requested_state_id,
+                'new_state_name' => (string) $request->requestedState->name,
+                'previous_state_id' => $previousStateId,
+                'previous_state_name' => $previousStateName,
+            ];
         });
+
+        $reviewer = User::query()->find($reviewerUserId);
+
+        IncidentStateChanged::dispatch(
+            incidentId: $eventData['incident_id'],
+            newStateId: $eventData['new_state_id'],
+            newStateName: $eventData['new_state_name'],
+            previousStateId: $eventData['previous_state_id'],
+            previousStateName: $eventData['previous_state_name'],
+            changedByUserId: $reviewerUserId,
+            changedByName: $reviewer?->getNombreCompletoAttribute() ?? 'Usuario',
+        );
     }
 
     public function rejectStateChangeRequest(int $requestId, int $reviewerUserId, ?string $comment): void

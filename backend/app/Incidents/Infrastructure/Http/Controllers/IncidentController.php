@@ -675,6 +675,7 @@ class IncidentController extends ApiController
 
         try {
             $this->incidentUseCase->approveStateChange(
+                $incident->id,
                 $stateRequest,
                 $user->id,
                 $roles,
@@ -718,6 +719,7 @@ class IncidentController extends ApiController
 
         try {
             $this->incidentUseCase->rejectStateChange(
+                $incident->id,
                 $stateRequest,
                 $user->id,
                 $roles,

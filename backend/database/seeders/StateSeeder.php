@@ -73,7 +73,7 @@ class StateSeeder extends Seeder
             ],
             [
                 'name'              => 'REABIERTA',
-                'description'       => 'Reabierta por el ciudadano (resolución insatisfactoria)',
+                'description'       => 'Reabierta por supervisión después del cierre',
                 'color'             => '#F97316',
                 'is_initial_state'  => false,
                 'is_final_state'    => false,
@@ -87,6 +87,15 @@ class StateSeeder extends Seeder
                 ['name' => $estado['name']],
                 $estado
             );
+        }
+
+        $resolvedId = State::where('name', 'RESUELTA')->value('id');
+        $reopenedId = State::where('name', 'REABIERTA')->value('id');
+
+        if ($resolvedId && $reopenedId) {
+            StateTransition::where('source_state_id', $resolvedId)
+                ->where('target_state_id', $reopenedId)
+                ->delete();
         }
 
         // ──────────────────────────────────────────────
@@ -108,8 +117,9 @@ class StateSeeder extends Seeder
 
             // RESUELTA → CERRADA (Supervisor confirma)
             ['origen' => 'RESUELTA',    'destino' => 'CERRADA',      'comment' => false, 'roles' => ['ADMIN', 'SUPERVISOR']],
-            // RESUELTA → REABIERTA (Ciudadano no satisfecho)
-            ['origen' => 'RESUELTA',    'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR', 'CIUDADANO']],
+
+            // CERRADA → REABIERTA (Supervisión reabre para nueva revisión)
+            ['origen' => 'CERRADA',     'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],
 
             // REABIERTA → EN_REVISION (Se vuelve a revisar)
             ['origen' => 'REABIERTA',   'destino' => 'EN_REVISION',  'comment' => false, 'roles' => ['ADMIN', 'SUPERVISOR']],
@@ -128,10 +138,10 @@ class StateSeeder extends Seeder
                     [
                         'requires_comment' => $t['comment'],
                         'allowed_roles'    => $t['roles'],
+                        'is_active'        => true,
                     ]
                 );
             }
         }
     }
 }
-

@@ -32,11 +32,9 @@ use Illuminate\Support\Facades\DB;
 final class EloquentOperationalStructureRepository implements OperationalStructureRepositoryInterface
 {
     private const INACTIVE_WORKLOAD_STATE_NAMES = [
-        'RESUELTA',
         'CERRADA',
         'CANCELADA',
         'RECHAZADA',
-        'RESOLVED',
         'CLOSED',
         'CANCELLED',
         'REJECTED',

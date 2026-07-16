@@ -26,7 +26,7 @@ vi.mock('../app/js/modules/incidents/application/subscribe-incident-realtime.use
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
   escapeHtml: (v) => String(v ?? ''),
-  formatCatalogLabel: (v) => v || '-',
+  formatCatalogLabel: (v) => ({ RESUELTA: 'Resuelta', CERRADA: 'Cerrada' })[v] || v || '-',
   formatDateTime: (v) => v || '-',
   formatShortDate: (v) => v || '-',
   getPriorityBadgeClass: vi.fn(() => 'badge-warning'),
@@ -362,6 +362,63 @@ describe('Integration — incident-detail-page', () => {
       expect(select.options[1].text).toContain('En Progreso');
       expect(select.options[2].text).toContain('Resuelta');
       expect(select.options[2].text).toContain('requiere comentario');
+    });
+
+    it('renders RESUELTA as current and CERRADA as the distinct target', async () => {
+      localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: 'SUPERVISOR' }] }));
+      document.body.innerHTML = `
+        <select id="estadoDirecto"></select>
+        <div id="statePriorityHint" class="d-none"></div>`;
+
+      const { renderStateSelector } = await import(
+        '../app/js/modules/incidents/presentation/incident-detail-page.js'
+      );
+
+      renderStateSelector(
+        { state_id: 4, state: { name: 'RESUELTA' }, priority_id: 1 },
+        [{
+          source_state_id: 4,
+          target_state_id: 5,
+          target_state_name: 'CERRADA',
+          allowed_roles: ['SUPERVISOR'],
+          is_active: true,
+          requires_comment: false,
+        }],
+      );
+
+      const options = [...document.getElementById('estadoDirecto').options].map((option) => option.text);
+      expect(options).toEqual(['Resuelta (actual)', 'Cerrada']);
+    });
+
+    it('shows CERRADA to REABIERTA only for backend-authorized roles', async () => {
+      const { renderStateSelector } = await import(
+        '../app/js/modules/incidents/presentation/incident-detail-page.js'
+      );
+      const transition = {
+        source_state_id: 5,
+        target_state_id: 7,
+        target_state_name: 'REABIERTA',
+        allowed_roles: ['ADMIN', 'SUPERVISOR'],
+        is_active: true,
+        requires_comment: true,
+      };
+
+      for (const role of ['ADMIN', 'SUPERVISOR', 'OPERADOR', 'CIUDADANO']) {
+        localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: role }] }));
+        document.body.innerHTML = `
+          <select id="estadoDirecto"></select>
+          <div id="statePriorityHint" class="d-none"></div>`;
+
+        renderStateSelector(
+          { state_id: 5, state: { name: 'CERRADA' }, priority_id: 1 },
+          [transition],
+        );
+
+        const optionValues = [...document.getElementById('estadoDirecto').options]
+          .map((option) => Number(option.value));
+        const isAuthorized = ['ADMIN', 'SUPERVISOR'].includes(role);
+        expect(optionValues, role).toEqual(isAuthorized ? [5, 7] : [5]);
+      }
     });
   });
 

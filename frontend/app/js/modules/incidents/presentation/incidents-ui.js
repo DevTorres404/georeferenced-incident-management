@@ -22,7 +22,7 @@ function formatCatalogLabel(value) {
     'NUEVA': 'Nueva',
     'PENDIENTE': 'Pendiente',
     'RESUELTA': 'Resuelta',
-    'CERRADA': 'Resuelta',
+    'CERRADA': 'Cerrada',
     'RECHAZADA': 'Rechazada',
   };
 

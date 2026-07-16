@@ -231,7 +231,7 @@ class DemoIncidentSeeder extends Seeder
             'RESUELTA' => ['NUEVA', 'EN_REVISION', 'EN_PROGRESO', 'RESUELTA'],
             'CERRADA' => ['NUEVA', 'EN_REVISION', 'EN_PROGRESO', 'RESUELTA', 'CERRADA'],
             'RECHAZADA' => ['NUEVA', 'EN_REVISION', 'RECHAZADA'],
-            'REABIERTA' => ['NUEVA', 'EN_REVISION', 'EN_PROGRESO', 'RESUELTA', 'REABIERTA'],
+            'REABIERTA' => ['NUEVA', 'EN_REVISION', 'EN_PROGRESO', 'RESUELTA', 'CERRADA', 'REABIERTA'],
         ][$finalState->name] ?? ['NUEVA'];
 
         $previousStateId = null;
