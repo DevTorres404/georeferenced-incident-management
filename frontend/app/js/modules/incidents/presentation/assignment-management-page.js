@@ -387,14 +387,25 @@ export async function submitAssignment(state) {
       support_user_ids: supportUserIds,
     });
 
+    globalThis.jQuery?.('#assignmentModal').modal('hide');
+
+    // Recargar incidencias y operadores desde el backend
     const [incidentsResponse, operatorsResponse] = await Promise.all([
       listIncidents({ per_page: 100 }),
       listAssignmentOperators(),
     ]);
     state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
+    state.filteredIncidents = [...state.incidents];
     state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
-    applyFilters(state);
-    globalThis.jQuery?.('#assignmentModal').modal('hide');
+    populateFilters(state);
+    renderKpis(state.filteredIncidents, state.operators);
+    renderTable(state);
+
+    // Disparar evento global para que otras partes de la app también se enteren
+    globalThis.dispatchEvent(new CustomEvent('sgi:notification-created', {
+      detail: { type: 'INCIDENT_ASSIGNED' },
+    }));
+
     showGlobalAlert('Asignación actualizada correctamente.', 'success');
   } catch (error) {
     showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger');

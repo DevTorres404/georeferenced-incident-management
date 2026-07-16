@@ -65,9 +65,10 @@ export async function initIncidentDetailPage() {
   }
 
   try {
-    const canChangeState = hasPermission('incidents.edit');
+    const isOperatorRole = isOperator();
+    const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
     const canAssignPriority = canManagePriority();
-    const isOperatorUser = !canChangeState && isOperator();
+    const isOperatorUser = isOperatorRole;
     const shouldLoadRequests = canChangeState || isOperatorUser;
 
     const [incidentResponse, transitionsResponse, prioritiesResponse, statesResponse, requestsResponse] = await Promise.all([
