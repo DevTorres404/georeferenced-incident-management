@@ -1,6 +1,6 @@
 import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
 
-function buildQuery(filters = {}) {
+export function buildQuery(filters = {}) {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {

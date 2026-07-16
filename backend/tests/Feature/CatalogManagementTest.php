@@ -99,4 +99,66 @@ class CatalogManagementTest extends TestCase
         $responsePermissions->assertOk()
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
     }
+
+    public function test_admin_can_create_category(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/categories', [
+            'name' => 'Nueva Categoria',
+            'description' => 'Test',
+            'color' => '#123456',
+            'is_active' => true,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.name', 'Nueva Categoria');
+        $this->assertDatabaseHas('core.categories', ['name' => 'Nueva Categoria']);
+    }
+
+    public function test_admin_can_update_category(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $category = \App\Incidents\Infrastructure\Persistence\Models\Category::first();
+
+        $response = $this->actingAs($admin)->putJson("/api/admin/catalogs/categories/{$category->id}", [
+            'name' => 'Categoria Actualizada',
+            'description' => 'Test Update',
+            'color' => '#654321',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.name', 'Categoria Actualizada');
+        $this->assertDatabaseHas('core.categories', ['id' => $category->id, 'name' => 'Categoria Actualizada']);
+    }
+
+    public function test_admin_can_create_priority(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/priorities', [
+            'name' => 'Nueva Prioridad',
+            'level' => 10,
+            'color' => '#000000',
+            'sla_hours' => 24,
+            'weight' => 10,
+            'is_active' => true,
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('core.priorities', ['name' => 'Nueva Prioridad', 'level' => 10]);
+    }
+
+    private function authenticateAdminWithPermission(string $permissionCode): User
+    {
+        $admin = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $role = Role::where('code', 'ADMIN')->firstOrFail();
+        
+        $permission = \App\Auth\Infrastructure\Persistence\Models\Permission::where('code', $permissionCode)->firstOrFail();
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
+        
+        $admin->roles()->sync([$role->id]);
+
+        return $admin;
+    }
 }

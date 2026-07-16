@@ -109,7 +109,7 @@ function resetScopeControls() {
   if (assigned) assigned.checked = isOperator;
 }
 
-function userHasRole(user, roleCode) {
+export function userHasRole(user, roleCode) {
   if (!user || !Array.isArray(user.roles)) return false;
 
   return user.roles.some((role) => {
@@ -422,13 +422,13 @@ function showMessage(message, type = 'info') {
   target.style.display = 'block';
 }
 
-function normalizePriorityName(priority) {
+export function normalizePriorityName(priority) {
   return normalizeText(priority?.name || '');
 }
 
 
 
-function getPriorityBadgeClass(value) {
+export function getPriorityBadgeClass(value) {
   const normalized = normalizeText(value);
   if (normalized.includes('CRIT')) return 'badge-danger';
   if (normalized.includes('ALTA')) return 'badge-warning';
@@ -436,7 +436,7 @@ function getPriorityBadgeClass(value) {
   return 'badge-success';
 }
 
-function formatLabel(value) {
+export function formatLabel(value) {
   const text = String(value || '-').replace(/_/g, ' ').trim();
   if (!text || text === '-') return '-';
 
@@ -445,9 +445,29 @@ function formatLabel(value) {
     .replace(/(^|\s)(\p{L})/gu, (match) => match.toLocaleUpperCase('es-EC'));
 }
 
-function normalizeText(value) {
+export function normalizeText(value) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toUpperCase();
 }
+
+export {
+  initIncidentMapPage,
+  initializeMap,
+  renderMarkers,
+  renderList,
+  focusPoint,
+  buildPopupHtml,
+  refreshMap,
+  configureScopeControls,
+  resetScopeControls,
+  showMessage,
+  loadCatalogFilters,
+  fillSelect,
+  buildFilters,
+  loadMapPoints,
+  updateCounter,
+  bindEvents,
+  showMapLibreMessage,
+};

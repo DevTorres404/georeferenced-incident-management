@@ -89,12 +89,14 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6 col-lg-3 mt-3 mt-md-0">
-                                    <label class="small text-muted font-weight-bold mb-1">Tipo de usuario</label>
-                                    <div class="btn-group btn-group-sm d-flex user-role-group-filter" role="group" aria-label="Filtrar usuarios por rol">
+                                    <fieldset class="border-0 p-0 m-0">
+                                        <legend class="small text-muted font-weight-bold mb-1 p-0 border-0">Tipo de usuario</legend>
+                                    <div class="btn-group btn-group-sm d-flex user-role-group-filter">
                                         <button type="button" class="btn btn-outline-primary active" data-role-group="all">Todos</button>
                                         <button type="button" class="btn btn-outline-primary" data-role-group="citizens">Ciudadanos</button>
                                         <button type="button" class="btn btn-outline-primary" data-role-group="executives">Ejecutivos</button>
                                     </div>
+                                </fieldset>
                                 </div>
                                 <div class="col-md-3 col-lg-2 mt-3 mt-md-0">
                                     <label for="users-per-page" class="small text-muted font-weight-bold mb-1">Por p&aacute;gina</label>
@@ -145,8 +147,8 @@
     </div>
 
     <!-- Modal Asignar Rol -->
-    <div class="modal fade" id="modalAssignRole" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal fade" id="modalAssignRole" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-primary text-white border-0">
                     <h5 class="modal-title font-weight-bold"><i class="fas fa-user-tag mr-2"></i>Asignar rol</h5>
@@ -160,7 +162,7 @@
                         <div class="d-flex align-items-center">
                             <div id="assignUserAvatar" class="assign-user-avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center flex-shrink-0"></div>
                             <div class="ml-3 min-w-0">
-                                <h5 id="assignUserName" class="font-weight-bold mb-1 text-truncate" aria-label="Nombre del usuario"></h5>
+                                <h5 id="assignUserName" class="font-weight-bold mb-1 text-truncate" aria-label="Nombre del usuario"><span class="sr-only">Seleccionar usuario</span></h5>
                                 <p id="assignUserEmail" class="text-muted small mb-1"></p>
                                 <div id="assignUserStatus" class="d-flex align-items-center gap-2"></div>
                             </div>

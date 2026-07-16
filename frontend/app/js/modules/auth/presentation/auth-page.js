@@ -16,9 +16,100 @@ import { handleBackendErrors, setupValidationListeners, validateFormFrontend, se
 const GOOGLE_POPUP_CLOSED_BY_USER = 'auth/popup-closed-by-user';
 const GOOGLE_POPUP_CANCELLED = 'auth/cancelled-popup-request';
 
+export function togglePasswordVisibility(input, button) {
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  const icon = button.querySelector('i');
+  icon.classList.toggle('fa-eye', !isHidden);
+  icon.classList.toggle('fa-eye-slash', isHidden);
+}
+
+export function showAlert(target, message, type = 'danger') {
+  if (!target) return;
+  target.className = `alert alert-${type} py-2 mb-3 text-start small`;
+  target.textContent = message;
+  target.classList.remove('d-none');
+}
+
+export function hideAlert(target) {
+  if (!target) return;
+  target.classList.add('d-none');
+  target.textContent = '';
+}
+
+export function normalizeCode(value) {
+  if (typeof value === 'string') return value;
+  return value?.code || value?.codigo || '';
+}
+
+export function hasRoleAdmin(user) {
+  if (!user || !user.roles) return false;
+  return user.roles.some(r => {
+    const code = typeof r === 'string' ? r : (r.code || r.codigo);
+    return code === 'ADMIN';
+  });
+}
+
+export function toggleSubmitState(submitBtn, spinner, btnText, state) {
+  if (!submitBtn) return;
+  submitBtn.disabled = state;
+  if (spinner) spinner.classList.toggle('d-none', !state);
+  if (btnText) {
+    if (state) {
+      btnText.textContent = 'Procesando...';
+    } else {
+      btnText.textContent = btnText.dataset.originalLabel || btnText.textContent;
+    }
+  }
+}
+
+export function switchView(viewName) {
+  const isAuthMode = viewName === 'login' || viewName === 'register' || viewName === 'email-verification';
+  if (isAuthMode) {
+    document.body.classList.remove('auth-login-mode', 'auth-register-mode', 'auth-email-verification-mode');
+    document.body.classList.add(`auth-${viewName}-mode`);
+  }
+
+  const viewMap = {
+    'login-view': 'login',
+    'register-view': 'register',
+    'email-verification-view': 'email-verification',
+    'profile-view': 'profile',
+    'two-factor-view': 'two-factor',
+    'setup-2fa-view': 'setup-2fa',
+    'forgot-password-view': 'forgot-password',
+  };
+
+  Object.entries(viewMap).forEach(([id, name]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('d-none', viewName !== name);
+  });
+
+  if (viewName !== 'login') hideAlert(document.getElementById('login-alert'));
+  if (viewName !== 'register') hideAlert(document.getElementById('register-alert'));
+  if (viewName !== 'profile') hideAlert(document.getElementById('profile-alert'));
+  if (viewName !== 'two-factor') hideAlert(document.getElementById('two-factor-alert'));
+  if (viewName !== 'setup-2fa') hideAlert(document.getElementById('setup-2fa-alert'));
+  if (viewName !== 'forgot-password') hideAlert(document.getElementById('forgot-password-alert'));
+}
+
+export function validateFormGroup(formGroup) {
+  if (!formGroup) return false;
+  const inputs = formGroup.querySelectorAll('input, select, textarea');
+  let valid = true;
+  inputs.forEach((input) => {
+    if (input.hasAttribute('required') && !input.value.trim()) {
+      input.classList.add('is-invalid');
+      valid = false;
+    }
+  });
+  return valid;
+}
+
+
 document.addEventListener('DOMContentLoaded', initAuthPage);
 
-function initAuthPage() { // NOSONAR - Inherently complex multi-view auth page with form handling, Google OAuth, 2FA setup, and password recovery flows
+export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth page with form handling, Google OAuth, 2FA setup, and password recovery flows
     const el = {
       loginView: document.getElementById('login-view'),
       registerView: document.getElementById('register-view'),

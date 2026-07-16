@@ -44,7 +44,7 @@ const state = {
 
 document.addEventListener('DOMContentLoaded', initOperationalStructurePage);
 
-async function initOperationalStructurePage() {
+export async function initOperationalStructurePage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('operational-structure');
   }
@@ -55,7 +55,7 @@ async function initOperationalStructurePage() {
   await refreshPageData();
 }
 
-async function refreshPageData() {
+export async function refreshPageData() {
   showPageLoading('Cargando operación nacional', 'Consultando zonas, supervisores y operadores...');
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
@@ -89,7 +89,7 @@ async function refreshPageData() {
   }
 }
 
-function bindEvents() {
+export function bindEvents() {
   state.operatorModalInstance = $('#operatorProfileModal');
   state.zoneManagersModalInstance = $('#zoneManagersModal');
 
@@ -129,7 +129,7 @@ function bindEvents() {
   document.getElementById('replaceOperatorForm')?.addEventListener('submit', submitReplaceOperatorForm);
 }
 
-function applyAccessMode() {
+export function applyAccessMode() {
   const isAdmin = userHasRole(state.currentUser, 'ADMIN');
   const changeSupervisorForm = document.getElementById('changeSupervisorForm');
   const replaceOperatorForm = document.getElementById('replaceOperatorForm');
@@ -317,7 +317,7 @@ function syncMapsData() {
   syncSelectedZoneLayers();
 }
 
-function selectZone(zoneId, options = {}) {
+export function selectZone(zoneId, options = {}) {
   const zone = findZoneById(zoneId);
   if (!zone) return;
 
@@ -345,7 +345,7 @@ function selectInitialZone() {
   clearSelectedZone();
 }
 
-function clearSelectedZone() {
+export function clearSelectedZone() {
   state.selectedZoneId = null;
   state.selectedZoneAnchorPoint = null;
   syncSelectedZoneLayers();
@@ -413,7 +413,7 @@ function showZonePopup(lngLat, properties = {}) {
     .addTo(state.map);
 }
 
-function renderSummary() {
+export function renderSummary() {
   setText('opsTotalZones', state.zones.length);
 
   const coveredProvinces = state.zones.reduce((total, zone) => total + (zone.provinces_covered || []).length, 0);
@@ -428,7 +428,7 @@ function renderSummary() {
   setText('opsNationalWorkload', `${formatDecimal(averageWorkload)} pts`);
 }
 
-function renderSupervisors() {
+export function renderSupervisors() {
   const target = document.getElementById('supervisorsTableBody');
   if (!target) return;
 
@@ -459,7 +459,7 @@ function renderSupervisors() {
   }).join('');
 }
 
-function renderOperators() {
+export function renderOperators() {
   const target = document.getElementById('operatorsTableBody');
   if (!target) return;
   const canManageOperations = userHasRole(state.currentUser, 'ADMIN');
@@ -516,7 +516,7 @@ function renderZoneLegend() {
   `).join('');
 }
 
-function renderSelectedZoneDetail(zone) {
+export function renderSelectedZoneDetail(zone) {
   const target = document.getElementById('selectedZoneDetailPanel');
   const wrapper = document.getElementById('selectedZoneDetailWrapper');
   if (!target || !wrapper) return;
@@ -576,7 +576,8 @@ function renderSelectedZoneDetail(zone) {
   `;
 }
 
-function buildZonePopupHtml(zone, provinceName) {
+
+export function buildZonePopupHtml(zone, provinceName) {
   return `
     <div class="ops-popup">
       <h6>${escapeHtml(zone.zone?.name || 'Zona')}</h6>
@@ -609,7 +610,7 @@ function applyZoneDetailPosition(wrapper, anchorPoint) {
   wrapper.style.setProperty('--detail-top', `${safeTop}px`);
 }
 
-function openZoneManagersModal(zoneId) {
+export function openZoneManagersModal(zoneId) {
   const zone = findZoneById(zoneId);
   const target = document.getElementById('zoneManagersModalBody');
   const subtitle = document.getElementById('zoneManagersModalSubtitle');
@@ -648,7 +649,7 @@ function openZoneManagersModal(zoneId) {
   state.zoneManagersModalInstance?.modal('show');
 }
 
-function openOperatorProfileModal(button) {
+export function openOperatorProfileModal(button) {
   const operatorId = Number(button.dataset.operatorId || 0);
   const operator = state.operators.find((item) => Number(item.operator?.id) === operatorId);
   if (!operator) return;
@@ -662,7 +663,7 @@ function openOperatorProfileModal(button) {
   state.operatorModalInstance?.modal('show');
 }
 
-async function submitOperatorProfileForm(event) {
+export async function submitOperatorProfileForm(event) {
   event.preventDefault();
 
   const operatorId = Number(getFieldValue('operatorProfileUserId') || 0);
@@ -721,7 +722,8 @@ async function buildZoneGeoJson(zones) {
   };
 }
 
-function buildProvinceZoneLookup(zones) {
+
+export function buildProvinceZoneLookup(zones) {
   return zones.reduce((lookup, zone) => {
     (zone.provinces_covered || []).forEach((province) => {
       lookup[normalizeText(province.name)] = zone;
@@ -730,7 +732,8 @@ function buildProvinceZoneLookup(zones) {
   }, {});
 }
 
-function extractCatalogItems(payload) {
+
+export function extractCatalogItems(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.data)) return payload.data;
   return [];
@@ -752,7 +755,8 @@ function findZoneByCode(zoneCode) {
   return state.zones.find((item) => String(item.zone?.code || '') === String(zoneCode || '')) || null;
 }
 
-function zoneColor(zoneCode) {
+
+export function zoneColor(zoneCode) {
   return ZONE_COLOR_BY_CODE[String(zoneCode || '').toUpperCase()] || '#64748b';
 }
 
@@ -769,7 +773,8 @@ function extendBounds(bounds, coordinates, geometryType) {
   }
 }
 
-function emptyGeoJson() {
+
+export function emptyGeoJson() {
   return { type: 'FeatureCollection', features: [] };
 }
 
@@ -862,7 +867,8 @@ function readSessionUser() {
   }
 }
 
-function userHasRole(user, roleCode) {
+
+export function userHasRole(user, roleCode) {
   if (!user || !Array.isArray(user.roles)) return false;
   return user.roles.some((role) => normalizeCode(role) === roleCode);
 }
@@ -889,7 +895,8 @@ function clearAlert() {
   alert.textContent = '';
 }
 
-function emptyState(message) {
+
+export function emptyState(message) {
   return `
     <div class="text-center text-muted py-5 border rounded bg-white">
       <i class="fas fa-sitemap fa-2x mb-3 d-block"></i>
@@ -897,13 +904,15 @@ function emptyState(message) {
     </div>`;
 }
 
-function fullName(user) {
+
+export function fullName(user) {
   if (!user) return '';
 
   return [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 }
 
-function normalizeText(value) {
+
+export function normalizeText(value) {
   return sanitizeProvinceName(value)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -911,7 +920,8 @@ function normalizeText(value) {
     .trim();
 }
 
-function sanitizeProvinceName(value) {
+
+export function sanitizeProvinceName(value) {
   const replacements = {
     'BolÃ­var': 'Bolivar',
     'CaÃ±ar': 'Canar',
@@ -932,15 +942,18 @@ function setText(id, value) {
   }
 }
 
-function formatDecimal(value) {
+
+export function formatDecimal(value) {
   return Number(value || 0).toFixed(1);
 }
 
-function clamp(value, min, max) {
+
+export function clamp(value, min, max) {
   return Math.min(Math.max(Number(value || 0), min), max);
 }
 
-function buildProvinceSummary(provinceNames) {
+
+export function buildProvinceSummary(provinceNames) {
   if (!provinceNames.length) {
     return 'Sin provincias asociadas';
   }
@@ -1087,7 +1100,7 @@ function updateTeamManagementTab(zone) {
   }
 }
 
-async function submitChangeSupervisorForm(event) {
+export async function submitChangeSupervisorForm(event) {
   event.preventDefault();
   if (!state.selectedZoneId) return;
 
@@ -1113,7 +1126,7 @@ async function submitChangeSupervisorForm(event) {
   }
 }
 
-async function submitReplaceOperatorForm(event) {
+export async function submitReplaceOperatorForm(event) {
   event.preventDefault();
   if (!state.selectedZoneId) return;
 

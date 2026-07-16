@@ -33,6 +33,24 @@ class AccessControlTest extends TestCase
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
     }
 
+    public function test_admin_can_get_access_control_overview(): void
+    {
+        $admin = $this->authenticateAdmin();
+
+        $response = $this->withToken($admin['token'])
+            ->getJson('/api/admin/access-control');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'roles' => [['id', 'code', 'name', 'permissions']],
+                    'permissions' => [['id', 'code', 'name']]
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('data.permissions_by_module'));
+    }
+
     public function test_admin_can_sync_role_permissions(): void
     {
         $admin = $this->authenticateAdmin();

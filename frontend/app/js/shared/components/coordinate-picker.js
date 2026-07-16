@@ -381,3 +381,12 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+export {
+  escapeHtml,
+  formatCoordinate,
+  isValidLatitude,
+  isValidLongitude,
+  readInputsAsLatLng,
+  readInputsAsLngLat,
+};

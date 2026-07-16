@@ -57,7 +57,9 @@ function Invoke-DockerLogged([string[]]$Arguments, [string]$LogPath) {
     $PreviousPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = 'Continue'
-        & docker @Arguments 2>&1 | Tee-Object -FilePath $LogPath | ForEach-Object { Write-Host "$_" }
+        $Output = @(& docker @Arguments 2>&1)
+        $Output | Out-File -FilePath $LogPath -Encoding utf8 -Force
+        $Output | ForEach-Object { Write-Host "$_" }
         $ExitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $PreviousPreference

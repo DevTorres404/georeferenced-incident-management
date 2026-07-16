@@ -63,8 +63,6 @@ services:
       POSTGRES_DB: ${ANALYSIS_DB_NAME:?ANALYSIS_DB_NAME is required}
       POSTGRES_USER: ${ANALYSIS_DB_USER:?ANALYSIS_DB_USER is required}
       POSTGRES_PASSWORD: ${ANALYSIS_DB_PASSWORD:?ANALYSIS_DB_PASSWORD is required}
-    tmpfs:
-      - /var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s

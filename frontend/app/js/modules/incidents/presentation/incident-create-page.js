@@ -36,14 +36,14 @@ const selectTerritoryFields = {
 
 // ─── Auto-save: borrador del wizard ──────────────────────────────
 
-function getFormValue(id) {
+export function getFormValue(id) {
   const el = document.getElementById(id);
   if (!el) return '';
   if (el.type === 'checkbox' || el.type === 'radio') return el.checked ? '1' : '';
   return el.value;
 }
 
-function setFormValue(id, value) {
+export function setFormValue(id, value) {
   const el = document.getElementById(id);
   if (!el || value === undefined || value === null || value === '') return;
   if (el.type === 'checkbox' || el.type === 'radio') { el.checked = value === '1' || value === true; return; }
@@ -57,7 +57,7 @@ const DRAFT_FIELDS = [
   'fConfirmacion',
 ];
 
-function saveDraft() {
+export function saveDraft() {
   try {
     const data = {};
     DRAFT_FIELDS.forEach((id) => { data[id] = getFormValue(id); });
@@ -67,7 +67,7 @@ function saveDraft() {
   } catch { /* localStorage lleno o no disponible — no crítico */ }
 }
 
-function restoreDraft() {
+export function restoreDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
     if (!raw) return false;
@@ -84,11 +84,11 @@ function restoreDraft() {
   } catch { return false; }
 }
 
-function clearDraft() {
+export function clearDraft() {
   try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch { /* no crítico */ }
 }
 
-function hasDraft() {
+export function hasDraft() {
   try { return localStorage.getItem(DRAFT_STORAGE_KEY) !== null; } catch { return false; }
 }
 
@@ -111,7 +111,7 @@ function bindAutoSave() {
 
 // ────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', async () => {
+export async function initCreateIncident() {
   globalThis.renderLayout?.('incident-create');
 
   hydrateContactEmail();
@@ -159,7 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       zoom: INCIDENT_CREATE_INITIAL_ZOOM,
     });
   });
-});
+}
+
+document.addEventListener('DOMContentLoaded', () => { initCreateIncident(); });
 
 function bindEvents() {
   $('#btnNextStep')?.addEventListener('click', goNext);
@@ -250,7 +252,7 @@ function bindEvidenceEvents() {
   });
 }
 
-function goNext() {
+export function goNext() {
   if (!validateCurrentStep()) return;
   if (currentStepIndex < STEPS.length - 1) {
     currentStepIndex += 1;
@@ -258,14 +260,14 @@ function goNext() {
   }
 }
 
-function goPrevious() {
+export function goPrevious() {
   if (currentStepIndex > 0) {
     currentStepIndex -= 1;
     renderStep();
   }
 }
 
-function goToStep(stepName) {
+export function goToStep(stepName) {
   const targetIndex = STEPS.indexOf(stepName);
   if (targetIndex < 0 || targetIndex === currentStepIndex) return;
 
@@ -275,7 +277,7 @@ function goToStep(stepName) {
   }
 }
 
-function renderStep() {
+export function renderStep() {
   const activeStep = STEPS[currentStepIndex];
 
   $$('[data-step-panel]').forEach((panel) => {
@@ -301,13 +303,13 @@ function renderStep() {
   saveDraft();
 }
 
-function populateCatalogs() {
+export function populateCatalogs() {
   fillSelect($('#fTipo'), catalogs.categories, 'Seleccione tipo');
   fillSelect($('#fSubtipo'), [], 'Primero seleccione tipo');
   setDisabled('#fSubtipo', true);
 }
 
-function populateSubcategories() {
+export function populateSubcategories() {
   const categoryId = $('#fTipo')?.value;
   const category = (catalogs.categories || []).find((item) => String(item.id) === String(categoryId));
   const options = category?.subcategories || [];
@@ -317,7 +319,7 @@ function populateSubcategories() {
   clearFieldError('fSubtipo');
 }
 
-async function populateTerritorialProvinces() {
+export async function populateTerritorialProvinces() {
   try {
     territorialProvinces = await listTerritorialProvinces();
     fillSelect($('#fTerritorialProvince'), territorialProvinces, 'Seleccione provincia');
@@ -331,7 +333,7 @@ async function populateTerritorialProvinces() {
   }
 }
 
-async function populateTerritorialLevel(level) {
+export async function populateTerritorialLevel(level) {
   const config = {
     province: {
       source: 'fTerritorialProvince',
@@ -393,7 +395,7 @@ async function getTerritorialChildrenCached(parentId, level = '') {
   return territorialChildrenCache.get(key) || [];
 }
 
-async function applyReverseGeocode(result) {
+export async function applyReverseGeocode(result) {
   const address = result?.address || {};
   const approximateAddress = buildApproximateAddress(result);
   const addressInput = $('#fDireccion');
@@ -419,7 +421,7 @@ async function applyReverseGeocode(result) {
   }
 }
 
-function buildApproximateAddress(result) {
+export function buildApproximateAddress(result) {
   const address = result?.address || {};
   return [
     address.road || address.pedestrian || address.footway,
@@ -429,7 +431,7 @@ function buildApproximateAddress(result) {
   ].filter(Boolean).join(', ') || result?.display_name || '';
 }
 
-async function selectTerritorialFromAddress(address) {
+export async function selectTerritorialFromAddress(address) {
   const provinceName = address.state || address.region;
   const cantonName = address.county || address.city || address.town || address.municipality;
   const parishName = address.city_district || address.suburb || address.village || address.neighbourhood;
@@ -473,14 +475,14 @@ async function selectTerritorialFromAddress(address) {
   await populateTerritorialLevel('parish');
 }
 
-function setSelectValue(id, value) {
+export function setSelectValue(id, value) {
   const select = $(`#${id}`);
   if (!select) return;
   select.value = String(value);
   clearFieldError(id);
 }
 
-function findUnitByName(units, value) {
+export function findUnitByName(units, value) {
   const target = normalizeLocationName(value);
   if (!target) return null;
 
@@ -492,7 +494,7 @@ function findUnitByName(units, value) {
     || null;
 }
 
-function normalizeLocationName(value) {
+export function normalizeLocationName(value) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -503,7 +505,7 @@ function normalizeLocationName(value) {
     .toUpperCase();
 }
 
-function addEvidenceFiles(fileList) {
+export function addEvidenceFiles(fileList) {
   clearEvidenceError();
 
   Array.from(fileList).forEach((file) => {
@@ -527,14 +529,14 @@ function addEvidenceFiles(fileList) {
   renderEvidencePreviews();
 }
 
-function removeEvidenceFile(id) {
+export function removeEvidenceFile(id) {
   const item = evidenceFiles.find((entry) => entry.id === id);
   if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
   evidenceFiles = evidenceFiles.filter((entry) => entry.id !== id);
   renderEvidencePreviews();
 }
 
-function renderEvidencePreviews() {
+export function renderEvidencePreviews() {
   const container = $('#evidencePreviewList');
   const count = $('#evidenceCount');
   if (count) count.textContent = String(evidenceFiles.length);
@@ -580,7 +582,7 @@ function renderEvidencePreviews() {
   });
 }
 
-async function handleSubmit(event) {
+export async function handleSubmit(event) {
   event.preventDefault();
 
   if (!validateUntil(STEPS.length - 1)) {
@@ -635,7 +637,7 @@ async function handleSubmit(event) {
   }
 }
 
-function validateUntil(targetIndex) {
+export function validateUntil(targetIndex) {
   for (let index = 0; index < targetIndex; index += 1) {
     if (!validateStep(STEPS[index])) {
       currentStepIndex = index;
@@ -645,11 +647,11 @@ function validateUntil(targetIndex) {
   return true;
 }
 
-function validateCurrentStep() {
+export function validateCurrentStep() {
   return validateStep(STEPS[currentStepIndex]);
 }
 
-function validateStep(step) {
+export function validateStep(step) {
   if (step === 'location') return validateLocation();
   if (step === 'evidence') return validateEvidence();
   if (step === 'details') return validateDetails();
@@ -657,7 +659,7 @@ function validateStep(step) {
   return true;
 }
 
-function validateLocation() {
+export function validateLocation() {
   let valid = true;
   valid = validateRequiredCoordinatePair() && valid;
 
@@ -687,12 +689,12 @@ function validateLocation() {
   return valid;
 }
 
-function validateEvidence() {
+export function validateEvidence() {
   clearEvidenceError();
   return true;
 }
 
-function validateDetails() {
+export function validateDetails() {
   let valid = true;
   valid = validateText('fTitulo', 5, 'Ingresa un título de al menos 5 caracteres.') && valid;
   valid = validateTextMax('fTitulo', 120, 'El título no debe superar 120 caracteres.') && valid;
@@ -731,7 +733,7 @@ function validateDetails() {
   return valid;
 }
 
-function validateReview() {
+export function validateReview() {
   if (!$('#fConfirmacion')?.checked) {
     setFieldError('fConfirmacion', 'Confirma la información antes de registrar.');
     return false;
@@ -740,7 +742,7 @@ function validateReview() {
   return true;
 }
 
-function validateText(id, minLength, message) {
+export function validateText(id, minLength, message) {
   const value = String($(`#${id}`)?.value || '').trim();
   if (value.length < minLength) {
     setFieldError(id, message);
@@ -750,7 +752,7 @@ function validateText(id, minLength, message) {
   return true;
 }
 
-function validateTextMax(id, maxLength, message) {
+export function validateTextMax(id, maxLength, message) {
   const value = String($(`#${id}`)?.value || '').trim();
   if (value.length > maxLength) {
     setFieldError(id, message);
@@ -759,7 +761,7 @@ function validateTextMax(id, maxLength, message) {
   return true;
 }
 
-function validateSelect(id, message) {
+export function validateSelect(id, message) {
   if (!String($(`#${id}`)?.value || '').trim()) {
     setFieldError(id, message);
     return false;
@@ -768,7 +770,7 @@ function validateSelect(id, message) {
   return true;
 }
 
-function validateEmail(id) {
+export function validateEmail(id) {
   const value = String($(`#${id}`)?.value || '').trim();
   if (!value) {
     setFieldError(id, 'Ingresa un correo de contacto.');
@@ -782,7 +784,7 @@ function validateEmail(id) {
   return true;
 }
 
-function validateRequiredCoordinatePair() {
+export function validateRequiredCoordinatePair() {
   const latitudeValue = String($('#fLatitud')?.value || '').trim();
   const longitudeValue = String($('#fLongitud')?.value || '').trim();
   let valid = true;
@@ -836,7 +838,7 @@ function validateTerritorialSelection() {
   return true;
 }
 
-function renderSummary() {
+export function renderSummary() {
   const container = $('#resumenIncidencia');
   if (!container) return;
 
@@ -885,7 +887,7 @@ function createReviewSection(title, rows) {
   return section;
 }
 
-function updateLocationSummary() {
+export function updateLocationSummary() {
   const address = $('#fDireccion')?.value?.trim();
   const lat = $('#fLatitud')?.value?.trim();
   const lng = $('#fLongitud')?.value?.trim();
@@ -913,7 +915,7 @@ function updateLocationSummary() {
   }
 }
 
-function fillSelect(select, items = [], placeholder = 'Seleccione') {
+export function fillSelect(select, items = [], placeholder = 'Seleccione') {
   if (!select) return;
 
   select.replaceChildren();
@@ -930,12 +932,12 @@ function fillSelect(select, items = [], placeholder = 'Seleccione') {
   });
 }
 
-function setDisabled(selector, disabled) {
+export function setDisabled(selector, disabled) {
   const element = $(selector);
   if (element) element.disabled = disabled;
 }
 
-function hydrateContactEmail() {
+export function hydrateContactEmail() {
   const emailInput = $('#fCorreo');
   if (!emailInput || emailInput.value) return;
 
@@ -952,7 +954,7 @@ function bindCounters() {
   updateCounter('fDescripcion', 'cntDescripcion', 1000);
 }
 
-function updateCounter(inputId, counterId, max) {
+export function updateCounter(inputId, counterId, max) {
   const input = $(`#${inputId}`);
   const counter = $(`#${counterId}`);
   if (!input || !counter) return;
@@ -995,7 +997,7 @@ function getSelectedTerritorialUnitId() {
   return value ? Number(value) : null;
 }
 
-function buildAddressText() {
+export function buildAddressText() {
   const address = $('#fDireccion')?.value.trim() || '';
   const reference = $('#fReferencia')?.value.trim() || '';
   const territory = selectedTerritorialPath();
@@ -1003,7 +1005,7 @@ function buildAddressText() {
   return [address, reference, territoryText].filter(Boolean).join(' - ') || null;
 }
 
-function setManualTerritoryMode(level, enabled) {
+export function setManualTerritoryMode(level, enabled) {
   if (!level || !manualTerritoryFields[level]) return;
 
   const wrapper = document.querySelector(`[data-manual-territory="${level}"]`);
@@ -1047,11 +1049,11 @@ function isManualTerritoryVisible(level) {
   return !document.querySelector(`[data-manual-territory="${level}"]`)?.classList.contains('d-none');
 }
 
-function getManualTerritoryValue(level) {
+export function getManualTerritoryValue(level) {
   return document.getElementById(manualTerritoryFields[level])?.value?.trim() || '';
 }
 
-function setManualTerritoryValue(level, value) {
+export function setManualTerritoryValue(level, value) {
   if (!value || !manualTerritoryFields[level]) return;
   setManualTerritoryMode(level, true);
   const input = document.getElementById(manualTerritoryFields[level]);
@@ -1097,12 +1099,13 @@ function setText(selector, value) {
   if (element) element.textContent = value;
 }
 
-function formatFileSize(bytes) {
+export function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function createClientId() {
+export function createClientId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

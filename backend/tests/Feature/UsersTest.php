@@ -54,6 +54,55 @@ class UsersTest extends TestCase
         );
     }
 
+    public function test_admin_can_update_user(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $user = User::factory()->create(['first_name' => 'Old Name', 'is_active' => true]);
+
+        $response = $this->withToken($admin['token'])
+            ->patchJson("/api/users/{$user->id}", [
+                'first_name' => 'New Name',
+                'is_active' => false,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.nombre', 'New Name')
+            ->assertJsonPath('data.activo', false);
+
+        $this->assertDatabaseHas('auth.users', [
+            'id' => $user->id,
+            'first_name' => 'New Name',
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_admin_can_delete_user(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $user = User::factory()->create(['is_active' => true]);
+
+        $response = $this->withToken($admin['token'])
+            ->deleteJson("/api/users/{$user->id}");
+
+        $response->assertOk();
+        $this->assertSoftDeleted('auth.users', ['id' => $user->id]);
+    }
+
+    public function test_admin_can_sync_user_roles(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $user = User::factory()->create();
+        $role = Role::where('code', 'SUPERVISOR')->firstOrFail();
+
+        $response = $this->withToken($admin['token'])
+            ->putJson("/api/users/{$user->id}/roles", [
+                'roles' => ['SUPERVISOR']
+            ]);
+
+        $response->assertOk();
+        $this->assertTrue($user->fresh()->roles()->where('roles.id', $role->id)->exists());
+    }
+
     private function authenticateAdmin(): array
     {
         $this->seed([RoleSeeder::class, PermissionSeeder::class]);

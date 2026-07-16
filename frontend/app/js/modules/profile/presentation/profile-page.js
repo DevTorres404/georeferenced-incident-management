@@ -22,7 +22,7 @@ function readSessionUser() {
   }
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -31,22 +31,22 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function normalizeCode(value) {
+export function normalizeCode(value) {
   if (typeof value === 'string') return value;
   return value?.codigo || value?.code || '';
 }
 
-function hasRole(roleCode, user) {
+export function hasRole(roleCode, user) {
   if (!user || !Array.isArray(user.roles)) return false;
   return user.roles.some((role) => normalizeCode(role) === roleCode);
 }
 
-function hasGoogleIdentity(user) {
+export function hasGoogleIdentity(user) {
   if (!user || !Array.isArray(user.identities)) return false;
   return user.identities.some((id) => id?.provider === 'google');
 }
 
-function formatDate(dateStr) {
+export function formatDate(dateStr) {
   if (!dateStr) return '-';
   try {
     const d = new Date(dateStr);
@@ -55,7 +55,7 @@ function formatDate(dateStr) {
   } catch { return '-'; }
 }
 
-function formatDateTime(dateStr) {
+export function formatDateTime(dateStr) {
   if (!dateStr) return '-';
   try {
     const d = new Date(dateStr);
@@ -69,7 +69,7 @@ function formatDateTime(dateStr) {
   } catch { return '-'; }
 }
 
-function initProfilePage() {
+export function initProfilePage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('profile');
   }
@@ -106,7 +106,7 @@ function initProfilePage() {
   }
 }
 
-function renderUserData(user) {
+export function renderUserData(user) {
   const firstName = user.nombre || user.first_name || user.name || '';
   const lastName = user.apellido || user.last_name || '';
   const username = user.username || '';
@@ -141,7 +141,7 @@ function renderUserData(user) {
   if (lastLoginEl) lastLoginEl.textContent = formatDateTime(user.last_login || user.lastLogin);
 }
 
-function initEditProfile(user) {
+export function initEditProfile(user) {
   const btnEdit = document.getElementById('btnEditProfile');
   const modalEdit = document.getElementById('modalEditProfile');
   const formEdit = document.getElementById('formEditProfile');
@@ -233,7 +233,7 @@ document.addEventListener('click', function (e) {
   }
 });
 
-function initChangePassword() {
+export function initChangePassword() {
   const btnOpen = document.getElementById('btnOpenChangePassword');
   const modal = document.getElementById('modalChangePassword');
   const form = document.getElementById('formChangePassword');
@@ -331,7 +331,25 @@ function clearChangePasswordAlert() {
   alertBox.classList.add('d-none');
 }
 
-function renderSecurityData(user) {
+function setPasswordFieldError(fieldId, message) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+
+  input.classList.add('is-invalid');
+  const container = input.parentElement;
+  if (!container) return;
+
+  let feedback = container.querySelector('.invalid-feedback');
+  if (!feedback) {
+    feedback = document.createElement('div');
+    feedback.className = 'invalid-feedback';
+    container.appendChild(feedback);
+  }
+  feedback.textContent = message;
+  feedback.style.display = 'block';
+}
+
+export function renderSecurityData(user) {
   const container = document.getElementById('securityContainer');
   if (!container) return;
 

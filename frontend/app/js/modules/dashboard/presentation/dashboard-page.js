@@ -10,7 +10,7 @@ import {
   showPageLoading,
 } from '../../incidents/presentation/incidents-ui.js?v=16';
 
-const CHART_COLORS = {
+export const CHART_COLORS = {
   info: '#0ea5e9',
   success: '#10b981',
   warning: '#f59e0b',
@@ -20,7 +20,7 @@ const CHART_COLORS = {
   teal: '#14b8a6',
 };
 
-const CATEGORY_PALETTE = [
+export const CATEGORY_PALETTE = [
   CHART_COLORS.info,
   CHART_COLORS.success,
   CHART_COLORS.warning,
@@ -29,7 +29,7 @@ const CATEGORY_PALETTE = [
   CHART_COLORS.indigo,
 ];
 
-const STATE_COLORS = {
+export const STATE_COLORS = {
   PENDIENTE: '#94a3b8',
   'EN PROCESO': CHART_COLORS.info,
   RESUELTA: CHART_COLORS.success,
@@ -43,7 +43,7 @@ globalThis.addEventListener('pagehide', (event) => {
   destroyDashboardCharts();
 });
 
-async function initDashboardPage() {
+export async function initDashboardPage() {
   globalThis.renderLayout?.('dashboard');
 
   showPageLoading('Cargando panel', 'Consultando métricas...');
@@ -67,7 +67,7 @@ async function initDashboardPage() {
 
 /* ── KPIs ────────────────────────────────────────────────────────────────── */
 
-function renderKPIs(kpis) {
+export function renderKPIs(kpis) {
   const grid = $('#kpiRow');
   if (!grid) return;
 
@@ -88,7 +88,7 @@ function renderKPIs(kpis) {
     </a>`).join('');
 }
 
-function showKpiSkeletons() {
+export function showKpiSkeletons() {
   const grid = $('#kpiRow');
   if (!grid) return;
 
@@ -104,7 +104,7 @@ function showKpiSkeletons() {
 
 /* ── Priority Bars ───────────────────────────────────────────────────────── */
 
-function renderPriorityBars(countsByPriority, total) {
+export function renderPriorityBars(countsByPriority, total) {
   const container = $('#barrasPrioridad');
   if (!container) return;
 
@@ -132,7 +132,7 @@ function renderPriorityBars(countsByPriority, total) {
   }).join('');
 }
 
-function priorityColor(label) {
+export function priorityColor(label) {
   const v = String(label || '').toUpperCase();
   if (v.includes('CRIT')) return CHART_COLORS.danger;
   if (v.includes('ALTA')) return CHART_COLORS.warning;
@@ -143,7 +143,7 @@ function priorityColor(label) {
 
 /* ── Info Cards ──────────────────────────────────────────────────────────── */
 
-function renderInfoCards(metrics) {
+export function renderInfoCards(metrics) {
   const stack = $('#infoStack');
   if (!stack) return;
 
@@ -188,7 +188,7 @@ function renderInfoCards(metrics) {
 
 /* ── Recent Incidents Table ──────────────────────────────────────────────── */
 
-function renderRecentIncidents(incidents) {
+export function renderRecentIncidents(incidents) {
   const tbody = $('#tablaUltimasBody');
   if (!tbody) return;
 
@@ -226,7 +226,7 @@ function renderRecentIncidents(incidents) {
 
 /* ── Charts ──────────────────────────────────────────────────────────────── */
 
-function renderCharts(metrics) {
+export function renderCharts(metrics) {
   destroyDashboardCharts();
   if (!globalThis.Chart) return;
 
@@ -409,7 +409,7 @@ function buildDataset(label, data, color) {
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-function topEntry(values) {
+export function topEntry(values) {
   const entries = Object.entries(values);
   if (!entries.length) return null;
   return entries.sort((a, b) => Number(b[1]) - Number(a[1]))[0];

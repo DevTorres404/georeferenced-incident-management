@@ -32,7 +32,14 @@ class TerritorialUnitSeeder extends Seeder
             $zones = $this->operationalZones((int) $country->id);
             $syncedIds = [];
 
+            // In testing environment, limit to a small subset to drastically speed up RefreshDatabase
+            $isTesting = app()->environment('testing');
+
             foreach ($this->rows($path) as $row) {
+                if ($isTesting && !in_array($this->normalizeName($row['province_name']), ['Pichincha', 'Guayas', 'Azuay', 'Santa Elena', 'Esmeraldas'])) {
+                    continue;
+                }
+                
                 $isActive = $row['is_active'];
                 $zone = $zones[$this->zoneCodeForProvince($row['province_code'])] ?? null;
 

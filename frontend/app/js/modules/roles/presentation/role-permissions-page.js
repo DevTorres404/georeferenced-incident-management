@@ -4,7 +4,7 @@ import { handleBackendErrors, setFormAlert } from '../../../shared/validators/va
 
 document.addEventListener('DOMContentLoaded', initRolePermissionsPage);
 
-async function initRolePermissionsPage() {
+export async function initRolePermissionsPage() {
   if (typeof globalThis.renderLayout === 'function') {
     globalThis.renderLayout('role-permissions');
   }
@@ -45,7 +45,7 @@ function bindActions(state) {
   document.getElementById('save-role-permissions-btn')?.addEventListener('click', () => saveRolePermissions(state));
 }
 
-function renderRoles(state) {
+export function renderRoles(state) {
   const container = document.getElementById('role-list');
   if (!container) return;
 
@@ -74,7 +74,7 @@ function renderRoles(state) {
   });
 }
 
-function renderPermissions(state) {
+export function renderPermissions(state) {
   const container = document.getElementById('permission-matrix');
   if (!container) return;
 
@@ -141,7 +141,7 @@ function renderPermissions(state) {
   });
 }
 
-function renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount) {
+export function renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount) {
   return `
     <section class="role-permission-overview">
       <div class="role-permission-heading">
@@ -176,7 +176,7 @@ function renderRoleOverview(role, selectedPermissions, navigationPreview, naviga
     </section>`;
 }
 
-function renderPermissionToolbar(state) {
+export function renderPermissionToolbar(state) {
   return `
     <div class="permission-toolbar">
       <div class="input-group input-group-sm permission-search">
@@ -217,7 +217,7 @@ function bindPermissionFilters(container, state) {
   });
 }
 
-function filterPermissionModules(permissionsByModule, navigationByPermission, state) {
+export function filterPermissionModules(permissionsByModule, navigationByPermission, state) {
   const searchTerm = normalizeSearchTerm(state.permissionSearchTerm);
 
   return Object.entries(permissionsByModule)
@@ -245,7 +245,7 @@ function filterPermissionModules(permissionsByModule, navigationByPermission, st
     .filter(([, permissions]) => permissions.length);
 }
 
-function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new Set()) {
+export function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new Set()) {
   return (items || []).reduce((result, item) => {
     if (!canShowNavigationItem(item, selectedPermissions)) {
       return result;
@@ -261,21 +261,21 @@ function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new 
   }, []);
 }
 
-function canShowNavigationItem(item, selectedPermissions) {
+export function canShowNavigationItem(item, selectedPermissions) {
   return !item.permission || selectedPermissions.has(item.permission);
 }
 
-function countNavigationPermissions(items = [], selectedPermissions = new Set()) {
+export function countNavigationPermissions(items = [], selectedPermissions = new Set()) {
   return flattenNavigationItems(buildAuthorizedNavigationPreview(items, selectedPermissions))
     .filter((item) => item.route)
     .length;
 }
 
-function flattenNavigationItems(items = []) {
+export function flattenNavigationItems(items = []) {
   return items.flatMap((item) => [item, ...flattenNavigationItems(item.children || [])]);
 }
 
-function buildNavigationPermissionIndex(items = [], parentLabel = '') {
+export function buildNavigationPermissionIndex(items = [], parentLabel = '') {
   const index = new Map();
 
   (items || []).forEach((item) => {
@@ -313,7 +313,7 @@ function renderNavigationBadges(entries = []) {
     </div>`;
 }
 
-function formatModuleLabel(module) {
+export function formatModuleLabel(module) {
   const labels = {
     about: 'Información',
     dashboard: 'Panel principal',
@@ -332,11 +332,11 @@ function formatModuleLabel(module) {
   return labels[key] || humanizeCode(module);
 }
 
-function formatPermissionLabel(permission) {
+export function formatPermissionLabel(permission) {
   return permission?.name || humanizeCode(permission?.code);
 }
 
-function getRoleDescription(code) {
+export function getRoleDescription(code) {
   const descriptions = {
     ADMIN: 'Administracion completa',
     SUPERVISOR: 'Supervision y coordinacion',
@@ -346,7 +346,7 @@ function getRoleDescription(code) {
   return descriptions[String(code || '').toUpperCase()] || 'Rol del sistema';
 }
 
-function humanizeCode(value) {
+export function humanizeCode(value) {
   return String(value || '')
     .replace(/[._-]+/g, ' ')
     .replace(/\s+/g, ' ')
@@ -354,7 +354,7 @@ function humanizeCode(value) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function normalizeSearchTerm(value) {
+export function normalizeSearchTerm(value) {
   return String(value || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -362,7 +362,7 @@ function normalizeSearchTerm(value) {
     .trim();
 }
 
-async function saveRolePermissions(state) {
+export async function saveRolePermissions(state) {
   const role = selectedRole(state);
   if (!role) return;
 
@@ -385,7 +385,7 @@ async function saveRolePermissions(state) {
   }
 }
 
-function selectedRole(state) {
+export function selectedRole(state) {
   return state.roles.find((role) => role.code === state.selectedRoleCode) || null;
 }
 
@@ -394,22 +394,22 @@ function replaceRole(state, updatedRole) {
   state.roles = state.roles.map((role) => role.id === updatedRole.id ? updatedRole : role);
 }
 
-function emptyState(message) {
+export function emptyState(message) {
   return `
     <div class="text-center text-muted py-4">
       <i class="fas fa-inbox fa-2x mb-2 d-block"></i>${escapeHtml(message)}
     </div>`;
 }
 
-function cssEscape(value) {
+export function cssEscape(value) {
   return String(value || '').replace(/["\\]/g, '\\$&');
 }
 
-function escapeAttr(value) {
+export function escapeAttr(value) {
   return escapeHtml(value).replace(/"/g, '&quot;');
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
   return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
