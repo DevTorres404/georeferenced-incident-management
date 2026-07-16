@@ -1110,5 +1110,10 @@ export function formatFileSize(bytes) {
 
 export function createClientId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  if (globalThis.crypto?.getRandomValues) {
+    const array = new Uint32Array(1);
+    globalThis.crypto.getRandomValues(array);
+    return `${Date.now()}-${array[0].toString(16)}`;
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`; // NOSONAR
 }
