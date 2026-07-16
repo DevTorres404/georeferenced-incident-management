@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Application\DTOs\ChangeStateInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Entities\Incident as IncidentEntity;
 use App\Incidents\Domain\Entities\IncidentState as IncidentStateEntity;
+use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Broadcasting\IncidentStateChanged;
@@ -21,7 +23,6 @@ use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\StateChangeRequest;
-use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
@@ -34,9 +35,11 @@ use Database\Seeders\PrioritySeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\StateSeeder;
 use Database\Seeders\TerritorialUnitSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -809,43 +812,257 @@ class IncidentsTest extends TestCase
             ->assertJsonPath('data.state_id', $reopenedState->id);
     }
 
-    public function test_operator_and_citizen_cannot_reopen_closed_incident(): void
+    public function test_admin_and_supervisor_without_reopen_permission_cannot_reopen_incidents(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-reopen-permission@incidencias.local');
+        $closedState = State::where('name', 'CERRADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $editPermission = Permission::where('code', 'incidents.edit')->firstOrFail();
+        $reopenPermission = Permission::where('code', 'incidents.reopen')->firstOrFail();
+
+        foreach (['SUPERVISOR', 'ADMIN'] as $index => $roleCode) {
+            $actor = $this->authenticateAs(
+                $roleCode,
+                strtolower($roleCode).'-without-reopen@incidencias.local'
+            );
+            $role = $actor['user']->roles()->firstOrFail();
+            $role->permissions()->syncWithoutDetaching([$editPermission->id]);
+            $role->permissions()->detach($reopenPermission->id);
+            $incident = $this->createIncidentInState(
+                "INC-NOREOPEN-{$index}",
+                $closedState->id,
+                $citizen['user']->id
+            );
+            $historyCount = IncidentState::where('incident_id', $incident->id)->count();
+            $notificationCount = Notification::where('incident_id', $incident->id)->count();
+
+            $this->actingAsUser($actor['user'])
+                ->patchJson("/api/incidents/{$incident->id}/state", [
+                    'state_id' => $reopenedState->id,
+                    'comment' => 'This actor lacks the database permission.',
+                ])->assertForbidden();
+
+            $this->assertSame($closedState->id, $incident->fresh()->state_id);
+            $this->assertSame($historyCount, IncidentState::where('incident_id', $incident->id)->count());
+            $this->assertSame($notificationCount, Notification::where('incident_id', $incident->id)->count());
+        }
+    }
+
+    public function test_admin_and_supervisor_can_reopen_rejected_incidents_and_start_a_new_assignment_workflow(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-rejected-reopen@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-rejected-reopen@incidencias.local');
+        $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-rejected-reopen@incidencias.local');
+        $formerOperator = $this->authenticateAs('OPERADOR', 'former-rejected-reopen@incidencias.local');
+        $newOperator = $this->authenticateAs('OPERADOR', 'new-rejected-reopen@incidencias.local');
+        $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $incident = $this->createIncidentInState(
+            'INC-REJECTED-REOPEN',
+            $rejectedState->id,
+            $citizen['user']->id
+        );
+        $formerAssignment = IncidentAssignment::query()->create([
+            'incident_id' => $incident->id,
+            'user_id' => $formerOperator['user']->id,
+            'assigned_by_id' => $supervisor['user']->id,
+            'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
+            'active' => false,
+            'unassignment_date' => now()->subDay(),
+        ]);
+
+        $this->actingAsUser($supervisor['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'The rejection requires a new review.',
+            ])->assertOk();
+
+        $this->assertFalse($formerAssignment->fresh()->active);
+        $this->actingAsUser($supervisor['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+        $this->actingAsUser($supervisor['user'])
+            ->postJson("/api/incidents/{$incident->id}/assignments", [
+                'user_id' => $newOperator['user']->id,
+            ])->assertCreated();
+        $this->actingAsUser($supervisor['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk()
+            ->assertJsonPath('data.state_id', $inProgressState->id);
+
+        $this->assertFalse($formerAssignment->fresh()->active);
+        $this->assertDatabaseHas('core.incident_assignments', [
+            'incident_id' => $incident->id,
+            'user_id' => $newOperator['user']->id,
+            'active' => true,
+        ]);
+
+        $adminIncident = $this->createIncidentInState(
+            'INC-ADMIN-REOPEN-R',
+            $rejectedState->id,
+            $citizen['user']->id
+        );
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$adminIncident->id}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'The administrator requires a new review.',
+            ])->assertOk()
+            ->assertJsonPath('data.state_id', $reopenedState->id);
+    }
+
+    public function test_both_reopening_paths_require_a_non_blank_reason_without_mutating_the_incident(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-blank-reopen@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-blank-reopen@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-blank-reopen@incidencias.local');
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $useCase = $this->app->make(IncidentUseCase::class);
+
+        foreach (['CERRADA', 'RECHAZADA'] as $index => $sourceName) {
+            $sourceState = State::where('name', $sourceName)->firstOrFail();
+            $incident = $this->createIncidentInState(
+                "INC-BLANK-REOPEN-{$index}",
+                $sourceState->id,
+                $citizen['user']->id
+            );
+            $assignment = IncidentAssignment::query()->create([
+                'incident_id' => $incident->id,
+                'user_id' => $operator['user']->id,
+                'assigned_by_id' => $admin['user']->id,
+                'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
+                'active' => false,
+                'unassignment_date' => now()->subDay(),
+            ]);
+            $initialHistoryCount = IncidentState::where('incident_id', $incident->id)->count();
+            $initialNotificationCount = Notification::where('incident_id', $incident->id)->count();
+            $initialAssignment = $assignment->fresh()->getRawOriginal();
+
+            foreach ([
+                'missing' => null,
+                'empty' => '',
+                'whitespace' => " \t\n ",
+                'nbsp' => "\u{00A0}",
+                'unicode separators' => "\u{2002}\u{2028}",
+                'unicode format characters' => "\u{200B}",
+            ] as $reason => $comment) {
+                try {
+                    $useCase->changeState(
+                        $incident->id,
+                        $admin['user']->id,
+                        ['ADMIN'],
+                        true,
+                        new ChangeStateInputData(stateId: $reopenedState->id, comment: $comment)
+                    );
+
+                    $this->fail("The {$sourceName} {$reason} reopening reason should be rejected.");
+                } catch (IncidentException $exception) {
+                    $this->assertSame('Esta transicion requiere comment.', $exception->getMessage());
+                }
+
+                $this->assertSame($sourceState->id, $incident->fresh()->state_id);
+                $this->assertSame($initialHistoryCount, IncidentState::where('incident_id', $incident->id)->count());
+                $this->assertSame(
+                    $initialNotificationCount,
+                    Notification::where('incident_id', $incident->id)->count()
+                );
+                $this->assertSame($initialAssignment, $assignment->fresh()->getRawOriginal());
+            }
+        }
+    }
+
+    public function test_reopening_notification_failure_rolls_back_state_and_history(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-reopen-rollback@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-reopen-rollback@incidencias.local');
+        $closedState = State::where('name', 'CERRADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $incident = $this->createIncidentInState(
+            'INC-REOPEN-ROLLBACK',
+            $closedState->id,
+            $citizen['user']->id
+        );
+        $historyCount = IncidentState::where('incident_id', $incident->id)->count();
+
+        DB::unprepared(<<<'SQL'
+            CREATE OR REPLACE FUNCTION core.fail_incident_notification_insert()
+            RETURNS trigger AS $$
+            BEGIN
+                RAISE EXCEPTION 'forced notification persistence failure';
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER fail_incident_notification_insert
+            BEFORE INSERT ON core.notifications
+            FOR EACH ROW EXECUTE FUNCTION core.fail_incident_notification_insert();
+            SQL);
+
+        try {
+            $this->app->make(IncidentUseCase::class)->changeState(
+                $incident->id,
+                $admin['user']->id,
+                ['ADMIN'],
+                true,
+                new ChangeStateInputData($reopenedState->id, 'Retry after notification recovery.')
+            );
+            $this->fail('Notification persistence failure must abort the state change.');
+        } catch (QueryException $exception) {
+            $this->assertStringContainsString('forced notification persistence failure', $exception->getMessage());
+        } finally {
+            DB::unprepared('DROP TRIGGER IF EXISTS fail_incident_notification_insert ON core.notifications');
+            DB::unprepared('DROP FUNCTION IF EXISTS core.fail_incident_notification_insert()');
+        }
+
+        $this->assertSame($closedState->id, $incident->fresh()->state_id);
+        $this->assertSame($historyCount, IncidentState::where('incident_id', $incident->id)->count());
+        $this->assertSame(0, Notification::where('incident_id', $incident->id)->count());
+    }
+
+    public function test_operator_and_citizen_cannot_use_either_reopening_path(): void
     {
         $this->seedCoreData();
 
         $citizen = $this->authenticateAs('CIUDADANO', 'citizen-denied-reopen@incidencias.local');
         $operator = $this->authenticateAs('OPERADOR', 'operator-denied-reopen@incidencias.local');
         $admin = $this->authenticateAs('ADMIN', 'admin-denied-reopen@incidencias.local');
-        $closedState = State::where('name', 'CERRADA')->firstOrFail();
         $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
-        $incident = $this->createIncidentInState(
-            'INC-DENIED-REOPEN',
-            $closedState->id,
-            $citizen['user']->id
-        );
-
-        $this->assignIncidentToOperator($incident, $operator['user']->id, $admin['user']->id);
-
-        $this->actingAsUser($operator['user'])
-            ->patchJson("/api/incidents/{$incident->id}/state", [
-                'state_id' => $reopenedState->id,
-                'comment' => 'Operator cannot reopen.',
-            ])->assertForbidden()
-            ->assertJsonPath('message', 'Tu rol no puede ejecutar esta transicion.');
 
         $citizenRole = $citizen['user']->roles()->firstOrFail();
         $citizenRole->permissions()->syncWithoutDetaching([
             Permission::where('code', 'incidents.edit')->firstOrFail()->id,
         ]);
 
-        $this->actingAsUser($citizen['user'])
-            ->patchJson("/api/incidents/{$incident->id}/state", [
-                'state_id' => $reopenedState->id,
-                'comment' => 'Citizen cannot reopen.',
-            ])->assertForbidden()
-            ->assertJsonPath('message', 'Tu rol no puede ejecutar esta transicion.');
+        foreach (['CERRADA', 'RECHAZADA'] as $index => $sourceName) {
+            $sourceState = State::where('name', $sourceName)->firstOrFail();
+            $incident = $this->createIncidentInState(
+                "INC-DENIED-REOPEN-{$index}",
+                $sourceState->id,
+                $citizen['user']->id
+            );
+            $this->assignIncidentToOperator($incident, $operator['user']->id, $admin['user']->id);
 
-        $this->assertSame($closedState->id, $incident->fresh()->state_id);
+            foreach ([$operator['user'], $citizen['user']] as $forbiddenUser) {
+                $this->actingAsUser($forbiddenUser)
+                    ->patchJson("/api/incidents/{$incident->id}/state", [
+                        'state_id' => $reopenedState->id,
+                        'comment' => 'This role cannot reopen incidents.',
+                    ])->assertForbidden()
+                    ->assertJsonPath('message', 'Tu rol no puede ejecutar esta transicion.');
+            }
+
+            $this->assertSame($sourceState->id, $incident->fresh()->state_id);
+        }
     }
 
     public function test_resolved_incident_cannot_transition_directly_to_reopened(): void
@@ -870,80 +1087,6 @@ class IncidentsTest extends TestCase
             ->assertJsonPath('message', 'La transicion de estado no esta permitida.');
 
         $this->assertSame($resolvedState->id, $incident->fresh()->state_id);
-    }
-
-    public function test_state_seeder_replaces_obsolete_reopening_transition_idempotently(): void
-    {
-        $this->seedCoreData();
-
-        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
-        $closedState = State::where('name', 'CERRADA')->firstOrFail();
-        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
-
-        StateTransition::query()->updateOrCreate(
-            [
-                'source_state_id' => $resolvedState->id,
-                'target_state_id' => $reopenedState->id,
-            ],
-            [
-                'requires_comment' => true,
-                'allowed_roles' => ['CIUDADANO'],
-                'is_active' => true,
-            ]
-        );
-
-        $this->seed(StateSeeder::class);
-
-        $this->assertDatabaseMissing('core.state_transitions', [
-            'source_state_id' => $resolvedState->id,
-            'target_state_id' => $reopenedState->id,
-        ]);
-
-        $transition = StateTransition::query()
-            ->where('source_state_id', $closedState->id)
-            ->where('target_state_id', $reopenedState->id)
-            ->firstOrFail();
-        $this->assertSame(['ADMIN', 'SUPERVISOR'], $transition->allowed_roles);
-        $this->assertTrue($transition->is_active);
-    }
-
-    public function test_reopening_data_migration_replaces_obsolete_transition_idempotently(): void
-    {
-        $this->seedCoreData();
-
-        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
-        $closedState = State::where('name', 'CERRADA')->firstOrFail();
-        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
-
-        StateTransition::query()
-            ->where('source_state_id', $closedState->id)
-            ->where('target_state_id', $reopenedState->id)
-            ->delete();
-        StateTransition::query()->create([
-            'source_state_id' => $resolvedState->id,
-            'target_state_id' => $reopenedState->id,
-            'requires_comment' => true,
-            'allowed_roles' => ['ADMIN', 'SUPERVISOR', 'CIUDADANO'],
-            'is_active' => true,
-        ]);
-
-        $migration = require database_path(
-            'migrations/2026_07_16_000002_correct_closed_incident_reopening_transition.php'
-        );
-        $migration->up();
-        $migration->up();
-
-        $this->assertDatabaseMissing('core.state_transitions', [
-            'source_state_id' => $resolvedState->id,
-            'target_state_id' => $reopenedState->id,
-        ]);
-
-        $transition = StateTransition::query()
-            ->where('source_state_id', $closedState->id)
-            ->where('target_state_id', $reopenedState->id)
-            ->firstOrFail();
-        $this->assertSame(['ADMIN', 'SUPERVISOR'], $transition->allowed_roles);
-        $this->assertTrue($transition->is_active);
     }
 
     public function test_resolution_request_notifies_supervisor_and_approval_notifies_requester_and_broadcasts(): void

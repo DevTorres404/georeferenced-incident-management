@@ -589,7 +589,13 @@ class IncidentController extends ApiController
         try {
             return response()->json([
                 'message' => 'Estado actualizado correctamente.',
-                'data' => $this->incidentUseCase->changeState($incident->id, $user->id, $roles, $dto),
+                'data' => $this->incidentUseCase->changeState(
+                    $incident->id,
+                    $user->id,
+                    $roles,
+                    $this->can($user, 'incidents.reopen'),
+                    $dto
+                ),
             ]);
         } catch (IncidentException $e) {
             return response()->json(['message' => $e->getMessage()], $e->getCode());
