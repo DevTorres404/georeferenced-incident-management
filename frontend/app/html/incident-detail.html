@@ -160,8 +160,9 @@
           <div class="modal-body">
             <div class="mb-3" id="modalRevisarResumen"></div>
             <div class="form-group">
-              <label for="modalRevisarComentario">Comentario (opcional)</label>
-              <textarea id="modalRevisarComentario" class="form-control" rows="2" maxlength="2000" placeholder="Agregue un comentario..."></textarea>
+              <label for="modalRevisarComentario">Comentario <span class="text-danger">*</span></label>
+              <textarea id="modalRevisarComentario" class="form-control" rows="2" maxlength="2000" required placeholder="Agregue un comentario (obligatorio)..."></textarea>
+              <div class="invalid-feedback" id="modalRevisarComentarioFeedback">Debe agregar un comentario para aprobar.</div>
             </div>
           </div>
           <div class="modal-footer">

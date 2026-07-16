@@ -676,7 +676,7 @@ class IncidentController extends ApiController
         }
 
         $data = $request->validate([
-            'comment' => ['nullable', 'string', 'max:2000'],
+            'comment' => ['required', 'string', 'max:2000'],
         ]);
 
         $roles = $user->roles()->pluck('code')->all();

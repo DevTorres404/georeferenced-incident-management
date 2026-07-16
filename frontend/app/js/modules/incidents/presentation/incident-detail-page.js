@@ -306,7 +306,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             <div class="alert alert-light border d-flex align-items-start mb-3 attachment-guidance" role="note">
               <i class="fas fa-info-circle text-success mr-2 mt-1"></i>
               <div>
-                <strong>Adjuntos permitidos:</strong> imagenes, PDF, Word, video y ZIP.
+                <strong>Adjuntos permitidos:</strong> imagenes JPG o PNG.
                 <div class="text-muted small">Tamano maximo por archivo: 10 MB.</div>
               </div>
             </div>
@@ -978,12 +978,12 @@ async function executeStateTransition(incident, transition, comment, transitions
   const updated = response?.data || {};
   incident.state_id = updated.state_id ?? nextStateId;
   incident.state = updated.state || {
-    ...incident.state,
     id: nextStateId,
     name: transition.target_state_name || '-',
   };
 
   const currentUser = readCurrentUser();
+  const newStateColor = incident.state?.color || getStateHexColor(incident.state?.name);
   incident.history = [
     {
       id: Date.now(),
@@ -991,6 +991,7 @@ async function executeStateTransition(incident, transition, comment, transitions
       previous_state_name: previousStateName,
       new_state_id: nextStateId,
       new_state_name: incident.state?.name,
+      new_state_color: newStateColor,
       user_id: Number(currentUser?.id || currentUser?.user_id || 0),
       comment: comment || null,
       created_at: new Date().toISOString(),
@@ -1528,6 +1529,7 @@ function openApproveModal(incident, request) {
   title.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar solicitud de cambio';
   summary.innerHTML = renderReviewSummary(request);
   commentInput.value = '';
+  commentInput.classList.remove('is-invalid');
   approveBtn.classList.remove('d-none');
   rejectBtn.classList.add('d-none');
 
@@ -1621,7 +1623,15 @@ document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', a
 document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async () => {
   if (!pendingReviewRequest || pendingReviewRequest.action !== 'approve') return;
   const { incident, request } = pendingReviewRequest;
-  const comment = document.getElementById('modalRevisarComentario')?.value.trim() || '';
+  const commentEl = document.getElementById('modalRevisarComentario');
+  const comment = commentEl?.value.trim() || '';
+
+  if (!comment) {
+    commentEl?.classList.add('is-invalid');
+    commentEl?.focus();
+    return;
+  }
+  commentEl?.classList.remove('is-invalid');
 
   const btn = document.getElementById('btnConfirmarAprobar');
   if (btn) btn.disabled = true;
@@ -1634,14 +1644,27 @@ document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async 
 
     // Dynamically update the state after approval
     pendingStateRequests = pendingStateRequests.filter((r) => Number(r.id) !== Number(request.id));
-    if (request.requested_state_id || request.requestedStateId) {
-      const newStateId = request.requested_state_id ?? request.requestedStateId;
-      const newStateName = request.requested_state_name ?? request.requestedStateName ?? request.requested_state?.name ?? '-';
-      incident.state_id = newStateId;
-      incident.state = { ...incident.state, id: newStateId, name: newStateName };
-      updateStatePresentation(incident, cachedTransitions);
-    }
     removePendingRequestRow(request.id);
+
+    // Re-fetch the full incident to get correct state color, history, and dates
+    try {
+      const response = await getIncident(incident.id, { noCache: true });
+      const fresh = response?.data;
+      if (fresh) {
+        Object.assign(incident, fresh);
+        updateStatePresentation(incident, cachedTransitions);
+      }
+    } catch (e) {
+      console.warn('[SGI] No se pudo refrescar detalle tras aprobar, usando datos locales.', e);
+      // Fallback: at least update state name so the badge isn't stale
+      if (request.requested_state_id || request.requestedStateId) {
+        const newStateId = request.requested_state_id ?? request.requestedStateId;
+        const newStateName = request.requested_state_name ?? request.requestedStateName ?? request.requested_state?.name ?? '-';
+        incident.state_id = newStateId;
+        incident.state = { id: newStateId, name: newStateName };
+        updateStatePresentation(incident, cachedTransitions);
+      }
+    }
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger');
   } finally {

@@ -497,6 +497,12 @@ class IncidentsTest extends TestCase
                 'territorial_unit_id' => $territorialUnitId,
             ])->json('data.id');
 
+        $priorityMedia = Priority::firstOrFail();
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priorityMedia->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operatorOne['user']->id,
@@ -1240,7 +1246,9 @@ class IncidentsTest extends TestCase
         $assignments = IncidentAssignment::where('incident_id', $incident->id)->get()->toArray();
 
         $this->actingAsUser($supervisor['user'])
-            ->patchJson("/api/incidents/{$incident->id}/state-requests/{$requestId}/approve")
+            ->patchJson("/api/incidents/{$incident->id}/state-requests/{$requestId}/approve", [
+                'comment' => 'Comentario obligatorio.',
+            ])
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Solo se puede solicitar la resolucion de una incidencia en progreso.');
 
@@ -1335,6 +1343,12 @@ class IncidentsTest extends TestCase
             ])->assertCreated()
             ->json('data.id');
 
+        $priorityMedia = Priority::firstOrFail();
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priorityMedia->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1348,7 +1362,7 @@ class IncidentsTest extends TestCase
 
         $this->assertDatabaseHas('core.incidents', [
             'id' => $incidentId,
-            'priority_id' => null,
+            'priority_id' => $priorityMedia->id,
         ]);
     }
 
@@ -1414,6 +1428,11 @@ class IncidentsTest extends TestCase
                 'territorial_unit_id' => $this->territorialUnitId(),
             ])->assertCreated()
             ->json('data.id');
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priority->id,
+            ])->assertOk();
 
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
@@ -1542,6 +1561,12 @@ class IncidentsTest extends TestCase
                 'territorial_unit_id' => $territorialUnitId,
             ])->json('data.id');
 
+        $priority = Priority::firstOrFail();
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$nearDueIncidentId}", [
+                'priority_id' => $priority->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$nearDueIncidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1611,14 +1636,14 @@ class IncidentsTest extends TestCase
             ->json('data.id');
 
         $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$operatorIncidentId}", [
+                'priority_id' => $highPriority->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$operatorIncidentId}/assignments", [
                 'user_id' => $operator['user']->id,
             ])->assertCreated();
-
-        $this->actingAsUser($admin['user'])
-            ->putJson("/api/incidents/{$operatorIncidentId}", [
-                'priority_id' => $highPriority->id,
-            ])->assertOk();
 
         $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
 
@@ -1792,6 +1817,12 @@ class IncidentsTest extends TestCase
             ])->json('data.id');
 
         // Admin assigns operator
+        $priority = Priority::firstOrFail();
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}", [
+                'priority_id' => $priority->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -2051,7 +2082,7 @@ class IncidentsTest extends TestCase
         $this->seedCoreData();
 
         $supervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-rejection-date@incidencias.local');
-        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $enRevisionState = State::where('name', 'EN_REVISION')->firstOrFail();
         $rejectedState = State::where('name', 'RECHAZADA')->firstOrFail();
 
         $incident = Incident::create([
@@ -2060,17 +2091,15 @@ class IncidentsTest extends TestCase
             'description' => 'Verify rejected_at is set.',
             'category_id' => Category::firstOrFail()->id,
             'priority_id' => Priority::firstOrFail()->id,
-            'state_id' => $inProgressState->id,
+            'state_id' => $enRevisionState->id,
             'territorial_unit_id' => $this->territorialUnitId(),
             'reported_by_id' => $supervisor['user']->id,
         ]);
 
-        $this->assignIncidentToOperator($incident, $supervisor['user']->id, $supervisor['user']->id);
-
         $response = $this->actingAsUser($supervisor['user'])
-            ->postJson("/api/incidents/{$incident->id}/state", [
+            ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $rejectedState->id,
-                'reason' => 'Test rejection',
+                'comment' => 'Test rejection',
             ]);
 
         $response->assertOk()
