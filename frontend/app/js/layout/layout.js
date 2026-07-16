@@ -2,7 +2,11 @@ import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=4';
 import { buildTopbarHtml } from './topbar.js?v=21';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../infrastructure/backend-client.js?v=21';
-import { clearSession as clearAuthSession } from '../core/auth-session.js?v=15';
+import {
+  clearSession as clearAuthSession,
+  hasPermission,
+  normalizePermissionCode,
+} from '../core/auth-session.js?v=16';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21';
 
 /**
@@ -107,31 +111,6 @@ function readSessionUser() {
     return null;
   }
 }
-/**
- * Verifica si el usuario en sesión tiene el permiso indicado.
- */
-function hasPermission(code) {
-  const expected = normalizePermissionCode(code);
-  const user = readSessionUser();
-  if (!user || !expected) return false;
-  // 1. Verificar permisos a nivel de usuario (estructura de la API)
-  if (Array.isArray(user.permissions)) {
-    if (user.permissions.some(p => normalizePermissionCode(p) === expected)) {
-      return true;
-    }
-  }
-  // 2. Fallback (por si los permisos vienen anidados en los roles)
-  if (Array.isArray(user.roles)) {
-    for (const role of user.roles) {
-      if (Array.isArray(role.permissions)) {
-        if (role.permissions.some(p => normalizePermissionCode(p) === expected)) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
 function hasRole(roleCode, sessionUser = readSessionUser()) {
   const user = sessionUser;
   if (!user || !Array.isArray(user.roles)) return false;
@@ -141,10 +120,6 @@ function hasRole(roleCode, sessionUser = readSessionUser()) {
 function normalizeRoleCode(value) {
   const raw = typeof value === 'string' ? value : value?.codigo || value?.code || value?.name || value?.nombre || '';
   return String(raw || '').trim().toUpperCase();
-}
-function normalizePermissionCode(value) {
-  const raw = typeof value === 'string' ? value : value?.codigo || value?.code || '';
-  return String(raw || '').trim().toLowerCase();
 }
 function formatRoleLabel(role) {
   if (typeof role === 'string') return role;

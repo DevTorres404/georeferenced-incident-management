@@ -266,6 +266,25 @@ describe('Integration — incident-detail-page', () => {
         expect(container.innerHTML).toContain('INC-001');
       });
     });
+
+    it.each([
+      ['ADMIN', ['incidents.create'], true],
+      ['CIUDADANO', [{ codigo: 'incidents.create' }], true],
+      ['SUPERVISOR', [], false],
+      ['OPERADOR', [], false],
+    ])('applies incidents.create to the %s New CTA', async (role, permissions, allowed) => {
+      const service = await import('../app/js/modules/incidents/application/incidents-service.js');
+      service.getIncident.mockResolvedValue({ data: sampleIncident });
+      service.listPriorities.mockResolvedValue({ data: [] });
+      service.listStates.mockResolvedValue({ data: [] });
+      service.getStateChangeRequests.mockResolvedValue({ data: [] });
+      localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: role }], permissions }));
+
+      const { initIncidentDetailPage } = await import('../app/js/modules/incidents/presentation/incident-detail-page.js');
+      await initIncidentDetailPage();
+
+      expect(document.getElementById('contenidoDetalle').innerHTML.includes('incident-create.html')).toBe(allowed);
+    });
   });
 
   // ─── 3. Coordinate validation integration ────────────────────────

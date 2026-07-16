@@ -1,6 +1,6 @@
 import { deleteIncident, listStates, listPriorities } from '../application/incidents-service.js?v=14';
 import { request } from '../../../infrastructure/backend-client.js?v=21';
-import { readUser } from '../../../core/auth-session.js?v=14';
+import { readUser, userHasPermission } from '../../../core/auth-session.js?v=16';
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -13,17 +13,20 @@ import {
 } from './incidents-ui.js?v=16';
 import { html, delegateEvent } from '../../../presentation/dom-utils.js?v=2';
 
+export { userHasPermission };
+
 const INCIDENT_SEARCH_STORAGE_KEY = 'SGI_incidents_search';
 
 document.addEventListener('DOMContentLoaded', initIncidentsPage);
 
 export async function initIncidentsPage() {
+  const canRefreshAuthorization = typeof globalThis.renderLayout === 'function';
   if (typeof globalThis.renderLayout === 'function') {
-    globalThis.renderLayout('incidents');
+    await globalThis.renderLayout('incidents');
   }
 
   const state = {
-    currentUser: readUser(),
+    currentUser: canRefreshAuthorization ? readUser() : null,
     pendingDeleteId: null,
     dataTable: null,
     states: [],
@@ -34,9 +37,11 @@ export async function initIncidentsPage() {
     activePendingStateRequest: false,
     activeSearchQuery: readStoredSearch(),
     activeScopeFilter: 'role',
+    canCreateIncident: false,
     canDeleteIncident: false,
   };
 
+  state.canCreateIncident = userHasPermission(state.currentUser, 'incidents.create');
   state.canDeleteIncident = userHasPermission(state.currentUser, 'incidents.delete');
   bindDeleteConfirmation(state);
 
@@ -247,9 +252,9 @@ function initDataTable(state) {
           <i class="fas fa-folder-open text-muted mb-3" style="font-size: 3.5rem; opacity: 0.5;"></i>
           <h4 class="text-main font-weight-bold">No hay incidencias disponibles</h4>
           <p class="text-muted">Cuando se creen incidencias, aparecerán aquí con su estado, prioridad y fecha.</p>
-          <a href="incident-create.html" class="btn btn-primary mt-2">
+          ${state.canCreateIncident ? `<a href="incident-create.html" class="btn btn-primary mt-2">
             <i class="fas fa-plus mr-1"></i>Crear nueva incidencia
-          </a>
+          </a>` : ''}
         </div>
       `,
       sInfo: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
@@ -492,28 +497,6 @@ function userHasRole(user, roleCode) {
   });
 }
 
-export function userHasPermission(user, permissionCode) {
-  if (!user) return false;
-  if (userHasRole(user, 'ADMIN')) return true;
-
-  const expected = String(permissionCode).trim().toUpperCase();
-  if (Array.isArray(user.permissions)) {
-    const hasDirectPermission = user.permissions.some((permission) => {
-      const code = typeof permission === 'string' ? permission : (permission?.code || permission?.codigo || '');
-      return String(code).trim().toUpperCase() === expected;
-    });
-    if (hasDirectPermission) return true;
-  }
-
-  return Array.isArray(user.roles) && user.roles.some((role) => (
-    Array.isArray(role?.permissions)
-      && role.permissions.some((permission) => {
-        const code = typeof permission === 'string' ? permission : (permission?.code || permission?.codigo || '');
-        return String(code).trim().toUpperCase() === expected;
-      })
-  ));
-}
-
 function bindPriorityFilters(state) {
   document.querySelectorAll('.priority-btn').forEach((button) => {
     button.addEventListener('click', () => {
@@ -539,7 +522,7 @@ function bindPriorityFilters(state) {
 function configureRoleActions(state) {
   const createButton = document.getElementById('btnCreateIncident');
   if (createButton) {
-    createButton.style.display = userHasPermission(state.currentUser, 'incidents.create') ? '' : 'none';
+    createButton.hidden = !state.canCreateIncident;
   }
 
   const mapButton = document.getElementById('btnViewMap');

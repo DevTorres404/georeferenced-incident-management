@@ -10,7 +10,7 @@ import {
   verifyTwoFactorLogin,
   resendVerificationEmail
 } from '../application/auth-service.js?v=17';
-import { isEmailVerified, suggestUsername, updateUser } from '../../../core/auth-session.js?v=15';
+import { isEmailVerified, suggestUsername, updateUser, userHasPermission } from '../../../core/auth-session.js?v=16';
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1';
 
 const GOOGLE_POPUP_CLOSED_BY_USER = 'auth/popup-closed-by-user';
@@ -48,6 +48,12 @@ export function hasRoleAdmin(user) {
     const code = typeof r === 'string' ? r : (r.code || r.codigo);
     return code === 'ADMIN';
   });
+}
+
+export function getPostAuthPage(user) {
+  if (userHasPermission(user, 'dashboard.view')) return 'dashboard.html';
+  if (userHasPermission(user, 'incidents.create')) return 'incident-create.html';
+  return 'dashboard.html';
 }
 
 export function toggleSubmitState(submitBtn, spinner, btnText, state) {
@@ -771,12 +777,7 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
   }
 
   function getPostAuthPath(user) {
-    const roles = Array.isArray(user?.roles) ? user.roles.map(normalizeCode) : [];
-    if (roles.includes('CIUDADANO')) {
-      return getAppPath('incident-create.html');
-    }
-
-    return getAppPath('dashboard.html');
+    return getAppPath(getPostAuthPage(user));
   }
 
   function routeAfterAuth(user, notice = {}) {

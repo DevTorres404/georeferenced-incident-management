@@ -20,6 +20,7 @@ import {
   MAP_BASE_STYLES,
   MAP_ECUADOR_BOUNDS,
 } from '../../../core/config.js?v=21';
+import { hasPermission } from '../../../core/auth-session.js?v=16';
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -42,6 +43,7 @@ let pendingStateRequests = [];
 let availableStates = [];
 let pendingStateRequest = null;
 let pendingReviewRequest = null;
+let canCreateIncident = false;
 
 globalThis.addEventListener('pagehide', () => {
   commentSubscription?.cleanup?.();
@@ -52,8 +54,10 @@ globalThis.addEventListener('pagehide', () => {
 });
 
 export async function initIncidentDetailPage() {
+  canCreateIncident = false;
   if (typeof globalThis.renderLayout === 'function') {
-    globalThis.renderLayout('incident-detail');
+    await globalThis.renderLayout('incident-detail');
+    canCreateIncident = hasPermission('incidents.create');
   }
 
   const incidentId = new URLSearchParams(globalThis.location.search).get('id');
@@ -161,9 +165,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             </small>
           ` : ''}
           ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="d-inline-block">${renderOperatorStateButton(incident)}</div>` : ''}
-          <a href="incident-create.html" class="btn btn-sm btn-primary">
+          ${canCreateIncident ? `<a href="incident-create.html" class="btn btn-sm btn-primary">
             <i class="fas fa-plus mr-1"></i>Nueva Incidencia
-          </a>
+          </a>` : ''}
         </div>
       </div>
     </div>
@@ -1266,23 +1270,6 @@ export function formatFileSize(value) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function hasPermission(permissionCode) {
-  const user = readCurrentUser();
-  const expected = normalizeCode(permissionCode);
-
-  if (!user) return false;
-
-  if (Array.isArray(user.permissions) && user.permissions.some((permission) => normalizeCode(permission) === expected)) {
-    return true;
-  }
-
-  return Array.isArray(user.roles) && user.roles.some((role) => {
-    if (normalizeCode(role) === 'ADMIN') return true;
-    return Array.isArray(role?.permissions)
-      && role.permissions.some((permission) => normalizeCode(permission) === expected);
-  });
 }
 
 function canManagePriority() {

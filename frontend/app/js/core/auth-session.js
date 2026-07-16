@@ -21,6 +21,30 @@ function readUser() {
   }
 }
 
+function normalizePermissionCode(value) {
+  const raw = typeof value === 'string' ? value : value?.code || value?.codigo || '';
+  return String(raw).trim().toLowerCase();
+}
+
+function userHasPermission(user, permissionCode) {
+  const expected = normalizePermissionCode(permissionCode);
+  if (!user || !expected) return false;
+
+  if (Array.isArray(user.permissions)
+    && user.permissions.some((permission) => normalizePermissionCode(permission) === expected)) {
+    return true;
+  }
+
+  return Array.isArray(user.roles) && user.roles.some((role) => (
+    Array.isArray(role?.permissions)
+      && role.permissions.some((permission) => normalizePermissionCode(permission) === expected)
+  ));
+}
+
+function hasPermission(permissionCode) {
+  return userHasPermission(readUser(), permissionCode);
+}
+
 function writeSession(data) {
   if (!data) {
     clearSession();
@@ -111,8 +135,11 @@ const api = {
   hasValidSession,
   clearSession,
   formatExpiry,
+  hasPermission,
   suggestUsername,
+  normalizePermissionCode,
   updateUser,
+  userHasPermission,
   isSessionExpired,
   isEmailVerified,
 };
@@ -125,11 +152,14 @@ export {
   clearSessionScopedCache,
   formatExpiry,
   getSession,
+  hasPermission,
   hasValidSession,
   isEmailVerified,
   isSessionExpired,
+  normalizePermissionCode,
   readUser,
   suggestUsername,
   updateUser,
+  userHasPermission,
   writeSession,
 };

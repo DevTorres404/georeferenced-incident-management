@@ -4,7 +4,8 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   request: vi.fn(),
 }));
 
-vi.mock('../app/js/core/auth-session.js', () => ({
+vi.mock('../app/js/core/auth-session.js', async (importOriginal) => ({
+  ...await importOriginal(),
   readUser: vi.fn(),
 }));
 
@@ -117,22 +118,4 @@ describe('incidents-page.js — pure functions', () => {
     });
   });
 
-  describe('userHasPermission', () => {
-    it('returns true when user has direct permission', async () => {
-      const { userHasPermission } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      const user = { permissions: ['incidents.edit'] };
-      expect(userHasPermission(user, 'incidents.edit')).toBe(true);
-    });
-
-    it('returns false when user lacks permission', async () => {
-      const { userHasPermission } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      const user = { permissions: [] };
-      expect(userHasPermission(user, 'incidents.edit')).toBe(false);
-    });
-
-    it('returns false when user is null', async () => {
-      const { userHasPermission } = await import('../app/js/modules/incidents/presentation/incidents-page.js');
-      expect(userHasPermission(null, 'incidents.edit')).toBe(false);
-    });
-  });
 });
