@@ -16,6 +16,7 @@ use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentCycleReadUseCase;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Exceptions\IncidentException;
+use App\Incidents\Infrastructure\Http\Requests\UploadIncidentAttachmentRequest;
 use App\Incidents\Infrastructure\Http\Resources\IncidentCycleResource;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
@@ -448,19 +449,12 @@ class IncidentController extends ApiController
      *
      * @bodyParam file file required El archivo a subir.
      */
-    public function addAttachment(Request $request, Incident $incident): JsonResponse
+    public function addAttachment(UploadIncidentAttachmentRequest $request, Incident $incident): JsonResponse
     {
-        $user = $request->user();
-        if (! $this->canViewIncident($user, $incident)) {
-            return $this->forbid();
-        }
-
-        $data = $request->validate([
-            'file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png'],
-        ]);
+        $user = $request->authenticatedUser();
+        $uploadedFile = $request->attachment();
 
         try {
-            $uploadedFile = $data['file'];
             $adjunto = $this->incidentUseCase->attachFile(
                 $incident->id,
                 $user->id,

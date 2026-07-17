@@ -310,47 +310,96 @@ class IncidentsTest extends TestCase
 
     public function test_citizen_can_create_incident_and_upload_photo_evidence(): void
     {
-        config(['filesystems.incident_disk' => 'public']);
-        Storage::fake('public');
-        $this->seedCoreData();
-        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-evidence@incidencias.local');
+        [$citizen, $incident] = $this->attachmentUploadContext('citizen-evidence@incidencias.local');
+        $file = $this->fakePng('evidence.png');
 
-        $category = Category::firstOrFail();
-        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
-        $territorialUnitId = $this->territorialUnitId();
-
-        $createResponse = $this->actingAsUser($citizen['user'])
-            ->postJson('/api/incidents', [
-                'title' => 'Alcantarilla abierta',
-                'description' => 'La alcantarilla esta abierta y representa riesgo para peatones.',
-                'category_id' => $category->id,
-                'subcategory_id' => $subcategory->id,
-                'territorial_unit_id' => $territorialUnitId,
-                'address_reference' => 'Cerca del parque central',
-                'latitude' => -2.1709,
-                'longitude' => -79.9224,
-            ]);
-
-        $createResponse->assertCreated();
-
-        $incidentId = $createResponse->json('data.id');
-        $file = UploadedFile::fake()->create('evidencia.png', 128, 'image/png');
-
-        $attachmentResponse = $this->actingAsUser($citizen['user'])
-            ->postJson("/api/incidents/{$incidentId}/attachments", [
+        $attachmentResponse = $this->actingAsUser($citizen)
+            ->postJson("/api/incidents/{$incident->id}/attachments", [
                 'file' => $file,
             ]);
 
         $attachmentResponse->assertCreated()
-            ->assertJsonPath('data.original_name', 'evidencia.png');
+            ->assertJsonPath('data.original_name', 'evidence.png')
+            ->assertJsonPath('data.mime_type', 'image/png');
 
         $path = $attachmentResponse->json('data.file_path');
         Storage::disk('public')->assertExists($path);
         $this->assertDatabaseHas('core.incident_attachments', [
-            'incident_id' => $incidentId,
-            'user_id' => $citizen['user']->id,
-            'original_name' => 'evidencia.png',
+            'incident_id' => $incident->id,
+            'user_id' => $citizen->id,
+            'original_name' => 'evidence.png',
         ]);
+    }
+
+    public function test_oversized_incident_attachment_is_rejected_without_side_effects(): void
+    {
+        [$citizen, $incident] = $this->attachmentUploadContext('oversized-evidence@incidencias.local');
+        $file = $this->fakePng('oversized.png')->size(10 * 1024 + 1);
+
+        $this->actingAsUser($citizen)
+            ->postJson("/api/incidents/{$incident->id}/attachments", ['file' => $file])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['file']);
+
+        $this->assertNoAttachmentSideEffects();
+    }
+
+    public function test_spoofed_incident_attachment_is_rejected_without_side_effects(): void
+    {
+        [$citizen, $incident] = $this->attachmentUploadContext('spoofed-evidence@incidencias.local');
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'incident-attachment-');
+        $this->assertNotFalse($temporaryPath);
+        file_put_contents($temporaryPath, '<?php echo "not an image";');
+        $file = new UploadedFile($temporaryPath, 'payload.png', 'image/png', UPLOAD_ERR_OK, true);
+
+        try {
+            $this->actingAsUser($citizen)
+                ->postJson("/api/incidents/{$incident->id}/attachments", ['file' => $file])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['file']);
+        } finally {
+            if (is_file($temporaryPath)) {
+                unlink($temporaryPath);
+            }
+        }
+
+        $this->assertNoAttachmentSideEffects();
+    }
+
+    public function test_missing_incident_attachment_is_rejected_without_side_effects(): void
+    {
+        [$citizen, $incident] = $this->attachmentUploadContext('missing-evidence@incidencias.local');
+
+        $this->actingAsUser($citizen)
+            ->postJson("/api/incidents/{$incident->id}/attachments")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['file']);
+
+        $this->assertNoAttachmentSideEffects();
+    }
+
+    public function test_unauthenticated_incident_attachment_is_rejected_without_side_effects(): void
+    {
+        [, $incident] = $this->attachmentUploadContext('unauthenticated-evidence@incidencias.local');
+
+        $this->postJson("/api/incidents/{$incident->id}/attachments", [
+            'file' => $this->fakePng('evidence.png'),
+        ])->assertUnauthorized();
+
+        $this->assertNoAttachmentSideEffects();
+    }
+
+    public function test_forbidden_incident_attachment_is_rejected_without_side_effects(): void
+    {
+        [, $incident] = $this->attachmentUploadContext('owner-evidence@incidencias.local');
+        $otherCitizen = $this->authenticateAs('CIUDADANO', 'forbidden-evidence@incidencias.local')['user'];
+
+        $this->actingAsUser($otherCitizen)
+            ->postJson("/api/incidents/{$incident->id}/attachments", [
+                'file' => $this->fakePng('evidence.png'),
+            ])->assertForbidden();
+
+        $this->assertNoAttachmentSideEffects();
     }
 
     public function test_admin_can_define_priority_when_creating_incident(): void
@@ -2529,6 +2578,46 @@ class IncidentsTest extends TestCase
             TerritorialUnitSeeder::class,
             OperationalZoneGeometrySeeder::class,
         ]);
+    }
+
+    /**
+     * @return array{User, Incident}
+     */
+    private function attachmentUploadContext(string $email): array
+    {
+        config(['filesystems.incident_disk' => 'public']);
+        Storage::fake('public');
+        $this->seedCoreData();
+        $citizen = $this->authenticateAs('CIUDADANO', $email)['user'];
+        $incident = Incident::create([
+            'code' => 'INC-UPLOAD-'.strtoupper(substr(hash('sha256', $email), 0, 8)),
+            'title' => 'Incident attachment validation',
+            'description' => 'Validates the secure HTTP boundary for incident attachments.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => State::firstOrFail()->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $citizen->id,
+        ]);
+
+        return [$citizen, $incident];
+    }
+
+    private function assertNoAttachmentSideEffects(): void
+    {
+        $this->assertDatabaseCount('core.incident_attachments', 0);
+        $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    private function fakePng(string $name): UploadedFile
+    {
+        $contents = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            true
+        );
+        $this->assertIsString($contents);
+
+        return UploadedFile::fake()->createWithContent($name, $contents);
     }
 
     private function territorialUnitId(): int
