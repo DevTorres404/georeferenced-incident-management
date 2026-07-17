@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'incident_id',
+    'incident_cycle_id',
     'user_id',
     'comment',
     'is_internal',
@@ -45,6 +46,11 @@ class IncidentComment extends Model
         return $this->usuario();
     }
 
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(IncidentCycle::class, 'incident_cycle_id');
+    }
+
     public function scopePublicos($query)
     {
         return $query->where('is_internal', false);
@@ -65,4 +71,3 @@ class IncidentComment extends Model
         return $this->scopeInternos($query);
     }
 }
-

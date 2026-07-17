@@ -11,6 +11,7 @@ use SplFileObject;
 class TerritorialUnitSeeder extends Seeder
 {
     private const DATA_FILE = 'seeders/data/territorial_units_cge_2026.csv';
+
     private const COUNTRY_CODE = 'EC';
 
     public function run(): void
@@ -36,10 +37,10 @@ class TerritorialUnitSeeder extends Seeder
             $isTesting = app()->environment('testing');
 
             foreach ($this->rows($path) as $row) {
-                if ($isTesting && !in_array($this->normalizeName($row['province_name']), ['Pichincha', 'Guayas', 'Azuay', 'Santa Elena', 'Esmeraldas'])) {
+                if ($isTesting && ! in_array($this->normalizeName($row['province_name']), ['Pichincha', 'Guayas', 'Azuay', 'Santa Elena', 'Esmeraldas'])) {
                     continue;
                 }
-                
+
                 $isActive = $row['is_active'];
                 $zone = $zones[$this->zoneCodeForProvince($row['province_code'])] ?? null;
 
@@ -54,7 +55,7 @@ class TerritorialUnitSeeder extends Seeder
                 $province = $this->unit(
                     name: $this->normalizeName($row['province_name']),
                     type: TerritorialUnit::TYPE_PROVINCE,
-                    parentId: $zone->id,
+                    parentId: $country->id,
                     code: $row['province_code'] !== '' ? $row['province_code'] : null,
                     isActive: $isActive
                 );
@@ -63,7 +64,7 @@ class TerritorialUnitSeeder extends Seeder
                 $canton = $this->unit(
                     name: $this->normalizeName($row['canton_name']),
                     type: TerritorialUnit::TYPE_CANTON,
-                    parentId: $province->id,
+                    parentId: $zone->id,
                     code: $row['canton_code'] !== '' ? $row['canton_code'] : null,
                     isActive: $isActive
                 );
@@ -107,6 +108,7 @@ class TerritorialUnitSeeder extends Seeder
 
             if ($headers === null) {
                 $headers = array_map(fn ($header) => trim((string) $header), $row);
+
                 continue;
             }
 

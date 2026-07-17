@@ -162,8 +162,8 @@ class IncidentUseCaseTest extends TestCase
             state: $state
         );
 
-        $this->incidentRepository->shouldReceive('load')
-            ->with($incidentId, false)
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with($incidentId)
             ->once()
             ->andReturn($incident);
 
@@ -199,8 +199,8 @@ class IncidentUseCaseTest extends TestCase
             state: $state
         );
 
-        $this->incidentRepository->shouldReceive('load')
-            ->with($incidentId, false)
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with($incidentId)
             ->once()
             ->andReturn($incident);
 
@@ -235,8 +235,8 @@ class IncidentUseCaseTest extends TestCase
             allowedRoleCodes: ['ADMIN', 'SUPERVISOR']
         );
 
-        $this->incidentRepository->shouldReceive('load')
-            ->with($incidentId, false)
+        $this->incidentRepository->shouldReceive('loadForUpdate')
+            ->with($incidentId)
             ->times(8)
             ->andReturn($incident);
         $this->incidentRepository->shouldReceive('findTransition')
@@ -298,7 +298,7 @@ class IncidentUseCaseTest extends TestCase
             allowedRoleCodes: ['ADMIN']
         );
 
-        $this->incidentRepository->shouldReceive('load')->with(1, false)->twice()->andReturn($incident);
+        $this->incidentRepository->shouldReceive('loadForUpdate')->with(1)->twice()->andReturn($incident);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 5)->once()->andReturn($reopeningTransition);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($unrelatedTransition);
         $this->incidentRepository->shouldReceive('stateNameById')->with(5)->once()->andReturn('REABIERTA');
@@ -334,7 +334,7 @@ class IncidentUseCaseTest extends TestCase
         $this->transactionManager->shouldReceive('run')
             ->once()
             ->andReturnUsing(fn ($operation) => $operation());
-        $this->incidentRepository->shouldReceive('load')->with(1, false)->once()->andReturn($incident);
+        $this->incidentRepository->shouldReceive('loadForUpdate')->with(1)->once()->andReturn($incident);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($transition);
         $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('EN_PROGRESO');
         $this->incidentRepository->shouldReceive('changeState')

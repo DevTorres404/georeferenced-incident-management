@@ -13,8 +13,10 @@ use App\Incidents\Application\DTOs\IncidentSummaryData;
 use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Application\UseCases\IncidentCycleReadUseCase;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Exceptions\IncidentException;
+use App\Incidents\Infrastructure\Http\Resources\IncidentCycleResource;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
@@ -39,6 +41,7 @@ class IncidentController extends ApiController
 {
     public function __construct(
         private IncidentUseCase $incidentUseCase,
+        private IncidentCycleReadUseCase $incidentCycleReadUseCase,
         private AdminNotifier $adminNotifier
     ) {}
 
@@ -945,6 +948,7 @@ class IncidentController extends ApiController
             )),
             attachments: $detail->attachments,
             assignments: $detail->assignments,
+            cycles: $detail->cycles,
         );
     }
 
@@ -954,5 +958,64 @@ class IncidentController extends ApiController
             'priority_id.prohibited' => 'No puedes asignar la prioridad de una incidencia.',
             'state_id.prohibited' => 'No puedes asignar el estado desde este formulario.',
         ];
+    }
+
+    public function timeline(Request $request, Incident $incident): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident)) {
+            return $this->forbid();
+        }
+
+        $timeline = $this->incidentCycleReadUseCase->timeline(
+            $incident->id,
+            $this->can($user, 'comments.internal')
+        );
+
+        return response()->json([
+            'incident_id' => $timeline->incidentId,
+            'current_cycle_number' => $timeline->currentCycleNumber,
+            'cycles' => array_map(IncidentCycleResource::timeline(...), $timeline->cycles),
+        ]);
+    }
+
+    public function cyclesList(Request $request, Incident $incident): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident)) {
+            return $this->forbid();
+        }
+
+        $cycles = array_map(
+            fn ($cycle): array => IncidentCycleResource::fromData($cycle),
+            $this->incidentCycleReadUseCase->list($incident->id)
+        );
+
+        return response()->json(['data' => $cycles]);
+    }
+
+    public function cycleDetail(Request $request, Incident $incident, int $cycle): JsonResponse
+    {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident)) {
+            return $this->forbid();
+        }
+
+        $cycleDetail = $this->incidentCycleReadUseCase->detail(
+            $incident->id,
+            $cycle,
+            $this->can($user, 'comments.internal')
+        );
+
+        return response()->json([
+            'cycle' => [
+                ...IncidentCycleResource::fromData($cycleDetail->cycle),
+                'number' => $cycleDetail->cycle->cycleNumber,
+                'snapshot' => IncidentCycleResource::snapshotForCaller($cycleDetail->snapshot, true),
+            ],
+            'state_history' => $cycleDetail->stateHistory,
+            'comments' => $cycleDetail->comments,
+            'attachments' => $cycleDetail->attachments,
+        ]);
     }
 }

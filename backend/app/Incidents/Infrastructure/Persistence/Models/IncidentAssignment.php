@@ -15,18 +15,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'incident_id',
+    'incident_cycle_id',
     'user_id',
     'assigned_by_id',
     'assignment_role',
     'active',
     'assignment_date',
     'unassignment_date',
+    'resolved_at',
 ])]
 class IncidentAssignment extends Model
 {
     protected $table = 'core.incident_assignments';
 
     public const ROLE_PRIMARY = 'primary';
+
     public const ROLE_SUPPORT = 'support';
 
     protected function casts(): array
@@ -35,6 +38,7 @@ class IncidentAssignment extends Model
             'active' => 'boolean',
             'assignment_date' => 'datetime',
             'unassignment_date' => 'datetime',
+            'resolved_at' => 'datetime',
         ];
     }
 

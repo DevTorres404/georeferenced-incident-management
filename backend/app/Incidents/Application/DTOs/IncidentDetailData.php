@@ -7,10 +7,10 @@ use JsonSerializable;
 final class IncidentDetailData implements JsonSerializable
 {
     /**
-     * @param array<int, IncidentHistoryEntryData> $history
-     * @param array<int, CommentData> $comments
-     * @param array<int, AttachmentData> $attachments
-     * @param array<int, AssignmentData> $assignments
+     * @param  array<int, IncidentHistoryEntryData>  $history
+     * @param  array<int, CommentData>  $comments
+     * @param  array<int, AttachmentData>  $attachments
+     * @param  array<int, AssignmentData>  $assignments
      */
     public function __construct(
         public readonly int $id,
@@ -40,41 +40,42 @@ final class IncidentDetailData implements JsonSerializable
         public readonly array $history = [],
         public readonly array $comments = [],
         public readonly array $attachments = [],
-        public readonly array $assignments = []
-    ) {
+        public readonly array $assignments = [],
+        public readonly array $cycles = []
+    ) {}
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'title' => $this->title,
+            'description' => $this->description,
+            'address' => $this->address,
+            'address_reference' => $this->address,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'resolution_date' => $this->resolutionDate,
+            'reopened_at' => $this->reopenedAt,
+            'previous_resolution_date' => $this->previousResolutionDate,
+            'rejected_at' => $this->rejectedAt,
+            'assigned_operator' => $this->assignedOperator,
+            'created_at' => $this->createdAt,
+            'reporter_user_id' => $this->reporterUserId,
+            'assignee_user_id' => $this->assigneeUserId,
+            'state_id' => $this->stateId,
+            'state' => $this->state,
+            'category' => $this->category,
+            'subcategory' => $this->subcategory,
+            'priority' => $this->priority,
+            'territorial_unit' => $this->territorialUnit,
+            'reporter' => $this->reporter,
+            'sla' => $this->sla,
+            'history' => $this->history,
+            'comments' => $this->comments,
+            'attachments' => $this->attachments,
+            'assignments' => $this->assignments,
+            'cycles' => $this->cycles,
+        ];
     }
-    
-        public function jsonSerialize(): array
-        {
-            return [
-                'id' => $this->id,
-                'code' => $this->code,
-                'title' => $this->title,
-                'description' => $this->description,
-                'address' => $this->address,
-                'address_reference' => $this->address,
-                'latitude' => $this->latitude,
-                'longitude' => $this->longitude,
-                'resolution_date' => $this->resolutionDate,
-                'reopened_at' => $this->reopenedAt,
-                'previous_resolution_date' => $this->previousResolutionDate,
-                'rejected_at' => $this->rejectedAt,
-                'assigned_operator' => $this->assignedOperator,
-                'created_at' => $this->createdAt,
-                'reporter_user_id' => $this->reporterUserId,
-                'assignee_user_id' => $this->assigneeUserId,
-                'state_id' => $this->stateId,
-                'state' => $this->state,
-                'category' => $this->category,
-                'subcategory' => $this->subcategory,
-                'priority' => $this->priority,
-                'territorial_unit' => $this->territorialUnit,
-                'reporter' => $this->reporter,
-                'sla' => $this->sla,
-                'history' => $this->history,
-                'comments' => $this->comments,
-                'attachments' => $this->attachments,
-                'assignments' => $this->assignments,
-            ];
-        }
-    }
+}

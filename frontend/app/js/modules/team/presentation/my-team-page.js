@@ -6,10 +6,7 @@ const state = {
 };
 
 async function initMyTeamPage() {
-    await Promise.all([
-        import('../../../layout/navbar.js?v=12'),
-        import('../../../layout/sidebar.js?v=21'),
-    ]);
+    await globalThis.renderLayout('my-team');
 
     showPageLoading();
 
@@ -84,7 +81,7 @@ function renderOperatorCard(op) {
     const activeIncidents = op.active_incidents ?? 0;
     const workloadPoints = op.workload_points ?? 0;
     const maxWorkloadPoints = op.max_workload_points ?? 20;
-    const territory = op.territory ? escapeHtml(op.territory) : 'Sin territorio asignado';
+    const zoneName = op.territory ? escapeHtml(op.territory) : 'Sin zona asignada';
     const loadPercent = maxWorkloadPoints > 0 ? Math.round((workloadPoints / maxWorkloadPoints) * 100) : 0;
 
     let loadBarClass = 'bg-success';
@@ -110,28 +107,32 @@ function renderOperatorCard(op) {
     return `
         <div class="col-lg-6 col-xl-4 mb-4">
             <div class="card card-outline card-primary h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0"><i class="fas fa-user-circle text-primary mr-1"></i> ${name}</h5>
-                    <span class="badge ${incidentBadgeClass} badge-pill" title="Incidencias activas">
-                        <i class="fas fa-exclamation-circle mr-1"></i>${activeIncidents}
-                    </span>
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-user-circle text-primary mr-2"></i>${name}</h3>
+                    <div class="card-tools">
+                        <span class="badge ${incidentBadgeClass} badge-pill" title="Incidencias activas">
+                            <i class="fas fa-exclamation-circle mr-1"></i>${activeIncidents}
+                        </span>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <small class="text-muted d-block">Correo</small>
-                            <span>${escapeHtml(op.email)}</span>
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <p class="detalle-label">Correo</p>
+                            <p>${escapeHtml(op.email)}</p>
                         </div>
-                        <div class="col-6">
-                            <small class="text-muted d-block">Territorio</small>
-                            <span><i class="fas fa-map-marker-alt text-muted mr-1"></i>${territory}</span>
+                        <div class="col-sm-6">
+                            <p class="detalle-label">Zona operativa</p>
+                            <p><i class="fas fa-map-marker-alt text-muted mr-1"></i>${zoneName}</p>
                         </div>
                     </div>
+                    <hr>
+                    <p class="detalle-label">Carga laboral</p>
                     <div class="mb-1 d-flex justify-content-between">
-                        <small class="text-muted">Carga laboral</small>
-                        <small class="text-muted">${workloadPoints} / ${maxWorkloadPoints} pts &middot; ${loadLabel}</small>
+                        <span>${workloadPoints} / ${maxWorkloadPoints} pts</span>
+                        <span class="text-muted">${loadLabel}</span>
                     </div>
-                    <div class="progress progress-sm mb-3">
+                    <div class="progress progress-sm">
                         <div class="progress-bar ${loadBarClass}" role="progressbar"
                             style="width: ${loadPercent}%;" aria-valuenow="${loadPercent}" aria-valuemin="0" aria-valuemax="100">
                         </div>

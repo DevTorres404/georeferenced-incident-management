@@ -15,6 +15,7 @@ import {
 } from '../application/incidents-service.js?v=17';
 import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2';
 import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1';
+import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
 import {
   API_URL,
   MAP_BASE_STYLES,
@@ -121,6 +122,8 @@ export async function initIncidentDetailPage() {
 }
 
 function renderIncidentDetail(container, incident, transitions, priorities) {
+  globalThis.currentIncidentData = incident;
+  globalThis.currentTransitions = transitions;
   const stateName = formatCatalogLabel(incident.state?.name || '-');
   const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin definir');
   const categoryName = formatCatalogLabel(incident.category?.name || '-');
@@ -132,8 +135,8 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
   const isOperatorRole = isOperator();
   const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
-  const canAssignPriority = canManagePriority();
-  const canAssign = hasPermission('incidents.assign');
+  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION';
+  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state);
   const hasValidCoordinates = hasCoordinates(incident);
   const historyTooltip = renderRecentStateChangesTooltip(history);
 
@@ -172,7 +175,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             </div>
           ` : ''}
           ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="flex-grow-1 flex-md-grow-0">${renderOperatorStateButton(incident)}</div>` : ''}
-          ${canAssign ? `<a href="assignment-management.html" class="btn btn-sm btn-outline-info flex-grow-1 flex-md-grow-0">
+          ${canAssign ? `<a href="assignment-management.html?incident_id=${incident.id}" class="btn btn-sm btn-outline-info flex-grow-1 flex-md-grow-0">
             <i class="fas fa-users mr-1"></i>Gestionar asignaciones
           </a>` : ''}
           ${canCreateIncident ? `<a href="incident-create.html" class="btn btn-sm btn-primary flex-grow-1 flex-md-grow-0">
@@ -349,8 +352,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
 
       <div class="col-lg-4">
         <div class="card card-outline card-warning">
-          <div class="card-header">
+          <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title"><i class="fas fa-history mr-2"></i>Historial de Cambios</h3>
+            ${incident.cycles && incident.cycles.length > 0 && canManagePriority() ? `<button type="button" class="btn btn-xs btn-info shadow-sm" onclick="globalThis.openCyclesModal()"><i class="fas fa-retweet mr-1"></i>Ver ciclos</button>` : ''}
           </div>
           <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
             <div class="p-3" id="timelineHistorial">
@@ -486,10 +490,54 @@ export function territoryLabel(incident) {
     territorialUnit?.full_path
       || territorialUnit?.name
       || incident?.address_reference
-      || incident?.address
+|| incident?.address
       || '-'
   );
 }
+
+export function openCyclesModal() {
+  const incident = globalThis.currentIncidentData;
+  if (!incident || !incident.cycles) return;
+
+  const body = document.getElementById('modalCiclosBody');
+  if (body) {
+    if (incident.cycles.length === 0) {
+      body.innerHTML = '<div class="p-4 text-center text-muted">No hay ciclos registrados</div>';
+    } else {
+      body.innerHTML = '<div class="list-group list-group-flush">' + incident.cycles.map(cycle => {
+        const opened = cycle.opened_at ? formatDateTime(cycle.opened_at) : '-';
+        const resolved = cycle.resolved_at ? formatDateTime(cycle.resolved_at) : '-';
+        const closed = cycle.closed_at ? formatDateTime(cycle.closed_at) : '-';
+        const resolvedBy = cycle.resolved_by || 'Sistema / Sin registro';
+        const openedBy = cycle.opened_by || 'Sistema';
+        const closedBy = cycle.closed_by || 'Sistema';
+        
+        // El usuario solicitó que la "razón de cierre" priorice lo que se escribió al resolver la incidencia.
+        const mainReason = cycle.resolution_description || cycle.closure_reason;
+        const closureAdministrativeComment = cycle.closure_reason && cycle.closure_reason !== cycle.resolution_description ? cycle.closure_reason : null;
+
+        return `
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1 font-weight-bold">Ciclo #${cycle.cycle_number}</h6>
+              <small class="text-muted">Apertura: ${opened}</small>
+            </div>
+            <p class="mb-1 small">
+              <strong>Abierto por:</strong> ${escapeHtml(openedBy)}
+              ${cycle.reopening_reason ? `<br><strong>Motivo reapertura:</strong> <span class="text-muted">${escapeHtml(cycle.reopening_reason)}</span>` : ''}
+              <br><strong>Resolución:</strong> ${resolved}
+              <br><strong>Resuelto por:</strong> ${escapeHtml(resolvedBy)}
+              ${mainReason ? `<br><strong>Motivo de resolución/cierre:</strong> <span class="text-muted">${escapeHtml(mainReason)}</span>` : ''}
+            </p>
+            ${cycle.closed_at ? `<small class="text-muted mb-0 mt-1 d-block"><i class="fas fa-lock mr-1"></i>Cierre definitivo: ${closed} por ${escapeHtml(closedBy)} ${closureAdministrativeComment ? `(<em>Nota admin: ${escapeHtml(closureAdministrativeComment)}</em>)` : ''}</small>` : ''}
+          </div>
+        `;
+      }).join('') + '</div>';
+    }
+  }
+  globalThis.jQuery?.('#modalCiclos').modal('show');
+}
+globalThis.openCyclesModal = openCyclesModal;
 
 export function renderStateSelector(incident, transitions) {
   const select = document.getElementById('estadoDirecto');
@@ -497,8 +545,9 @@ export function renderStateSelector(incident, transitions) {
 
   const hasPriority = !!(incident.priority_id || incident.priority?.id);
   const currentStateName = formatCatalogLabel(incident.state?.name || '-');
+  const isEnRevision = normalizeCode(incident.state?.name) === 'EN_REVISION';
 
-  if (!hasPriority) {
+  if (isEnRevision && !hasPriority) {
     select.innerHTML = `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`;
     select.disabled = true;
     select.title = 'Debes asignar una prioridad antes de cambiar el estado';
@@ -888,6 +937,15 @@ function bindPriorityForm(incident) {
 
       globalThis.jQuery?.('#modalPrioridad').modal('hide');
       showGlobalAlert('Prioridad actualizada correctamente.', 'success');
+      
+      // En este tipo de arquitectura necesitamos recargar para que todos los botones y eventos
+      // (como "Gestionar Asignaciones") se re-calculen y bindeen correctamente.
+      setTimeout(() => {
+        globalThis.jQuery?.('.modal-backdrop').remove();
+        document.body.classList.remove('modal-open');
+        clearApiCache();
+        window.location.reload();
+      }, 400);
     } catch (error) {
       showGlobalAlert(error.message || 'No se pudo actualizar la prioridad.', 'danger');
     } finally {
@@ -1010,6 +1068,13 @@ async function executeStateTransition(incident, transition, comment, transitions
 
   updateStatePresentation(incident, transitions);
   showStateChangeConfirmation(incident.state?.name);
+  
+  setTimeout(() => {
+    globalThis.jQuery?.('.modal-backdrop').remove();
+    document.body.classList.remove('modal-open');
+    clearApiCache();
+    window.location.reload();
+  }, 400);
 }
 
 function updateStatePresentation(incident, transitions) {
@@ -1180,6 +1245,7 @@ export function renderHistory(history) {
 
   return history.map((entry) => {
     const stateName = formatCatalogLabel(entry.new_state_name || '-');
+    const stateColor = entry.new_state_color || getStateHexColor(stateName);
     const author = entry.user
       ? [entry.user.first_name, entry.user.last_name].filter(Boolean).join(' ')
       : 'Sistema';
@@ -1189,12 +1255,12 @@ export function renderHistory(history) {
       : `Cambio de estado: ${stateName}`;
 
     return `
-      <div class="timeline-item-custom" style="border-left-color:#6c757d">
+      <div class="timeline-item-custom" style="border-left-color: ${stateColor}">
         <small class="text-muted d-block mb-1">${escapeHtml(formatDateTime(entry.created_at))}</small>
         <strong>${escapeHtml(action)}</strong>
         <br>
         <small><i class="fas fa-user mr-1 text-muted"></i>${escapeHtml(author)}</small>
-        <span class="badge float-right" style="background-color: ${entry.new_state_color || getStateHexColor(stateName)}; color: #fff;">${escapeHtml(stateName)}</span>
+        <span class="badge float-right" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(stateName)}</span>
       </div>`;
   }).join('');
 }
@@ -1480,10 +1546,11 @@ function renderPendingStateRequests(requests) {
               ${requests.map((r) => {
                 const requesterName = r.requestedByUserName || r.requested_by_user_name || 'Usuario';
                 const stateName = r.requestedStateName || r.requested_state_name || '-';
+                const stateColor = r.requestedStateColor || r.requested_state_color || getStateHexColor(stateName);
                 return `
                   <tr>
                     <td>${escapeHtml(requesterName)}</td>
-                    <td><span class="badge badge-info">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
+                    <td><span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
                     <td>${escapeHtml(r.reason || '-')}</td>
                     <td><small>${escapeHtml(formatDateTime(r.created_at || r.createdAt))}</small></td>
                     <td>
@@ -1586,6 +1653,18 @@ function readCurrentUser() {
 function normalizeCode(value) {
   if (typeof value === 'string') return value.trim().toUpperCase();
   return String(value?.code || value?.codigo || value?.name || value?.nombre || '').trim().toUpperCase();
+}
+
+function isStateInProgressOrBeyond(state) {
+  const name = normalizeCode(state?.name || '');
+  if (!name) return false;
+  return ['EN_PROGRESO', 'IN_PROGRESS', 'ASIGNADA', 'ASSIGNED', 'RESUELTA', 'RESOLVED',
+    'CERRADA', 'CLOSED', 'RECHAZADA', 'REJECTED', 'CANCELADA', 'CANCELLED'].includes(name);
+}
+
+function isStrictlyInProgress(state) {
+  const name = normalizeCode(state?.name || '');
+  return name === 'EN_PROGRESO' || name === 'IN_PROGRESS';
 }
 
 // ── Module-level event bindings (run once) ──

@@ -1,10 +1,11 @@
 <?php
 
+use App\Audit\Infrastructure\Http\Controllers\AuditController;
 use App\Auth\Infrastructure\Http\Controllers\AuthController;
 use App\Auth\Infrastructure\Http\Controllers\TwoFactorAuthController;
-use App\Audit\Infrastructure\Http\Controllers\AuditController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
+use App\Incidents\Infrastructure\Http\Controllers\DashboardController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
 use App\Operations\Infrastructure\Http\Controllers\OperationalStructureController;
@@ -13,7 +14,6 @@ use App\TerritorialUnits\Infrastructure\Http\Controllers\TerritorialUnitControll
 use App\Users\Infrastructure\Http\Controllers\AccessControlController;
 use App\Users\Infrastructure\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-
 
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
@@ -47,7 +47,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::match(['patch', 'post'], '/auth/password', [AuthController::class, 'changePassword']);
     Route::get('/navigation/menu', [AccessControlController::class, 'navigation']);
-    
+
     Route::post('/auth/2fa/enable', [TwoFactorAuthController::class, 'enable']);
     Route::post('/auth/2fa/disable', [TwoFactorAuthController::class, 'disable']);
     Route::post('/auth/2fa/confirm', [TwoFactorAuthController::class, 'confirm']);
@@ -73,7 +73,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/catalogs/roles', [CatalogController::class, 'roles'])->middleware('permission:users.view');
         Route::get('/catalogs/permissions', [CatalogController::class, 'permissions'])->middleware('permission:users.manage_roles');
 
-        Route::get('/dashboard/metrics', [\App\Incidents\Infrastructure\Http\Controllers\DashboardController::class, 'metrics'])
+        Route::get('/dashboard/metrics', [DashboardController::class, 'metrics'])
             ->middleware('permission:dashboard.view');
 
         Route::prefix('territorial-units')->middleware('permission:territorial_units.manage')->group(function () {
@@ -109,6 +109,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             ->middleware('permission:incidents.edit');
         Route::get('/state-requests/pending', [IncidentController::class, 'pendingStateChangeRequests'])
             ->middleware('permission:incidents.edit');
+
+        Route::get('/incidents/{incident}/timeline', [IncidentController::class, 'timeline'])
+            ->middleware('permission:incidents.view');
+        Route::get('/incidents/{incident}/cycles', [IncidentController::class, 'cyclesList'])
+            ->middleware('permission:incidents.view');
+        Route::get('/incidents/{incident}/cycles/{cycle}', [IncidentController::class, 'cycleDetail'])
+            ->middleware('permission:incidents.view');
 
         Route::middleware('permission:notifications.view')->group(function () {
             Route::get('/notifications', [NotificationController::class, 'index']);

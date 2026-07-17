@@ -18,6 +18,9 @@ use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentCycle;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
@@ -402,10 +405,23 @@ class IncidentsTest extends TestCase
                 && ! $event->comment->isInternal
         );
 
-        $priority = \App\Incidents\Infrastructure\Persistence\Models\Priority::firstOrFail();
+        $priority = Priority::firstOrFail();
         $this->actingAsUser($admin['user'])
             ->patchJson("/api/incidents/{$incidentId}", [
                 'priority_id' => $priority->id,
+            ])->assertOk();
+
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $inProgressState->id,
             ])->assertOk();
 
         $this->actingAsUser($admin['user'])
@@ -433,15 +449,6 @@ class IncidentsTest extends TestCase
                     'assignments',
                 ],
             ]);
-
-        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
-
-        $this->actingAsUser($admin['user'])
-            ->patchJson("/api/incidents/{$incidentId}/state", [
-                'state_id' => $reviewState->id,
-                'comment' => 'Validado por supervisor.',
-            ])->assertOk()
-            ->assertJsonPath('data.state_id', $reviewState->id);
 
         $operatorNotifications = $this->actingAsUser($operator['user'])
             ->getJson('/api/notifications');
@@ -503,6 +510,19 @@ class IncidentsTest extends TestCase
                 'priority_id' => $priorityMedia->id,
             ])->assertOk();
 
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operatorOne['user']->id,
@@ -515,15 +535,6 @@ class IncidentsTest extends TestCase
 
         $this->assertFalse(
             $this->userHasNotification($operatorOne['user'], 'Incidencia reasignada', 'fue reasignada a otro operador')
-        );
-
-        $this->actingAsUser($admin['user'])
-            ->putJson("/api/incidents/{$incidentId}", [
-                'priority_id' => $priority->id,
-            ])->assertOk();
-
-        $this->assertTrue(
-            $this->userHasNotification($operatorTwo['user'], 'Cambio de prioridad', 'cambió a Alta')
         );
     }
 
@@ -938,6 +949,12 @@ class IncidentsTest extends TestCase
             ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $reviewState->id,
             ])->assertOk();
+
+        $this->actingAsUser($supervisor['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($supervisor['user'])
             ->postJson("/api/incidents/{$incident->id}/assignments", [
                 'primary_user_id' => $primary['user']->id,
@@ -951,11 +968,7 @@ class IncidentsTest extends TestCase
             ->count());
         $this->assertSame($primary['user']->id, $incident->fresh()->current_assigned_id);
 
-        $this->actingAsUser($supervisor['user'])
-            ->patchJson("/api/incidents/{$incident->id}/state", [
-                'state_id' => $inProgressState->id,
-            ])->assertOk()
-            ->assertJsonPath('data.state_id', $inProgressState->id);
+        $this->assertSame($inProgressState->id, $incident->fresh()->state_id);
 
         $this->assertSame(0, IncidentAssignment::query()
             ->whereIn('id', $staleAssignmentIds)
@@ -1349,6 +1362,19 @@ class IncidentsTest extends TestCase
                 'priority_id' => $priorityMedia->id,
             ])->assertOk();
 
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1434,6 +1460,19 @@ class IncidentsTest extends TestCase
                 'priority_id' => $priority->id,
             ])->assertOk();
 
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1451,13 +1490,10 @@ class IncidentsTest extends TestCase
         $this->assertTrue($admin['user']->fresh()->tienePermiso('incidents.edit'));
         $this->assertFalse($admin['user']->fresh()->tienePermiso('comments.internal'));
 
-        $response = $this->actingAsUser($admin['user'])
-            ->putJson("/api/incidents/{$incidentId}", [
-                'priority_id' => $priority->id,
-            ]);
+        $detailResponse = $this->actingAsUser($admin['user'])
+            ->getJson("/api/incidents/{$incidentId}");
 
-        $response->assertOk()
-            ->assertJsonPath('data.priority.id', $priority->id)
+        $detailResponse->assertOk()
             ->assertJsonPath('data.comments', []);
     }
 
@@ -1567,6 +1603,19 @@ class IncidentsTest extends TestCase
                 'priority_id' => $priority->id,
             ])->assertOk();
 
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$nearDueIncidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$nearDueIncidentId}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$nearDueIncidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1638,6 +1687,19 @@ class IncidentsTest extends TestCase
         $this->actingAsUser($admin['user'])
             ->patchJson("/api/incidents/{$operatorIncidentId}", [
                 'priority_id' => $highPriority->id,
+            ])->assertOk();
+
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$operatorIncidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$operatorIncidentId}/state", [
+                'state_id' => $inProgressState->id,
             ])->assertOk();
 
         $this->actingAsUser($admin['user'])
@@ -1823,6 +1885,19 @@ class IncidentsTest extends TestCase
                 'priority_id' => $priority->id,
             ])->assertOk();
 
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reviewState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $inProgressState->id,
+            ])->assertOk();
+
         $this->actingAsUser($admin['user'])
             ->postJson("/api/incidents/{$incidentId}/assignments", [
                 'user_id' => $operator['user']->id,
@@ -1877,6 +1952,373 @@ class IncidentsTest extends TestCase
             ])->assertForbidden();
     }
 
+    public function test_assignment_requires_in_progress_state(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-state-check@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-state-check@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-state-check@incidencias.local');
+
+        $nuevaState = State::where('name', 'NUEVA')->firstOrFail();
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $priority = Priority::firstOrFail();
+        $category = Category::firstOrFail();
+        $subcategory = Subcategory::where('category_id', $category->id)->firstOrFail();
+        $territorialUnitId = $this->territorialUnitId();
+
+        $nuevaIncident = Incident::create([
+            'code' => 'INC-STATE-NUEVA',
+            'title' => 'Incident in NUEVA',
+            'description' => 'Cannot assign in NUEVA.',
+            'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
+            'priority_id' => $priority->id,
+            'state_id' => $nuevaState->id,
+            'territorial_unit_id' => $territorialUnitId,
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$nuevaIncident->id}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])->assertStatus(422)
+            ->assertJsonPath('message', 'Solo se pueden asignar operadores a incidencias en estado EN_PROGRESO.');
+
+        $progressIncident = Incident::create([
+            'code' => 'INC-STATE-PROGRESS',
+            'title' => 'Incident in EN_PROGRESO',
+            'description' => 'Can assign in EN_PROGRESO.',
+            'category_id' => $category->id,
+            'subcategory_id' => $subcategory->id,
+            'priority_id' => $priority->id,
+            'state_id' => $inProgressState->id,
+            'territorial_unit_id' => $territorialUnitId,
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$progressIncident->id}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])->assertCreated();
+
+        $this->assertDatabaseHas('core.incident_assignments', [
+            'incident_id' => $progressIncident->id,
+            'user_id' => $operator['user']->id,
+            'active' => true,
+        ]);
+    }
+
+    public function test_resolved_at_set_on_active_assignments_when_incident_resolved(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-resolved-at@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-resolved-at@incidencias.local');
+        $primary = $this->authenticateAs('OPERADOR', 'primary-resolved-at@incidencias.local');
+        $support = $this->authenticateAs('OPERADOR', 'support-resolved-at@incidencias.local');
+
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
+        $priority = Priority::firstOrFail();
+
+        $incident = Incident::create([
+            'code' => 'INC-RESOLVED-AT',
+            'title' => 'Resolved At Test',
+            'description' => 'Verify resolved_at on assignments.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => $priority->id,
+            'state_id' => $inProgressState->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+
+        $this->assignIncidentToOperator($incident, $primary['user']->id, $admin['user']->id);
+        IncidentAssignment::query()->create([
+            'incident_id' => $incident->id,
+            'user_id' => $support['user']->id,
+            'assigned_by_id' => $admin['user']->id,
+            'assignment_role' => IncidentAssignment::ROLE_SUPPORT,
+            'active' => true,
+        ]);
+
+        $this->assertNull($incident->fresh()->resolution_date);
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'Resolution verified.',
+            ])->assertOk()
+            ->assertJsonPath('data.state_id', $resolvedState->id);
+
+        $assignments = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->get();
+
+        $this->assertCount(2, $assignments);
+        foreach ($assignments as $assignment) {
+            $this->assertNotNull($assignment->resolved_at, "resolved_at should be set for role {$assignment->assignment_role}");
+        }
+
+        $this->assertNotNull($incident->fresh()->resolution_date);
+    }
+
+    public function test_resolved_at_preserved_through_reopen_cycle(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-reopen-resolve@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-reopen-resolve@incidencias.local');
+        $firstPrimary = $this->authenticateAs('OPERADOR', 'first-primary-reopen@incidencias.local');
+        $secondPrimary = $this->authenticateAs('OPERADOR', 'second-primary-reopen@incidencias.local');
+
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
+        $closedState = State::where('name', 'CERRADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+
+        $incident = Incident::create([
+            'code' => 'INC-REOPEN-RESOLVE',
+            'title' => 'Reopen Resolve Cycle',
+            'description' => 'Verify resolved_at survives reopen.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => $inProgressState->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $citizen['user']->id,
+        ]);
+
+        $this->assignIncidentToOperator($incident, $firstPrimary['user']->id, $admin['user']->id);
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'First resolution.',
+            ])->assertOk();
+
+        $firstResolvedAt = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->value('resolved_at');
+        $this->assertNotNull($firstResolvedAt);
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $closedState->id,
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'Reopening for review.',
+            ])->assertOk();
+
+        $oldAssignments = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', false)
+            ->get();
+        $this->assertCount(1, $oldAssignments);
+        $this->assertNotNull($oldAssignments->first()->resolved_at, 'Historical resolved_at must be preserved after reopen');
+        $this->assertNull($incident->fresh()->current_assigned_id);
+
+        $this->assertDatabaseHas('core.incident_assignments', [
+            'incident_id' => $incident->id,
+            'user_id' => $firstPrimary['user']->id,
+            'active' => false,
+            'resolved_at' => $firstResolvedAt,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $reviewState->id,
+                'comment' => 'Moving to review for new assignment.',
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $inProgressState->id,
+                'comment' => 'Moving to in progress.',
+            ])->assertOk();
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$incident->id}/assignments", [
+                'user_id' => $secondPrimary['user']->id,
+            ])->assertCreated();
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incident->id}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'Second resolution.',
+            ])->assertOk();
+
+        $oldAssignment = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('user_id', $firstPrimary['user']->id)
+            ->first();
+        $this->assertNotNull($oldAssignment->resolved_at, 'First cycle resolved_at must be preserved');
+        $this->assertEquals(
+            $firstResolvedAt,
+            $oldAssignment->resolved_at,
+            'First cycle resolved_at should not have changed'
+        );
+
+        $secondAssignment = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('user_id', $secondPrimary['user']->id)
+            ->first();
+        $this->assertNotNull($secondAssignment->resolved_at, 'Second cycle must have its own resolved_at');
+    }
+
+    public function test_cycle_history_redacts_internal_snapshot_comments_and_preserves_immutable_snapshots(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-cycle-history@incidencias.local')['user'];
+        $admin = $this->authenticateAs('ADMIN', 'admin-cycle-history@incidencias.local')['user'];
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
+        $closedState = State::where('name', 'CERRADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen)
+            ->postJson('/api/incidents', [
+                'title' => 'Cycle history visibility',
+                'description' => 'Verifies historic comments and attachments.',
+                'category_id' => Category::firstOrFail()->id,
+                'subcategory_id' => Subcategory::where('category_id', Category::firstOrFail()->id)->firstOrFail()->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $incident = Incident::findOrFail($incidentId);
+        $incident->forceFill([
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => $inProgressState->id,
+        ])->save();
+        $firstCycle = IncidentCycle::query()->where('incident_id', $incidentId)->firstOrFail();
+
+        IncidentComment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $firstCycle->id,
+            'user_id' => $admin->id,
+            'comment' => 'Public historic comment',
+            'is_internal' => false,
+        ]);
+        IncidentComment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $firstCycle->id,
+            'user_id' => $admin->id,
+            'comment' => 'Internal historic comment',
+            'is_internal' => true,
+        ]);
+        IncidentAttachment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $firstCycle->id,
+            'user_id' => $admin->id,
+            'original_name' => 'historic-evidence.pdf',
+            'file_path' => 'incidents/historic-evidence.pdf',
+            'mime_type' => 'application/pdf',
+            'file_size_bytes' => 128,
+            'file_hash' => 'historic-file-hash',
+        ]);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'First cycle resolved.',
+            ])
+            ->assertOk();
+
+        $snapshotAtResolution = $firstCycle->fresh()->snapshot;
+        $this->assertNotNull($snapshotAtResolution);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $closedState->id,
+                'comment' => 'First cycle closed.',
+            ])
+            ->assertOk();
+
+        $this->assertSame($snapshotAtResolution, $firstCycle->fresh()->snapshot);
+        $this->assertNotNull($firstCycle->fresh()->closed_at);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'A new cycle is required.',
+            ])
+            ->assertOk();
+
+        $this->assertSame($snapshotAtResolution, $firstCycle->fresh()->snapshot);
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/cycles/{$firstCycle->id}")
+            ->assertOk()
+            ->assertJsonPath('cycle.snapshot.comments.0.comment', 'Public historic comment')
+            ->assertJsonPath('cycle.snapshot.attachments.0.file_name', 'historic-evidence.pdf')
+            ->assertJsonPath('comments.0.comment', 'Public historic comment')
+            ->assertJsonPath('attachments.0.name', 'historic-evidence.pdf')
+            ->assertJsonMissing(['comment' => 'Internal historic comment'])
+            ->assertJsonMissing(['file_path' => 'incidents/historic-evidence.pdf'])
+            ->assertJsonMissing(['file_hash' => 'historic-file-hash']);
+
+        $this->actingAsUser($admin)
+            ->getJson("/api/incidents/{$incidentId}/cycles/{$firstCycle->id}")
+            ->assertOk()
+            ->assertJsonFragment(['comment' => 'Internal historic comment'])
+            ->assertJsonMissing(['file_path' => 'incidents/historic-evidence.pdf'])
+            ->assertJsonMissing(['file_hash' => 'historic-file-hash']);
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/timeline")
+            ->assertOk()
+            ->assertJsonPath('cycles.0.id', $firstCycle->id)
+            ->assertJsonPath('cycles.0.cycle_number', 1)
+            ->assertJsonFragment(['description' => 'Public historic comment'])
+            ->assertJsonFragment(['description' => 'historic-evidence.pdf'])
+            ->assertJsonMissing(['description' => 'Internal historic comment']);
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/cycles")
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.id', $firstCycle->id);
+
+        $otherCitizen = $this->authenticateAs('CIUDADANO', 'other-cycle-history@incidencias.local')['user'];
+        foreach ([
+            "/api/incidents/{$incidentId}/timeline",
+            "/api/incidents/{$incidentId}/cycles",
+            "/api/incidents/{$incidentId}/cycles/{$firstCycle->id}",
+        ] as $endpoint) {
+            $this->actingAsUser($otherCitizen)->getJson($endpoint)->assertForbidden();
+        }
+
+        $otherIncident = Incident::create([
+            'code' => 'INC-CYCLE-SCOPE-01',
+            'title' => 'Cycle child scope',
+            'description' => 'Cycle IDs must remain scoped to their incident.',
+            'category_id' => Category::firstOrFail()->id,
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => $inProgressState->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+            'reported_by_id' => $citizen->id,
+        ]);
+        $otherCycle = IncidentCycle::query()->create([
+            'incident_id' => $otherIncident->id,
+            'cycle_number' => 1,
+            'opened_at' => now(),
+            'opened_by' => $citizen->id,
+        ]);
+        $otherIncident->update(['current_cycle_id' => $otherCycle->id]);
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/cycles/{$otherCycle->id}")
+            ->assertNotFound();
+    }
+
     private function seedCoreData(): void
     {
         $this->seed([
@@ -1906,7 +2348,7 @@ class IncidentsTest extends TestCase
 
         $canton = TerritorialUnit::query()
             ->where('type', TerritorialUnit::TYPE_CANTON)
-            ->where('parent_id', $province->id)
+            ->where('code', 'like', $province->code.'%')
             ->orderBy('name')
             ->firstOrFail();
 

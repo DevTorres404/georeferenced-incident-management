@@ -46,6 +46,16 @@ class NavigationItemSeeder extends Seeder
                 ],
             ],
             [
+                'code' => 'territorial-zonal',
+                'label' => 'Cobertura zonal',
+                'icon' => 'fa-map-pin',
+                'permission_code' => 'operations.view_team',
+                'sort_order' => 35,
+                'children' => [
+                    ['code' => 'my-team', 'label' => 'Mi equipo', 'icon' => 'fa-users', 'route' => 'my-team.html', 'permission_code' => 'operations.view_team', 'sort_order' => 10],
+                ],
+            ],
+            [
                 'code' => 'admin-tools',
                 'label' => 'Administracion',
                 'icon' => 'fa-shield-alt',

@@ -7,9 +7,7 @@ use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 
 final class AssignmentMapper
 {
-    public function __construct(private UserSummaryMapper $userSummaryMapper)
-    {
-    }
+    public function __construct(private UserSummaryMapper $userSummaryMapper) {}
 
     public function fromModel(IncidentAssignment $assignment): AssignmentData
     {
@@ -22,6 +20,7 @@ final class AssignmentMapper
             active: (bool) ($assignment->active ?? $assignment->isActive()),
             assignmentDate: $assignment->assignment_date?->toIso8601String(),
             unassignmentDate: $assignment->unassignment_date?->toIso8601String(),
+            resolvedAt: $assignment->resolved_at?->toIso8601String(),
             user: $assignment->relationLoaded('user') && $assignment->user
                 ? $this->userSummaryMapper->fromModel($assignment->user)
                 : null,

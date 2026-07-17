@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'incident_id',
+    'incident_cycle_id',
     'previous_state_id',
     'new_state_id',
     'user_id',
@@ -58,5 +59,9 @@ class IncidentState extends Model
     {
         return $this->usuario();
     }
-}
 
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(IncidentCycle::class, 'incident_cycle_id');
+    }
+}

@@ -21,11 +21,11 @@ class OperationalZoneGeometrySeeder extends Seeder
 
         $contents = (string) file_get_contents($path);
         $contents = preg_replace('/^\xEF\xBB\xBF/', '', $contents) ?: $contents;
-        
+
         if (app()->environment('testing')) {
             $contents = '{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"province_name":"AZUAY"},"geometry":{"type":"Polygon","coordinates":[[[-79, -3], [-78, -3], [-78, -2], [-79, -2], [-79, -3]]]}},{"type":"Feature","properties":{"province_name":"PICHINCHA"},"geometry":{"type":"Polygon","coordinates":[[[-79, 0], [-78, 0], [-78, 1], [-79, 1], [-79, 0]]]}},{"type":"Feature","properties":{"province_name":"GUAYAS"},"geometry":{"type":"Polygon","coordinates":[[[-81, -3], [-78, -3], [-78, -1], [-81, -1], [-81, -3]]]}},{"type":"Feature","properties":{"province_name":"SANTA ELENA"},"geometry":{"type":"Polygon","coordinates":[[[-81, -3], [-80, -3], [-80, -2], [-81, -2], [-81, -3]]]}},{"type":"Feature","properties":{"province_name":"ESMERALDAS"},"geometry":{"type":"Polygon","coordinates":[[[-80, 0], [-79, 0], [-79, 1], [-80, 1], [-80, 0]]]}}]}';
         }
-        
+
         $payload = json_decode($contents, true);
 
         if (! is_array($payload) || ! isset($payload['features']) || ! is_array($payload['features'])) {
@@ -47,30 +47,54 @@ class OperationalZoneGeometrySeeder extends Seeder
 
         $zones = TerritorialUnit::query()
             ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
-            ->with(['children' => fn ($query) => $query->where('type', TerritorialUnit::TYPE_PROVINCE)])
+            ->get()
+            ->keyBy('code');
+
+        $provinces = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_PROVINCE)
             ->get();
 
-        foreach ($zones as $zone) {
-            $provinceGeometries = [];
+        $geometriesByZoneCode = [];
 
-            foreach ($zone->children as $province) {
-                $provinceKey = $this->normalizeProvinceName($province->name);
-
-                if (isset($geometriesByProvince[$provinceKey])) {
-                    $provinceGeometries[] = $geometriesByProvince[$provinceKey];
-                }
-            }
-
-            if ($provinceGeometries === []) {
+        foreach ($provinces as $province) {
+            $zoneCode = $this->zoneCodeForProvince((string) $province->code);
+            if (! $zoneCode) {
                 continue;
             }
 
-            $this->updateZoneCoverageArea((int) $zone->id, $provinceGeometries);
+            $provinceKey = $this->normalizeProvinceName($province->name);
+
+            if (isset($geometriesByProvince[$provinceKey])) {
+                $geometriesByZoneCode[$zoneCode][] = $geometriesByProvince[$provinceKey];
+            }
+        }
+
+        foreach ($geometriesByZoneCode as $zoneCode => $provinceGeometries) {
+            $zone = $zones[$zoneCode] ?? null;
+
+            if ($zone) {
+                $this->updateZoneCoverageArea((int) $zone->id, $provinceGeometries);
+            }
         }
     }
 
+    private function zoneCodeForProvince(string $provinceCode): string
+    {
+        return match ($provinceCode) {
+            '08', '13', '23' => 'Z1',
+            '09' => 'Z2',
+            '24', '12', '07' => 'Z3',
+            '04', '10', '17', '05', '18' => 'Z4',
+            '02', '06', '03', '01', '11' => 'Z5',
+            '21', '22', '15' => 'Z8',
+            '20' => 'Z7',
+            '16', '14', '19' => 'Z6',
+            default => '',
+        };
+    }
+
     /**
-     * @param array<int, array<string, mixed>> $geometries
+     * @param  array<int, array<string, mixed>>  $geometries
      */
     private function updateZoneCoverageArea(int $zoneId, array $geometries): void
     {

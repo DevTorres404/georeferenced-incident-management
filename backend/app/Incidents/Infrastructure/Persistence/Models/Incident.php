@@ -40,6 +40,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'reopened_at',
     'previous_resolution_date',
     'rejected_at',
+    'resolved_by_supervisor_id',
+    'resolution_snapshots',
+    'current_cycle_id',
 ])]
 class Incident extends Model
 {
@@ -50,14 +53,30 @@ class Incident extends Model
     protected function casts(): array
     {
         return [
-            'latitude'          => 'decimal:8',
-            'longitude'         => 'decimal:8',
-            'due_date'          => 'datetime',
-            'resolution_date'   => 'datetime',
-            'reopened_at'       => 'datetime',
+            'latitude' => 'decimal:8',
+            'longitude' => 'decimal:8',
+            'due_date' => 'datetime',
+            'resolution_date' => 'datetime',
+            'reopened_at' => 'datetime',
             'previous_resolution_date' => 'datetime',
-            'rejected_at'       => 'datetime',
+            'rejected_at' => 'datetime',
+            'resolution_snapshots' => 'array',
         ];
+    }
+
+    // ──────────────────────────────────────────────
+    // Relaciones — Ciclos de atención
+    // ──────────────────────────────────────────────
+
+    public function cycles(): HasMany
+    {
+        return $this->hasMany(IncidentCycle::class, 'incident_id')
+            ->orderBy('cycle_number', 'asc');
+    }
+
+    public function currentCycle(): BelongsTo
+    {
+        return $this->belongsTo(IncidentCycle::class, 'current_cycle_id');
     }
 
     // ──────────────────────────────────────────────
@@ -135,6 +154,11 @@ class Incident extends Model
     public function currentAssignee(): BelongsTo
     {
         return $this->asignadoActual();
+    }
+
+    public function resolvedBySupervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by_supervisor_id');
     }
 
     // ──────────────────────────────────────────────

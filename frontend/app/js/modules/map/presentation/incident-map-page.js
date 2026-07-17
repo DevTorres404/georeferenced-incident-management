@@ -73,11 +73,11 @@ function configureScopeControls() {
   const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR') && !isAdmin;
   const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin && !isSupervisor;
 
-  if (mineWrapper) mineWrapper.style.display = isOperator ? 'none' : '';
+  if (mineWrapper) mineWrapper.style.display = (isOperator || isSupervisor) ? 'none' : '';
   if (assignedWrapper) assignedWrapper.style.display = isOperator ? '' : 'none';
 
   if (mine) {
-    mine.disabled = !isAdmin && !isSupervisor;
+    mine.disabled = isOperator || isSupervisor;
     mine.checked = !isAdmin && !isSupervisor && !isOperator;
   }
 
@@ -88,7 +88,7 @@ function configureScopeControls() {
 
   if (!context) return;
   if (isSupervisor) {
-    context.textContent = 'Mostrando incidencias de tu zona operativa. Activa “Mis reportes” para reducir el alcance.';
+    context.textContent = 'Mostrando incidencias de tu zona operativa.';
   } else if (isOperator) {
     context.textContent = 'El mapa muestra únicamente las incidencias que tienes asignadas.';
   } else if (isAdmin) {

@@ -105,4 +105,9 @@ class IncidentException extends Exception
     {
         return new self('No se pueden asignar operadores a una incidencia cerrada.', 422);
     }
+
+    public static function inProgressRequiredForAssignment(): self
+    {
+        return new self('Solo se pueden asignar operadores a incidencias en estado EN_PROGRESO.', 422);
+    }
 }

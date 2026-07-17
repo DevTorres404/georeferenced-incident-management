@@ -14,9 +14,7 @@ use Illuminate\Validation\Rule;
 
 class TerritorialUnitController extends ApiController
 {
-    public function __construct(private TerritorialUnitUseCase $territorialUnitUseCase)
-    {
-    }
+    public function __construct(private TerritorialUnitUseCase $territorialUnitUseCase) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -57,11 +55,13 @@ class TerritorialUnitController extends ApiController
 
     public function cantons(int $provinceId): JsonResponse
     {
+        $province = TerritorialUnit::findOrFail($provinceId);
+
         return response()->json([
             'data' => $this->territorialUnitUseCase->list(new TerritorialUnitFiltersData(
                 type: TerritorialUnit::TYPE_CANTON,
-                parentId: $provinceId,
-                isActive: true
+                isActive: true,
+                parentCodePrefix: $province->code
             )),
         ]);
     }

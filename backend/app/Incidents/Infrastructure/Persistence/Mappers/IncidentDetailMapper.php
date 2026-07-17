@@ -7,6 +7,9 @@ use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\PrioritySummaryData;
 use App\Incidents\Application\DTOs\TerritorialUnitSummaryData;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
+use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
+use Carbon\Carbon;
 
 final class IncidentDetailMapper
 {
@@ -17,15 +20,14 @@ final class IncidentDetailMapper
         private CommentMapper $commentMapper,
         private AttachmentMapper $attachmentMapper,
         private AssignmentMapper $assignmentMapper
-    ) {
-    }
+    ) {}
 
     public function fromModel(Incident $incident): IncidentDetailData
     {
         $reporter = null;
         if ($incident->relationLoaded('reporter') && $incident->reporter) {
             $reporter = [
-                'name' => $incident->reporter->first_name . ' ' . $incident->reporter->last_name,
+                'name' => $incident->reporter->first_name.' '.$incident->reporter->last_name,
                 'email' => $incident->reporter->email,
                 'phone' => $incident->reporter->phone ?? 'Sin registro',
                 'type' => $incident->reporter->tieneRol('OPERADOR') ? 'Operador' : 'Ciudadano',
@@ -35,14 +37,14 @@ final class IncidentDetailMapper
         $assignedOperator = null;
         if ($incident->relationLoaded('currentAssignee') && $incident->currentAssignee) {
             $op = $incident->currentAssignee;
-            $profile = \App\Operations\Infrastructure\Persistence\Models\OperatorProfile::where('user_id', $op->id)->first();
-            $assignment = \App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment::where('operator_user_id', $op->id)->active()->first();
+            $profile = OperatorProfile::where('user_id', $op->id)->first();
+            $assignment = SupervisorOperatorAssignment::where('operator_user_id', $op->id)->active()->first();
             $supervisor = $assignment ? $assignment->supervisor : null;
 
             $assignedOperator = [
-                'name' => $op->first_name . ' ' . $op->last_name,
-                'supervisor_name' => $supervisor ? ($supervisor->first_name . ' ' . $supervisor->last_name) : 'Sin supervisor',
-                'active_incidents_count' => \App\Incidents\Infrastructure\Persistence\Models\Incident::where('current_assigned_id', $op->id)
+                'name' => $op->first_name.' '.$op->last_name,
+                'supervisor_name' => $supervisor ? ($supervisor->first_name.' '.$supervisor->last_name) : 'Sin supervisor',
+                'active_incidents_count' => Incident::where('current_assigned_id', $op->id)
                     ->whereNotIn('state_id', [4, 5, 6, 7]) // Assuming typical closed states
                     ->count(),
                 'workload_points' => 0, // Simplified for this view, or calculate if needed
@@ -52,12 +54,12 @@ final class IncidentDetailMapper
 
         $sla = null;
         if ($incident->priority && $incident->created_at) {
-            $now = \Carbon\Carbon::now();
+            $now = Carbon::now();
             $maxTimeHours = $incident->priority->sla_hours ?? 24;
             $dueDate = $incident->due_date ?? clone $incident->created_at->addHours($maxTimeHours);
-            
+
             $elapsedMinutes = $incident->created_at->diffInMinutes($now);
-            $elapsedStr = floor($elapsedMinutes / 60) . 'h ' . ($elapsedMinutes % 60) . 'min';
+            $elapsedStr = floor($elapsedMinutes / 60).'h '.($elapsedMinutes % 60).'min';
 
             $status = $now->greaterThan($dueDate) ? 'Fuera de tiempo' : 'Dentro del tiempo';
             if ($incident->resolution_date) {
@@ -69,10 +71,10 @@ final class IncidentDetailMapper
                 $lastStateChange = $incident->stateHistory->first()->created_at;
             }
             $timeInStateMinutes = $lastStateChange->diffInMinutes($now);
-            $timeInStateStr = floor($timeInStateMinutes / 60) . 'h ' . ($timeInStateMinutes % 60) . 'min';
+            $timeInStateStr = floor($timeInStateMinutes / 60).'h '.($timeInStateMinutes % 60).'min';
 
             $sla = [
-                'max_time' => $maxTimeHours . 'h',
+                'max_time' => $maxTimeHours.'h',
                 'elapsed_time' => $elapsedStr,
                 'status' => $status,
                 'time_in_state' => $timeInStateStr,
@@ -128,8 +130,23 @@ final class IncidentDetailMapper
             attachments: $incident->relationLoaded('attachments')
                 ? $incident->attachments->map(fn ($item) => $this->attachmentMapper->fromModel($item))->all()
                 : [],
-            assignments: $incident->relationLoaded('assignments')
-                ? $incident->assignments->map(fn ($item) => $this->assignmentMapper->fromModel($item))->all()
+            assignments: $incident->relationLoaded('assignments') && $incident->assignments
+                ? $incident->assignments->map(fn ($assignment) => $this->assignmentMapper->fromModel($assignment))->toArray()
+                : [],
+            cycles: $incident->relationLoaded('cycles') && $incident->cycles
+                ? $incident->cycles->map(fn ($cycle) => [
+                    'id' => $cycle->id,
+                    'cycle_number' => $cycle->cycle_number,
+                    'opened_at' => $cycle->opened_at?->toIso8601String(),
+                    'opened_by' => $cycle->openedBy ? $cycle->openedBy->getNombreCompletoAttribute() : null,
+                    'reopening_reason' => $cycle->reopening_reason,
+                    'resolved_at' => $cycle->resolved_at?->toIso8601String(),
+                    'resolved_by' => $cycle->resolvedBy ? $cycle->resolvedBy->getNombreCompletoAttribute() : null,
+                    'resolution_description' => $cycle->resolution_description,
+                    'closed_at' => $cycle->closed_at?->toIso8601String(),
+                    'closed_by' => $cycle->closedBy ? $cycle->closedBy->getNombreCompletoAttribute() : null,
+                    'closure_reason' => $cycle->closure_reason,
+                ])->toArray()
                 : []
         );
     }

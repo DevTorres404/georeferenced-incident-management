@@ -48,6 +48,12 @@ export async function initAssignmentManagementPage() {
     populateFilters(state);
     renderKpis(state.filteredIncidents, state.operators);
     renderTable(state);
+
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    const preselectId = urlParams.get('incident_id');
+    if (preselectId) {
+      setTimeout(() => openAssignmentModal(state, Number(preselectId)), 100);
+    }
   } catch (error) {
     renderError(error?.message || 'No se pudo cargar la gestión de asignaciones.');
   } finally {
@@ -98,6 +104,10 @@ function bindStaticEvents(state) {
 
   document.getElementById('btnSaveAssignment')?.addEventListener('click', async () => {
     await submitAssignment(state);
+  });
+
+  document.getElementById('primaryOperatorSelect')?.addEventListener('change', (e) => {
+    updateSupportOperatorsList(state, e.target.value);
   });
 }
 
@@ -242,9 +252,14 @@ export function renderTable(state) {
       ? activeAssignments.map((assignment) => {
           const roleClass = assignment.assignment_role === 'support' ? 'assignment-chip assignment-chip-support' : 'assignment-chip';
           const roleLabel = assignment.assignment_role === 'support' ? 'Apoyo' : 'Principal';
-          return `<span class="${roleClass}">${escapeHtml(assignment.full_name || `#${assignment.user_id}`)} · ${roleLabel}</span>`;
+          const resolvedIcon = assignment.resolved_at ? ' <i class="fas fa-check-double text-success ml-1" title="Resolvió la incidencia"></i>' : '';
+          const name = assignment.full_name || (assignment.user ? `${assignment.user.first_name} ${assignment.user.last_name}`.trim() : null) || `#${assignment.user_id}`;
+          return `<span class="${roleClass}">${escapeHtml(name)} · ${roleLabel}${resolvedIcon}</span>`;
         }).join('')
       : '<span class="text-muted">Sin asignación</span>';
+
+    const stateName = String(incident.state?.name || '').trim().toUpperCase();
+    const canAssignOperator = stateName === 'EN_PROGRESO' || stateName === 'IN_PROGRESS';
 
     return `
       <tr>
@@ -263,7 +278,7 @@ export function renderTable(state) {
           <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-secondary mr-1" title="Ver detalle">
             <i class="fas fa-eye"></i>
           </a>
-          <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}">
+          <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : 'disabled title="La incidencia debe estar en progreso"'}>
             <i class="fas fa-user-check mr-1"></i>${activeAssignments.length ? 'Reasignar' : 'Asignar'}
           </button>
         </td>
@@ -286,13 +301,14 @@ async function openAssignmentModal(state, incidentId) {
       const primarySelect = document.getElementById('primaryOperatorSelect');
 
       const missingPriority = !incident.priority_id && !incident.priority?.id;
-      const missingState = !incident.state_id && !incident.state?.id;
+      const stateName = String(incident.state?.name || '').trim().toUpperCase();
+      const notInProgress = stateName !== 'EN_PROGRESO' && stateName !== 'IN_PROGRESS';
 
-      if (missingPriority || missingState) {
+      if (missingPriority || notInProgress) {
         const parts = [];
         if (missingPriority) parts.push('asignar una prioridad');
-        if (missingState) parts.push('definir un estado');
-        const message = `Esta incidencia aún no tiene ${parts.join(' ni ')}. <a href="incident-detail.html?id=${incident.id}" class="alert-link">Ve al detalle</a> para completarlo antes de asignar un operador.`;
+        if (notInProgress) parts.push('cambiar el estado a "En progreso"');
+        const message = `Esta incidencia aún no cumple los requisitos: debes ${parts.join(' y ')}. <a href="incident-detail.html?id=${incident.id}" class="alert-link">Ve al detalle</a> para completarlo antes de asignar un operador.`;
 
         if (workflowWarning) {
           workflowWarning.innerHTML = message;
@@ -343,19 +359,30 @@ function renderAssignmentModal(state) {
 
   const primarySelect = document.getElementById('primaryOperatorSelect');
   if (primarySelect) {
-    primarySelect.innerHTML = state.operators.map((operator) => {
+    const defaultOption = `<option value="" disabled ${!currentPrimaryId ? 'selected' : ''}>Seleccione un operador principal...</option>`;
+    const options = state.operators.map((operator) => {
       const disabled = !operator.available && String(operator.user_id) !== String(currentPrimaryId) ? 'disabled' : '';
       const selected = String(operator.user_id) === String(currentPrimaryId) ? 'selected' : '';
       return `<option value="${operator.user_id}" ${selected} ${disabled}>${escapeHtml(buildOperatorOptionLabel(operator))}</option>`;
     }).join('');
+    primarySelect.innerHTML = defaultOption + options;
   }
 
+  updateSupportOperatorsList(state, currentPrimaryId);
+}
+
+function updateSupportOperatorsList(state, currentPrimaryId) {
   const supportList = document.getElementById('supportOperatorsList');
-  if (supportList) {
-    const currentPrimaryIdNum = Number(currentPrimaryId);
-    supportList.innerHTML = state.operators
-      .filter((operator) => Number(operator.user_id) !== currentPrimaryIdNum)
-      .map((operator) => {
+  if (!supportList) return;
+
+  const incident = state.selectedIncident;
+  const activeAssignments = (incident?.assignments || []).filter((a) => a.active !== false);
+  const currentSupportIds = new Set(activeAssignments.filter((a) => a.assignment_role === 'support').map((a) => String(a.user_id)));
+
+  const currentPrimaryIdNum = Number(currentPrimaryId);
+  supportList.innerHTML = state.operators
+    .filter((operator) => Number(operator.user_id) !== currentPrimaryIdNum)
+    .map((operator) => {
       const checked = currentSupportIds.has(String(operator.user_id)) ? 'checked' : '';
       const disabled = !operator.available && !checked ? 'disabled' : '';
       const disabledClass = disabled ? 'disabled' : '';
@@ -368,7 +395,6 @@ function renderAssignmentModal(state) {
           </span>
         </label>`;
     }).join('');
-  }
 }
 
 export async function submitAssignment(state) {

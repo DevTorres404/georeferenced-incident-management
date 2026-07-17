@@ -8,7 +8,7 @@ final class TerritorialUnitFiltersData
         public readonly ?string $type = null,
         public readonly ?int $parentId = null,
         public readonly ?string $search = null,
-        public readonly ?bool $isActive = true
-    ) {
-    }
+        public readonly ?bool $isActive = true,
+        public readonly ?string $parentCodePrefix = null
+    ) {}
 }

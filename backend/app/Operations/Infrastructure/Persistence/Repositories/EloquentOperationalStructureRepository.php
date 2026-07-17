@@ -2,17 +2,17 @@
 
 namespace App\Operations\Infrastructure\Persistence\Repositories;
 
-use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Audit\Infrastructure\Persistence\Models\AuditLog;
+use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
-use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\OperationalTerritoryData;
 use App\Operations\Application\DTOs\OperationalUserData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
+use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SupervisorProfileData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
@@ -27,6 +27,7 @@ use App\Operations\Infrastructure\Persistence\Models\SupervisorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentOperationalStructureRepository implements OperationalStructureRepositoryInterface
@@ -42,9 +43,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
 
     private const TRANSFER_AUDIT_EVENT = 'transferred';
 
-    public function __construct(private SupervisorCapacityPolicy $supervisorCapacityPolicy)
-    {
-    }
+    public function __construct(private SupervisorCapacityPolicy $supervisorCapacityPolicy) {}
 
     public function zones(): array
     {
@@ -473,10 +472,23 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
 
     private function zoneSummary(TerritorialUnit $zone): OperationalZoneSummaryData
     {
-        $provinces = TerritorialUnit::query()
+        $cantonCodes = TerritorialUnit::query()
             ->where('parent_id', $zone->id)
+            ->where('type', TerritorialUnit::TYPE_CANTON)
+            ->where('is_active', true)
+            ->pluck('code');
+
+        $provinceCodes = $cantonCodes
+            ->map(fn (?string $code) => $code ? substr($code, 0, 2) : null)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $provinces = TerritorialUnit::query()
             ->where('type', TerritorialUnit::TYPE_PROVINCE)
             ->where('is_active', true)
+            ->whereIn('code', $provinceCodes)
             ->orderBy('name')
             ->get();
 
@@ -625,7 +637,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     }
 
     /**
-     * @param array<int, int> $operatorIds
+     * @param  array<int, int>  $operatorIds
      */
     private function activeWorkloadPointsForOperators(array $operatorIds): int
     {
@@ -663,6 +675,20 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     {
         if ($territory->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
             return $territory;
+        }
+
+        if ($territory->type === TerritorialUnit::TYPE_PROVINCE) {
+            $canton = TerritorialUnit::query()
+                ->where('type', TerritorialUnit::TYPE_CANTON)
+                ->where('code', 'like', $territory->code.'%')
+                ->first();
+
+            if ($canton && $canton->parent_id) {
+                $zone = TerritorialUnit::find($canton->parent_id);
+                if ($zone && $zone->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                    return $zone;
+                }
+            }
         }
 
         $current = $territory;
@@ -753,7 +779,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Incident>
+     * @return Collection<int, Incident>
      */
     private function activeTransferIncidentsForOperator(int $operatorUserId)
     {
@@ -800,7 +826,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     }
 
     /**
-     * @param array<int, int> $operatorIds
+     * @param  array<int, int>  $operatorIds
      */
     private function transferZoneOperatorsToSupervisor(TerritorialUnit $zone, array $operatorIds, int $newSupervisorUserId, int $assignedByUserId): void
     {
@@ -832,8 +858,12 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     private function transferIncidentsToOperator($incidents, int $newOperatorUserId, int $assignedByUserId): void
     {
         foreach ($incidents as $incident) {
+            $lockedIncident = Incident::query()
+                ->lockForUpdate()
+                ->findOrFail($incident->id);
+
             $activeAssignment = IncidentAssignment::query()
-                ->where('incident_id', $incident->id)
+                ->where('incident_id', $lockedIncident->id)
                 ->where('active', true)
                 ->where('assignment_role', IncidentAssignment::ROLE_PRIMARY)
                 ->latest('assignment_date')
@@ -847,7 +877,8 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             }
 
             IncidentAssignment::create([
-                'incident_id' => $incident->id,
+                'incident_id' => $lockedIncident->id,
+                'incident_cycle_id' => $lockedIncident->current_cycle_id,
                 'user_id' => $newOperatorUserId,
                 'assigned_by_id' => $assignedByUserId,
                 'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
@@ -857,7 +888,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     }
 
     /**
-     * @param array<int, string> $incidentCodes
+     * @param  array<int, string>  $incidentCodes
      */
     private function transferUnreadNotificationsByIncidentCodes(?int $fromUserId, int $toUserId, array $incidentCodes): void
     {
@@ -882,9 +913,9 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     }
 
     /**
-     * @param array<string, mixed> $oldValues
-     * @param array<string, mixed> $newValues
-     * @param array<int, string> $tags
+     * @param  array<string, mixed>  $oldValues
+     * @param  array<string, mixed>  $newValues
+     * @param  array<int, string>  $tags
      */
     private function writeTransferAudit(
         string $auditableType,

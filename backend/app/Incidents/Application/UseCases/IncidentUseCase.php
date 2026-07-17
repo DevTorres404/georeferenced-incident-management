@@ -129,7 +129,7 @@ final class IncidentUseCase
             $canReopen,
             $data
         ): Incident {
-            $incident = $this->incidentRepository->load($incidentId, false);
+            $incident = $this->incidentRepository->loadForUpdate($incidentId);
             $transition = $this->incidentRepository->findTransition($incident->stateId, $data->stateId);
 
             if (! $transition) {

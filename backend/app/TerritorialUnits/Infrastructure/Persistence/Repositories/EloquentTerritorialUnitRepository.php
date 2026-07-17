@@ -13,9 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class EloquentTerritorialUnitRepository implements TerritorialUnitRepositoryInterface
 {
-    public function __construct(private TerritorialHierarchyRules $hierarchyRules)
-    {
-    }
+    public function __construct(private TerritorialHierarchyRules $hierarchyRules) {}
 
     public function list(TerritorialUnitFiltersData $filters): array
     {
@@ -33,6 +31,10 @@ final class EloquentTerritorialUnitRepository implements TerritorialUnitReposito
 
         if ($filters->parentId !== null) {
             $query->where('parent_id', $filters->parentId);
+        }
+
+        if ($filters->parentCodePrefix !== null) {
+            $query->where('code', 'LIKE', $filters->parentCodePrefix.'%');
         }
 
         if ($filters->search !== null && trim($filters->search) !== '') {
@@ -82,6 +84,20 @@ final class EloquentTerritorialUnitRepository implements TerritorialUnitReposito
 
         if ($unit->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
             return $this->toData($unit);
+        }
+
+        if ($unit->type === TerritorialUnit::TYPE_PROVINCE) {
+            $canton = TerritorialUnit::query()
+                ->where('type', TerritorialUnit::TYPE_CANTON)
+                ->where('code', 'like', $unit->code.'%')
+                ->first();
+
+            if ($canton && $canton->parent_id) {
+                $zone = TerritorialUnit::with(TerritorialUnit::PARENT_CHAIN)->find($canton->parent_id);
+                if ($zone && $zone->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                    return $this->toData($zone);
+                }
+            }
         }
 
         $current = $unit;
@@ -151,7 +167,7 @@ final class EloquentTerritorialUnitRepository implements TerritorialUnitReposito
     }
 
     /**
-     * @param Collection<int, TerritorialUnit> $units
+     * @param  Collection<int, TerritorialUnit>  $units
      * @return array<int, TerritorialUnitData>
      */
     private function buildTree(Collection $units, ?int $parentId = null): array
@@ -164,7 +180,7 @@ final class EloquentTerritorialUnitRepository implements TerritorialUnitReposito
     }
 
     /**
-     * @param array<int, TerritorialUnitData> $children
+     * @param  array<int, TerritorialUnitData>  $children
      */
     private function toData(TerritorialUnit $unit, array $children = []): TerritorialUnitData
     {

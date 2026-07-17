@@ -479,7 +479,6 @@ function configureScopeFilters(state) {
   const options = isSupervisor
     ? [
         { value: 'role', label: 'Mi zona', icon: 'fa-map-marker-alt' },
-        { value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' },
       ]
     : isOperator
       ? [{ value: 'assigned', label: 'Asignadas a mí', icon: 'fa-user-check' }]

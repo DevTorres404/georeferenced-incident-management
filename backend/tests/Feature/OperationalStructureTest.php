@@ -23,13 +23,13 @@ final class OperationalStructureTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_operational_zone_can_be_resolved_from_province_parish_and_sector(): void
+    public function test_operational_zone_can_be_resolved_from_canton_parish_and_sector(): void
     {
         $this->seedBaseStructure();
         $admin = $this->authenticateAdmin();
 
-        $province = TerritorialUnit::query()->where('type', TerritorialUnit::TYPE_PROVINCE)->where('name', 'Santa Elena')->firstOrFail();
-        $canton = TerritorialUnit::query()->where('type', TerritorialUnit::TYPE_CANTON)->where('parent_id', $province->id)->orderBy('name')->firstOrFail();
+        $zone = TerritorialUnit::query()->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)->where('name', 'Costa Sur')->firstOrFail();
+        $canton = TerritorialUnit::query()->where('type', TerritorialUnit::TYPE_CANTON)->where('parent_id', $zone->id)->orderBy('name')->firstOrFail();
         $parish = TerritorialUnit::query()->where('type', TerritorialUnit::TYPE_PARISH)->where('parent_id', $canton->id)->orderBy('name')->firstOrFail();
         $sector = TerritorialUnit::query()->create([
             'name' => 'Sector Test Costa Sur',
@@ -39,7 +39,7 @@ final class OperationalStructureTest extends TestCase
             'is_active' => true,
         ]);
 
-        foreach ([$province, $parish, $sector] as $unit) {
+        foreach ([$canton, $parish, $sector] as $unit) {
             $response = $this->actingAsUser($admin)
                 ->getJson("/api/territorial-units/{$unit->id}/operational-zone");
 
@@ -224,13 +224,13 @@ final class OperationalStructureTest extends TestCase
             ->map(fn ($id) => (int) $id)
             ->all();
 
-        $province = TerritorialUnit::query()
+        $territory = TerritorialUnit::query()
             ->where('parent_id', $zones['Z1']->id)
-            ->where('type', TerritorialUnit::TYPE_PROVINCE)
+            ->where('type', TerritorialUnit::TYPE_CANTON)
             ->firstOrFail();
 
         $incidentCode = 'INC-Z1-TRANSFER-001';
-        $this->createActiveIncidentForOperator($incidentCode, $province, $admin, $zoneOperatorIds[0], $currentSupervisorId);
+        $this->createActiveIncidentForOperator($incidentCode, $territory, $admin, $zoneOperatorIds[0], $currentSupervisorId);
 
         DB::table('core.notifications')->insert([
             'user_id' => $currentSupervisorId,
@@ -284,13 +284,13 @@ final class OperationalStructureTest extends TestCase
             ->value('operator_user_id');
 
         $replacementOperator = $this->createOperatorInZone($zone, $admin);
-        $province = TerritorialUnit::query()
+        $territory = TerritorialUnit::query()
             ->where('parent_id', $zone->id)
-            ->where('type', TerritorialUnit::TYPE_PROVINCE)
+            ->where('type', TerritorialUnit::TYPE_CANTON)
             ->firstOrFail();
 
         $incidentCode = 'INC-Z1-TRANSFER-002';
-        $incidentId = $this->createActiveIncidentForOperator($incidentCode, $province, $admin, $currentOperatorId, $supervisorId);
+        $incidentId = $this->createActiveIncidentForOperator($incidentCode, $territory, $admin, $currentOperatorId, $supervisorId);
 
         DB::table('core.notifications')->insert([
             'user_id' => $currentOperatorId,
@@ -311,6 +311,12 @@ final class OperationalStructureTest extends TestCase
         $this->assertDatabaseHas('core.incidents', [
             'id' => $incidentId,
             'current_assigned_id' => (int) $replacementOperator->id,
+        ]);
+        $this->assertDatabaseHas('core.incident_assignments', [
+            'incident_id' => $incidentId,
+            'user_id' => (int) $replacementOperator->id,
+            'incident_cycle_id' => Incident::findOrFail($incidentId)->current_cycle_id,
+            'active' => true,
         ]);
         $this->assertDatabaseHas('core.notifications', [
             'user_id' => (int) $replacementOperator->id,
@@ -364,16 +370,19 @@ final class OperationalStructureTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $priorityId = (int) DB::table('core.priorities')->insertGetId([
-            'name' => 'Alta '.$code,
-            'level' => 2,
-            'color' => '#ff6600',
-            'sla_hours' => 24,
-            'weight' => 3,
-            'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $priorityId = (int) DB::table('core.priorities')->value('id');
+        if (! $priorityId) {
+            $priorityId = (int) DB::table('core.priorities')->insertGetId([
+                'name' => 'Alta '.$code,
+                'level' => 1,
+                'color' => '#ff6600',
+                'sla_hours' => 24,
+                'weight' => 3,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $stateId = (int) DB::table('core.states')->insertGetId([
             'name' => 'EN_PROGRESO_'.$code,
@@ -408,8 +417,19 @@ final class OperationalStructureTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        $cycleId = (int) DB::table('core.incident_cycles')->insertGetId([
+            'incident_id' => $incidentId,
+            'cycle_number' => 1,
+            'opened_at' => now(),
+            'opened_by' => $reporter->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('core.incidents')->where('id', $incidentId)->update(['current_cycle_id' => $cycleId]);
+
         DB::table('core.incident_assignments')->insert([
             'incident_id' => $incidentId,
+            'incident_cycle_id' => $cycleId,
             'user_id' => $operatorUserId,
             'assigned_by_id' => $assignedByUserId,
             'assignment_date' => now(),

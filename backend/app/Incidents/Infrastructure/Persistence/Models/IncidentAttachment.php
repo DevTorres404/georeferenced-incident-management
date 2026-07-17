@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 #[Fillable([
     'incident_id',
+    'incident_cycle_id',
     'user_id',
     'original_name',
     'file_path',
@@ -27,6 +28,7 @@ class IncidentAttachment extends Model
     protected $table = 'core.incident_attachments';
 
     const UPDATED_AT = null;
+
     public $timestamps = true;
 
     protected function casts(): array
@@ -51,18 +53,23 @@ class IncidentAttachment extends Model
         return $this->usuario();
     }
 
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(IncidentCycle::class, 'incident_cycle_id');
+    }
+
     public function getTamanoFormateadoAttribute(): string
     {
         $bytes = $this->file_size_bytes;
 
         if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 2) . ' MB';
+            return round($bytes / 1048576, 2).' MB';
         }
         if ($bytes >= 1024) {
-            return round($bytes / 1024, 2) . ' KB';
+            return round($bytes / 1024, 2).' KB';
         }
 
-        return $bytes . ' B';
+        return $bytes.' B';
     }
 
     public function getFormattedSizeAttribute(): string
@@ -70,4 +77,3 @@ class IncidentAttachment extends Model
         return $this->getTamanoFormateadoAttribute();
     }
 }
-

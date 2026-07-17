@@ -29,6 +29,7 @@ use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Broadcasting\IncidentAssigned;
 use App\Incidents\Infrastructure\Broadcasting\IncidentStateChanged;
 use App\Incidents\Infrastructure\Jobs\NotifyIncidentCreatedJob;
+use App\Incidents\Infrastructure\Persistence\Actions\BuildIncidentCycleSnapshotAction;
 use App\Incidents\Infrastructure\Persistence\Mappers\AssignmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\AttachmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\CommentMapper;
@@ -42,6 +43,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentCycle;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
@@ -283,8 +285,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'reported_by_id' => $userId,
             ]);
 
+            $cycle = IncidentCycle::create([
+                'incident_id' => $incident->id,
+                'cycle_number' => 1,
+                'opened_at' => now(),
+                'opened_by' => $userId,
+            ]);
+
+            $incident->forceFill(['current_cycle_id' => $cycle->id])->saveQuietly();
+
             IncidentState::create([
                 'incident_id' => $incident->id,
+                'incident_cycle_id' => $cycle->id,
                 'previous_state_id' => null,
                 'new_state_id' => $initialState->id,
                 'user_id' => $userId,
@@ -383,6 +395,9 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             'assignments.assignedBy',
             'comments.user',
             'attachments.user',
+            'cycles.openedBy',
+            'cycles.resolvedBy',
+            'cycles.closedBy',
         ])->findOrFail($incidentId);
 
         return $this->incidentDetailMapper->fromModel($incident);
@@ -488,81 +503,87 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function addComment(int $incidentId, int $userId, AddCommentInputData $data): CommentData
     {
-        $incident = Incident::findOrFail($incidentId);
-        $comment = IncidentComment::create([
-            'incident_id' => $incidentId,
-            'user_id' => $userId,
-            'comment' => $data->comment,
-            'is_internal' => $data->isInternal,
-        ])->load('user');
+        return DB::transaction(function () use ($incidentId, $userId, $data): CommentData {
+            $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
+            $comment = IncidentComment::create([
+                'incident_id' => $incidentId,
+                'incident_cycle_id' => $incident->current_cycle_id,
+                'user_id' => $userId,
+                'comment' => $data->comment,
+                'is_internal' => $data->isInternal,
+            ])->load('user');
 
-        if (! $data->isInternal && (int) $incident->reported_by_id !== $userId) {
-            $this->createNotification(
-                userId: (int) $incident->reported_by_id,
-                title: 'Comentario recibido',
-                message: "Un operador respondio en tu incidencia {$incident->code}.",
-                type: 'NEW_COMMENT',
-                incidentId: $incidentId
-            );
-        }
+            if (! $data->isInternal && (int) $incident->reported_by_id !== $userId) {
+                $this->createNotification(
+                    userId: (int) $incident->reported_by_id,
+                    title: 'Comentario recibido',
+                    message: "Un operador respondio en tu incidencia {$incident->code}.",
+                    type: 'NEW_COMMENT',
+                    incidentId: $incidentId
+                );
+            }
 
-        if ((int) $incident->reported_by_id === $userId) {
-            $this->notifyAssignedOperators(
-                incidentId: $incidentId,
-                title: 'Comentario recibido',
-                message: "El ciudadano respondio en la incidencia {$incident->code}.",
-                type: 'NEW_COMMENT'
-            );
-        }
+            if ((int) $incident->reported_by_id === $userId) {
+                $this->notifyAssignedOperators(
+                    incidentId: $incidentId,
+                    title: 'Comentario recibido',
+                    message: "El ciudadano respondio en la incidencia {$incident->code}.",
+                    type: 'NEW_COMMENT'
+                );
+            }
 
-        if ($this->isSupervisorUserId($userId)) {
-            $this->notifyAssignedOperators(
-                incidentId: $incidentId,
-                title: 'Comentario del supervisor',
-                message: "El supervisor agrego un comentario en la incidencia {$incident->code}.",
-                type: 'NEW_COMMENT'
-            );
-        }
+            if ($this->isSupervisorUserId($userId)) {
+                $this->notifyAssignedOperators(
+                    incidentId: $incidentId,
+                    title: 'Comentario del supervisor',
+                    message: "El supervisor agrego un comentario en la incidencia {$incident->code}.",
+                    type: 'NEW_COMMENT'
+                );
+            }
 
-        $commentData = $this->commentMapper->fromModel($comment);
-        event(new CommentCreated($commentData));
+            $commentData = $this->commentMapper->fromModel($comment);
+            event(new CommentCreated($commentData));
 
-        return $commentData;
+            return $commentData;
+        });
     }
 
     public function attachFile(int $incidentId, int $userId, StoredFileData $storedFileData): AttachmentData
     {
-        $incident = Incident::findOrFail($incidentId);
-        $attachment = IncidentAttachment::create([
-            'incident_id' => $incidentId,
-            'user_id' => $userId,
-            'original_name' => $storedFileData->originalName,
-            'file_path' => $storedFileData->storagePath,
-            'mime_type' => $storedFileData->mimeType,
-            'file_size_bytes' => $storedFileData->sizeInBytes,
-            'file_hash' => $storedFileData->hash,
-        ])->load('user');
+        return DB::transaction(function () use ($incidentId, $userId, $storedFileData): AttachmentData {
+            $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
+            $attachment = IncidentAttachment::create([
+                'incident_id' => $incidentId,
+                'incident_cycle_id' => $incident->current_cycle_id,
+                'user_id' => $userId,
+                'original_name' => $storedFileData->originalName,
+                'file_path' => $storedFileData->storagePath,
+                'mime_type' => $storedFileData->mimeType,
+                'file_size_bytes' => $storedFileData->sizeInBytes,
+                'file_hash' => $storedFileData->hash,
+            ])->load('user');
 
-        if ((int) $incident->reported_by_id !== $userId) {
-            $this->createNotification(
-                userId: (int) $incident->reported_by_id,
-                title: 'Evidencia agregada',
-                message: "Se agrego una actualizacion o evidencia a tu incidencia {$incident->code}.",
-                type: 'NEW_COMMENT',
-                incidentId: $incidentId
-            );
-        }
+            if ((int) $incident->reported_by_id !== $userId) {
+                $this->createNotification(
+                    userId: (int) $incident->reported_by_id,
+                    title: 'Evidencia agregada',
+                    message: "Se agrego una actualizacion o evidencia a tu incidencia {$incident->code}.",
+                    type: 'NEW_COMMENT',
+                    incidentId: $incidentId
+                );
+            }
 
-        if ((int) $incident->reported_by_id === $userId) {
-            $this->notifyAssignedOperators(
-                incidentId: $incidentId,
-                title: 'Evidencia agregada',
-                message: "Se adjunto nueva evidencia a la incidencia {$incident->code}.",
-                type: 'NEW_COMMENT'
-            );
-        }
+            if ((int) $incident->reported_by_id === $userId) {
+                $this->notifyAssignedOperators(
+                    incidentId: $incidentId,
+                    title: 'Evidencia agregada',
+                    message: "Se adjunto nueva evidencia a la incidencia {$incident->code}.",
+                    type: 'NEW_COMMENT'
+                );
+            }
 
-        return $this->attachmentMapper->fromModel($attachment);
+            return $this->attachmentMapper->fromModel($attachment);
+        });
     }
 
     public function assign(int $incidentId, int $userId, AssignIncidentOperatorsInputData $data): IncidentAssignmentBatchData
@@ -581,8 +602,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 throw IncidentException::stateRequiredForAssignment();
             }
 
-            if (in_array(strtoupper((string) $incident->state?->name), ['CERRADA', 'CLOSED'], true)) {
+            $currentStateName = strtoupper((string) ($incident->state?->name ?? ''));
+            if (in_array($currentStateName, ['CERRADA', 'CLOSED'], true)) {
                 throw IncidentException::closedIncidentAssignmentNotAllowed();
+            }
+
+            if ($currentStateName !== 'EN_PROGRESO' && $currentStateName !== 'IN_PROGRESS') {
+                throw IncidentException::inProgressRequiredForAssignment();
             }
 
             $this->ensureUserCanAssignIncident($userId, $incident);
@@ -637,6 +663,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
                 IncidentAssignment::create([
                     'incident_id' => $incidentId,
+                    'incident_cycle_id' => $incident->current_cycle_id,
                     'user_id' => (int) $operatorUserId,
                     'assigned_by_id' => $userId,
                     'assignment_role' => $assignmentRole,
@@ -655,6 +682,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
                     IncidentState::create([
                         'incident_id' => $incident->id,
+                        'incident_cycle_id' => $incident->current_cycle_id,
                         'previous_state_id' => $previousStateId,
                         'new_state_id' => $assignedStateId,
                         'user_id' => $userId,
@@ -728,38 +756,66 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function changeState(int $incidentId, int $userId, ChangeStateInputData $data): \App\Incidents\Domain\Entities\Incident
     {
-        $incident = Incident::findOrFail($incidentId);
-
-        if (! $incident->priority_id) {
-            throw IncidentException::priorityRequiredForState();
-        }
-
-        $previousStateId = $incident->state_id;
-        $previousState = State::find($previousStateId);
         $newState = State::findOrFail($data->stateId);
-
         $normalizedNewState = strtoupper((string) $newState->name);
         $isClosing = in_array($normalizedNewState, ['CERRADA', 'CLOSED'], true);
         $isReopening = in_array($normalizedNewState, ['REABIERTA', 'REOPENED'], true);
+        $isResolved = in_array($normalizedNewState, ['RESUELTA', 'RESOLVED'], true);
         $releasesAssignments = $isClosing || $isReopening;
-        $assignedOperatorIds = DB::transaction(function () use (
-            $incident,
+        [$assignedOperatorIds, $previousStateId] = DB::transaction(function () use (
+            $incidentId,
             $data,
             $userId,
-            $previousStateId,
             $newState,
             $isClosing,
+            $isResolved,
             $isReopening,
             $releasesAssignments
         ): array {
-            $updateData = [
-                'state_id' => $data->stateId,
-            ];
+            $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
+            $previousStateId = $incident->state_id;
+
+            if (! $incident->priority_id && in_array(strtoupper((string) $newState->name), ['EN_PROGRESO', 'RESUELTA', 'CERRADA'], true)) {
+                throw IncidentException::priorityRequiredForState();
+            }
+
+            $updateData = ['state_id' => $data->stateId];
 
             if ($isReopening) {
                 $updateData['reopened_at'] = now();
                 $updateData['previous_resolution_date'] = $incident->resolution_date;
                 $updateData['resolution_date'] = null;
+                $updateData['resolved_by_supervisor_id'] = null;
+
+                $currentCycle = IncidentCycle::query()->find($incident->current_cycle_id);
+                if ($currentCycle && ! $currentCycle->isClosed()) {
+                    $currentCycle->forceFill([
+                        'closed_at' => now(),
+                        'closed_by' => $userId,
+                        'closure_reason' => 'Reabierta — nuevo ciclo iniciado.',
+                    ])->save();
+                }
+
+                IncidentCycle::query()
+                    ->where('incident_id', $incident->id)
+                    ->lockForUpdate()
+                    ->pluck('cycle_number');
+
+                $lastCycleNumber = IncidentCycle::query()
+                    ->where('incident_id', $incident->id)
+                    ->max('cycle_number') ?? 0;
+
+                $nextCycleNumber = (int) $lastCycleNumber + 1;
+
+                $newCycle = IncidentCycle::create([
+                    'incident_id' => $incident->id,
+                    'cycle_number' => $nextCycleNumber,
+                    'opened_at' => now(),
+                    'opened_by' => $userId,
+                    'reopening_reason' => $data->comment,
+                ]);
+
+                $updateData['current_cycle_id'] = $newCycle->id;
             } else {
                 if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {
                     $updateData['rejected_at'] = $incident->rejected_at ?? now();
@@ -768,17 +824,40 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 } else {
                     $updateData['resolution_date'] = null;
                 }
+
+                if ($isResolved) {
+                    if (! $incident->resolution_date) {
+                        $updateData['resolution_date'] = now();
+                    }
+
+                    $updateData['resolved_by_supervisor_id'] = $userId;
+
+                    IncidentAssignment::where('incident_id', $incident->id)
+                        ->where('active', true)
+                        ->update(['resolved_at' => now()]);
+                }
             }
 
             $incident->update($updateData);
 
+            $cycleId = $incident->fresh()->current_cycle_id;
+
             IncidentState::create([
                 'incident_id' => $incident->id,
+                'incident_cycle_id' => $cycleId,
                 'previous_state_id' => $previousStateId,
                 'new_state_id' => $data->stateId,
                 'user_id' => $userId,
                 'comment' => $data->comment,
             ]);
+
+            if ($isResolved && $cycleId) {
+                $this->updateCycleOnResolve($cycleId, $userId, $data->comment);
+            }
+
+            if ($isClosing && $cycleId) {
+                $this->updateCycleOnClose($cycleId, $userId, $data->comment);
+            }
 
             $operatorIds = [];
             if ($releasesAssignments) {
@@ -808,8 +887,11 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 $incident->forceFill(['current_assigned_id' => null])->save();
             }
 
-            return $operatorIds;
+            return [$operatorIds, (int) $previousStateId];
         });
+
+        $incident = Incident::query()->findOrFail($incidentId);
+        $previousState = State::find($previousStateId);
 
         [$title, $message, $type] = $this->stateNotificationPayload(
             incidentCode: $incident->code,
@@ -1094,6 +1176,20 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     {
         if ($territory->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
             return $territory;
+        }
+
+        if ($territory->type === TerritorialUnit::TYPE_PROVINCE) {
+            $canton = TerritorialUnit::query()
+                ->where('type', TerritorialUnit::TYPE_CANTON)
+                ->where('code', 'like', $territory->code.'%')
+                ->first();
+
+            if ($canton && $canton->parent_id) {
+                $zone = TerritorialUnit::find($canton->parent_id);
+                if ($zone && $zone->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                    return $zone;
+                }
+            }
         }
 
         $current = $territory;
@@ -1551,6 +1647,25 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         return in_array($stateName, ['NUEVA', 'PENDIENTE', 'PENDING'], true);
     }
 
+    private function appendResolutionSnapshot(Incident $incident, int $userId): void
+    {
+        $operators = IncidentAssignment::query()
+            ->where('incident_id', $incident->id)
+            ->where('active', true)
+            ->get(['user_id', 'assignment_role'])
+            ->toArray();
+
+        $snapshots = $incident->resolution_snapshots ?? [];
+        $snapshots[] = [
+            'resolved_at' => now()->toISOString(),
+            'resolved_by_supervisor_id' => $userId,
+            'operators' => $operators,
+            'previous_resolution_date' => $incident->previous_resolution_date?->toISOString(),
+        ];
+
+        Incident::withoutTimestamps(fn () => $incident->forceFill(['resolution_snapshots' => $snapshots])->save());
+    }
+
     public function findPendingStateChangeRequest(int $incidentId): ?StateChangeRequestData
     {
         $request = StateChangeRequest::query()
@@ -1564,6 +1679,53 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         }
 
         return $this->stateChangeRequestMapper->fromModel($request);
+    }
+
+    private function updateCycleOnResolve(int $cycleId, int $userId, ?string $resolutionDescription): void
+    {
+        $cycle = IncidentCycle::query()->find($cycleId);
+        if (! $cycle || $cycle->resolved_at) {
+            return;
+        }
+
+        $cycle->forceFill([
+            'resolved_at' => now(),
+            'resolved_by' => $userId,
+            'resolution_description' => $resolutionDescription,
+        ])->save();
+
+        $this->persistCycleSnapshotIfMissing($cycle);
+
+        $this->appendResolutionSnapshot($cycle->incident, $userId);
+    }
+
+    private function updateCycleOnClose(int $cycleId, int $userId, ?string $closureReason): void
+    {
+        $cycle = IncidentCycle::query()->find($cycleId);
+        if (! $cycle || $cycle->closed_at) {
+            return;
+        }
+
+        $cycle->forceFill([
+            'closed_at' => now(),
+            'closed_by' => $userId,
+            'closure_reason' => $closureReason,
+        ])->save();
+
+        $this->persistCycleSnapshotIfMissing($cycle);
+    }
+
+    private function persistCycleSnapshotIfMissing(IncidentCycle $cycle): void
+    {
+        if ($cycle->snapshot !== null) {
+            return;
+        }
+
+        $snapshot = app(BuildIncidentCycleSnapshotAction::class)->execute($cycle->fresh());
+        $cycle->forceFill([
+            'snapshot' => $snapshot,
+            'snapshot_generated_at' => now(),
+        ])->save();
     }
 
     public function stateNameById(int $stateId): ?string
@@ -1644,15 +1806,27 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             $incident->update([
                 'state_id' => $request->requested_state_id,
                 'resolution_date' => $incident->resolution_date ?? now(),
+                'resolved_by_supervisor_id' => $reviewerUserId,
             ]);
+
+            IncidentAssignment::where('incident_id', $incident->id)
+                ->where('active', true)
+                ->update(['resolved_at' => now()]);
+
+            $cycleId = $incident->current_cycle_id;
 
             IncidentState::create([
                 'incident_id' => $incident->id,
+                'incident_cycle_id' => $cycleId,
                 'previous_state_id' => $previousStateId,
                 'new_state_id' => $request->requested_state_id,
                 'user_id' => $reviewerUserId,
                 'comment' => $comment ?? 'Cambio de estado aprobado por supervisor.',
             ]);
+
+            if ($cycleId) {
+                $this->updateCycleOnResolve($cycleId, $reviewerUserId, $comment);
+            }
 
             $request->update([
                 'status' => 'approved',

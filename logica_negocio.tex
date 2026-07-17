@@ -518,21 +518,21 @@ El sistema implementa una jerarquía territorial basada en la estructura adminis
   ]
   \node {País (Ecuador)}
     child { node {Zona Operativa}
-      child { node {Provincia}
-        child { node {Cantón}
-          child { node {Parroquia}
-            child { node {Sector} }
-          }
+      child { node {Cantón}
+        child { node {Parroquia}
+          child { node {Sector} }
         }
       }
-    };
+    }
+    child { node {Provincia} };
 \end{tikzpicture}
-\caption{Jerarquía territorial}
+\caption{Jerarquía territorial (Separación Operativa y Política)}
 \end{figure}
 
 \begin{restriccion}[Reglas de validación jerárquica]
 \begin{itemize}
-  \item Cada tipo de unidad tiene un padre válido específico (ej: Provincia solo puede ser hija de Zona Operativa).
+  \item Cada tipo de unidad tiene un padre válido específico (ej: Cantón es hijo de Zona Operativa, Provincia es hija directa de País).
+  \item La Zona Operativa y la Provincia son ramas paralelas para permitir divisiones operativas independientes de la geopolítica (ej: Guayaquil/Quito).
   \item No se permiten ciclos (un nodo no puede ser ancestro de sí mismo).
   \item La validación se realiza en el dominio via \texttt{TerritorialHierarchyRules}.
   \item Los datos base provienen del dataset CGE 2026 con 24 provincias, 221 cantones y 1024 parroquias.

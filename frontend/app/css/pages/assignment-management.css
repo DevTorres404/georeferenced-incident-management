@@ -54,8 +54,17 @@
   color: var(--sgi-text-muted);
 }
 
+.assignment-row-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+  justify-content: center;
+}
+
 .assignment-row-actions .btn {
   min-width: 40px;
+  white-space: nowrap;
 }
 
 .assignment-modal-summary {

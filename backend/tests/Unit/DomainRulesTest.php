@@ -101,11 +101,15 @@ class DomainRulesTest extends TestCase
         $rules = new TerritorialHierarchyRules;
 
         $rules->validate(TerritorialUnitType::COUNTRY, null);
-        $rules->validate(TerritorialUnitType::OPERATIONAL_ZONE, TerritorialUnitType::COUNTRY, 1);
-        $rules->validate(TerritorialUnitType::PROVINCE, TerritorialUnitType::OPERATIONAL_ZONE, 2, [1]);
-        $rules->validate(TerritorialUnitType::CANTON, TerritorialUnitType::PROVINCE, 3, [2, 1]);
-        $rules->validate(TerritorialUnitType::PARISH, TerritorialUnitType::CANTON, 4, [3, 2, 1]);
-        $rules->validate(TerritorialUnitType::SECTOR, TerritorialUnitType::PARISH, 5, [4, 3, 2, 1]);
+
+        // Rama Operativa
+        $rules->validate(TerritorialUnitType::OPERATIONAL_ZONE, TerritorialUnitType::COUNTRY, 2, [1]);
+        $rules->validate(TerritorialUnitType::CANTON, TerritorialUnitType::OPERATIONAL_ZONE, 4, [2, 1]);
+        $rules->validate(TerritorialUnitType::PARISH, TerritorialUnitType::CANTON, 5, [4, 2, 1]);
+        $rules->validate(TerritorialUnitType::SECTOR, TerritorialUnitType::PARISH, 6, [5, 4, 2, 1]);
+
+        // Rama Política
+        $rules->validate(TerritorialUnitType::PROVINCE, TerritorialUnitType::COUNTRY, 3, [1]);
 
         $this->addToAssertionCount(6);
     }

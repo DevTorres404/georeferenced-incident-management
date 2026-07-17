@@ -271,6 +271,28 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
     private function resolveOperationalZone(?TerritorialUnit $territory): ?TerritorialUnit
     {
+        if (! $territory) {
+            return null;
+        }
+
+        if ($territory->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+            return $territory;
+        }
+
+        if ($territory->type === TerritorialUnit::TYPE_PROVINCE) {
+            $canton = TerritorialUnit::query()
+                ->where('type', TerritorialUnit::TYPE_CANTON)
+                ->where('code', 'like', $territory->code.'%')
+                ->first();
+
+            if ($canton && $canton->parent_id) {
+                $zone = TerritorialUnit::find($canton->parent_id);
+                if ($zone && $zone->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                    return $zone;
+                }
+            }
+        }
+
         $current = $territory;
 
         while ($current) {
