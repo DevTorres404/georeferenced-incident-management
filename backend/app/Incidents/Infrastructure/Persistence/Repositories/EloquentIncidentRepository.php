@@ -834,18 +834,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                             'unassignment_date' => now(),
                         ]);
 
-                    // Re-create assignments for the new cycle
-                    foreach ($activeAssignments as $assignment) {
-                        IncidentAssignment::create([
-                            'incident_id' => $incident->id,
-                            'incident_cycle_id' => $newCycle->id,
-                            'user_id' => $assignment->user_id,
-                            'assigned_by_id' => $userId, // Supervisor reopening it
-                            'assignment_role' => $assignment->assignment_role,
-                            'active' => true,
-                            'assignment_date' => now(),
-                        ]);
-                    }
+                    $incident->forceFill(['current_assigned_id' => null])->save();
                 }
             } else {
                 if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {

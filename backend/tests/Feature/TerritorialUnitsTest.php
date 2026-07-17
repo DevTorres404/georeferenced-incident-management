@@ -84,7 +84,7 @@ class TerritorialUnitsTest extends TestCase
         $country = TerritorialUnit::create(['name' => 'C', 'type' => 'country']);
         $zone = TerritorialUnit::create(['name' => 'Z', 'type' => 'operational_zone', 'parent_id' => $country->id]);
         $province = TerritorialUnit::create(['name' => 'Provincia', 'type' => 'province', 'code' => 'P1', 'parent_id' => $zone->id, 'is_active' => true]);
-        TerritorialUnit::create(['name' => 'Canton 1', 'type' => 'canton', 'code' => 'C1', 'parent_id' => $province->id, 'is_active' => true]);
+        TerritorialUnit::create(['name' => 'Canton 1', 'type' => 'canton', 'code' => 'P1-C1', 'parent_id' => $province->id, 'is_active' => true]);
 
         $responseProvinces = $this->actingAsAdmin()->getJson('/api/territorial-units/provinces');
         $responseProvinces->assertStatus(200);

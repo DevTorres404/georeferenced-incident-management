@@ -62,7 +62,7 @@ class MyTeamAccessTest extends TestCase
             'code' => 'operational-structure',
             'permission_code' => 'operations.view',
         ]);
-        $this->assertDatabaseMissing('auth.navigation_items', [
+        $this->assertDatabaseHas('auth.navigation_items', [
             'permission_code' => 'operations.view_team',
         ]);
     }

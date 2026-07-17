@@ -19,6 +19,7 @@ class NavigationItemSeeder extends Seeder
                 'children' => [
                     ['code' => 'dashboard', 'label' => 'Panel principal', 'icon' => 'fa-tachometer-alt', 'route' => 'dashboard.html', 'permission_code' => 'dashboard.view', 'sort_order' => 10],
                     ['code' => 'reports', 'label' => 'Reportes y estadisticas', 'icon' => 'fa-chart-bar', 'route' => 'reports.html', 'permission_code' => 'reportes.ver', 'sort_order' => 20],
+                    ['code' => 'notifications', 'label' => 'Notificaciones', 'icon' => 'fa-bell', 'route' => 'notifications.html', 'permission_code' => 'notifications.view', 'sort_order' => 30],
                 ],
             ],
             [
