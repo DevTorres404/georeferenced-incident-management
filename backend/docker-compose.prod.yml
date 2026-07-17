@@ -69,7 +69,7 @@ services:
   queue:
     image: sgi-backend:prod
     restart: unless-stopped
-    command: php artisan queue:work redis --tries=3 --timeout=120 --sleep=3
+    command: php artisan queue:work --tries=3 --timeout=120 --sleep=3
     env_file:
       - ${SGI_ENV_FILE:-.env}
     depends_on:
