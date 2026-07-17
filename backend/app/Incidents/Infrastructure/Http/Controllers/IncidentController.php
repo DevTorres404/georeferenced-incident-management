@@ -874,8 +874,8 @@ class IncidentController extends ApiController
             'territorial_unit_id' => [...$nullable, 'integer', Rule::exists(TerritorialUnit::class, 'id')->where('is_active', true)],
             'address' => [...$nullable, 'string', 'max:500'],
             'address_reference' => [...$nullable, 'string', 'max:500'],
-            'latitude' => [...$nullable, 'numeric', 'between:-90,90'],
-            'longitude' => [...$nullable, 'numeric', 'between:-180,180'],
+            'latitude' => [...$nullable, 'numeric', 'between:-5.5,2.0'],
+            'longitude' => [...$nullable, 'numeric', 'between:-92.5,-75.0'],
             'resolution_date' => [...$nullable, 'date'],
         ];
     }
@@ -960,6 +960,8 @@ class IncidentController extends ApiController
         return [
             'priority_id.prohibited' => 'No puedes asignar la prioridad de una incidencia.',
             'state_id.prohibited' => 'No puedes asignar el estado desde este formulario.',
+            'latitude.between' => 'La ubicación debe estar dentro del territorio ecuatoriano.',
+            'longitude.between' => 'La ubicación debe estar dentro del territorio ecuatoriano.',
         ];
     }
 

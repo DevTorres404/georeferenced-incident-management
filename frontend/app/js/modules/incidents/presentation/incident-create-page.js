@@ -852,14 +852,14 @@ export function validateRequiredCoordinatePair() {
     setFieldError('fLatitud', 'Selecciona un punto en el mapa o ingresa la latitud.');
     valid = false;
   } else {
-    valid = validateCoordinate('fLatitud', -90, 90, 'La latitud debe estar entre -90 y 90.') && valid;
+    valid = validateCoordinate('fLatitud', -5.5, 2.0, 'La latitud debe estar dentro del territorio ecuatoriano (-5.5 a 2.0).') && valid;
   }
 
   if (!longitudeValue) {
     setFieldError('fLongitud', 'Selecciona un punto en el mapa o ingresa la longitud.');
     valid = false;
   } else {
-    valid = validateCoordinate('fLongitud', -180, 180, 'La longitud debe estar entre -180 y 180.') && valid;
+    valid = validateCoordinate('fLongitud', -92.5, -75.0, 'La longitud debe estar dentro del territorio ecuatoriano (-92.5 a -75.0).') && valid;
   }
 
   return valid;
