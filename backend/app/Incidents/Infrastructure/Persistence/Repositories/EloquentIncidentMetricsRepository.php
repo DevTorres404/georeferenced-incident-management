@@ -91,7 +91,6 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
     public function getMonthlyTrend(int $userId, int $months = 6): array
     {
-        $monthsData = [];
         $labels = [];
         $monthKeys = [];
         for ($i = $months - 1; $i >= 0; $i--) {

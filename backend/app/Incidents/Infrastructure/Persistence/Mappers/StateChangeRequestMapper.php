@@ -23,14 +23,23 @@ final class StateChangeRequestMapper
             reason: $stateChangeRequest->reason,
             status: $stateChangeRequest->status,
             reviewedByUserId: $stateChangeRequest->reviewed_by_user_id ? (int) $stateChangeRequest->reviewed_by_user_id : null,
-            reviewedByUserName: $stateChangeRequest->reviewed_by_user_id
-                ? ($stateChangeRequest->relationLoaded('reviewedBy') && $stateChangeRequest->reviewedBy
-                    ? $stateChangeRequest->reviewedBy->getNombreCompletoAttribute()
-                    : "Usuario #{$stateChangeRequest->reviewed_by_user_id}")
-                : null,
+            reviewedByUserName: self::resolveReviewerName($stateChangeRequest),
             reviewerComment: $stateChangeRequest->reviewer_comment,
             createdAt: $stateChangeRequest->created_at?->toIso8601String() ?? now()->toIso8601String(),
             reviewedAt: $stateChangeRequest->reviewed_at?->toIso8601String(),
         );
+    }
+
+    private static function resolveReviewerName(StateChangeRequest $stateChangeRequest): ?string
+    {
+        if (! $stateChangeRequest->reviewed_by_user_id) {
+            return null;
+        }
+
+        if ($stateChangeRequest->relationLoaded('reviewedBy') && $stateChangeRequest->reviewedBy) {
+            return $stateChangeRequest->reviewedBy->getNombreCompletoAttribute();
+        }
+
+        return "Usuario #{$stateChangeRequest->reviewed_by_user_id}";
     }
 }
