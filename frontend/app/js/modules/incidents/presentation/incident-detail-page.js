@@ -3,7 +3,6 @@ import {
   approveStateChangeRequest,
   changeIncidentState,
   getIncident,
-  getPendingStateChangeRequests,
   getStateChangeRequests,
   listPriorities,
   listStateTransitions,
@@ -29,9 +28,7 @@ import {
   formatShortDate,
   getPriorityBadgeClass,
   getPriorityHexColor,
-  getStateBadgeClass,
   getStateHexColor,
-  hidePageLoading,
   showGlobalAlert,
 } from './incidents-ui.js?v=14';
 
@@ -76,7 +73,6 @@ export async function initIncidentDetailPage() {
     const isOperatorRole = isOperator();
     const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
     const canAssignPriority = canManagePriority();
-    const canAssign = hasPermission('incidents.assign');
     const isOperatorUser = isOperatorRole;
     const shouldLoadRequests = canChangeState || isOperatorUser;
 

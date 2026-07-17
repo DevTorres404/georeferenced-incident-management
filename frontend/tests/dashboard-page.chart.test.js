@@ -12,7 +12,7 @@ vi.mock('../app/js/presentation/dom-utils.js', () => ({
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
   escapeHtml: (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]),
-  formatCatalogLabel: (v) => v || '-',
+  formatCatalogLabel: vi.fn((v) => v || '-'),
   formatShortDate: (v) => (v ? new Date(v).toLocaleDateString('es-EC') : '-'),
   getPriorityBadgeClass: vi.fn(() => 'badge-secondary'),
   getStateBadgeClass: vi.fn(() => 'badge-secondary'),
@@ -117,6 +117,7 @@ describe('dashboard-page — chart functions', () => {
     renderCharts(sampleMetrics);
 
     const [doughnut, bar, line] = configs;
+    const { formatCatalogLabel } = await import('../app/js/modules/incidents/presentation/incidents-ui.js');
 
     expect(doughnut.data.labels).toEqual(['Robo', 'Daño material', 'Otro']);
     expect(doughnut.data.datasets[0].data).toEqual([50, 40, 60]);
@@ -132,6 +133,11 @@ describe('dashboard-page — chart functions', () => {
     expect(line.data.datasets[1].data).toEqual([25, 30, 20]);
     expect(line.data.datasets[2].label).toBe('Pendientes');
     expect(line.data.datasets[2].data).toEqual([25, 30, 20]);
+    expect(formatCatalogLabel.mock.calls).toEqual([
+      ['Robo'], ['Daño material'], ['Otro'],
+      ['Pendiente'], ['En proceso'], ['Resuelta'],
+      ['Registradas'], ['Resueltas'], ['Pendientes'],
+    ]);
   });
 
   it('uses correct color palettes for each chart type', async () => {

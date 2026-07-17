@@ -242,7 +242,7 @@ function initDataTable(state) {
         data: 'priority',
         render: (data, type, row) => {
           const label = formatCatalogLabel(data);
-          const color = (row && row.priority_color) || getPriorityHexColor(data);
+          const color = row?.priority_color || getPriorityHexColor(data);
           return `<span class="badge shadow-sm" style="background-color: ${color}; color: #fff">${escapeHtml(label)}</span>`;
         },
       },
@@ -390,10 +390,9 @@ function renderStateFilters(state) {
   `;
 
   state.states.forEach((s) => {
-    let icon = 'fas fa-circle';
+    let icon = 'fas fa-cogs';
     if (s.is_initial_state) icon = 'fas fa-exclamation-circle';
     else if (s.is_final_state) icon = 'fas fa-check-circle';
-    else icon = 'fas fa-cogs';
 
     const normalizedName = String(s.name || '').toUpperCase().replace(/_/g, ' ');
     if (normalizedName === 'EN REVISION') icon = 'fas fa-search';

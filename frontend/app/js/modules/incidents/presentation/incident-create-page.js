@@ -202,9 +202,8 @@ async function authorizeIncidentCreation() {
   try {
     if (typeof globalThis.renderLayout === 'function') {
       await globalThis.renderLayout('incident-create');
-      if (hasPermission('incidents.create')) return true;
       // renderLayout already redirected to the default page.
-      return false;
+      return hasPermission('incidents.create');
     }
   } catch (err) {
     console.warn('authorizeIncidentCreation: renderLayout failed', err);
@@ -852,14 +851,14 @@ export function validateRequiredCoordinatePair() {
     setFieldError('fLatitud', 'Selecciona un punto en el mapa o ingresa la latitud.');
     valid = false;
   } else {
-    valid = validateCoordinate('fLatitud', -5.5, 2.0, 'La latitud debe estar dentro del territorio ecuatoriano (-5.5 a 2.0).') && valid;
+    valid = validateCoordinate('fLatitud', -5.5, 2, 'La latitud debe estar dentro del territorio ecuatoriano (-5.5 a 2.0).') && valid;
   }
 
   if (!longitudeValue) {
     setFieldError('fLongitud', 'Selecciona un punto en el mapa o ingresa la longitud.');
     valid = false;
   } else {
-    valid = validateCoordinate('fLongitud', -92.5, -75.0, 'La longitud debe estar dentro del territorio ecuatoriano (-92.5 a -75.0).') && valid;
+    valid = validateCoordinate('fLongitud', -92.5, -75, 'La longitud debe estar dentro del territorio ecuatoriano (-92.5 a -75.0).') && valid;
   }
 
   return valid;

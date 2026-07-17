@@ -292,6 +292,13 @@ describe('incident-create-page.js — validation functions', () => {
       expect(validateRequiredCoordinatePair()).toBe(true);
     });
 
+    it('accepts coordinates at the upper Ecuador boundaries', async () => {
+      const { validateRequiredCoordinatePair } = await import('../app/js/modules/incidents/presentation/incident-create-page.js');
+      document.getElementById('fLatitud').value = '2';
+      document.getElementById('fLongitud').value = '-75';
+      expect(validateRequiredCoordinatePair()).toBe(true);
+    });
+
     it('returns false when lat is out of range', async () => {
       const { validateRequiredCoordinatePair } = await import('../app/js/modules/incidents/presentation/incident-create-page.js');
       document.getElementById('fLatitud').value = '100';

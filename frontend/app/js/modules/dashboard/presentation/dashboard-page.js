@@ -256,7 +256,7 @@ function renderStateChart(countsByState) {
   dashboardCharts.states = new globalThis.Chart(canvas.getContext('2d'), {
     type: 'bar',
     data: {
-      labels: labels.map(formatCatalogLabel),
+      labels: labels.map((label) => formatCatalogLabel(label)),
       datasets: [{
         label: 'Incidencias',
         data: labels.map((label) => Number(countsByState[label] || 0)),
@@ -381,7 +381,7 @@ export function topEntry(values) {
 
 export function renderMapMarkers(incidents) {
   const map = globalThis.__sgiDashMap;
-  if (!map || typeof globalThis.maplibregl === 'undefined') {
+  if (!map || globalThis.maplibregl === undefined) {
     // If map is not initialized yet, try again shortly
     setTimeout(() => renderMapMarkers(incidents), 500);
     return;

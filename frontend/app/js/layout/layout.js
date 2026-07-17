@@ -5,8 +5,8 @@ import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from
 import {
   clearSession as clearAuthSession,
   hasPermission,
-  normalizePermissionCode,
 } from '../core/auth-session.js?v=16';
+export { normalizePermissionCode } from '../core/auth-session.js?v=16';
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21';
 
 /**
@@ -1043,7 +1043,6 @@ export {
   loadNavbarNotifications,
   logoutManually,
   normalizeMobileSidebar,
-  normalizePermissionCode,
   normalizeRoleCode,
   refreshSessionUserOrRedirect,
   renderLayout,
