@@ -279,7 +279,7 @@ export function renderTable(state) {
             <i class="fas fa-eye"></i>
           </a>
           <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : 'disabled title="La incidencia debe estar en progreso"'}>
-            <i class="fas fa-user-check mr-1"></i>${activeAssignments.length ? 'Reasignar' : 'Asignar'}
+            <i class="fas fa-user-check mr-1"></i><span>${activeAssignments.length ? 'Reasignar' : 'Asignar'}</span>
           </button>
         </td>
       </tr>`;
@@ -359,7 +359,7 @@ function renderAssignmentModal(state) {
 
   const primarySelect = document.getElementById('primaryOperatorSelect');
   if (primarySelect) {
-    const defaultOption = `<option value="" disabled ${!currentPrimaryId ? 'selected' : ''}>Seleccione un operador principal...</option>`;
+    const defaultOption = `<option value="" ${!currentPrimaryId ? 'selected' : ''}>Seleccione un operador principal...</option>`;
     const options = state.operators.map((operator) => {
       const disabled = !operator.available && String(operator.user_id) !== String(currentPrimaryId) ? 'disabled' : '';
       const selected = String(operator.user_id) === String(currentPrimaryId) ? 'selected' : '';

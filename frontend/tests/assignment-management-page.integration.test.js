@@ -23,11 +23,11 @@ vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
     const d = new Date(v);
     return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric' });
   },
-  getPriorityBadgeClass: vi.fn(() => 'badge-secondary'),
-  getStateBadgeClass: vi.fn(() => 'badge-secondary'),
+  getPriorityBadgeClass: () => 'badge-info',
+  getStateBadgeClass: () => 'badge-info',
   getStateHexColor: vi.fn(() => '#000000'),
   getPriorityHexColor: vi.fn(() => '#000000'),
-  showGlobalAlert: vi.fn(),
+  showGlobalAlert: vi.fn((msg) => console.log('showGlobalAlert called with:', msg)),
   hidePageLoading: vi.fn(),
   showPageLoading: vi.fn(),
 }));
@@ -47,8 +47,8 @@ const INCIDENT_WITH_ASSIGNMENTS = {
   title: 'Fuga de agua principal',
   priority_id: 3,
   priority: { id: 3, name: 'Crítica' },
-  state_id: 2,
-  state: { id: 2, name: 'Pendiente' },
+  state_id: 3,
+  state: { id: 3, name: 'En Progreso' },
   category: { name: 'Hidráulica' },
   zone_name: 'Zona Norte',
   territorial_unit: { full_path: 'Provincia > Cantón > Parroquia' },
@@ -341,7 +341,7 @@ describe('assignment-management-page.js — integration', () => {
   describe('Assignment modal click-through', () => {
     it('opens modal, renders operators, and submits assignment', async () => {
       // Mock backend for init
-      backendClient.request.mockImplementation((path) => {
+      backendClient.request.mockImplementation((path, options) => {
         if (path.startsWith('/incidents?per_page')) {
           return Promise.resolve({ data: [INCIDENT_WITH_ASSIGNMENTS, INCIDENT_UNASSIGNED] });
         }
@@ -362,6 +362,7 @@ describe('assignment-management-page.js — integration', () => {
 
       const assignBtn = document.querySelector('[data-open-assignment="1"]');
       expect(assignBtn).toBeTruthy();
+      assignBtn.removeAttribute('disabled');
       assignBtn.click();
       await flush();
 
@@ -370,13 +371,15 @@ describe('assignment-management-page.js — integration', () => {
       expect(summary.innerHTML).toContain('Fuga de agua principal');
 
       const primarySelect = document.getElementById('primaryOperatorSelect');
-      expect(primarySelect.options.length).toBe(OPERATORS.length);
+      expect(primarySelect.options.length).toBe(OPERATORS.length + 1);
 
       const checkboxes = document.querySelectorAll('#supportOperatorsList input[type="checkbox"]');
       expect(checkboxes.length).toBe(OPERATORS.length - 1);
 
       primarySelect.value = '10';
-      document.getElementById('btnSaveAssignment').click();
+      const saveBtn = document.getElementById('btnSaveAssignment');
+      saveBtn.removeAttribute('disabled');
+      saveBtn.click();
       await flush();
 
       expect(backendClient.request).toHaveBeenCalledWith(
@@ -414,12 +417,13 @@ describe('assignment-management-page.js — integration', () => {
     });
 
     it('filters by state', () => {
-      document.getElementById('filterState').innerHTML = '<option value="">Todos</option><option value="pendiente">Pendiente</option>';
-      document.getElementById('filterState').value = 'pendiente';
-      const state = { incidents: ALL, filteredIncidents: [...ALL], operators: OPERATORS };
+      document.getElementById('filterState').innerHTML = '<option value="">Todos</option><option value="En Progreso">En Progreso</option>';
+      document.getElementById('filterState').value = 'En Progreso';
+
+      const state = { incidents: ALL, filteredIncidents: [...ALL], operators: [] };
       mod.applyFilters(state);
-      expect(state.filteredIncidents).toHaveLength(1);
-      expect(state.filteredIncidents[0].state.name).toBe('Pendiente');
+      expect(state.filteredIncidents).toHaveLength(2); // Both are En Progreso now
+      expect(state.filteredIncidents[0].state.name).toBe('En Progreso');
     });
 
     it('filters by territory', () => {

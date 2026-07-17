@@ -294,6 +294,7 @@ describe('incident-create-page — wizard lifecycle', () => {
       expect(document.querySelector('[data-step-panel="evidence"]').classList.contains('d-none')).toBe(false);
 
       // 2 → 3 (evidence → details)
+      mod.addEvidenceFiles([new File([''], 'test.jpg', { type: 'image/jpeg' })]);
       document.getElementById('btnNextStep').click();
       expect(document.querySelector('[data-step-panel="details"]').classList.contains('d-none')).toBe(false);
 
@@ -454,6 +455,7 @@ describe('incident-create-page — wizard lifecycle', () => {
       subtipoEl.disabled = false;
       tipoEl.value = '1';
       subtipoEl.value = '10';
+      mod.addEvidenceFiles([new File([''], 'test.jpg', { type: 'image/jpeg' })]);
 
       mod.goNext();
       mod.goNext();
@@ -499,6 +501,7 @@ describe('incident-create-page — wizard lifecycle', () => {
       subtipoEl.disabled = false;
       tipoEl.value = '1';
       subtipoEl.value = '10';
+      mod.addEvidenceFiles([new File([''], 'test.jpg', { type: 'image/jpeg' })]);
 
       mod.goNext();
       mod.goNext();

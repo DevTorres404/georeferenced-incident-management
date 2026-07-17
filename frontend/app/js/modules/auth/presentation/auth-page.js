@@ -53,6 +53,7 @@ export function hasRoleAdmin(user) {
 export function getPostAuthPage(user) {
   if (userHasPermission(user, 'dashboard.view')) return 'dashboard.html';
   if (userHasPermission(user, 'incidents.view')) return 'incidents.html';
+  if (userHasPermission(user, 'incidents.create')) return 'incident-create.html';
   return 'incidents.html';
 }
 

@@ -298,6 +298,7 @@ describe('incident-create-page — integration', () => {
       document.getElementById('fSubtipo').value = '2';
       document.getElementById('fCorreo').value = 'test@example.com';
       const mod = await createModule();
+      mod.addEvidenceFiles([new File([''], 'test.jpg', { type: 'image/jpeg' })]);
 
       mod.goToStep('details');
 

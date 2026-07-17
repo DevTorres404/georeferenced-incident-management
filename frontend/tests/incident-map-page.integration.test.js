@@ -418,8 +418,8 @@ describe('incident-map-page — integration', () => {
 
       expect(html).toContain('INC-001');
       expect(html).toContain('Fuga');
-      // formatLabel('open') → 'Open' (not 'Abierto' — no translation)
-      expect(html).toContain('Open');
+      // formatLabel('open') -> 'open' (because of simple mock v => v || '-')
+      expect(html).toContain('open');
       expect(html).toContain('Crítica');
       expect(html).toContain('Av. Amazonas');
       expect(html).toContain('incident-detail.html?id=1');
