@@ -318,6 +318,10 @@ final class OperationalStructureTest extends TestCase
             'incident_cycle_id' => Incident::findOrFail($incidentId)->current_cycle_id,
             'active' => true,
         ]);
+        $this->assertSame(
+            Incident::findOrFail($incidentId)->current_cycle_id,
+            Incident::findOrFail($incidentId)->currentCycle->id
+        );
         $this->assertDatabaseHas('core.notifications', [
             'user_id' => (int) $replacementOperator->id,
             'message' => "Debes atender la incidencia {$incidentCode}.",

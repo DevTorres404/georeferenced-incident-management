@@ -87,7 +87,6 @@ class PermissionSeeder extends Seeder
             ])->pluck('id')->toArray(),
             'OPERADOR' => Permission::whereIn('code', [
                 'about.view',
-                'dashboard.view',
                 'incidents.view',
                 'incidents.detail',
                 'incidents.map',

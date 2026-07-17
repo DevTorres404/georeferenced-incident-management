@@ -62,6 +62,18 @@ export async function initIncidentsPage() {
     configureScopeFilters(state);
     configureRoleActions(state);
     bindPriorityFilters(state);
+
+    const isCitizenOnly = !userHasRole(state.currentUser, 'ADMIN') && 
+                          !userHasRole(state.currentUser, 'SUPERVISOR') && 
+                          !userHasRole(state.currentUser, 'OPERADOR');
+    state.isCitizenOnly = isCitizenOnly;
+    
+    if (isCitizenOnly) {
+      document.getElementById('incidentScopeSection')?.classList.add('d-none');
+      document.getElementById('stateFilterSection')?.classList.add('d-none');
+      document.getElementById('priorityFilterSection')?.classList.add('d-none');
+    }
+
     initDataTable(state);
     restoreSearchInput(state);
   } catch (error) {
@@ -180,9 +192,9 @@ function initDataTable(state) {
             : '';
 
           return `
-            <div class="d-none d-md-block table-ticket-code">${code}</div>
+            <div class="${state.isCitizenOnly ? 'd-none' : 'd-none d-md-block'} table-ticket-code">${code}</div>
             
-            <div class="d-block d-md-none">
+            <div class="${state.isCitizenOnly ? 'd-block' : 'd-block d-md-none'}">
               <div class="d-flex align-items-center justify-content-between mb-1">
                 <span class="table-ticket-code font-weight-bold">${code}</span>
                 <div>
@@ -192,11 +204,11 @@ function initDataTable(state) {
               </div>
               <h6 class="font-weight-bold mb-1 text-truncate" style="max-width: 100%;">${title}</h6>
               <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-                <span class="badge shadow-sm" style="background-color: ${priorityColor}; color: #fff">${escapeHtml(priorityLabel)}</span>
+                ${state.isCitizenOnly ? '' : `<span class="badge shadow-sm" style="background-color: ${priorityColor}; color: #fff">${escapeHtml(priorityLabel)}</span>`}
                 <small class="text-muted"><i class="fas fa-folder mr-1"></i>${category}</small>
               </div>
               <div class="d-flex flex-column mb-2">
-                <small class="text-muted text-truncate"><i class="fas fa-map-marker-alt mr-1 text-primary" style="opacity:0.6;"></i>${territory}</small>
+                ${state.isCitizenOnly ? '' : `<small class="text-muted text-truncate"><i class="fas fa-map-marker-alt mr-1 text-primary" style="opacity:0.6;"></i>${territory}</small>`}
                 <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i>${date}</small>
               </div>
               <div class="d-flex justify-content-end gap-2 border-top pt-2 mt-2">
@@ -280,13 +292,13 @@ function initDataTable(state) {
     ],
     columnDefs: [
       { targets: 0, className: 'text-left' },
-      { targets: 1, className: 'd-none d-md-table-cell' },
-      { targets: 2, className: 'd-none d-md-table-cell' },
-      { targets: 3, className: 'd-none d-md-table-cell' },
-      { targets: 4, className: 'd-none d-md-table-cell' },
-      { targets: 5, className: 'd-none d-md-table-cell' },
-      { targets: 6, className: 'd-none d-md-table-cell' },
-      { targets: 7, className: 'text-center d-none d-md-table-cell', orderable: false, searchable: false },
+      { targets: 1, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 2, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 3, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 4, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 5, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 6, className: 'd-none d-md-table-cell', visible: !state.isCitizenOnly },
+      { targets: 7, className: 'text-center d-none d-md-table-cell', visible: !state.isCitizenOnly, orderable: false, searchable: false },
     ],
     order: [[6, 'desc']],
     pageLength: 10,
@@ -329,6 +341,10 @@ function initDataTable(state) {
       if (tableEl) {
         tableEl.style.transition = 'opacity 0.25s ease';
         tableEl.style.opacity = '1';
+      }
+      if (state.isCitizenOnly) {
+        document.querySelector('#tablaIncidencias thead')?.classList.add('d-none');
+        document.querySelector('#tablaIncidencias')?.classList.remove('table-hover');
       }
     },
   });
@@ -570,6 +586,14 @@ function configureRoleActions(state) {
     const isInternalUser = isAdmin || isSupervisor || isOperator;
 
     mapButton.style.display = isInternalUser ? '' : 'none';
+
+    // Operators only see "En progreso" incidents — state/priority filters are irrelevant
+    if (isOperator && !isAdmin && !isSupervisor) {
+      const stateSection = document.getElementById('stateFilterSection');
+      const prioritySection = document.getElementById('priorityFilterSection');
+      if (stateSection) stateSection.style.display = 'none';
+      if (prioritySection) prioritySection.style.display = 'none';
+    }
   }
 }
 

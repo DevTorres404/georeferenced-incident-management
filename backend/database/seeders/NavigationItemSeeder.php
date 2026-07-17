@@ -19,7 +19,6 @@ class NavigationItemSeeder extends Seeder
                 'children' => [
                     ['code' => 'dashboard', 'label' => 'Panel principal', 'icon' => 'fa-tachometer-alt', 'route' => 'dashboard.html', 'permission_code' => 'dashboard.view', 'sort_order' => 10],
                     ['code' => 'reports', 'label' => 'Reportes y estadisticas', 'icon' => 'fa-chart-bar', 'route' => 'reports.html', 'permission_code' => 'reportes.ver', 'sort_order' => 20],
-                    ['code' => 'notifications', 'label' => 'Notificaciones', 'icon' => 'fa-bell', 'route' => 'notifications.html', 'permission_code' => 'notifications.view', 'sort_order' => 30],
                 ],
             ],
             [
@@ -69,6 +68,7 @@ class NavigationItemSeeder extends Seeder
             ],
         ];
 
+        $activeCodes = [];
         foreach ($groups as $group) {
             $children = $group['children'];
             unset($group['children']);
@@ -77,13 +77,17 @@ class NavigationItemSeeder extends Seeder
                 ['code' => $group['code']],
                 [...$group, 'parent_id' => null, 'route' => null, 'active' => true]
             );
+            $activeCodes[] = $group['code'];
 
             foreach ($children as $child) {
                 NavigationItem::updateOrCreate(
                     ['code' => $child['code']],
                     [...$child, 'parent_id' => $parent->id, 'active' => true]
                 );
+                $activeCodes[] = $child['code'];
             }
         }
+        
+        NavigationItem::whereNotIn('code', $activeCodes)->delete();
     }
 }

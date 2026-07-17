@@ -108,7 +108,19 @@ class IncidentsTest extends TestCase
             ->assertJsonPath('data.title', 'Bache grande frente al parque');
 
         $incidentId = $createResponse->json('data.id');
-        $this->assertNull(Incident::findOrFail($incidentId)->priority_id);
+        $createdIncident = Incident::findOrFail($incidentId);
+        $initialCycle = IncidentCycle::query()
+            ->where('incident_id', $incidentId)
+            ->where('cycle_number', 1)
+            ->firstOrFail();
+
+        $this->assertNull($createdIncident->priority_id);
+        $this->assertSame($initialCycle->id, $createdIncident->current_cycle_id);
+        $this->assertDatabaseHas('core.incident_states', [
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $initialCycle->id,
+            'new_state_id' => $createdIncident->state_id,
+        ]);
         Bus::assertDispatched(NotifyIncidentCreatedJob::class, function (NotifyIncidentCreatedJob $job) use ($incidentId): bool {
             return $job->incidentId === (int) $incidentId;
         });
@@ -2277,6 +2289,16 @@ class IncidentsTest extends TestCase
             ->assertOk()
             ->assertJsonPath('cycles.0.id', $firstCycle->id)
             ->assertJsonPath('cycles.0.cycle_number', 1)
+            ->assertJsonStructure([
+                'incident_id',
+                'current_cycle_number',
+                'cycles' => [[
+                    'id',
+                    'cycle_number',
+                    'status',
+                    'events',
+                ]],
+            ])
             ->assertJsonFragment(['description' => 'Public historic comment'])
             ->assertJsonFragment(['description' => 'historic-evidence.pdf'])
             ->assertJsonMissing(['description' => 'Internal historic comment']);
@@ -2285,7 +2307,39 @@ class IncidentsTest extends TestCase
             ->getJson("/api/incidents/{$incidentId}/cycles")
             ->assertOk()
             ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.id', $firstCycle->id);
+            ->assertJsonPath('data.0.id', $firstCycle->id)
+            ->assertJsonStructure([
+                'data' => [[
+                    'id',
+                    'cycle_number',
+                    'status',
+                    'opened_at',
+                    'opened_by',
+                    'reopening_reason',
+                    'resolved_at',
+                    'resolved_by',
+                    'resolution_description',
+                    'closed_at',
+                    'closed_by',
+                ]],
+            ]);
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/cycles/{$firstCycle->id}")
+            ->assertOk()
+            ->assertJsonStructure([
+                'cycle' => [
+                    'id',
+                    'cycle_number',
+                    'number',
+                    'status',
+                    'opened_at',
+                    'snapshot',
+                ],
+                'state_history',
+                'comments',
+                'attachments',
+            ]);
 
         $otherCitizen = $this->authenticateAs('CIUDADANO', 'other-cycle-history@incidencias.local')['user'];
         foreach ([
@@ -2317,6 +2371,151 @@ class IncidentsTest extends TestCase
         $this->actingAsUser($citizen)
             ->getJson("/api/incidents/{$incidentId}/cycles/{$otherCycle->id}")
             ->assertNotFound();
+    }
+
+    public function test_two_reopen_cycles_preserve_prior_cycle_public_evidence_and_snapshots(): void
+    {
+        $this->seedCoreData();
+
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-multi-cycle@incidencias.local')['user'];
+        $admin = $this->authenticateAs('ADMIN', 'admin-multi-cycle@incidencias.local')['user'];
+        $inProgressState = State::where('name', 'EN_PROGRESO')->firstOrFail();
+        $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
+        $closedState = State::where('name', 'CERRADA')->firstOrFail();
+        $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+        $reviewState = State::where('name', 'EN_REVISION')->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen)
+            ->postJson('/api/incidents', [
+                'title' => 'Multiple reopen cycles',
+                'description' => 'Public evidence remains visible across every completed cycle.',
+                'category_id' => Category::firstOrFail()->id,
+                'subcategory_id' => Subcategory::where('category_id', Category::firstOrFail()->id)->firstOrFail()->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        $incident = Incident::findOrFail($incidentId);
+        $incident->forceFill([
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => $inProgressState->id,
+        ])->save();
+        $firstCycle = IncidentCycle::query()->where('incident_id', $incidentId)->where('cycle_number', 1)->firstOrFail();
+
+        IncidentComment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $firstCycle->id,
+            'user_id' => $admin->id,
+            'comment' => 'Cycle 1 public comment',
+            'is_internal' => false,
+        ]);
+        IncidentAttachment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $firstCycle->id,
+            'user_id' => $admin->id,
+            'original_name' => 'cycle-1-evidence.txt',
+            'file_path' => 'incidents/cycle-1-evidence.txt',
+            'mime_type' => 'text/plain',
+            'file_size_bytes' => 101,
+            'file_hash' => 'cycle-one-hash',
+        ]);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'Cycle 1 resolved.',
+            ])->assertOk();
+        $firstSnapshot = $firstCycle->fresh()->snapshot;
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $closedState->id])
+            ->assertOk();
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'Cycle 2 is required.',
+            ])->assertOk();
+
+        $secondCycle = IncidentCycle::query()->where('incident_id', $incidentId)->where('cycle_number', 2)->firstOrFail();
+        $this->assertSame($secondCycle->id, $incident->fresh()->current_cycle_id);
+        $this->assertSame($firstSnapshot, $firstCycle->fresh()->snapshot);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $reviewState->id])
+            ->assertOk();
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $inProgressState->id])
+            ->assertOk();
+
+        IncidentComment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $secondCycle->id,
+            'user_id' => $admin->id,
+            'comment' => 'Cycle 2 public comment',
+            'is_internal' => false,
+        ]);
+        IncidentAttachment::query()->create([
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $secondCycle->id,
+            'user_id' => $admin->id,
+            'original_name' => 'cycle-2-evidence.txt',
+            'file_path' => 'incidents/cycle-2-evidence.txt',
+            'mime_type' => 'text/plain',
+            'file_size_bytes' => 202,
+            'file_hash' => 'cycle-two-hash',
+        ]);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $resolvedState->id,
+                'comment' => 'Cycle 2 resolved.',
+            ])->assertOk();
+        $secondSnapshot = $secondCycle->fresh()->snapshot;
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $closedState->id])
+            ->assertOk();
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", [
+                'state_id' => $reopenedState->id,
+                'comment' => 'Cycle 3 is required.',
+            ])->assertOk();
+
+        $thirdCycle = IncidentCycle::query()->where('incident_id', $incidentId)->where('cycle_number', 3)->firstOrFail();
+        $this->assertSame($thirdCycle->id, $incident->fresh()->current_cycle_id);
+        $this->assertSame($firstSnapshot, $firstCycle->fresh()->snapshot);
+        $this->assertSame($secondSnapshot, $secondCycle->fresh()->snapshot);
+
+        $this->actingAsUser($admin)
+            ->patchJson("/api/incidents/{$incidentId}/state", ['state_id' => $reviewState->id])
+            ->assertOk();
+        $this->assertDatabaseHas('core.incident_states', [
+            'incident_id' => $incidentId,
+            'incident_cycle_id' => $thirdCycle->id,
+            'new_state_id' => $reviewState->id,
+        ]);
+
+        foreach ([
+            [$firstCycle, 'Cycle 1 public comment', 'cycle-1-evidence.txt'],
+            [$secondCycle, 'Cycle 2 public comment', 'cycle-2-evidence.txt'],
+        ] as [$cycle, $comment, $attachment]) {
+            $this->actingAsUser($citizen)
+                ->getJson("/api/incidents/{$incidentId}/cycles/{$cycle->id}")
+                ->assertOk()
+                ->assertJsonFragment(['comment' => $comment])
+                ->assertJsonFragment(['name' => $attachment]);
+        }
+
+        $this->actingAsUser($citizen)
+            ->getJson("/api/incidents/{$incidentId}/timeline")
+            ->assertOk()
+            ->assertJsonCount(3, 'cycles')
+            ->assertJsonPath('current_cycle_number', 3)
+            ->assertJsonFragment(['description' => 'Cycle 1 public comment'])
+            ->assertJsonFragment(['description' => 'cycle-1-evidence.txt'])
+            ->assertJsonFragment(['description' => 'Cycle 2 public comment'])
+            ->assertJsonFragment(['description' => 'cycle-2-evidence.txt']);
     }
 
     private function seedCoreData(): void

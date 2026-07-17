@@ -761,7 +761,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $isClosing = in_array($normalizedNewState, ['CERRADA', 'CLOSED'], true);
         $isReopening = in_array($normalizedNewState, ['REABIERTA', 'REOPENED'], true);
         $isResolved = in_array($normalizedNewState, ['RESUELTA', 'RESOLVED'], true);
-        $releasesAssignments = $isClosing || $isReopening;
+        $releasesAssignments = $isClosing;
         [$assignedOperatorIds, $previousStateId] = DB::transaction(function () use (
             $incidentId,
             $data,
@@ -816,6 +816,37 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 ]);
 
                 $updateData['current_cycle_id'] = $newCycle->id;
+
+                // Clone active assignments to the new cycle
+                $activeAssignments = IncidentAssignment::query()
+                    ->where('incident_id', $incident->id)
+                    ->where('active', true)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($activeAssignments->isNotEmpty()) {
+                    // Close old assignments
+                    IncidentAssignment::query()
+                        ->where('incident_id', $incident->id)
+                        ->where('active', true)
+                        ->update([
+                            'active' => false,
+                            'unassignment_date' => now(),
+                        ]);
+
+                    // Re-create assignments for the new cycle
+                    foreach ($activeAssignments as $assignment) {
+                        IncidentAssignment::create([
+                            'incident_id' => $incident->id,
+                            'incident_cycle_id' => $newCycle->id,
+                            'user_id' => $assignment->user_id,
+                            'assigned_by_id' => $userId, // Supervisor reopening it
+                            'assignment_role' => $assignment->assignment_role,
+                            'active' => true,
+                            'assignment_date' => now(),
+                        ]);
+                    }
+                }
             } else {
                 if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {
                     $updateData['rejected_at'] = $incident->rejected_at ?? now();

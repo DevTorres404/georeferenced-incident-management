@@ -23,8 +23,11 @@ export function buildTopbarHtml(user) {
           </div>
           <div id="navbarNotificationsList" class="sgi-notif-dropdown-list"></div>
           <button type="button" id="btnMarkAllRead" class="sgi-notif-dropdown-footer" style="display:none;">
-            <i class="fas fa-check-double mr-1"></i>Marcar todas como leidas
+            <i class="fas fa-check-double mr-1"></i>Marcar todas como leídas
           </button>
+          <a href="notifications.html" class="sgi-notif-dropdown-footer bg-light text-center border-top font-weight-bold" style="text-decoration:none; display:block; padding: 10px;">
+            Ver todas las notificaciones <i class="fas fa-arrow-right ml-1"></i>
+          </a>
         </div>
       </li>`;
 

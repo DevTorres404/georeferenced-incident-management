@@ -47,6 +47,11 @@ class IncidentAssignment extends Model
         return $this->belongsTo(Incident::class, 'incident_id');
     }
 
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(IncidentCycle::class, 'incident_cycle_id');
+    }
+
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

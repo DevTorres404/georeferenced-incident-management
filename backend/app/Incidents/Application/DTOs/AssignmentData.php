@@ -9,6 +9,7 @@ final class AssignmentData implements JsonSerializable
     public function __construct(
         public readonly int $id,
         public readonly int $incidentId,
+        public readonly ?int $incidentCycleId,
         public readonly int $userId,
         public readonly ?int $assignedById,
         public readonly string $assignmentRole,
@@ -25,6 +26,7 @@ final class AssignmentData implements JsonSerializable
         return [
             'id' => $this->id,
             'incident_id' => $this->incidentId,
+            'incident_cycle_id' => $this->incidentCycleId,
             'user_id' => $this->userId,
             'assigned_by_id' => $this->assignedById,
             'assignment_role' => $this->assignmentRole,

@@ -21,6 +21,5 @@ final class IncidentFiltersData
         public readonly ?string $sortBy = null,
         public readonly ?string $sortDirection = null,
         public readonly ?bool $pendingStateRequest = null,
-    ) {
-    }
+    ) {}
 }

@@ -14,6 +14,7 @@ final class AssignmentMapper
         return new AssignmentData(
             id: (int) $assignment->id,
             incidentId: (int) $assignment->incident_id,
+            incidentCycleId: $assignment->incident_cycle_id ? (int) $assignment->incident_cycle_id : null,
             userId: (int) $assignment->user_id,
             assignedById: $assignment->assigned_by_id ? (int) $assignment->assigned_by_id : null,
             assignmentRole: (string) ($assignment->assignment_role ?? 'primary'),

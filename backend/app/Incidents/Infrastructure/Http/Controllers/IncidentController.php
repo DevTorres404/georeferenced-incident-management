@@ -88,8 +88,8 @@ class IncidentController extends ApiController
             stateId: $filters['state_id'] ?? null,
             priorityId: $filters['priority_id'] ?? null,
             categoryId: $filters['category_id'] ?? null,
-            mine: $filters['mine'] ?? null,
-            assignedToMe: $filters['assigned_to_me'] ?? null,
+            mine: isset($filters['mine']) ? filter_var($filters['mine'], FILTER_VALIDATE_BOOLEAN) : null,
+            assignedToMe: isset($filters['assigned_to_me']) ? filter_var($filters['assigned_to_me'], FILTER_VALIDATE_BOOLEAN) : null,
             overdue: $filters['overdue'] ?? null,
             search: $filters['search'] ?? null,
             latitude: $filters['latitude'] ?? null,
@@ -142,8 +142,8 @@ class IncidentController extends ApiController
             stateFilter: $validated['state_filter'] ?? null,
             stateId: $validated['state_id'] ?? null,
             priorityId: $validated['priority_filter'] ?? null,
-            mine: $validated['mine'] ?? null,
-            assignedToMe: $validated['assigned_to_me'] ?? null,
+            mine: isset($validated['mine']) ? filter_var($validated['mine'], FILTER_VALIDATE_BOOLEAN) : null,
+            assignedToMe: isset($validated['assigned_to_me']) ? filter_var($validated['assigned_to_me'], FILTER_VALIDATE_BOOLEAN) : null,
             search: $searchValue,
             sortBy: $sortBy,
             sortDirection: $orderDirection,
@@ -182,8 +182,8 @@ class IncidentController extends ApiController
         ]);
 
         $filters = new IncidentFiltersData(
-            mine: $validated['mine'] ?? null,
-            assignedToMe: $validated['assigned_to_me'] ?? null,
+            mine: isset($validated['mine']) ? filter_var($validated['mine'], FILTER_VALIDATE_BOOLEAN) : null,
+            assignedToMe: isset($validated['assigned_to_me']) ? filter_var($validated['assigned_to_me'], FILTER_VALIDATE_BOOLEAN) : null,
         );
 
         return response()->json([
@@ -912,7 +912,13 @@ class IncidentController extends ApiController
 
     private function visibleIncidentDetail(User $user, IncidentDetailData $detail): IncidentDetailData
     {
-        if ($this->can($user, 'comments.internal')) {
+        $canSeeInternalComments = $this->can($user, 'comments.internal');
+
+        $filteredComments = $canSeeInternalComments
+            ? $detail->comments
+            : array_values(array_filter($detail->comments, fn ($c) => ! $c->isInternal));
+
+        if ($canSeeInternalComments) {
             return $detail;
         }
 
@@ -942,10 +948,7 @@ class IncidentController extends ApiController
             assignedOperator: $detail->assignedOperator,
             sla: $detail->sla,
             history: $detail->history,
-            comments: array_values(array_filter(
-                $detail->comments,
-                fn ($comment) => ! $comment->isInternal
-            )),
+            comments: $filteredComments,
             attachments: $detail->attachments,
             assignments: $detail->assignments,
             cycles: $detail->cycles,

@@ -3,6 +3,7 @@ import { readUser } from '../../../core/auth-session.js?v=14';
 import { hideMainLoader, showMainLoader } from '../../../layout/loader.js?v=20';
 import { escapeHtml } from '../../../shared/sanitizer.js?v=20';
 import { getMapCatalogs, listIncidentMapPoints } from '../application/map-service.js?v=1';
+import { formatCatalogLabel, getPriorityHexColor, getStateHexColor } from '../../incidents/presentation/incidents-ui.js?v=2';
 
 const state = {
   map: null,
@@ -337,6 +338,12 @@ function renderList() {
   list.innerHTML = state.points.map((point) => {
     const stateName = point.state_name || point.state?.name || point.state?.nombre || '';
     const priorityName = point.priority_name || point.priority?.name || point.priority?.nombre || '';
+    
+    const stateLabel = formatCatalogLabel(stateName);
+    const stateColor = point.state_color || getStateHexColor(stateName);
+    
+    const priorityLabel = formatCatalogLabel(priorityName);
+    const priorityColor = point.priority_color || getPriorityHexColor(priorityName);
 
     return `
     <button type="button" class="list-group-item list-group-item-action js-focus-incident" data-incident-id="${escapeHtml(point.id)}">
@@ -346,11 +353,11 @@ function renderList() {
           <div class="text-main">${escapeHtml(point.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(point.address || point.city?.name || 'Sin dirección registrada')}</small>
         </div>
-        <span class="badge ${getPriorityBadgeClass(priorityName)}">${escapeHtml(formatLabel(priorityName) || '-')}</span>
+        <span class="badge shadow-sm" style="background-color: ${priorityColor}; color: #fff;">${escapeHtml(priorityLabel || '-')}</span>
       </div>
       <div class="mt-2">
-        <span class="badge badge-light">${escapeHtml(formatLabel(stateName) || 'Sin estado')}</span>
-        <span class="badge badge-light">${escapeHtml(formatLabel(point.category?.name || point.category_name || 'Sin categoría'))}</span>
+        <span class="badge shadow-sm" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(stateLabel || 'Sin estado')}</span>
+        <span class="badge badge-light">${escapeHtml(formatCatalogLabel(point.category?.name || point.category_name || 'Sin categoría'))}</span>
       </div>
     </button>
   `}).join('');
@@ -386,14 +393,20 @@ function buildPopupHtml(point) {
   // Extraer nombre de estado y prioridad desde múltiples formatos posibles
   const stateName = point.state_name || point.state?.name || point.state?.nombre || '';
   const priorityName = point.priority_name || point.priority?.name || point.priority?.nombre || '';
+  
+  const stateLabel = formatCatalogLabel(stateName);
+  const stateColor = point.state_color || getStateHexColor(stateName);
+  
+  const priorityLabel = formatCatalogLabel(priorityName);
+  const priorityColor = point.priority_color || getPriorityHexColor(priorityName);
 
   return `
     <div class="incident-map-popup">
       <strong>${escapeHtml(point.code || `#${point.id}`)}</strong>
       <p>${escapeHtml(point.title || 'Sin título')}</p>
       <dl>
-        <dt>Estado</dt><dd>${escapeHtml(formatLabel(stateName) || '-')}</dd>
-        <dt>Prioridad</dt><dd>${escapeHtml(formatLabel(priorityName) || '-')}</dd>
+        <dt>Estado</dt><dd><span class="badge shadow-sm" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(stateLabel || '-')}</span></dd>
+        <dt>Prioridad</dt><dd><span class="badge shadow-sm" style="background-color: ${priorityColor}; color: #fff;">${escapeHtml(priorityLabel || '-')}</span></dd>
         <dt>Ubicación</dt><dd>${escapeHtml(point.address || point.city?.name || '-')}</dd>
       </dl>
       <a class="btn btn-sm btn-primary btn-block" href="incident-detail.html?id=${encodeURIComponent(point.id)}">

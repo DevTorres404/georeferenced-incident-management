@@ -117,6 +117,8 @@ class StateSeeder extends Seeder
 
             // RESUELTA → CERRADA (Supervisor confirma)
             ['origen' => 'RESUELTA',    'destino' => 'CERRADA',      'comment' => false, 'roles' => ['ADMIN', 'SUPERVISOR']],
+            // RESUELTA → REABIERTA (Supervisor rechaza la resolución)
+            ['origen' => 'RESUELTA',    'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],
 
             // CERRADA → REABIERTA (Supervisión reabre para nueva revisión)
             ['origen' => 'CERRADA',     'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],

@@ -4,7 +4,6 @@ namespace App\Incidents\Domain\Repositories;
 
 use App\Incidents\Application\DTOs\AddCommentInputData;
 use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
-use App\Incidents\Application\DTOs\AssignmentData;
 use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
@@ -14,6 +13,7 @@ use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentListResultData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
+use App\Incidents\Application\DTOs\IncidentMapPointData;
 use App\Incidents\Application\DTOs\NotificationData;
 use App\Incidents\Application\DTOs\NotificationFiltersData;
 use App\Incidents\Application\DTOs\RequestStateChangeInputData;
@@ -37,7 +37,7 @@ interface IncidentRepositoryInterface
     public function countByState(IncidentFiltersData $filters, int $userId, bool $canManage): array;
 
     /**
-     * @return array<int, \App\Incidents\Application\DTOs\IncidentMapPointData>
+     * @return array<int, IncidentMapPointData>
      */
     public function mapPoints(IncidentMapFiltersData $filters, int $userId, bool $canManage): array;
 

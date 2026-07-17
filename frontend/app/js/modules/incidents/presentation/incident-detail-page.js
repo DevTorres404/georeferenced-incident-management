@@ -134,9 +134,11 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const history = Array.isArray(incident.history) ? incident.history : [];
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
   const isOperatorRole = isOperator();
-  const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
-  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION';
-  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state);
+  const isFinalState = Boolean(incident.state?.is_final_state);
+  const isReadOnly = isFinalState || normalizeCode(incident.state?.name) === 'RESUELTA';
+  const canChangeState = hasPermission('incidents.edit') && !isOperatorRole && !isFinalState;
+  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION' && !isFinalState;
+  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state) && !isFinalState;
   const hasValidCoordinates = hasCoordinates(incident);
   const historyTooltip = renderRecentStateChangesTooltip(history);
 
@@ -241,7 +243,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             </div>
             <hr>
             <p class="detalle-label">Descripción completa</p>
-            <p class="text-justify">${escapeHtml(incident.description || '-')}</p>
+            <p class="text-justify mb-4">${escapeHtml(incident.description || '-')}</p>
+            
+            ${renderActiveOperators(incident.assignments || [], incident)}
           </div>
         </div>
 
@@ -291,6 +295,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
           <div class="card-body" id="listadoComentarios" style="max-height: 400px; overflow-y: auto;">
             ${renderComments(comments)}
           </div>
+          ${!isReadOnly ? `
           <div class="card-footer">
             <div class="input-group">
               <input type="text" id="nuevoComentario" class="form-control" placeholder="Escriba un comentario...">
@@ -301,12 +306,13 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               </div>
             </div>
           </div>
+          ` : ''}
         </div>
 
         <div class="card card-outline card-success">
           <div class="card-header">
             <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
-              <h3 class="card-title mb-0"><i class="fas fa-paperclip mr-2"></i>Evidencias y Documentos</h3>
+              <h3 class="card-title mb-0"><i class="fas fa-paperclip mr-2"></i>Evidencias</h3>
               <span class="badge badge-success" id="attachmentsCount">${attachments.length}</span>
             </div>
           </div>
@@ -319,6 +325,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               </div>
             </div>
 
+            ${!isReadOnly ? `
             <form id="attachmentUploadForm" class="mb-4" novalidate>
               <div class="form-row align-items-end">
                 <div class="col-md-8">
@@ -342,6 +349,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                 </div>
               </div>
             </form>
+            ` : ''}
 
             <div id="attachmentsList">
               ${renderAttachments(attachments)}
@@ -516,6 +524,24 @@ export function openCyclesModal() {
         const mainReason = cycle.resolution_description || cycle.closure_reason;
         const closureAdministrativeComment = cycle.closure_reason && cycle.closure_reason !== cycle.resolution_description ? cycle.closure_reason : null;
 
+        // Compute operators assigned during this cycle
+        const cycleStartMs = cycle.opened_at ? new Date(cycle.opened_at).getTime() : 0;
+        const cycleEndMs = cycle.resolved_at ? new Date(cycle.resolved_at).getTime() : (cycle.closed_at ? new Date(cycle.closed_at).getTime() : Date.now());
+
+        const cycleOperators = (incident.assignments || [])
+          .filter(a => {
+            const aStartMs = a.assignment_date ? new Date(a.assignment_date).getTime() : 0;
+            const aEndMs = a.unassignment_date ? new Date(a.unassignment_date).getTime() : (a.resolved_at ? new Date(a.resolved_at).getTime() : Date.now());
+            return aStartMs <= cycleEndMs && aEndMs >= cycleStartMs;
+          })
+          .map(a => `${a.user?.first_name || ''} ${a.user?.last_name || ''}`.trim() || a.user?.email)
+          .filter(Boolean);
+          
+        const uniqueOperators = [...new Set(cycleOperators)];
+        const operatorsHtml = uniqueOperators.length > 0
+          ? `<br><strong>Operadores a cargo:</strong> ${escapeHtml(uniqueOperators.join(', '))}`
+          : '<br><strong>Operadores a cargo:</strong> <span class="text-muted">Ninguno</span>';
+
         return `
           <div class="list-group-item">
             <div class="d-flex w-100 justify-content-between">
@@ -525,6 +551,7 @@ export function openCyclesModal() {
             <p class="mb-1 small">
               <strong>Abierto por:</strong> ${escapeHtml(openedBy)}
               ${cycle.reopening_reason ? `<br><strong>Motivo reapertura:</strong> <span class="text-muted">${escapeHtml(cycle.reopening_reason)}</span>` : ''}
+              ${operatorsHtml}
               <br><strong>Resolución:</strong> ${resolved}
               <br><strong>Resuelto por:</strong> ${escapeHtml(resolvedBy)}
               ${mainReason ? `<br><strong>Motivo de resolución/cierre:</strong> <span class="text-muted">${escapeHtml(mainReason)}</span>` : ''}
@@ -581,13 +608,23 @@ export function renderStateSelector(incident, transitions) {
 
 export function getAvailableStateTransitions(incident, transitions) {
   const seenTargets = new Set();
+  const user = readCurrentUser();
+  const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => normalizeCode(r)) : [];
+  const isAdmin = userRoles.includes('ADMIN');
+  const isSupervisor = userRoles.includes('SUPERVISOR') && !isAdmin;
 
   return transitions.filter((transition) => {
     const targetStateId = Number(transition.target_state_id);
+    const targetStateName = normalizeCode(transition.target_state_name || '');
     const isActive = transition.is_active !== false && Number(transition.is_active) !== 0;
     const isCurrentSource = Number(transition.source_state_id) === Number(incident.state_id);
     const isNewTarget = targetStateId !== Number(incident.state_id) && !seenTargets.has(targetStateId);
     const isAllowed = isTransitionAllowedForCurrentUser(transition);
+
+    // Los supervisores no pueden pasar la incidencia a RESUELTA de forma manual
+    if (isSupervisor && targetStateName === 'RESUELTA') {
+      return false;
+    }
 
     if (!isActive || !isCurrentSource || !isNewTarget || !isAllowed) return false;
     seenTargets.add(targetStateId);
@@ -985,6 +1022,20 @@ function bindStateChangeControl(incident, transitions) {
       return;
     }
 
+    directSelect.value = String(incident.state_id);
+    const confirm = await Swal.fire({
+      title: '¿Confirmar cambio?',
+      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(transition.target_state_name || '')}"?${normalizeCode(transition.target_state_name) === 'CERRADA' ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (!confirm.isConfirmed) {
+      return;
+    }
+
     directSelect.disabled = true;
     try {
       await executeStateTransition(incident, transition, '', transitions);
@@ -1008,6 +1059,18 @@ function bindStateChangeControl(incident, transitions) {
       commentInput.focus();
       return;
     }
+
+    const confirm = await Swal.fire({
+      title: '¿Confirmar cambio?',
+      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(pendingTransition.target_state_name || '')}"?${normalizeCode(pendingTransition.target_state_name) === 'CERRADA' ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+      target: document.getElementById('modalEstado')
+    });
+
+    if (!confirm.isConfirmed) return;
 
     saveButton.disabled = true;
     try {
@@ -1632,11 +1695,12 @@ function openRejectModal(incident, request) {
 function renderReviewSummary(request) {
   const requesterName = request.requestedByUserName || request.requested_by_user_name || 'Usuario';
   const stateName = request.requestedStateName || request.requested_state_name || '-';
+  const stateColor = request.requestedStateColor || request.requested_state_color || getStateHexColor(stateName);
 
   return `
     <div class="small">
       <p><strong>Solicitante:</strong> ${escapeHtml(requesterName)}</p>
-      <p><strong>Estado solicitado:</strong> <span class="badge badge-info">${escapeHtml(formatCatalogLabel(stateName))}</span></p>
+      <p><strong>Estado solicitado:</strong> <span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></p>
       <p><strong>Razon:</strong><br>${escapeHtml(request.reason || 'Sin especificar')}</p>
       <p><strong>Fecha:</strong> ${escapeHtml(formatDateTime(request.created_at || request.createdAt))}</p>
     </div>`;
@@ -1780,3 +1844,37 @@ document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async
     if (btn) btn.disabled = false;
   }
 });
+
+function renderActiveOperators(assignments, incident) {
+  let targetAssignments = assignments.filter(a => a.active);
+  
+  if (targetAssignments.length === 0 && incident?.cycles?.length > 0) {
+    const latestCycle = incident.cycles[incident.cycles.length - 1];
+    targetAssignments = assignments.filter(a => Number(a.incident_cycle_id) === Number(latestCycle.id));
+  }
+  
+  if (targetAssignments.length === 0) return '';
+  
+  const operatorCards = targetAssignments.map(a => {
+    const name = (a.user?.first_name || '') + ' ' + (a.user?.last_name || '');
+    return `
+      <div class="d-flex align-items-center mb-2">
+        <div class="mr-3 text-info">
+          <i class="fas fa-user-circle fa-2x"></i>
+        </div>
+        <div>
+          <div class="font-weight-bold" style="line-height: 1.1;">${escapeHtml(name.trim() || 'Operador Desconocido')}</div>
+          <div class="text-muted small">Asignado el ${formatShortDate(a.assignment_date)}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <hr>
+    <p class="detalle-label mb-2"><i class="fas fa-users mr-1"></i> Operadores a cargo</p>
+    <div class="mt-2 bg-light rounded p-3 border">
+      ${operatorCards}
+    </div>
+  `;
+}
