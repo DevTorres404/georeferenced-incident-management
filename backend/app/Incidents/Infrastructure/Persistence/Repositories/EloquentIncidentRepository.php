@@ -332,7 +332,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $this->notifyZoneSupervisorsOrAdmins(
             incident: $incident,
             title: 'Nueva incidencia creada',
-            message: 'Nueva incidencia reportada en '.($incident->category?->name ?? 'una categoría registrada').'.',
+            message: "Nueva incidencia {$incident->code} reportada en ".($incident->category?->name ?? 'una categoría registrada').'.',
             type: 'STATUS_CHANGE'
         );
 
@@ -341,7 +341,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             $this->notifyZoneSupervisorsForIncident(
                 incident: $incident,
                 title: 'Incidencia critica creada',
-                message: "Se reporto una incidencia critica en {$sector}.",
+                message: "Se reporto una incidencia critica {$incident->code} en {$sector}.",
                 type: 'STATUS_CHANGE'
             );
         }

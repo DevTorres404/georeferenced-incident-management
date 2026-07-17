@@ -743,6 +743,10 @@ export function validateLocation() {
 
 export function validateEvidence() {
   clearEvidenceError();
+  if (evidenceFiles.length === 0) {
+    setEvidenceError('Debe subir al menos una fotografía como evidencia.');
+    return false;
+  }
   return true;
 }
 

@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
     <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/incident-create.css?v=3">
+    <link rel="stylesheet" href="/css/pages/incident-create.css?v=4">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -89,8 +89,7 @@
                                             class="wizard-step-button is-active" data-step-target="location">
                                             <span>1</span> <strong>Ubicación</strong> </button> <button type="button"
                                             class="wizard-step-button" data-step-target="evidence"> <span>2</span>
-                                            <strong>Evidencia <small
-                                                    class="text-muted font-weight-normal">(opcional)</small></strong>
+                                            <strong>Evidencia <small class="text-danger font-weight-normal">(obligatorio)</small></strong>
                                         </button> <button type="button" class="wizard-step-button"
                                             data-step-target="details"> <span>3</span>
                                             <strong>Detalles</strong> </button> <button type="button"
@@ -140,7 +139,7 @@
                                         </div>
                                     </div>
                                     <div class="wizard-panel d-none" data-step-panel="evidence">
-                                        <h3>2. Evidencia fotografica</h3>
+                                        <h3>2. Evidencia fotografica <span class="text-danger">*</span></h3>
                                         <p>Sube al menos una foto clara del daño observado.</p> <input type="file"
                                             class="d-none" id="fEvidence" accept="image/jpeg,image/png" multiple
                                             aria-label="Seleccionar archivos de evidencia">
@@ -235,7 +234,7 @@
         <script src="/dist/js/adminlte.min.js"></script>
         <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
         <script type="module" src="/js/layout/layout.js?v=43"></script>
-        <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=38"></script>
+        <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=40"></script>
     </div>
 </body>
 
