@@ -34,4 +34,4 @@ RUN composer dump-autoload --optimize \
        storage/framework/sessions storage/framework/testing storage/framework/views \
        storage/logs bootstrap/cache
 
-CMD ["php", "run-analysis-coverage.php"]
+CMD ["./vendor/bin/phpunit", "--coverage-clover=build/logs/clover.xml", "--log-junit=build/logs/junit.xml"]
