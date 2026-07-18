@@ -143,7 +143,7 @@
                                         <p>Sube al menos una foto clara del daño observado.</p> <input type="file"
                                             class="d-none" id="fEvidence" accept="image/jpeg,image/png" multiple
                                             aria-label="Seleccionar archivos de evidencia">
-                                        <div class="evidence-dropzone" id="evidenceDropzone" role="button" tabindex="0">
+                                        <div class="evidence-dropzone" id="evidenceDropzone" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
                                             <div class="evidence-folder" aria-hidden="true">
                                                 <div class="evidence-folder-top"></div>
                                                 <div class="evidence-folder-bottom"></div>

@@ -1,33 +1,24 @@
 <?php
 
 $normalizeOrigin = static function (string $origin): ?string {
-    $origin = trim($origin);
-    $result = null;
-
-    if ($origin !== '' && !str_contains($origin, '*') && filter_var($origin, FILTER_VALIDATE_URL) !== false) {
-        $parts = parse_url($origin);
-
-        if ($parts !== false) {
-            $scheme = strtolower($parts['scheme'] ?? '');
-            
-            $isValid = in_array($scheme, ['http', 'https'], true)
-                && isset($parts['host'])
-                && !isset($parts['user'])
-                && !isset($parts['pass'])
-                && !isset($parts['query'])
-                && !isset($parts['fragment'])
-                && (!isset($parts['path']) || $parts['path'] === '' || $parts['path'] === '/');
-
-            if ($isValid) {
-                $host = strtolower($parts['host']);
-                $port = $parts['port'] ?? null;
-                $isDefaultPort = ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
-                $result = $scheme.'://'.$host.($port !== null && !$isDefaultPort ? ':'.$port : '');
-            }
-        }
+    $parts = parse_url(trim($origin));
+    
+    if (!$parts || !isset($parts['scheme'], $parts['host']) || str_contains($origin, '*')) {
+        return null;
     }
 
-    return $result;
+    $scheme = strtolower($parts['scheme']);
+    $hasExtra = array_intersect_key($parts, array_flip(['user', 'pass', 'query', 'fragment']));
+    $hasPath = isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/';
+
+    if ($hasExtra || $hasPath || !in_array($scheme, ['http', 'https'], true)) {
+        return null;
+    }
+
+    $port = $parts['port'] ?? null;
+    $isDefaultPort = ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
+
+    return $scheme.'://'.strtolower($parts['host']).($port !== null && !$isDefaultPort ? ':'.$port : '');
 };
 
 $allowedOrigins = array_values(array_unique(array_filter(array_map(
