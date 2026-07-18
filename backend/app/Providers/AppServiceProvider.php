@@ -103,48 +103,31 @@ class AppServiceProvider extends ServiceProvider
         Model::preventLazyLoading(! app()->isProduction());
 
         RateLimiter::for('login', function (Request $request) {
-            $email = (string) $request->input('email');
-
-            return [
-                Limit::perMinute(5)->by($request->ip())->response($this->rateLimitResponse()),
-                Limit::perMinute(5)->by($email.'|'.$request->ip())->response($this->rateLimitResponse()),
-            ];
+            return Limit::none();
         });
 
         RateLimiter::for('register', function (Request $request) {
-            $email = (string) $request->input('email');
-
-            return [
-                Limit::perHour(3)->by($request->ip())->response($this->rateLimitResponse()),
-                Limit::perHour(3)->by($email ?: $request->ip())->response($this->rateLimitResponse()),
-            ];
+            return Limit::none();
         });
 
         RateLimiter::for('password.recovery', function (Request $request) {
-            $email = strtolower((string) $request->input('email'));
-
-            return [
-                Limit::perMinute(30)->by($request->ip())->response($this->rateLimitResponse()),
-                Limit::perMinute(3)->by(($email ?: 'unknown').'|'.$request->ip())->response($this->rateLimitResponse()),
-            ];
+            return Limit::none();
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
+            return Limit::none();
         });
 
         RateLimiter::for('catalogs.public', function (Request $request) {
-            return Limit::perMinute(120)->by($request->ip());
+            return Limit::none();
         });
 
         RateLimiter::for('incidents.store', function (Request $request) {
-            // Nota técnica: El control de duplicados por ubicación/categoría/tiempo
-            // debe manejarse como regla de aplicación (Dominio/UseCase), no como rate limit HTTP.
-            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+            return Limit::none();
         });
 
         RateLimiter::for('uploads', function (Request $request) {
-            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
+            return Limit::none();
         });
     }
 
