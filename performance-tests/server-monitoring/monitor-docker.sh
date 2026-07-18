@@ -20,7 +20,7 @@ echo "timestamp,name,cpu%,mem%,mem_usage,net_input,net_output,block_input,block_
 
 END=$((SECONDS + DURATION * 60))
 while [ $SECONDS -lt $END ]; do
-    docker stats --no-stream --format "{{.Timestamp}},{{.Name}},{{.CPUPerc}},{{.MemPerc}},{{.MemUsage}},{{.NetIO}},{{.BlockIO}},{{.PIDs}}" \
+    docker stats --no-stream --format "{{.Name}},{{.CPUPerc}},{{.MemPerc}},{{.MemUsage}},{{.NetIO}},{{.BlockIO}},{{.PIDs}}" \
         | while IFS= read -r line; do
             echo "$(date +%Y-%m-%dT%H:%M:%S),$line" >> "$OUTPUT_FILE"
         done
