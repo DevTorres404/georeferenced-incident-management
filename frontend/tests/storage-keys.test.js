@@ -20,7 +20,7 @@ describe('STORAGE_KEYS', () => {
 
 describe('FLASH_MESSAGES', () => {
   it('defines password updated key', () => {
-    expect(FLASH_MESSAGES.passwordUpdated).toBe('sgig_flash_message');
+    expect(FLASH_MESSAGES.pwdUpdated).toBe('sgig_flash_message');
   });
 });
 
