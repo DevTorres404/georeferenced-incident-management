@@ -18,7 +18,7 @@ export const STORAGE_KEYS = {
 };
 
 export const FLASH_MESSAGES = {
-  pwdUpdated: 'sgig_flash_message',
+  credentialUpdated: 'sgig_flash_message',
   sessionExpired: 'sgig_session_expired',
   redirectAfterLogin: 'sgig_redirect_after_login',
 };
