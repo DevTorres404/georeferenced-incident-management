@@ -14,8 +14,7 @@ final class OperatorProfileData implements JsonSerializable
         public readonly int $currentActiveIncidents = 0,
         public readonly int $currentWorkloadPoints = 0,
         public readonly ?OperationalUserData $supervisor = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

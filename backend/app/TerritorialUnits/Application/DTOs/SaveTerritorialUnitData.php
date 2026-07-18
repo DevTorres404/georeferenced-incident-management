@@ -10,6 +10,5 @@ final class SaveTerritorialUnitData
         public readonly ?int $parentId = null,
         public readonly ?string $code = null,
         public readonly bool $isActive = true
-    ) {
-    }
+    ) {}
 }

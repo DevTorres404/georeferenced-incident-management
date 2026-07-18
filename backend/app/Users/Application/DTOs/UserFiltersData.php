@@ -9,6 +9,5 @@ final class UserFiltersData
         public readonly ?string $roleCode = null,
         public readonly ?bool $isActive = null,
         public readonly int $perPage = 15
-    ) {
-    }
+    ) {}
 }

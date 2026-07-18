@@ -7,9 +7,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Category;
 
 final class CategoryMapper
 {
-    public function __construct(private SubcategoryMapper $subcategoryMapper)
-    {
-    }
+    public function __construct(private SubcategoryMapper $subcategoryMapper) {}
 
     public function fromModel(Category $category): CategoryData
     {

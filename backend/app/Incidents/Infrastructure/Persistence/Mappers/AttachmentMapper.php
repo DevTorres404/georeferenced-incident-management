@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Storage;
 
 final class AttachmentMapper
 {
-    public function __construct(private UserSummaryMapper $userSummaryMapper)
-    {
-    }
+    public function __construct(private UserSummaryMapper $userSummaryMapper) {}
 
     public function fromModel(IncidentAttachment $attachment): AttachmentData
     {

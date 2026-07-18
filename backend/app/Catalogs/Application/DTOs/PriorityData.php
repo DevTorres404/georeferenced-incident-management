@@ -19,8 +19,7 @@ final class PriorityData implements JsonSerializable
         public readonly int $slaHours,
         public readonly int $weight,
         public readonly bool $isActive
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

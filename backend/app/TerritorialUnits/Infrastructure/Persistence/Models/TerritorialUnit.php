@@ -22,10 +22,15 @@ class TerritorialUnit extends Model
     use Auditable;
 
     public const TYPE_COUNTRY = TerritorialUnitType::COUNTRY;
+
     public const TYPE_OPERATIONAL_ZONE = TerritorialUnitType::OPERATIONAL_ZONE;
+
     public const TYPE_PROVINCE = TerritorialUnitType::PROVINCE;
+
     public const TYPE_CANTON = TerritorialUnitType::CANTON;
+
     public const TYPE_PARISH = TerritorialUnitType::PARISH;
+
     public const TYPE_SECTOR = TerritorialUnitType::SECTOR;
 
     public const TYPES = TerritorialUnitType::ALL;

@@ -22,9 +22,9 @@ return new class extends Migration
         // Convierte latitude/longitude a GEOMETRY(Point,4326)
         // y viceversa para mantener consistencia biaddressal
         // ══════════════════════════════════════════════
-        DB::statement("
+        DB::statement('
             CREATE OR REPLACE FUNCTION core.actualizar_ubicacion()
-            RETURNS TRIGGER AS \$\$
+            RETURNS TRIGGER AS $$
             BEGIN
                 -- Caso 1: Se proporcionan lat/lng → generar geometría
                 IF NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL THEN
@@ -43,15 +43,15 @@ return new class extends Migration
 
                 RETURN NEW;
             END;
-            \$\$ LANGUAGE plpgsql;
-        ");
+            $$ LANGUAGE plpgsql;
+        ');
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_actualizar_ubicacion
             BEFORE INSERT OR UPDATE ON core.incidents
             FOR EACH ROW
             EXECUTE FUNCTION core.actualizar_ubicacion();
-        ");
+        ');
 
         // ══════════════════════════════════════════════
         // TRIGGER 2: Cálculo automático de fecha_limite
@@ -81,12 +81,12 @@ return new class extends Migration
             \$\$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_calcular_fecha_limite
             BEFORE INSERT OR UPDATE ON core.incidents
             FOR EACH ROW
             EXECUTE FUNCTION core.calcular_fecha_limite();
-        ");
+        ');
 
         // ══════════════════════════════════════════════
         // TRIGGER 3: Sincronización de asignación actual
@@ -142,12 +142,12 @@ return new class extends Migration
             \$\$ LANGUAGE plpgsql;
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE TRIGGER trg_sincronizar_asignacion
             AFTER INSERT OR UPDATE OR DELETE ON core.incident_assignments
             FOR EACH ROW
             EXECUTE FUNCTION core.sincronizar_asignacion_actual();
-        ");
+        ');
     }
 
     public function down(): void

@@ -7,7 +7,7 @@ use JsonSerializable;
 final class TerritorialUnitData implements JsonSerializable
 {
     /**
-     * @param array<int, TerritorialUnitData> $children
+     * @param  array<int, TerritorialUnitData>  $children
      */
     public function __construct(
         public readonly int $id,
@@ -18,8 +18,7 @@ final class TerritorialUnitData implements JsonSerializable
         public readonly bool $isActive,
         public readonly string $fullPath,
         public readonly array $children = []
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

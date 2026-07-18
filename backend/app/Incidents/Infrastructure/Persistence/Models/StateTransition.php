@@ -27,8 +27,8 @@ class StateTransition extends Model
     {
         return [
             'requires_comment' => 'boolean',
-            'allowed_roles'    => 'array', // JSONB → array PHP
-            'is_active'        => 'boolean',
+            'allowed_roles' => 'array', // JSONB → array PHP
+            'is_active' => 'boolean',
         ];
     }
 
@@ -62,4 +62,3 @@ class StateTransition extends Model
         return in_array($roleCode, $this->allowed_roles);
     }
 }
-

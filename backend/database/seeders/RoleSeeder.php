@@ -17,23 +17,23 @@ class RoleSeeder extends Seeder
     {
         $roles = [
             [
-                'code'        => 'ADMIN',
-                'name'        => 'Administrador',
+                'code' => 'ADMIN',
+                'name' => 'Administrador',
                 'description' => 'Acceso total al sistema. Gestiona usuarios, roles, configuración y reportes.',
             ],
             [
-                'code'        => 'SUPERVISOR',
-                'name'        => 'Supervisor',
+                'code' => 'SUPERVISOR',
+                'name' => 'Supervisor',
                 'description' => 'Supervisa incidents, asigna operadores, aprueba resoluciones y genera reportes.',
             ],
             [
-                'code'        => 'OPERADOR',
-                'name'        => 'Operador',
+                'code' => 'OPERADOR',
+                'name' => 'Operador',
                 'description' => 'Atiende incidents asignadas, actualiza states y registra avances.',
             ],
             [
-                'code'        => 'CIUDADANO',
-                'name'        => 'Ciudadano',
+                'code' => 'CIUDADANO',
+                'name' => 'Ciudadano',
                 'description' => 'Reporta incidents, consulta el estado de sus reportes y recibe notificaciones.',
             ],
         ];
@@ -46,4 +46,3 @@ class RoleSeeder extends Seeder
         }
     }
 }
-

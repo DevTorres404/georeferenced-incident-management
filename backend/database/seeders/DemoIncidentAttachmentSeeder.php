@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 
 class DemoIncidentAttachmentSeeder extends Seeder
 {
@@ -18,6 +18,7 @@ class DemoIncidentAttachmentSeeder extends Seeder
 
         if (empty($incidents) || empty($users)) {
             $this->command->warn('No incidents or users found. Skipping DemoIncidentAttachmentSeeder.');
+
             return;
         }
 
@@ -31,13 +32,13 @@ class DemoIncidentAttachmentSeeder extends Seeder
         for ($i = 0; $i < 20; $i++) {
             $extensions = ['jpg', 'png', 'pdf'];
             $ext = $faker->randomElement($extensions);
-            $mime = $ext === 'pdf' ? 'application/pdf' : 'image/' . ($ext === 'jpg' ? 'jpeg' : 'png');
-            
+            $mime = $ext === 'pdf' ? 'application/pdf' : 'image/'.($ext === 'jpg' ? 'jpeg' : 'png');
+
             $attachments[] = [
                 'incident_id' => $faker->randomElement($incidents),
                 'user_id' => $faker->randomElement($users),
-                'original_name' => $faker->word() . '.' . $ext,
-                'file_path' => 'attachments/demo/' . $faker->uuid() . '.' . $ext,
+                'original_name' => $faker->word().'.'.$ext,
+                'file_path' => 'attachments/demo/'.$faker->uuid().'.'.$ext,
                 'mime_type' => $mime,
                 'file_size_bytes' => $faker->numberBetween(1024, 5242880), // 1KB to 5MB
                 'file_hash' => hash('sha256', $faker->sentence()),
@@ -46,7 +47,7 @@ class DemoIncidentAttachmentSeeder extends Seeder
         }
 
         DB::table('core.incident_attachments')->insert($attachments);
-        
+
         $this->command->info('DemoIncidentAttachmentSeeder: 20 fake attachments inserted successfully.');
     }
 }

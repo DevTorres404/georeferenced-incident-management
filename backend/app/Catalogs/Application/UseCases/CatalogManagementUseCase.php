@@ -3,14 +3,12 @@
 namespace App\Catalogs\Application\UseCases;
 
 use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
-use App\Shared\Application\Results\PaginatedResult;
 use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
+use App\Shared\Application\Results\PaginatedResult;
 
 final class CatalogManagementUseCase
 {
-    public function __construct(private CatalogRepositoryInterface $catalogRepository)
-    {
-    }
+    public function __construct(private CatalogRepositoryInterface $catalogRepository) {}
 
     public function paginate(string $catalog, CatalogPaginationFiltersData $filters): PaginatedResult
     {

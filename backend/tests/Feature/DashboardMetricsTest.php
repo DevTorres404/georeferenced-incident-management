@@ -165,13 +165,13 @@ class DashboardMetricsTest extends TestCase
         $this->assertSame(2, array_sum($response->json('data.countsByCategory')));
         $this->assertSame(2, array_sum($response->json('data.countsByPriority')));
         $this->assertSame(2, array_sum($response->json('data.countsByState')));
-        
+
         $totalInTrend = 0;
         foreach ($response->json('data.monthlyTrend.series') as $serie) {
             $totalInTrend += array_sum($serie['data']);
         }
         $this->assertSame(2, $totalInTrend);
-        
+
         $this->assertSame(2, array_sum(array_column($response->json('data.topCities'), 'count')));
 
         $unassignedSupervisor = $this->authenticateAs('SUPERVISOR', 'supervisor-without-zone@incidencias.local');

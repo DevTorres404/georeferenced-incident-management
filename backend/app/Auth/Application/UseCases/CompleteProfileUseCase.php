@@ -9,9 +9,7 @@ use App\Auth\Domain\Repositories\UserRepositoryInterface;
 
 final class CompleteProfileUseCase
 {
-    public function __construct(private UserRepositoryInterface $userRepository)
-    {
-    }
+    public function __construct(private UserRepositoryInterface $userRepository) {}
 
     public function execute(CompleteProfileInputData $input): AuthActionResultData
     {

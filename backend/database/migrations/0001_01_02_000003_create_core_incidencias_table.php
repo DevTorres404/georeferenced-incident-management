@@ -72,10 +72,10 @@ return new class extends Migration
         });
 
         // ── Columna PostGIS (no soportada por Blueprint) ──
-        DB::statement("
+        DB::statement('
             ALTER TABLE core.incidents
             ADD COLUMN location geometry(Point, 4326)
-        ");
+        ');
 
         // ── CHECK constraints de coordenadas ──
         DB::statement('ALTER TABLE core.incidents ADD CONSTRAINT chk_incident_latitude CHECK (latitude BETWEEN -90 AND 90)');

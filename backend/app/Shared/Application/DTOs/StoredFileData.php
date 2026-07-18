@@ -10,6 +10,5 @@ final class StoredFileData
         public readonly string $mimeType,
         public readonly int $sizeInBytes,
         public readonly string $hash
-    ) {
-    }
+    ) {}
 }

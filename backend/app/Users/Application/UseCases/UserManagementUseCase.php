@@ -12,9 +12,7 @@ use App\Users\Domain\Repositories\UserRepositoryInterface;
 
 final class UserManagementUseCase
 {
-    public function __construct(private UserRepositoryInterface $userRepository)
-    {
-    }
+    public function __construct(private UserRepositoryInterface $userRepository) {}
 
     public function paginate(UserFiltersData $filters): PaginatedResult
     {

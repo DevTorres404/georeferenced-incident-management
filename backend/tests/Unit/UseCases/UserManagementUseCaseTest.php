@@ -12,6 +12,7 @@ use PHPUnit\Framework\TestCase;
 class UserManagementUseCaseTest extends TestCase
 {
     private UserRepositoryInterface $repository;
+
     private UserManagementUseCase $useCase;
 
     protected function setUp(): void

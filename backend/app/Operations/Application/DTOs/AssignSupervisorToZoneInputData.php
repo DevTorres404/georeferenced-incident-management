@@ -8,6 +8,5 @@ final class AssignSupervisorToZoneInputData
         public readonly int $zoneId,
         public readonly int $supervisorUserId,
         public readonly int $assignedByUserId
-    ) {
-    }
+    ) {}
 }

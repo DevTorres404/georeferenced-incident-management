@@ -30,6 +30,7 @@ class AuditLog extends Model
     protected $table = 'audit.audit_logs';
 
     const UPDATED_AT = null;
+
     public $timestamps = true;
 
     protected function casts(): array
@@ -37,7 +38,7 @@ class AuditLog extends Model
         return [
             'old_values' => 'array',
             'new_values' => 'array',
-            'tags'       => 'array',
+            'tags' => 'array',
             'auditable_id' => 'integer',
         ];
     }
@@ -52,4 +53,3 @@ class AuditLog extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 }
-

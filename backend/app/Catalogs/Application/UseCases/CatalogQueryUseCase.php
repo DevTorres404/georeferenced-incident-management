@@ -6,9 +6,7 @@ use App\Catalogs\Domain\Repositories\CatalogRepositoryInterface;
 
 class CatalogQueryUseCase
 {
-    public function __construct(private CatalogRepositoryInterface $catalogRepository)
-    {
-    }
+    public function __construct(private CatalogRepositoryInterface $catalogRepository) {}
 
     public function overview(): array
     {

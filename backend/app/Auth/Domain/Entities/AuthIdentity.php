@@ -14,8 +14,7 @@ final class AuthIdentity implements JsonSerializable
         public readonly ?string $verifiedAt,
         public readonly ?string $lastUsedAt,
         public readonly array $providerData = []
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

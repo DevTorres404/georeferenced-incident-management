@@ -8,6 +8,5 @@ final class ResetPasswordWithCodeInputData
         public readonly string $email,
         public readonly string $code,
         public readonly string $password
-    ) {
-    }
+    ) {}
 }

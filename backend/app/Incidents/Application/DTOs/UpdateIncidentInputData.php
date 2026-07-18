@@ -5,7 +5,7 @@ namespace App\Incidents\Application\DTOs;
 final class UpdateIncidentInputData
 {
     /**
-     * @param array<int, string> $presentFields
+     * @param  array<int, string>  $presentFields
      */
     public function __construct(
         public readonly ?string $title = null,
@@ -19,8 +19,7 @@ final class UpdateIncidentInputData
         public readonly ?int $territorialUnitId = null,
         public readonly ?string $resolutionDate = null,
         public readonly array $presentFields = []
-    ) {
-    }
+    ) {}
 
     public function has(string $field): bool
     {

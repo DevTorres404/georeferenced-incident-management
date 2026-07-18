@@ -7,7 +7,7 @@ use JsonSerializable;
 final class PaginatedResult implements JsonSerializable
 {
     /**
-     * @param array<int, mixed> $items
+     * @param  array<int, mixed>  $items
      */
     public function __construct(
         public readonly array $items,
@@ -15,8 +15,7 @@ final class PaginatedResult implements JsonSerializable
         public readonly int $perPage,
         public readonly int $total,
         public readonly int $lastPage
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

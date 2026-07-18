@@ -5,7 +5,7 @@ namespace App\Users\Application\DTOs;
 final class CreateManagedUserInputData
 {
     /**
-     * @param array<int, string> $roleCodes
+     * @param  array<int, string>  $roleCodes
      */
     public function __construct(
         public readonly string $firstName,
@@ -18,6 +18,5 @@ final class CreateManagedUserInputData
         public readonly bool $isActive = true,
         public readonly array $roleCodes = ['CIUDADANO'],
         public readonly ?int $assignedBy = null
-    ) {
-    }
+    ) {}
 }

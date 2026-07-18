@@ -47,4 +47,3 @@ class Subcategory extends Model
         return $this->scopeActivos($query);
     }
 }
-

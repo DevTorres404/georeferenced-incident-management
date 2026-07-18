@@ -11,9 +11,7 @@ use Illuminate\Http\Request;
 
 class NotificationController extends ApiController
 {
-    public function __construct(private NotificationUseCase $notificationUseCase)
-    {
-    }
+    public function __construct(private NotificationUseCase $notificationUseCase) {}
 
     public function index(Request $request): JsonResponse
     {

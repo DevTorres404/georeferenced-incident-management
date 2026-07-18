@@ -17,8 +17,7 @@ final class VerifyPasswordResetCodeUseCase
         private UserRepositoryInterface $userRepository,
         private PasswordResetCodeRepositoryInterface $resetCodeRepository,
         private PasswordHasherPort $passwordHasher
-    ) {
-    }
+    ) {}
 
     public function execute(VerifyPasswordResetCodeInputData $input): void
     {

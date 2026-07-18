@@ -16,8 +16,7 @@ final class AuthActionResultData implements JsonSerializable
         public readonly ?string $verificationError = null,
         public readonly bool $requires2fa = false,
         public readonly ?string $twoFactorToken = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

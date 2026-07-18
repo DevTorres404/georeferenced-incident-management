@@ -12,8 +12,7 @@ final class StateSummaryData implements JsonSerializable
         public readonly ?string $color,
         public readonly bool $allowsEdition,
         public readonly bool $isFinalState
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

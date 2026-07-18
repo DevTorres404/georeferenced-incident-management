@@ -14,6 +14,5 @@ final class CreateUserInputData
         public readonly ?string $profilePhoto = null,
         public readonly ?string $emailVerifiedAt = null,
         public readonly bool $isActive = true
-    ) {
-    }
+    ) {}
 }

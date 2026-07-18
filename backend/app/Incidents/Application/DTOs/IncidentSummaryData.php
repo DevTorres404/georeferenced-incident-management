@@ -26,8 +26,7 @@ final class IncidentSummaryData implements JsonSerializable
         public readonly ?string $dueDate = null,
         public readonly array $assignments = [],
         public readonly bool $hasPendingStateRequest = false,
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

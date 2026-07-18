@@ -9,6 +9,5 @@ final class ChangePasswordInputData
         public readonly ?int $currentTokenId,
         public readonly string $currentPassword,
         public readonly string $newPassword
-    ) {
-    }
+    ) {}
 }

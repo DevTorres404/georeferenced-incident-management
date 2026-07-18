@@ -14,7 +14,7 @@ final class IncidentAssigned implements ShouldBroadcast, ShouldDispatchAfterComm
     use InteractsWithSockets;
 
     /**
-     * @param array<int, array{user_id: int, user_name: string, role: string}> $assignments
+     * @param  array<int, array{user_id: int, user_name: string, role: string}>  $assignments
      */
     public function __construct(
         private readonly int $incidentId,

@@ -28,6 +28,7 @@ class LoginAttempt extends Model
     protected $table = 'audit.access_logs';
 
     const UPDATED_AT = null;
+
     public $timestamps = true;
 
     protected function casts(): array
@@ -59,4 +60,3 @@ class LoginAttempt extends Model
             ->where('created_at', '>=', now()->subMinutes($minutes));
     }
 }
-

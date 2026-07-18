@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Auth\Infrastructure\Persistence\Models\Permission;
+use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use App\Auth\Infrastructure\Persistence\Models\Role;
-use App\Auth\Infrastructure\Persistence\Models\Permission;
 use Tests\TestCase;
 
 class TerritorialUnitsTest extends TestCase
@@ -21,7 +21,7 @@ class TerritorialUnitsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         $this->seed([
             RoleSeeder::class,
             PermissionSeeder::class,
@@ -31,7 +31,7 @@ class TerritorialUnitsTest extends TestCase
             'email' => 'admin@incidencias.local',
             'two_factor_confirmed_at' => now(),
         ]);
-        
+
         $role = Role::where('code', 'ADMIN')->firstOrFail();
         $role->permissions()->syncWithoutDetaching(Permission::pluck('id')->all());
         $this->admin->roles()->sync([$role->id]);
@@ -40,6 +40,7 @@ class TerritorialUnitsTest extends TestCase
     private function actingAsAdmin(): self
     {
         Sanctum::actingAs($this->admin->fresh(), ['*']);
+
         return $this;
     }
 
@@ -51,8 +52,8 @@ class TerritorialUnitsTest extends TestCase
         $response = $this->actingAsAdmin()->getJson('/api/territorial-units');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data' => [['id', 'name', 'type']]]);
-        
+            ->assertJsonStructure(['data' => [['id', 'name', 'type']]]);
+
         $this->assertCount(2, $response->json('data'));
     }
 
@@ -76,7 +77,7 @@ class TerritorialUnitsTest extends TestCase
         $response = $this->actingAsAdmin()->getJson('/api/territorial-units/tree');
 
         $response->assertStatus(200)
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_can_get_provinces_and_cantons()

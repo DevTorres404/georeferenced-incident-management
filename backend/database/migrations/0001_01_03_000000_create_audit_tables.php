@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -19,14 +18,14 @@ return new class extends Migration
         // ──────────────────────────────────────────────
         Schema::create('audit.audit_logs', function (Blueprint $table) {
             $table->id();
-            
+
             // Relación polimórfica para identificar el modelo auditado (ej. App\Models\User, id: 5)
             $table->string('auditable_type', 255)->comment('Clase del modelo Eloquent afectado');
             $table->unsignedBigInteger('auditable_id')->comment('ID del registro afectado');
-            
+
             // Evento (created, updated, deleted, restored, etc.)
             $table->string('event', 50)->comment('Evento que disparó la auditoría');
-            
+
             $table->jsonb('old_values')->nullable()
                 ->comment('Snapshot del registro ANTES del cambio');
             $table->jsonb('new_values')->nullable()
@@ -43,11 +42,11 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable()
                 ->comment('IPv4 o IPv6 del cliente');
             $table->text('user_agent')->nullable();
-            
+
             $table->jsonb('tags')->nullable()->comment('Etiquetas opcionales de categorización');
 
             $table->timestamp('created_at')->useCurrent();
-            
+
             // Índices de búsqueda
             $table->index(['auditable_type', 'auditable_id'], 'idx_audit_auditable');
             $table->index('user_id', 'idx_audit_user');
@@ -73,13 +72,13 @@ return new class extends Migration
             $table->boolean('is_success')->default(false);
             $table->string('failure_reason', 255)->nullable()
                 ->comment('Razón del fallo si is_success es falso');
-            
+
             $table->string('session_id', 255)->nullable()
                 ->comment('ID de la sesión o token para rastreo cruzado');
 
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
-            
+
             $table->timestamp('created_at')->useCurrent();
 
             $table->index('email', 'idx_access_logs_email');

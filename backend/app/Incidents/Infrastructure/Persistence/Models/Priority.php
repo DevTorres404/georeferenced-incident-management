@@ -20,9 +20,9 @@ class Priority extends Model
     protected function casts(): array
     {
         return [
-            'level'     => 'integer',
+            'level' => 'integer',
             'sla_hours' => 'integer',
-            'weight'    => 'integer',
+            'weight' => 'integer',
             'is_active' => 'boolean',
         ];
     }

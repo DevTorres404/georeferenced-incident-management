@@ -7,12 +7,11 @@ use App\Incidents\Application\DTOs\IncidentSummaryData;
 use App\Incidents\Application\DTOs\PrioritySummaryData;
 use App\Incidents\Application\DTOs\TerritorialUnitSummaryData;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 
 final class IncidentSummaryMapper
 {
-    public function __construct(private StateSummaryMapper $stateSummaryMapper)
-    {
-    }
+    public function __construct(private StateSummaryMapper $stateSummaryMapper) {}
 
     public function fromModel(Incident $incident): IncidentSummaryData
     {
@@ -21,7 +20,7 @@ final class IncidentSummaryMapper
             $current = $incident->territorialUnit;
 
             while ($current) {
-                if ($current->type === \App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
+                if ($current->type === TerritorialUnit::TYPE_OPERATIONAL_ZONE) {
                     $zoneName = $current->name;
                     break;
                 }

@@ -10,7 +10,5 @@ return new class extends Migration
         // Territorial hierarchy now lives in core.territorial_units.
     }
 
-    public function down(): void
-    {
-    }
+    public function down(): void {}
 };

@@ -14,8 +14,7 @@ final class OperationalZoneSummaryData implements JsonSerializable
         public readonly int $activeIncidents,
         public readonly float $averageWorkloadPoints,
         public readonly array $provincesCovered
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -44,8 +44,8 @@ class AccessControlTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'roles' => [['id', 'code', 'name', 'permissions']],
-                    'permissions' => [['id', 'code', 'name']]
-                ]
+                    'permissions' => [['id', 'code', 'name']],
+                ],
             ]);
 
         $this->assertNotEmpty($response->json('data.permissions_by_module'));

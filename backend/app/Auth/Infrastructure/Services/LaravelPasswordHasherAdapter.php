@@ -7,9 +7,7 @@ use Illuminate\Contracts\Hashing\Hasher;
 
 final class LaravelPasswordHasherAdapter implements PasswordHasherPort
 {
-    public function __construct(private Hasher $hasher)
-    {
-    }
+    public function __construct(private Hasher $hasher) {}
 
     public function verify(string $plainValue, ?string $hashedValue): bool
     {

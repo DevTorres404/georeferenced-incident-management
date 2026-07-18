@@ -8,9 +8,7 @@ use App\Auth\Domain\Repositories\UserRepositoryInterface;
 
 final class GetAuthenticatedUserUseCase
 {
-    public function __construct(private UserRepositoryInterface $userRepository)
-    {
-    }
+    public function __construct(private UserRepositoryInterface $userRepository) {}
 
     public function execute(int $userId): AuthUser
     {

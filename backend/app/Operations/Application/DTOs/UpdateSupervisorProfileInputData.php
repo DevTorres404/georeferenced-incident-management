@@ -7,6 +7,5 @@ final class UpdateSupervisorProfileInputData
     public function __construct(
         public readonly int $supervisorUserId,
         public readonly int $maxOperators
-    ) {
-    }
+    ) {}
 }

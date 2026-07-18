@@ -12,6 +12,7 @@ use PHPUnit\Framework\TestCase;
 class CatalogManagementUseCaseTest extends TestCase
 {
     private CatalogRepositoryInterface $repository;
+
     private CatalogManagementUseCase $useCase;
 
     protected function setUp(): void
@@ -31,7 +32,7 @@ class CatalogManagementUseCaseTest extends TestCase
     {
         $catalog = 'categories';
         $filters = new CatalogPaginationFiltersData(perPage: 15, isActive: true);
-        
+
         $paginatedResult = new PaginatedResult(
             items: [],
             currentPage: 1,

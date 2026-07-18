@@ -9,6 +9,7 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 /**
  * @group Auditoría (Administración)
@@ -17,9 +18,7 @@ use Illuminate\Http\Request;
  */
 class AuditController extends ApiController
 {
-    public function __construct(private AuditQueryUseCase $auditQueryUseCase)
-    {
-    }
+    public function __construct(private AuditQueryUseCase $auditQueryUseCase) {}
 
     /**
      * Listar logs de auditoría.
@@ -27,6 +26,7 @@ class AuditController extends ApiController
      * Devuelve un registro detallado de las operaciones realizadas en el sistema.
      *
      * @authenticated
+     *
      * @queryParam tabla string Filtrar por nombre de la tabla (ej. users, incidents). Example: incidents
      * @queryParam tabla_id int Filtrar por ID del registro modificado. Example: 5
      * @queryParam user_id int Filtrar por ID del usuario que realizó la acción. Example: 2
@@ -38,7 +38,7 @@ class AuditController extends ApiController
         $filters = $request->validate([
             'tabla' => ['nullable', 'string', 'max:100'],
             'tabla_id' => ['nullable', 'integer'],
-            'user_id' => ['nullable', 'integer', \Illuminate\Validation\Rule::exists(User::class, 'id')],
+            'user_id' => ['nullable', 'integer', Rule::exists(User::class, 'id')],
             'accion' => ['nullable', 'string', 'max:20'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
@@ -60,6 +60,7 @@ class AuditController extends ApiController
      * Devuelve un registro de los intentos de acceso al sistema, exitosos o fallidos.
      *
      * @authenticated
+     *
      * @queryParam email string Filtrar por correo electrónico intentado. Example: admin@torres404.com
      * @queryParam is_success boolean Filtrar por éxito del intento. Example: 1
      * @queryParam ip_address string Filtrar por dirección IP. Example: 192.168.1.1
@@ -84,4 +85,3 @@ class AuditController extends ApiController
         ));
     }
 }
-

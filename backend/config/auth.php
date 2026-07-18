@@ -117,4 +117,3 @@ return [
     'api_token_expiration' => env('AUTH_API_TOKEN_EXPIRATION', 120),
 
 ];
-

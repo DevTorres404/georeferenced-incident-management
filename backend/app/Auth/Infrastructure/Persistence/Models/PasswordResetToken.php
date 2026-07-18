@@ -18,7 +18,9 @@ class PasswordResetToken extends Model
     protected $table = 'auth.password_reset_tokens';
 
     protected $primaryKey = 'email';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     const UPDATED_AT = null;

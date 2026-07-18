@@ -100,3 +100,14 @@ scripts/*
 !sonar-project.properties
 !docker-compose.sonar.yml
 !REPORTE-SONARQUBE.md
+
+# OpenCode & AI Local Configs
+.opencode.local.json
+.env.opencode
+.claude
+opencode.jsonc
+.opencode/
+.atl/
+backend/boost.json
+
+# Nota: La carpeta .opencode/ ahora se ignora a pedido del usuario.

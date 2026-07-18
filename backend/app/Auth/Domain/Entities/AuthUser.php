@@ -7,9 +7,9 @@ use JsonSerializable;
 final class AuthUser implements JsonSerializable
 {
     /**
-     * @param array<int, string> $roleCodes
-     * @param array<int, string> $permissionCodes
-     * @param array<int, AuthIdentity> $identities
+     * @param  array<int, string>  $roleCodes
+     * @param  array<int, string>  $permissionCodes
+     * @param  array<int, AuthIdentity>  $identities
      */
     public function __construct(
         public readonly ?int $id,
@@ -28,8 +28,7 @@ final class AuthUser implements JsonSerializable
         public readonly array $roleCodes = [],
         public readonly array $permissionCodes = [],
         public readonly array $identities = []
-    ) {
-    }
+    ) {}
 
     public function hasVerifiedEmail(): bool
     {

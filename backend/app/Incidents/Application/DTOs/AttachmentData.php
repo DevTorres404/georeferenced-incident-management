@@ -18,8 +18,7 @@ final class AttachmentData implements JsonSerializable
         public readonly ?string $fileHash,
         public readonly ?string $createdAt,
         public readonly ?UserSummaryData $user = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -9,8 +9,7 @@ final class DisableTwoFactorUseCase
 {
     public function __construct(
         private UserRepositoryInterface $userRepository
-    ) {
-    }
+    ) {}
 
     public function execute(int $userId): void
     {

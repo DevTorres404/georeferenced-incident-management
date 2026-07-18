@@ -13,4 +13,3 @@ class PersonalAccessToken extends SanctumToken
 {
     protected $table = 'auth.personal_access_tokens';
 }
-

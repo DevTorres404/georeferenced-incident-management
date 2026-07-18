@@ -4,6 +4,7 @@ namespace App\Auth\Infrastructure\Persistence\Models;
 
 use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Audit\Infrastructure\Persistence\Models\LoginAttempt;
+use App\Auth\Infrastructure\Notifications\VerifyEmailNotification;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
@@ -13,7 +14,6 @@ use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
-use App\Auth\Infrastructure\Notifications\VerifyEmailNotification;
 use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Database\Factories\UserFactory;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
@@ -49,8 +49,7 @@ use Laravel\Sanctum\HasApiTokens;
     'password',
     'remember_token',
 ])]
-class User extends Authenticatable
-    implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use Auditable, HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable, SoftDeletes;
@@ -73,9 +72,9 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_login'        => 'datetime',
-            'password'          => 'hashed',
-            'is_active'         => 'boolean',
+            'last_login' => 'datetime',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -244,7 +243,7 @@ class User extends Authenticatable
      */
     public function tieneRol(string $codigo): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 
@@ -262,7 +261,7 @@ class User extends Authenticatable
      */
     public function tienePermiso(string $codigoPermiso): bool
     {
-        if (!$this->is_active) {
+        if (! $this->is_active) {
             return false;
         }
 

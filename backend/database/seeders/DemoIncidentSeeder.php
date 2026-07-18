@@ -5,17 +5,17 @@ namespace Database\Seeders;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
 use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
-use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
-use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
-use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class DemoIncidentSeeder extends Seeder
@@ -256,7 +256,7 @@ class DemoIncidentSeeder extends Seeder
 
     private function seedAssignment(Incident $incident, array $data): void
     {
-        if (!isset($data['assignee'], $data['assigned_by'])) {
+        if (! isset($data['assignee'], $data['assigned_by'])) {
             return;
         }
 
@@ -269,9 +269,9 @@ class DemoIncidentSeeder extends Seeder
             'assignment_role' => IncidentAssignment::ROLE_PRIMARY,
             'active' => empty($data['close_assignment']),
             'assignment_date' => $assignmentDate,
-            'unassignment_date' => !empty($data['close_assignment']) ? ($data['resolution_date'] ?? Carbon::now()) : null,
+            'unassignment_date' => ! empty($data['close_assignment']) ? ($data['resolution_date'] ?? Carbon::now()) : null,
             'created_at' => $assignmentDate,
-            'updated_at' => !empty($data['close_assignment']) ? Carbon::now() : $assignmentDate,
+            'updated_at' => ! empty($data['close_assignment']) ? Carbon::now() : $assignmentDate,
         ]);
     }
 

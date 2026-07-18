@@ -14,8 +14,7 @@ final class CommentData implements JsonSerializable
         public readonly bool $isInternal,
         public readonly ?string $createdAt,
         public readonly ?UserSummaryData $user = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

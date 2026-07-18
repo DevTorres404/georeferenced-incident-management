@@ -9,6 +9,5 @@ final class UpdateOperatorProfileInputData
         public readonly int $maxActiveIncidents,
         public readonly int $maxWorkloadPoints,
         public readonly bool $active
-    ) {
-    }
+    ) {}
 }

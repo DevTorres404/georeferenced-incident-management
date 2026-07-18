@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 class NotificationUseCaseTest extends TestCase
 {
     private IncidentRepositoryInterface $repository;
+
     private NotificationUseCase $useCase;
 
     protected function setUp(): void

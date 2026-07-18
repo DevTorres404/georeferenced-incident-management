@@ -18,8 +18,7 @@ final class IncidentMapPointData implements JsonSerializable
         public readonly ?PrioritySummaryData $priority,
         public readonly ?TerritorialUnitSummaryData $territorialUnit,
         public readonly ?string $createdAt
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -47,4 +47,3 @@ class Permission extends Model
         return $query->where('module', $module);
     }
 }
-

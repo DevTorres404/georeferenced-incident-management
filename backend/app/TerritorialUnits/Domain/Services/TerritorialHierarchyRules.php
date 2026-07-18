@@ -8,7 +8,7 @@ use DomainException;
 final class TerritorialHierarchyRules
 {
     /**
-     * @param array<int, int> $parentAncestorIds
+     * @param  array<int, int>  $parentAncestorIds
      */
     public function validate(
         string $type,
@@ -16,8 +16,7 @@ final class TerritorialHierarchyRules
         ?int $parentId = null,
         array $parentAncestorIds = [],
         ?int $currentId = null
-    ): void
-    {
+    ): void {
         if (! TerritorialUnitType::isValid($type)) {
             throw new DomainException('El tipo territorial no es valido.');
         }

@@ -12,7 +12,7 @@ use JsonSerializable;
 final class CategoryData implements JsonSerializable
 {
     /**
-     * @param array<int, SubcategoryData> $subcategories
+     * @param  array<int, SubcategoryData>  $subcategories
      */
     public function __construct(
         public readonly int $id,
@@ -22,8 +22,7 @@ final class CategoryData implements JsonSerializable
         public readonly ?string $color,
         public readonly bool $isActive,
         public readonly array $subcategories = []
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -21,8 +21,8 @@ class Configuration extends Model
         return match ($this->type) {
             'integer' => (int) $this->value,
             'boolean' => filter_var($this->value, FILTER_VALIDATE_BOOLEAN),
-            'json'    => json_decode($this->value, true),
-            default   => $this->value,
+            'json' => json_decode($this->value, true),
+            default => $this->value,
         };
     }
 
@@ -33,4 +33,3 @@ class Configuration extends Model
         return $config ? $config->typed_value : $default;
     }
 }
-

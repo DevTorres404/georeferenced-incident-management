@@ -40,7 +40,6 @@ final class AddIncidentCycleIdToTablesMigrationTest extends TestCase
         $this->originalConnectionConfig = Config::get('database.connections.'.self::CONNECTION);
         $this->adminConnectionConfigExisted = Config::has('database.connections.'.self::ADMIN_CONNECTION);
         $this->originalAdminConnectionConfig = Config::get('database.connections.'.self::ADMIN_CONNECTION);
-        $this->database = sprintf('incident_cycle_migration_%d_%s', getmypid(), bin2hex(random_bytes(4)));
 
         $connection = config('database.connections.pgsql');
         $adminConnection = $connection;
@@ -48,6 +47,15 @@ final class AddIncidentCycleIdToTablesMigrationTest extends TestCase
 
         Config::set('database.connections.'.self::ADMIN_CONNECTION, $adminConnection);
         DB::purge(self::ADMIN_CONNECTION);
+
+        try {
+            DB::connection(self::ADMIN_CONNECTION)->getPdo();
+        } catch (\Exception $e) {
+            $this->markTestSkipped('PostgreSQL is not available: '.$e->getMessage());
+        }
+
+        $this->database = sprintf('incident_cycle_migration_%d_%s', getmypid(), bin2hex(random_bytes(4)));
+
         DB::connection(self::ADMIN_CONNECTION)->unprepared(sprintf('CREATE DATABASE "%s"', $this->database));
 
         $connection['database'] = $this->database;
@@ -71,7 +79,11 @@ final class AddIncidentCycleIdToTablesMigrationTest extends TestCase
         } finally {
             try {
                 if (isset($this->database)) {
-                    DB::connection(self::ADMIN_CONNECTION)->unprepared(sprintf('DROP DATABASE IF EXISTS "%s"', $this->database));
+                    try {
+                        DB::connection(self::ADMIN_CONNECTION)->unprepared(sprintf('DROP DATABASE IF EXISTS "%s"', $this->database));
+                    } catch (\Exception) {
+                        // Nothing to clean up — connection never established.
+                    }
                 }
             } finally {
                 try {

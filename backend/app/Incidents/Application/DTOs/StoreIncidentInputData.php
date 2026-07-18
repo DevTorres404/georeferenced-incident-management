@@ -15,6 +15,5 @@ final class StoreIncidentInputData
         public readonly ?float $longitude = null,
         public readonly ?int $territorialUnitId = null,
         public readonly ?string $resolutionDate = null
-    ) {
-    }
+    ) {}
 }

@@ -40,7 +40,7 @@ class Notification extends Model
     protected function casts(): array
     {
         return [
-            'is_read'        => 'boolean',
+            'is_read' => 'boolean',
             'read_at' => 'datetime',
         ];
     }
@@ -78,7 +78,7 @@ class Notification extends Model
     public function markAsRead(): void
     {
         $this->update([
-            'is_read'        => true,
+            'is_read' => true,
             'read_at' => now(),
         ]);
     }

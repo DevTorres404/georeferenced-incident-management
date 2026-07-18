@@ -7,14 +7,13 @@ use JsonSerializable;
 final class IncidentAssignmentBatchData implements JsonSerializable
 {
     /**
-     * @param array<int, AssignmentData> $assignments
+     * @param  array<int, AssignmentData>  $assignments
      */
     public function __construct(
         public readonly int $incidentId,
         public readonly ?int $currentAssigneeUserId,
         public readonly array $assignments
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

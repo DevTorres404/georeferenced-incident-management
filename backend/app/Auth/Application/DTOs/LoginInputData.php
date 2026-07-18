@@ -9,6 +9,5 @@ final class LoginInputData
         public readonly string $password,
         public readonly string $ip,
         public readonly ?string $userAgent
-    ) {
-    }
+    ) {}
 }

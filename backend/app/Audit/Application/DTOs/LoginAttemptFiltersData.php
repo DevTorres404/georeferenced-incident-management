@@ -9,6 +9,5 @@ final class LoginAttemptFiltersData
         public readonly ?bool $successful = null,
         public readonly ?string $ipAddress = null,
         public readonly int $perPage = 25
-    ) {
-    }
+    ) {}
 }

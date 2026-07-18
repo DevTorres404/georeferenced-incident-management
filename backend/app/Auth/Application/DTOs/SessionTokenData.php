@@ -10,8 +10,7 @@ final class SessionTokenData implements JsonSerializable
         public readonly string $token,
         public readonly string $expiresAt,
         public readonly int $expiresIn
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

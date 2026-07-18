@@ -7,18 +7,17 @@ use JsonSerializable;
 final class IncidentTransition implements JsonSerializable
 {
     /**
-     * @param array<int, string> $allowedRoleCodes
+     * @param  array<int, string>  $allowedRoleCodes
      */
     public function __construct(
         public readonly int $fromStateId,
         public readonly int $toStateId,
         public readonly bool $requiresComment,
         public readonly array $allowedRoleCodes = []
-    ) {
-    }
+    ) {}
 
     /**
-     * @param array<int, string> $roleCodes
+     * @param  array<int, string>  $roleCodes
      */
     public function isAllowedForRoles(array $roleCodes): bool
     {

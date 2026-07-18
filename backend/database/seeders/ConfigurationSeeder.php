@@ -14,51 +14,51 @@ class ConfigurationSeeder extends Seeder
     {
         $configs = [
             [
-                'key'         => 'app.nombre',
-                'value'       => 'Sistema de Gestión de Incidencias Ciudadanas',
-                'type'        => 'string',
+                'key' => 'app.nombre',
+                'value' => 'Sistema de Gestión de Incidencias Ciudadanas',
+                'type' => 'string',
                 'description' => 'Nombre de la aplicación mostrado en la UI',
             ],
             [
-                'key'         => 'incident.codigo_prefijo',
-                'value'       => 'INC',
-                'type'        => 'string',
+                'key' => 'incident.codigo_prefijo',
+                'value' => 'INC',
+                'type' => 'string',
                 'description' => 'Prefijo para el código de incidencias (ej: INC-2026-00001)',
             ],
             [
-                'key'         => 'incident.adjunto_max_mb',
-                'value'       => '10',
-                'type'        => 'integer',
+                'key' => 'incident.adjunto_max_mb',
+                'value' => '10',
+                'type' => 'integer',
                 'description' => 'Tamaño máximo de archivo adjunto en megabytes',
             ],
             [
-                'key'         => 'incident.adjuntos_max_cantidad',
-                'value'       => '5',
-                'type'        => 'integer',
+                'key' => 'incident.adjuntos_max_cantidad',
+                'value' => '5',
+                'type' => 'integer',
                 'description' => 'Cantidad máxima de adjuntos por incidencia',
             ],
             [
-                'key'         => 'notificacion.email_activo',
-                'value'       => 'true',
-                'type'        => 'boolean',
+                'key' => 'notificacion.email_activo',
+                'value' => 'true',
+                'type' => 'boolean',
                 'description' => 'Habilitar notificaciones por correo electrónico',
             ],
             [
-                'key'         => 'mapa.latitud_centro',
-                'value'       => '-1.8312',
-                'type'        => 'string',
+                'key' => 'mapa.latitud_centro',
+                'value' => '-1.8312',
+                'type' => 'string',
                 'description' => 'Latitud del centro del mapa por defecto (Ecuador)',
             ],
             [
-                'key'         => 'mapa.longitud_centro',
-                'value'       => '-78.4678',
-                'type'        => 'string',
+                'key' => 'mapa.longitud_centro',
+                'value' => '-78.4678',
+                'type' => 'string',
                 'description' => 'Longitud del centro del mapa por defecto (Ecuador)',
             ],
             [
-                'key'         => 'mapa.zoom_default',
-                'value'       => '6',
-                'type'        => 'integer',
+                'key' => 'mapa.zoom_default',
+                'value' => '6',
+                'type' => 'integer',
                 'description' => 'Nivel de zoom inicial del mapa',
             ],
         ];
@@ -71,4 +71,3 @@ class ConfigurationSeeder extends Seeder
         }
     }
 }
-

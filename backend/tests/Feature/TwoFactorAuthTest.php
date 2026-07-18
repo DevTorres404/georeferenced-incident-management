@@ -8,8 +8,8 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Mockery;
+use Tests\TestCase;
 
 class TwoFactorAuthTest extends TestCase
 {
@@ -32,7 +32,7 @@ class TwoFactorAuthTest extends TestCase
 
         $response = $this->actingAs($user)
             ->postJson('/api/auth/2fa/enable');
-            
+
         $response->assertOk()
             ->assertJsonPath('qr_url', 'otpauth://totp/Test?secret=ABCDEF123456');
 

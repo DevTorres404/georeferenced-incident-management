@@ -17,8 +17,7 @@ final class AssignmentOperatorOptionData implements JsonSerializable
         public readonly int $maxActiveIncidents,
         public readonly int $maxWorkloadPoints,
         public readonly bool $available
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

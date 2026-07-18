@@ -17,8 +17,7 @@ final class LoginUseCase
         private LoginAttemptRepositoryInterface $attemptRepository,
         private PasswordHasherPort $passwordHasher,
         private SessionManagerPort $sessionManager
-    ) {
-    }
+    ) {}
 
     public function execute(LoginInputData $input): AuthActionResultData
     {
@@ -93,6 +92,7 @@ final class LoginUseCase
 
         if ($user->isTwoFactorEnabled()) {
             $twoFactorToken = $this->sessionManager->createTwoFactorToken($user->id);
+
             return new AuthActionResultData(
                 message: 'Se requiere verificación de dos factores.',
                 user: null,

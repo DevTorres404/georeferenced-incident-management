@@ -14,8 +14,7 @@ final class OperationalUserData implements JsonSerializable
         public readonly ?string $roleCode,
         public readonly ?OperationalTerritoryData $territory = null,
         public readonly ?OperationalTerritoryData $operationalZone = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

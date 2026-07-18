@@ -9,6 +9,5 @@ final class UpdateOwnProfileInputData
         public readonly string $firstName,
         public readonly string $lastName,
         public readonly string $username
-    ) {
-    }
+    ) {}
 }

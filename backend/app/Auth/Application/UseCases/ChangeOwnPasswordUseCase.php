@@ -16,8 +16,7 @@ final class ChangeOwnPasswordUseCase
         private PasswordHasherPort $passwordHasher,
         private SessionManagerPort $sessionManager,
         private UserNotificationPort $notificationPort
-    ) {
-    }
+    ) {}
 
     public function execute(ChangePasswordInputData $input): void
     {

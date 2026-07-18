@@ -43,7 +43,7 @@ return new class extends Migration
     }
 
     /**
-     * @param array<int, string> $roleCodes
+     * @param  array<int, string>  $roleCodes
      */
     private function grant(string $permissionCode, array $roleCodes): void
     {
@@ -64,7 +64,7 @@ return new class extends Migration
     }
 
     /**
-     * @param array<int, string> $roleCodes
+     * @param  array<int, string>  $roleCodes
      */
     private function revoke(string $permissionCode, array $roleCodes): void
     {

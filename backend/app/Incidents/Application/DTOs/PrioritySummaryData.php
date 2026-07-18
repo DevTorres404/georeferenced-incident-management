@@ -10,8 +10,7 @@ final class PrioritySummaryData implements JsonSerializable
         public readonly int $id,
         public readonly string $name,
         public readonly int $level
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

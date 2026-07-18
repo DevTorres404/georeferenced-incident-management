@@ -7,9 +7,7 @@ use App\Catalogs\Application\DTOs\RoleData;
 
 final class RoleMapper
 {
-    public function __construct(private PermissionMapper $permissionMapper)
-    {
-    }
+    public function __construct(private PermissionMapper $permissionMapper) {}
 
     public function fromModel(Role $role): RoleData
     {

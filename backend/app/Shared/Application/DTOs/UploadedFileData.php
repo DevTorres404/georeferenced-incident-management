@@ -9,6 +9,5 @@ final class UploadedFileData
         public readonly string $mimeType,
         public readonly int $sizeInBytes,
         public readonly string $temporaryPath
-    ) {
-    }
+    ) {}
 }

@@ -12,8 +12,7 @@ final class PermissionData implements JsonSerializable
         public readonly string $name,
         public readonly string $description,
         public readonly string $module
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

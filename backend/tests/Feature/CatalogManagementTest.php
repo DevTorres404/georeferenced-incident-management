@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
-use Database\Seeders\CatalogSeeder;
-use Database\Seeders\RoleSeeder;
-use Database\Seeders\PermissionSeeder;
+use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Infrastructure\Persistence\Models\Category;
+use App\Incidents\Infrastructure\Persistence\Models\State;
+use Database\Seeders\CategorySeeder;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\PrioritySeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\StateSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,21 +22,21 @@ class CatalogManagementTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Seed catalogs, roles and permissions
         $this->seed([
-            \Database\Seeders\CategorySeeder::class,
-            \Database\Seeders\PrioritySeeder::class,
-            \Database\Seeders\StateSeeder::class,
-            \Database\Seeders\RoleSeeder::class,
-            \Database\Seeders\PermissionSeeder::class
+            CategorySeeder::class,
+            PrioritySeeder::class,
+            StateSeeder::class,
+            RoleSeeder::class,
+            PermissionSeeder::class,
         ]);
     }
 
     public function test_user_can_fetch_all_catalogs_overview(): void
     {
         $response = $this->getJson('/api/catalogs');
-        
+
         $response->assertOk()
             ->assertJsonStructure([
                 'categories',
@@ -43,14 +48,14 @@ class CatalogManagementTest extends TestCase
     public function test_user_can_fetch_categories_and_subcategories(): void
     {
         $responseCategories = $this->getJson('/api/catalogs/categories');
-        
+
         $responseCategories->assertOk()
             ->assertJsonStructure(['data' => [['id', 'name', 'color']]]);
 
-        $categoryId = \App\Incidents\Infrastructure\Persistence\Models\Category::first()->id;
+        $categoryId = Category::first()->id;
 
         $responseSubcategories = $this->getJson("/api/catalogs/categories/{$categoryId}/subcategories");
-        
+
         $responseSubcategories->assertOk()
             ->assertJsonStructure(['data' => [['id', 'name']]]);
     }
@@ -58,7 +63,7 @@ class CatalogManagementTest extends TestCase
     public function test_user_can_fetch_priorities(): void
     {
         $response = $this->getJson('/api/catalogs/priorities');
-        
+
         $response->assertOk()
             ->assertJsonStructure(['data' => [['id', 'name', 'level', 'color']]]);
     }
@@ -66,14 +71,14 @@ class CatalogManagementTest extends TestCase
     public function test_user_can_fetch_states_and_transitions(): void
     {
         $responseStates = $this->getJson('/api/catalogs/states');
-        
+
         $responseStates->assertOk()
             ->assertJsonStructure(['data' => [['id', 'name', 'color']]]);
 
-        $stateId = \App\Incidents\Infrastructure\Persistence\Models\State::first()->id;
+        $stateId = State::first()->id;
 
         $responseTransitions = $this->getJson("/api/catalogs/states/{$stateId}/transitions");
-        
+
         $responseTransitions->assertOk();
     }
 
@@ -90,12 +95,12 @@ class CatalogManagementTest extends TestCase
         $admin->roles()->sync([$role->id]);
 
         $responseRoles = $this->actingAs($admin)->getJson('/api/catalogs/roles');
-        
+
         $responseRoles->assertOk()
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
 
         $responsePermissions = $this->actingAs($admin)->getJson('/api/catalogs/permissions');
-        
+
         $responsePermissions->assertOk()
             ->assertJsonStructure(['data' => [['id', 'code', 'name']]]);
     }
@@ -119,7 +124,7 @@ class CatalogManagementTest extends TestCase
     public function test_admin_can_update_category(): void
     {
         $admin = $this->authenticateAdminWithPermission('catalogs.manage');
-        $category = \App\Incidents\Infrastructure\Persistence\Models\Category::first();
+        $category = Category::first();
 
         $response = $this->actingAs($admin)->putJson("/api/admin/catalogs/categories/{$category->id}", [
             'name' => 'Categoria Actualizada',
@@ -153,10 +158,10 @@ class CatalogManagementTest extends TestCase
     {
         $admin = User::factory()->create(['two_factor_confirmed_at' => now()]);
         $role = Role::where('code', 'ADMIN')->firstOrFail();
-        
-        $permission = \App\Auth\Infrastructure\Persistence\Models\Permission::where('code', $permissionCode)->firstOrFail();
+
+        $permission = Permission::where('code', $permissionCode)->firstOrFail();
         $role->permissions()->syncWithoutDetaching([$permission->id]);
-        
+
         $admin->roles()->sync([$role->id]);
 
         return $admin;

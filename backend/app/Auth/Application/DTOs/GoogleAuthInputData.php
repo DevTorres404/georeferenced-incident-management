@@ -9,6 +9,5 @@ final class GoogleAuthInputData
         public readonly string $idToken,
         public readonly string $ip,
         public readonly ?string $userAgent
-    ) {
-    }
+    ) {}
 }

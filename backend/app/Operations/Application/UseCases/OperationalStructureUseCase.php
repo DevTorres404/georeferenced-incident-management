@@ -4,8 +4,8 @@ namespace App\Operations\Application\UseCases;
 
 use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
-use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
+use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SupervisorProfileData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
@@ -15,9 +15,7 @@ use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
 
 final class OperationalStructureUseCase
 {
-    public function __construct(private OperationalStructureRepositoryInterface $operationalStructureRepository)
-    {
-    }
+    public function __construct(private OperationalStructureRepositoryInterface $operationalStructureRepository) {}
 
     /**
      * @return array<int, OperationalZoneSummaryData>

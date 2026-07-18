@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
@@ -30,21 +29,21 @@ class RateLimitingTest extends TestCase
         for ($i = 0; $i < 5; $i++) {
             $this->postJson('/api/login', [
                 'email' => 'test@example.com',
-                'password' => 'password123'
+                'password' => 'password123',
             ]);
         }
 
         // La sexta debe fallar
         $response = $this->postJson('/api/login', [
             'email' => 'test@example.com',
-            'password' => 'password123'
+            'password' => 'password123',
         ]);
 
         $response->assertStatus(429)
-                 ->assertJson([
-                     'message' => 'Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.',
-                     'code' => 'RATE_LIMIT_EXCEEDED'
-                 ]);
+            ->assertJson([
+                'message' => 'Has realizado demasiadas solicitudes. Intenta nuevamente más tarde.',
+                'code' => 'RATE_LIMIT_EXCEEDED',
+            ]);
     }
 
     public function test_register_rate_limiting_returns_429()
@@ -55,7 +54,7 @@ class RateLimitingTest extends TestCase
                 'name' => 'Test User',
                 'email' => 'test@example.com',
                 'password' => 'password123',
-                'password_confirmation' => 'password123'
+                'password_confirmation' => 'password123',
             ]);
         }
 
@@ -64,7 +63,7 @@ class RateLimitingTest extends TestCase
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password123',
-            'password_confirmation' => 'password123'
+            'password_confirmation' => 'password123',
         ]);
 
         $response->assertStatus(429);

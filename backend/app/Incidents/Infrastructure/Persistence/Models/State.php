@@ -33,10 +33,10 @@ class State extends Model
     {
         return [
             'is_initial_state' => 'boolean',
-            'is_final_state'   => 'boolean',
-            'allows_edition'   => 'boolean',
-            'is_active'        => 'boolean',
-            'order'            => 'integer',
+            'is_final_state' => 'boolean',
+            'allows_edition' => 'boolean',
+            'is_active' => 'boolean',
+            'order' => 'integer',
         ];
     }
 
@@ -102,4 +102,3 @@ class State extends Model
         return $this->scopeInicial($query);
     }
 }
-

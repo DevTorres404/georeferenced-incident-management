@@ -13,9 +13,7 @@ use Illuminate\Http\JsonResponse;
  */
 class CatalogController extends ApiController
 {
-    public function __construct(private CatalogQueryUseCase $catalogQueryUseCase)
-    {
-    }
+    public function __construct(private CatalogQueryUseCase $catalogQueryUseCase) {}
 
     /**
      * Resumen de catálogos.
@@ -49,6 +47,7 @@ class CatalogController extends ApiController
      * Devuelve las subcategorías de una categoría específica.
      *
      * @group Categorías y subcategorías
+     *
      * @urlParam categoria int required El ID de la categoría. Example: 3
      */
     public function subcategories(int $categoria): JsonResponse
@@ -88,6 +87,7 @@ class CatalogController extends ApiController
      * Devuelve las transiciones posibles desde un estado específico, o todas si no se envía el estado.
      *
      * @group Estados de incidencia
+     *
      * @urlParam estado int El ID del estado origen. Example: 1
      */
     public function transitions(?int $estado = null): JsonResponse
@@ -101,6 +101,7 @@ class CatalogController extends ApiController
      * Listar roles.
      *
      * @group Roles y permisos
+     *
      * @authenticated
      */
     public function roles(): JsonResponse
@@ -114,6 +115,7 @@ class CatalogController extends ApiController
      * Listar permisos.
      *
      * @group Roles y permisos
+     *
      * @authenticated
      */
     public function permissions(): JsonResponse

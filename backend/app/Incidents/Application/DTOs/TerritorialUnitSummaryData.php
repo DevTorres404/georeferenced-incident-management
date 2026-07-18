@@ -11,8 +11,7 @@ final class TerritorialUnitSummaryData implements JsonSerializable
         public readonly string $name,
         public readonly string $type,
         public readonly string $fullPath
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -8,6 +8,5 @@ final class ReplaceZoneOperatorInputData
         public readonly int $currentOperatorUserId,
         public readonly int $replacementOperatorUserId,
         public readonly int $assignedByUserId
-    ) {
-    }
+    ) {}
 }

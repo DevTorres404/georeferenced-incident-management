@@ -12,7 +12,7 @@ use JsonSerializable;
 final class StateTransitionData implements JsonSerializable
 {
     /**
-     * @param array<int, string> $allowedRoles
+     * @param  array<int, string>  $allowedRoles
      */
     public function __construct(
         public readonly int $id,
@@ -23,8 +23,7 @@ final class StateTransitionData implements JsonSerializable
         public readonly bool $requiresComment,
         public readonly array $allowedRoles,
         public readonly bool $isActive
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

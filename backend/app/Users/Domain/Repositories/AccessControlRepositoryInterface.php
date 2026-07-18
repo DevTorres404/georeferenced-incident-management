@@ -10,7 +10,7 @@ interface AccessControlRepositoryInterface
     public function overview(): array;
 
     /**
-     * @param array<int, string> $permissionCodes
+     * @param  array<int, string>  $permissionCodes
      * @return array<string, mixed>
      */
     public function syncRolePermissions(int $roleId, array $permissionCodes): array;

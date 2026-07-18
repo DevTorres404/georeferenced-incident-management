@@ -1,9 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+
 return new class extends Migration
 {
     /**
@@ -19,7 +18,7 @@ return new class extends Migration
             'created_at' => now(),
             'updated_at' => now(),
         ]);
-        
+
         $adminRole = DB::table('auth.roles')->where('code', 'ADMIN')->first();
         if ($adminRole) {
             $permission = DB::table('auth.permissions')->where('code', 'dashboard.view')->first();

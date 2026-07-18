@@ -7,9 +7,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Incident as IncidentModel;
 
 final class IncidentMapper
 {
-    public function __construct(private IncidentStateMapper $stateMapper)
-    {
-    }
+    public function __construct(private IncidentStateMapper $stateMapper) {}
 
     public function fromModel(IncidentModel $incident): Incident
     {

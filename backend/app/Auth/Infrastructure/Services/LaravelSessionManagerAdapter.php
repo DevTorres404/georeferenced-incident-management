@@ -6,6 +6,8 @@ use App\Auth\Application\DTOs\SessionTokenData;
 use App\Auth\Application\Ports\SessionManagerPort;
 use App\Auth\Infrastructure\Persistence\Models\PersonalAccessToken;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 final class LaravelSessionManagerAdapter implements SessionManagerPort
 {
@@ -39,20 +41,21 @@ final class LaravelSessionManagerAdapter implements SessionManagerPort
 
     public function createTwoFactorToken(int $userId): string
     {
-        $token = \Illuminate\Support\Str::random(64);
-        \Illuminate\Support\Facades\Cache::put('2fa_token_'.$token, $userId, now()->addMinutes(10));
+        $token = Str::random(64);
+        Cache::put('2fa_token_'.$token, $userId, now()->addMinutes(10));
 
         return $token;
     }
 
     public function getUserIdFromTwoFactorToken(string $token): ?int
     {
-        $userId = \Illuminate\Support\Facades\Cache::get('2fa_token_'.$token);
+        $userId = Cache::get('2fa_token_'.$token);
+
         return $userId ? (int) $userId : null;
     }
 
     public function deleteTwoFactorToken(string $token): void
     {
-        \Illuminate\Support\Facades\Cache::forget('2fa_token_'.$token);
+        Cache::forget('2fa_token_'.$token);
     }
 }

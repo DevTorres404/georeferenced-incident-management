@@ -19,7 +19,9 @@ final class OperatorProfile extends Model
     protected $table = 'auth.operator_profiles';
 
     public const DEFAULT_INCIDENT_CAPACITY = 20;
+
     public const DEFAULT_MAX_ACTIVE_INCIDENTS = 10;
+
     public const DEFAULT_MAX_WORKLOAD_POINTS = 20;
 
     protected function casts(): array

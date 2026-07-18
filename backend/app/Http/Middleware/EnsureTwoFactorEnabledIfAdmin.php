@@ -11,7 +11,7 @@ class EnsureTwoFactorEnabledIfAdmin
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -21,7 +21,7 @@ class EnsureTwoFactorEnabledIfAdmin
             if (empty($user->two_factor_confirmed_at)) {
                 return response()->json([
                     'message' => 'Los administradores deben configurar la autenticación de dos factores.',
-                    'requires_2fa_setup' => true
+                    'requires_2fa_setup' => true,
                 ], 403);
             }
         }

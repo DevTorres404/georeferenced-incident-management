@@ -9,9 +9,7 @@ use App\TerritorialUnits\Domain\Repositories\TerritorialUnitRepositoryInterface;
 
 final class TerritorialUnitUseCase
 {
-    public function __construct(private TerritorialUnitRepositoryInterface $territorialUnitRepository)
-    {
-    }
+    public function __construct(private TerritorialUnitRepositoryInterface $territorialUnitRepository) {}
 
     /**
      * @return array<int, TerritorialUnitData>

@@ -2,6 +2,7 @@
 
 namespace App\Auth\Infrastructure\Jobs;
 
+use App\Auth\Application\DTOs\GoogleAuthInputData;
 use App\Auth\Application\UseCases\GoogleRegistrationUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Infrastructure\Events\GoogleRegistrationUpdated;
@@ -33,7 +34,7 @@ class ProcessGoogleRegistration implements ShouldQueue
         ));
 
         try {
-            $result = $useCase->execute(new \App\Auth\Application\DTOs\GoogleAuthInputData(
+            $result = $useCase->execute(new GoogleAuthInputData(
                 intent: $this->intent,
                 idToken: $this->idToken,
                 ip: $this->ip,

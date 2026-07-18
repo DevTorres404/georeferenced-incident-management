@@ -15,8 +15,7 @@ final class Incident implements JsonSerializable
         public readonly ?int $assigneeUserId,
         public readonly int $stateId,
         public readonly ?IncidentState $state
-    ) {
-    }
+    ) {}
 
     public function canBeEdited(): bool
     {

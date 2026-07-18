@@ -39,7 +39,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::statement("
+        DB::statement('
             UPDATE core.incidents
             SET priority_id = (
                 SELECT id
@@ -48,7 +48,7 @@ return new class extends Migration
                 LIMIT 1
             )
             WHERE priority_id IS NULL
-        ");
+        ');
 
         DB::statement('ALTER TABLE core.incidents ALTER COLUMN priority_id SET NOT NULL');
 

@@ -20,8 +20,7 @@ final class EloquentUserRepository implements UserRepositoryInterface
     public function __construct(
         private AuthUserMapper $userMapper,
         private UserNotificationPort $notificationPort
-    ) {
-    }
+    ) {}
 
     public function paginate(UserFiltersData $filters): PaginatedResult
     {

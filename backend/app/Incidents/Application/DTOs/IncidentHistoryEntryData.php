@@ -17,8 +17,7 @@ final class IncidentHistoryEntryData implements JsonSerializable
         public readonly ?string $comment,
         public readonly ?string $createdAt,
         public readonly ?UserSummaryData $user = null
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -5,7 +5,7 @@ namespace App\Users\Application\DTOs;
 final class UpdateManagedUserInputData
 {
     /**
-     * @param array<int, string>|null $roleCodes
+     * @param  array<int, string>|null  $roleCodes
      */
     public function __construct(
         public readonly ?string $firstName = null,
@@ -18,6 +18,5 @@ final class UpdateManagedUserInputData
         public readonly ?bool $isActive = null,
         public readonly ?array $roleCodes = null,
         public readonly ?int $assignedBy = null
-    ) {
-    }
+    ) {}
 }

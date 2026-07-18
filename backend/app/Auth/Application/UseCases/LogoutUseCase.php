@@ -6,9 +6,7 @@ use App\Auth\Application\Ports\SessionManagerPort;
 
 final class LogoutUseCase
 {
-    public function __construct(private SessionManagerPort $sessionManager)
-    {
-    }
+    public function __construct(private SessionManagerPort $sessionManager) {}
 
     public function execute(int $tokenId): void
     {

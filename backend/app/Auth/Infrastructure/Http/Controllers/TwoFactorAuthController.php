@@ -18,8 +18,7 @@ final class TwoFactorAuthController
         private ConfirmTwoFactorUseCase $confirmTwoFactor,
         private VerifyTwoFactorLoginUseCase $verifyLogin,
         private DisableTwoFactorUseCase $disableTwoFactor
-    ) {
-    }
+    ) {}
 
     public function enable(Request $request): JsonResponse
     {

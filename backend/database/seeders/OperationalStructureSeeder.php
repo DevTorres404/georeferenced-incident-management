@@ -120,7 +120,7 @@ final class OperationalStructureSeeder extends Seeder
     }
 
     /**
-     * @param array<string, string> $data
+     * @param  array<string, string>  $data
      */
     private function user(array $data, int $roleId, int $assignedBy): User
     {

@@ -2,12 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 
 class DemoAuditLogSeeder extends Seeder
 {
@@ -19,6 +18,7 @@ class DemoAuditLogSeeder extends Seeder
 
         if (empty($users) || empty($incidents)) {
             $this->command->warn('No users or incidents found. Skipping DemoAuditLogSeeder.');
+
             return;
         }
 
@@ -38,7 +38,7 @@ class DemoAuditLogSeeder extends Seeder
             $modelClass = $faker->randomElement(array_keys($models));
             $modelId = $faker->randomElement($models[$modelClass]);
             $event = $faker->randomElement($events);
-            
+
             $oldValues = null;
             $newValues = null;
 
@@ -54,21 +54,21 @@ class DemoAuditLogSeeder extends Seeder
 
             $logs[] = [
                 'auditable_type' => $modelClass,
-                'auditable_id'   => $modelId,
-                'event'          => $event,
-                'old_values'     => $oldValues,
-                'new_values'     => $newValues,
-                'url'            => '/api/' . ($modelClass === User::class ? 'users' : 'incidents') . '/' . $modelId,
-                'user_id'        => $faker->randomElement($users),
-                'ip_address'     => $faker->ipv4(),
-                'user_agent'     => $faker->userAgent(),
-                'tags'           => json_encode(['source' => 'demo']),
-                'created_at'     => $faker->dateTimeBetween('-1 year', 'now'),
+                'auditable_id' => $modelId,
+                'event' => $event,
+                'old_values' => $oldValues,
+                'new_values' => $newValues,
+                'url' => '/api/'.($modelClass === User::class ? 'users' : 'incidents').'/'.$modelId,
+                'user_id' => $faker->randomElement($users),
+                'ip_address' => $faker->ipv4(),
+                'user_agent' => $faker->userAgent(),
+                'tags' => json_encode(['source' => 'demo']),
+                'created_at' => $faker->dateTimeBetween('-1 year', 'now'),
             ];
         }
 
         DB::table('audit.audit_logs')->insert($logs);
-        
+
         $this->command->info('DemoAuditLogSeeder: 50 fake audit logs inserted successfully.');
     }
 }

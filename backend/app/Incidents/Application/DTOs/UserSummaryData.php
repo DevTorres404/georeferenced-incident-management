@@ -11,8 +11,7 @@ final class UserSummaryData implements JsonSerializable
         public readonly string $firstName,
         public readonly string $lastName,
         public readonly string $email
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -14,17 +14,17 @@ final class LaravelUserNotificationAdapter implements UserNotificationPort
 {
     public function sendVerificationEmail(int $userId): void
     {
-        User::findOrFail($userId)->notify(new VerifyEmailNotification());
+        User::findOrFail($userId)->notify(new VerifyEmailNotification);
     }
 
     public function sendWelcomeEmail(int $userId): void
     {
-        User::findOrFail($userId)->notify(new WelcomeEmailNotification());
+        User::findOrFail($userId)->notify(new WelcomeEmailNotification);
     }
 
     public function sendPasswordChangedEmail(int $userId): void
     {
-        User::findOrFail($userId)->notify(new PasswordChangedNotification());
+        User::findOrFail($userId)->notify(new PasswordChangedNotification);
     }
 
     public function sendPasswordResetCodeEmail(int $userId, string $code, int $expiresInMinutes): void
@@ -34,6 +34,6 @@ final class LaravelUserNotificationAdapter implements UserNotificationPort
 
     public function sendPasswordResetCompletedEmail(int $userId): void
     {
-        User::findOrFail($userId)->notify(new PasswordResetCompletedNotification());
+        User::findOrFail($userId)->notify(new PasswordResetCompletedNotification);
     }
 }

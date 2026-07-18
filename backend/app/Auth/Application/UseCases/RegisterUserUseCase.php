@@ -18,8 +18,7 @@ final class RegisterUserUseCase
         private SessionManagerPort $sessionManager,
         private UserNotificationPort $notificationPort,
         private LoggerPort $logger
-    ) {
-    }
+    ) {}
 
     public function execute(RegisterUserInputData $input): AuthActionResultData
     {

@@ -7,15 +7,14 @@ use JsonSerializable;
 final class SupervisorProfileData implements JsonSerializable
 {
     /**
-     * @param array<int, OperationalUserData> $operators
+     * @param  array<int, OperationalUserData>  $operators
      */
     public function __construct(
         public readonly OperationalUserData $supervisor,
         public readonly int $maxOperators,
         public readonly int $activeOperatorsCount,
         public readonly array $operators = []
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -15,10 +15,10 @@ class CategorySeeder extends Seeder
     {
         $categories = [
             [
-                'name'        => 'Vialidad',
+                'name' => 'Vialidad',
                 'description' => 'Problemas relacionados con calles, carreteras y vías públicas',
-                'icon'        => 'fa-road',
-                'color'       => '#6366F1',
+                'icon' => 'fa-road',
+                'color' => '#6366F1',
                 'subcategories' => [
                     'Bache',
                     'Semáforo dañado',
@@ -28,10 +28,10 @@ class CategorySeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'Servicios Públicos',
+                'name' => 'Servicios Públicos',
                 'description' => 'Agua potable, alcantarillado y drenaje',
-                'icon'        => 'fa-faucet-drip',
-                'color'       => '#0EA5E9',
+                'icon' => 'fa-faucet-drip',
+                'color' => '#0EA5E9',
                 'subcategories' => [
                     'Fuga de agua',
                     'Alcantarilla tapada',
@@ -40,10 +40,10 @@ class CategorySeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'Alumbrado Público',
+                'name' => 'Alumbrado Público',
                 'description' => 'Luminarias, postes y cableado eléctrico público',
-                'icon'        => 'fa-lightbulb',
-                'color'       => '#F59E0B',
+                'icon' => 'fa-lightbulb',
+                'color' => '#F59E0B',
                 'subcategories' => [
                     'Luminaria apagada',
                     'Poste dañado',
@@ -52,10 +52,10 @@ class CategorySeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'Espacios Públicos',
+                'name' => 'Espacios Públicos',
                 'description' => 'Parques, plazas, áreas verdes y mobiliario urbano',
-                'icon'        => 'fa-tree',
-                'color'       => '#22C55E',
+                'icon' => 'fa-tree',
+                'color' => '#22C55E',
                 'subcategories' => [
                     'Parque descuidado',
                     'Mobiliario dañado',
@@ -64,10 +64,10 @@ class CategorySeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'Recolección de Residuos',
+                'name' => 'Recolección de Residuos',
                 'description' => 'Basura, residuos y limpieza urbana',
-                'icon'        => 'fa-trash',
-                'color'       => '#A855F7',
+                'icon' => 'fa-trash',
+                'color' => '#A855F7',
                 'subcategories' => [
                     'Basura acumulada',
                     'Contenedor lleno',
@@ -76,10 +76,10 @@ class CategorySeeder extends Seeder
                 ],
             ],
             [
-                'name'        => 'Seguridad',
+                'name' => 'Seguridad',
                 'description' => 'Situaciones que afectan la seguridad ciudadana',
-                'icon'        => 'fa-shield-halved',
-                'color'       => '#EF4444',
+                'icon' => 'fa-shield-halved',
+                'color' => '#EF4444',
                 'subcategories' => [
                     'Vandalismo',
                     'Zona insegura',
@@ -101,7 +101,7 @@ class CategorySeeder extends Seeder
                 Subcategory::updateOrCreate(
                     [
                         'category_id' => $categoria->id,
-                        'name'       => $subNombre,
+                        'name' => $subNombre,
                     ],
                     ['description' => null]
                 );
@@ -109,4 +109,3 @@ class CategorySeeder extends Seeder
         }
     }
 }
-

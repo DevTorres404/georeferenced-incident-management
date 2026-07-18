@@ -33,11 +33,11 @@ return new class extends Migration
             WHERE active = true AND assignment_role = 'primary'
         ");
 
-        DB::statement("
+        DB::statement('
             CREATE UNIQUE INDEX uq_incident_assignments_single_active_operator
             ON core.incident_assignments (incident_id, user_id)
             WHERE active = true
-        ");
+        ');
 
         DB::statement("
             CREATE OR REPLACE FUNCTION core.sincronizar_asignacion_actual()

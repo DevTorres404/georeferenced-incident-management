@@ -11,6 +11,7 @@ use App\Auth\Domain\Repositories\UserRepositoryInterface;
 final class RequestPasswordResetCodeUseCase
 {
     private const CODE_LENGTH = 6;
+
     private const EXPIRES_IN_MINUTES = 15;
 
     public function __construct(
@@ -18,8 +19,7 @@ final class RequestPasswordResetCodeUseCase
         private PasswordResetCodeRepositoryInterface $resetCodeRepository,
         private PasswordHasherPort $passwordHasher,
         private UserNotificationPort $notificationPort
-    ) {
-    }
+    ) {}
 
     public function execute(ForgotPasswordInputData $input): void
     {

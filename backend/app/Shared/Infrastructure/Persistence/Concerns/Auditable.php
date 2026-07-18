@@ -44,7 +44,7 @@ trait Auditable
     }
 
     /**
-     * @param array<string, mixed>|null $values
+     * @param  array<string, mixed>|null  $values
      * @return array<string, mixed>|null
      */
     private static function snapshot(Model $model, ?array $values = null): ?array
@@ -65,8 +65,8 @@ trait Auditable
     }
 
     /**
-     * @param array<string, mixed>|null $oldValues
-     * @param array<string, mixed>|null $newValues
+     * @param  array<string, mixed>|null  $oldValues
+     * @param  array<string, mixed>|null  $newValues
      */
     private static function writeAuditLog(
         Model $model,

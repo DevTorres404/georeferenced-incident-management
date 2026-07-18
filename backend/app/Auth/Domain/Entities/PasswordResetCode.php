@@ -11,8 +11,7 @@ final class PasswordResetCode
         public readonly ?string $expiresAt,
         public readonly int $attempts,
         public readonly ?string $usedAt
-    ) {
-    }
+    ) {}
 
     public function isUsed(): bool
     {

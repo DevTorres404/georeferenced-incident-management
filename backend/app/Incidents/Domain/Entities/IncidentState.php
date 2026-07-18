@@ -11,8 +11,7 @@ final class IncidentState implements JsonSerializable
         public readonly ?string $name,
         public readonly bool $allowsEdition,
         public readonly bool $isFinal
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

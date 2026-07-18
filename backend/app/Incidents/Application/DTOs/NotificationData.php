@@ -16,8 +16,7 @@ final class NotificationData implements JsonSerializable
         public readonly bool $isRead,
         public readonly ?string $readAt,
         public readonly ?string $createdAt
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

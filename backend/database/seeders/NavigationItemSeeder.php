@@ -88,7 +88,7 @@ class NavigationItemSeeder extends Seeder
                 $activeCodes[] = $child['code'];
             }
         }
-        
+
         NavigationItem::whereNotIn('code', $activeCodes)->delete();
     }
 }

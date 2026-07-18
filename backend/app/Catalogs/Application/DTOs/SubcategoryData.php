@@ -17,8 +17,7 @@ final class SubcategoryData implements JsonSerializable
         public readonly string $name,
         public readonly ?string $description,
         public readonly bool $isActive
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -14,8 +14,7 @@ final class StateData implements JsonSerializable
         public readonly int $order,
         public readonly bool $isInitialState,
         public readonly bool $isFinalState
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

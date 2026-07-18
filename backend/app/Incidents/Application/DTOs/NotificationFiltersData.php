@@ -7,6 +7,5 @@ final class NotificationFiltersData
     public function __construct(
         public readonly ?bool $isRead = null,
         public readonly int $perPage = 15
-    ) {
-    }
+    ) {}
 }

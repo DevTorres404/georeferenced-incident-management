@@ -40,11 +40,11 @@ return new class extends Migration
         ");
 
         // Índice parcial: notificaciones no leídas por usuario (consulta más frecuente)
-        DB::statement("
+        DB::statement('
             CREATE INDEX idx_notifications_unread
             ON core.notifications (user_id)
             WHERE is_read = FALSE
-        ");
+        ');
 
         // ──────────────────────────────────────────────
         // core.configuraciones — Parámetros del sistema

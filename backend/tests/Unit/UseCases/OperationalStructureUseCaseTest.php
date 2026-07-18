@@ -4,6 +4,8 @@ namespace Tests\Unit\UseCases;
 
 use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
+use App\Operations\Application\DTOs\OperationalTerritoryData;
+use App\Operations\Application\DTOs\OperationalUserData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
 use App\Operations\Application\DTOs\OperatorProfileData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
@@ -15,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 class OperationalStructureUseCaseTest extends TestCase
 {
     private OperationalStructureRepositoryInterface $repository;
+
     private OperationalStructureUseCase $useCase;
 
     protected function setUp(): void
@@ -37,11 +40,11 @@ class OperationalStructureUseCaseTest extends TestCase
             supervisorUserId: 2,
             assignedByUserId: 3
         );
-        
-        $zoneData = new \App\Operations\Application\DTOs\OperationalTerritoryData(1, 'Zone', 'ZONE', null, 'Zone');
-        $userData = new \App\Operations\Application\DTOs\OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'SUPERVISOR');
-        
-        $summary = new \App\Operations\Application\DTOs\OperationalZoneSummaryData(
+
+        $zoneData = new OperationalTerritoryData(1, 'Zone', 'ZONE', null, 'Zone');
+        $userData = new OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'SUPERVISOR');
+
+        $summary = new OperationalZoneSummaryData(
             zone: $zoneData,
             supervisor: $userData,
             maxOperators: 10,
@@ -50,7 +53,7 @@ class OperationalStructureUseCaseTest extends TestCase
             averageWorkloadPoints: 0.0,
             provincesCovered: []
         );
-        
+
         $this->repository->shouldReceive('assignSupervisorToZone')
             ->with($data)
             ->once()
@@ -68,10 +71,10 @@ class OperationalStructureUseCaseTest extends TestCase
             replacementOperatorUserId: 2,
             assignedByUserId: 3
         );
-        
-        $userData = new \App\Operations\Application\DTOs\OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'OPERATOR');
-        
-        $operatorProfile = new \App\Operations\Application\DTOs\OperatorProfileData(
+
+        $userData = new OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'OPERATOR');
+
+        $operatorProfile = new OperatorProfileData(
             operator: $userData,
             maxActiveIncidents: 5,
             maxWorkloadPoints: 10,
@@ -95,10 +98,10 @@ class OperationalStructureUseCaseTest extends TestCase
             territorialUnitId: 2,
             assignedByUserId: 3
         );
-        
-        $userData = new \App\Operations\Application\DTOs\OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'OPERATOR');
-        
-        $operatorProfile = new \App\Operations\Application\DTOs\OperatorProfileData(
+
+        $userData = new OperationalUserData(2, 'Name', 'Last', 'e@m.com', 'OPERATOR');
+
+        $operatorProfile = new OperatorProfileData(
             operator: $userData,
             maxActiveIncidents: 5,
             maxWorkloadPoints: 10,

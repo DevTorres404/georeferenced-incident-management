@@ -11,8 +11,7 @@ final class EnableTwoFactorUseCase
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private TwoFactorAuthPort $twoFactorAuth
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{secret: string, qr_url: string}
@@ -30,7 +29,7 @@ final class EnableTwoFactorUseCase
         }
 
         $secret = $this->twoFactorAuth->generateSecretKey();
-        
+
         $this->userRepository->updateTwoFactorSecret($userId, $secret);
 
         $qrUrl = $this->twoFactorAuth->getQRCodeUrl(

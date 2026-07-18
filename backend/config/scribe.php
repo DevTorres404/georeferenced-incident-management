@@ -190,7 +190,7 @@ return [
             'Ubicación',
             'Categorías y subcategorías',
             'Notificaciones',
-            'Dashboard y métricas'
+            'Dashboard y métricas',
         ],
     ],
 

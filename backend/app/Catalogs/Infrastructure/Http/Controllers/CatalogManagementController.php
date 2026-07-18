@@ -2,18 +2,15 @@
 
 namespace App\Catalogs\Infrastructure\Http\Controllers;
 
+use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
 use App\Catalogs\Application\UseCases\CatalogManagementUseCase;
-use App\Auth\Infrastructure\Persistence\Models\Role;
-use App\Shared\Infrastructure\Http\Controllers\ApiController;
-use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Configuration;
-use App\Incidents\Infrastructure\Persistence\Models\State;
 use App\Incidents\Infrastructure\Persistence\Models\Priority;
-use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
-use App\Incidents\Infrastructure\Persistence\Models\StateTransition;
-use Illuminate\Database\Eloquent\Model;
+use App\Incidents\Infrastructure\Persistence\Models\State;
+use App\Shared\Infrastructure\Http\Controllers\ApiController;
+use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,9 +25,7 @@ class CatalogManagementController extends ApiController
     public function __construct(
         private CatalogManagementUseCase $catalogManagementUseCase,
         private AdminNotifier $adminNotifier
-    )
-    {
-    }
+    ) {}
 
     /**
      * Listar registros de un catálogo.
@@ -38,7 +33,9 @@ class CatalogManagementController extends ApiController
      * Devuelve una lista paginada de un catálogo específico.
      *
      * @authenticated
+     *
      * @urlParam catalog string required El nombre del catálogo. Example: categories
+     *
      * @queryParam per_page int Cantidad por página. Example: 15
      * @queryParam is_active boolean Filtrar por estado. Example: 1
      */
@@ -64,6 +61,7 @@ class CatalogManagementController extends ApiController
      * Permite crear un nuevo registro en un catálogo. Los parámetros del body dependen del catálogo.
      *
      * @authenticated
+     *
      * @urlParam catalog string required El nombre del catálogo. Example: categories
      */
     public function store(Request $request, string $catalog): JsonResponse
@@ -85,6 +83,7 @@ class CatalogManagementController extends ApiController
      * Devuelve el detalle de un registro específico de un catálogo.
      *
      * @authenticated
+     *
      * @urlParam catalog string required El nombre del catálogo. Example: categories
      * @urlParam id int required El ID del registro. Example: 2
      */
@@ -101,6 +100,7 @@ class CatalogManagementController extends ApiController
      * Permite modificar un registro existente en un catálogo. Los parámetros del body dependen del catálogo.
      *
      * @authenticated
+     *
      * @urlParam catalog string required El nombre del catálogo. Example: categories
      * @urlParam id int required El ID del registro. Example: 2
      */
@@ -124,6 +124,7 @@ class CatalogManagementController extends ApiController
      * Elimina un registro de un catálogo.
      *
      * @authenticated
+     *
      * @urlParam catalog string required El nombre del catálogo. Example: categories
      * @urlParam id int required El ID del registro. Example: 2
      */

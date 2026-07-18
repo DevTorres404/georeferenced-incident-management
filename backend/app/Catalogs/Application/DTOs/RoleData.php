@@ -13,8 +13,7 @@ final class RoleData implements JsonSerializable
         public readonly string $description,
         /** @var PermissionData[] */
         public readonly array $permissions = []
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

@@ -9,9 +9,7 @@ use App\Shared\Application\Results\PaginatedResult;
 
 final class NotificationUseCase
 {
-    public function __construct(private IncidentRepositoryInterface $incidentRepository)
-    {
-    }
+    public function __construct(private IncidentRepositoryInterface $incidentRepository) {}
 
     public function listForUser(int $userId, NotificationFiltersData $filters): PaginatedResult
     {

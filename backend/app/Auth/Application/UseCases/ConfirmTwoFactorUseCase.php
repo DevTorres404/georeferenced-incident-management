@@ -11,8 +11,7 @@ final class ConfirmTwoFactorUseCase
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private TwoFactorAuthPort $twoFactorAuth
-    ) {
-    }
+    ) {}
 
     public function execute(int $userId, string $code): void
     {

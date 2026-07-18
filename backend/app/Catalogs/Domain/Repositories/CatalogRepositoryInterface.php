@@ -4,12 +4,12 @@ namespace App\Catalogs\Domain\Repositories;
 
 use App\Catalogs\Application\DTOs\CatalogPaginationFiltersData;
 use App\Catalogs\Application\DTOs\CategoryData;
+use App\Catalogs\Application\DTOs\PermissionData;
 use App\Catalogs\Application\DTOs\PriorityData;
+use App\Catalogs\Application\DTOs\RoleData;
 use App\Catalogs\Application\DTOs\StateData;
 use App\Catalogs\Application\DTOs\StateTransitionData;
 use App\Catalogs\Application\DTOs\SubcategoryData;
-use App\Catalogs\Application\DTOs\PermissionData;
-use App\Catalogs\Application\DTOs\RoleData;
 use App\Shared\Application\Results\PaginatedResult;
 
 interface CatalogRepositoryInterface

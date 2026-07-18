@@ -8,6 +8,5 @@ final class AssignOperatorTerritoryInputData
         public readonly int $operatorUserId,
         public readonly int $territorialUnitId,
         public readonly int $assignedByUserId
-    ) {
-    }
+    ) {}
 }

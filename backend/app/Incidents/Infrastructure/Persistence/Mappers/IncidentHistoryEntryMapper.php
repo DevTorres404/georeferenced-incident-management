@@ -7,9 +7,7 @@ use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
 
 final class IncidentHistoryEntryMapper
 {
-    public function __construct(private UserSummaryMapper $userSummaryMapper)
-    {
-    }
+    public function __construct(private UserSummaryMapper $userSummaryMapper) {}
 
     public function fromModel(IncidentState $history): IncidentHistoryEntryData
     {

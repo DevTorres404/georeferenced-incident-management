@@ -10,6 +10,5 @@ final class AuditLogFiltersData
         public readonly ?int $userId = null,
         public readonly ?string $action = null,
         public readonly int $perPage = 25
-    ) {
-    }
+    ) {}
 }

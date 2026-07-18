@@ -12,8 +12,7 @@ final class OperationalTerritoryData implements JsonSerializable
         public readonly string $type,
         public readonly ?string $code,
         public readonly string $fullPath
-    ) {
-    }
+    ) {}
 
     public function jsonSerialize(): array
     {

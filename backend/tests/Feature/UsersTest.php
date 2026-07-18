@@ -96,7 +96,7 @@ class UsersTest extends TestCase
 
         $response = $this->withToken($admin['token'])
             ->putJson("/api/users/{$user->id}/roles", [
-                'roles' => ['SUPERVISOR']
+                'roles' => ['SUPERVISOR'],
             ]);
 
         $response->assertOk();

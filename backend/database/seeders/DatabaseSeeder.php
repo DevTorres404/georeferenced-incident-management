@@ -44,10 +44,10 @@ class DatabaseSeeder extends Seeder
         $admin = User::updateOrCreate(
             ['email' => 'admin@incidents.local'],
             [
-                'first_name'   => 'Administrador',
+                'first_name' => 'Administrador',
                 'last_name' => 'Sistema',
                 'password' => 'password', // Se hashea automáticamente por el cast 'hashed'
-                'is_active'   => true,
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );

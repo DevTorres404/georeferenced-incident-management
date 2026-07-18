@@ -16,6 +16,5 @@ final class IncidentMapFiltersData
         public readonly ?float $minLongitude = null,
         public readonly ?float $maxLongitude = null,
         public readonly int $limit = 500
-    ) {
-    }
+    ) {}
 }

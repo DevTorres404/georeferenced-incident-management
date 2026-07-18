@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 use Illuminate\Support\Str;
 
 class DemoAccessLogSeeder extends Seeder
@@ -17,6 +17,7 @@ class DemoAccessLogSeeder extends Seeder
 
         if ($users->isEmpty()) {
             $this->command->warn('No users found. Skipping DemoAccessLogSeeder.');
+
             return;
         }
 
@@ -31,7 +32,7 @@ class DemoAccessLogSeeder extends Seeder
         for ($i = 0; $i < 50; $i++) {
             $isSuccess = $faker->boolean(80); // 80% success rate
             $user = $faker->randomElement($users);
-            
+
             $logs[] = [
                 'email' => $isSuccess ? $user->email : $faker->safeEmail(),
                 'user_id' => $isSuccess ? $user->id : null,
@@ -46,7 +47,7 @@ class DemoAccessLogSeeder extends Seeder
         }
 
         DB::table('audit.access_logs')->insert($logs);
-        
+
         $this->command->info('DemoAccessLogSeeder: 50 fake access logs inserted successfully.');
     }
 }

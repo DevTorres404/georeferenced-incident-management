@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Faker\Factory as Faker;
 use Illuminate\Support\Str;
 
 class DemoUserIdentitySeeder extends Seeder
@@ -18,6 +18,7 @@ class DemoUserIdentitySeeder extends Seeder
 
         if ($users->isEmpty()) {
             $this->command->warn('Target demo users not found. Skipping DemoUserIdentitySeeder.');
+
             return;
         }
 
@@ -46,6 +47,6 @@ class DemoUserIdentitySeeder extends Seeder
             $identities[] = $user->id;
         }
 
-        $this->command->info('DemoUserIdentitySeeder: ' . count($identities) . ' fake user identities inserted successfully.');
+        $this->command->info('DemoUserIdentitySeeder: '.count($identities).' fake user identities inserted successfully.');
     }
 }

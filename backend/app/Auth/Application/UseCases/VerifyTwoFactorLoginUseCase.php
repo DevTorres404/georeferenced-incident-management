@@ -14,8 +14,7 @@ final class VerifyTwoFactorLoginUseCase
         private UserRepositoryInterface $userRepository,
         private TwoFactorAuthPort $twoFactorAuth,
         private SessionManagerPort $sessionManager
-    ) {
-    }
+    ) {}
 
     public function execute(string $twoFactorToken, string $code): AuthActionResultData
     {
@@ -38,7 +37,7 @@ final class VerifyTwoFactorLoginUseCase
         }
 
         $this->userRepository->updateLastAccess($user->id);
-        
+
         $session = $this->sessionManager->createForUser($user->id, 'api-token');
         $profile = $this->userRepository->loadProfile($user->id);
 

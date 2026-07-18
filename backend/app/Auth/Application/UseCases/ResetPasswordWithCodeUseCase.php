@@ -20,8 +20,7 @@ final class ResetPasswordWithCodeUseCase
         private SessionManagerPort $sessionManager,
         private UserNotificationPort $notificationPort,
         private VerifyPasswordResetCodeUseCase $verifyPasswordResetCodeUseCase
-    ) {
-    }
+    ) {}
 
     public function execute(ResetPasswordWithCodeInputData $input): void
     {

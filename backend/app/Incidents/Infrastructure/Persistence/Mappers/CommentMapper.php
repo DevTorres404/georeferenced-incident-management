@@ -7,9 +7,7 @@ use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 
 final class CommentMapper
 {
-    public function __construct(private UserSummaryMapper $userSummaryMapper)
-    {
-    }
+    public function __construct(private UserSummaryMapper $userSummaryMapper) {}
 
     public function fromModel(IncidentComment $comment): CommentData
     {

@@ -11,8 +11,7 @@ final class ResendVerificationEmailUseCase
     public function __construct(
         private UserRepositoryInterface $userRepository,
         private UserNotificationPort $notificationPort
-    ) {
-    }
+    ) {}
 
     public function execute(int $userId): void
     {
