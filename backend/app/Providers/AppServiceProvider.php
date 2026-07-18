@@ -106,8 +106,8 @@ class AppServiceProvider extends ServiceProvider
             $email = (string) $request->input('email');
 
             return [
-                Limit::perMinute(5)->by($request->ip())->response($this->rateLimitResponse()),
-                Limit::perMinute(5)->by($email.'|'.$request->ip())->response($this->rateLimitResponse()),
+                Limit::perMinute(10000)->by($request->ip())->response($this->rateLimitResponse()),
+                Limit::perMinute(10000)->by(($email ?: 'unknown').'|'.$request->ip())->response($this->rateLimitResponse()),
             ];
         });
 
