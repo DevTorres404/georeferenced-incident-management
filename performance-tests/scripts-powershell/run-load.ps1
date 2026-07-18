@@ -43,7 +43,7 @@ $envVars = "-e BASE_URL=$baseUrl"
 if ($token) { $envVars += " -e TEST_TOKEN=$token" }
 
 $scriptFile = Join-Path $PSScriptRoot "..\scripts\load.js"
-Invoke-Expression "k6 run $envVars --out json=$jsonFile --summary-export=$htmlFile $scriptFile"
+Invoke-Expression "k6 run $envVars --out json='$jsonFile' --summary-export='$htmlFile' '$scriptFile'"
 
 Write-Host "=== Load Test completado ===" -ForegroundColor Green
 Write-Host "Resultados: $jsonFile"

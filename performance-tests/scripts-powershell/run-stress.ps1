@@ -50,7 +50,7 @@ if ($confirmation -ne "s") {
 
 $envVars = "-e BASE_URL=$baseUrl -e TEST_EMAIL=$email -e TEST_PASSWORD=$password"
 $scriptFile = Join-Path $PSScriptRoot "..\scripts\stress.js"
-Invoke-Expression "k6 run $envVars --out json=$jsonFile --summary-export=$htmlFile $scriptFile"
+Invoke-Expression "k6 run $envVars --out json='$jsonFile' --summary-export='$htmlFile' '$scriptFile'"
 
 Write-Host "=== Stress Test completado ===" -ForegroundColor Green
 Write-Host "Resultados: $jsonFile"

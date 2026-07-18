@@ -51,7 +51,7 @@ if ($token) {
 }
 
 $scriptFile = Join-Path $PSScriptRoot "..\scripts\smoke.js"
-$cmd = "k6 run $envVars --out json=$jsonFile --summary-export=$htmlFile $scriptFile"
+$cmd = "k6 run $envVars --out json='$jsonFile' --summary-export='$htmlFile' '$scriptFile'"
 Write-Host "Ejecutando: k6 run ..." -ForegroundColor Gray
 Invoke-Expression $cmd
 
