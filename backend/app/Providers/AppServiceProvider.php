@@ -130,21 +130,21 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(10000)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
         });
 
         RateLimiter::for('catalogs.public', function (Request $request) {
-            return Limit::perMinute(10000)->by($request->ip());
+            return Limit::perMinute(120)->by($request->ip());
         });
 
         RateLimiter::for('incidents.store', function (Request $request) {
             // Nota técnica: El control de duplicados por ubicación/categoría/tiempo
             // debe manejarse como regla de aplicación (Dominio/UseCase), no como rate limit HTTP.
-            return Limit::none();
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
         });
 
         RateLimiter::for('uploads', function (Request $request) {
-            return Limit::perMinute(10000)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip())->response($this->rateLimitResponse());
         });
     }
 
