@@ -22,12 +22,13 @@ export const concurrentRead = {
 
 export const stress = {
   executor: 'ramping-vus',
-  startVUs: 0,
+  startVUs: 1,
   stages: [
     { duration: '30s', target: 10 },
-    { duration: '1m', target: 25 },
-    { duration: '1m', target: 50 },
+    { duration: '2m', target: 10 },
+    { duration: '2m', target: 25 },
     { duration: '2m', target: 50 },
+    { duration: '2m', target: 100 },
     { duration: '30s', target: 0 },
   ],
 };

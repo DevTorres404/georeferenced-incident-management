@@ -37,16 +37,12 @@ $timestamp = Get-Date -Format "yyyy-MM-dd-HHmm"
 $jsonFile = Join-Path $jsonDir "stress-$timestamp.json"
 $htmlFile = Join-Path $htmlDir "stress-$timestamp.html"
 
-Write-Host "⚠️  STRESS TEST - Ejecutar solo si el equipo lo autoriza" -ForegroundColor Red
+Write-Host "⚠️  STRESS TEST COMPREHENSIVO (HITO 7)" -ForegroundColor Red
 Write-Host "URL: $baseUrl"
-Write-Host "50 VUs pico, ~5 minutos"
+Write-Host "100 VUs pico, ~9 minutos. Incluye login, mapas, subidas y catálogos."
 Write-Host ""
 
-$confirmation = Read-Host "¿Continuar? (s/N)"
-if ($confirmation -ne "s") {
-    Write-Host "Cancelado."
-    exit 0
-}
+Write-Host "Ejecutando test automáticamente..." -ForegroundColor Cyan
 
 $envVars = "-e BASE_URL=$baseUrl -e TEST_EMAIL=$email -e TEST_PASSWORD=$password"
 $scriptFile = Join-Path $PSScriptRoot "..\scripts\stress.js"
