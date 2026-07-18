@@ -327,14 +327,7 @@ function startInactivityWatcher() {
   scheduleInactivityLogout();
 }
 async function logoutManually() {
-  try {
-    await requestBackendLogout();
-  } catch {
-    // La sesión local se elimina incluso si el backend no responde.
-  } finally {
-    clearSession();
-    redirectToLogin();
-  }
+  await logoutFromInactivity();
 }
 function scheduleSessionExpiryLogout() {
   const expiresAt = new Date(localStorage.getItem(AUTH_KEYS.expiresAt) || '').getTime();
