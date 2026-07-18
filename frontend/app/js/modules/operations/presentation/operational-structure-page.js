@@ -990,7 +990,7 @@ function isChecked(id) {
 function renderAvatar(name) {
   const initials = String(name || 'U').substring(0, 2).toUpperCase();
   const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1', '#ec4899'];
-  const colorIndex = initials.charCodeAt(0) % colors.length;
+  const colorIndex = initials.codePointAt(0) % colors.length;
   const bgColor = colors[colorIndex] || colors[0];
 
   return `<div class="ops-avatar" style="background-color: ${bgColor};">${escapeHtml(initials)}</div>`;

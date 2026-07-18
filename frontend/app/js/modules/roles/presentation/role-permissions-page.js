@@ -406,14 +406,14 @@ export function cssEscape(value) {
 }
 
 export function escapeAttr(value) {
-  return escapeHtml(value).replace(/"/g, '&quot;');
+  return escapeHtml(value).replaceAll('"', '&quot;');
 }
 
 export function escapeHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#039;');
 }

@@ -822,7 +822,7 @@ function exportPrintableReport() {
 }
 
 export function escapeCsvValue(value) {
-  const normalized = String(value ?? '').replace(/"/g, '""');
+  const normalized = String(value ?? '').replaceAll('"', '""');
   return `"${normalized}"`;
 }
 
@@ -881,7 +881,7 @@ function isFinishedState() {
 }
 
 function matchesStateCategory(stateCode, validCodes) {
-  return validCodes.includes(stateCode) || validCodes.includes(stateCode.replace(/_/g, ' '));
+  return validCodes.includes(stateCode) || validCodes.includes(stateCode.replaceAll('_', ' '));
 }
 
 export function monthKey(date) {

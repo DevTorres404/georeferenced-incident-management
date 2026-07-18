@@ -394,7 +394,7 @@ function renderStateFilters(state) {
     if (s.is_initial_state) icon = 'fas fa-exclamation-circle';
     else if (s.is_final_state) icon = 'fas fa-check-circle';
 
-    const normalizedName = String(s.name || '').toUpperCase().replace(/_/g, ' ');
+    const normalizedName = String(s.name || '').toUpperCase().replaceAll('_', ' ');
     if (normalizedName === 'EN REVISION') icon = 'fas fa-search';
     if (normalizedName === 'RECHAZADA') icon = 'fas fa-times-circle';
 

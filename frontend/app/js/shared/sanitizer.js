@@ -2,15 +2,15 @@
 
 function escapeHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#39;');
 }
 
 function escapeAttribute(value) {
-  return escapeHtml(value).replace(/"/g, '&quot;');
+  return escapeHtml(value).replaceAll('"', '&quot;');
 }
 
 export { escapeAttribute, escapeHtml };

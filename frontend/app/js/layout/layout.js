@@ -143,11 +143,11 @@ function getDefaultPageForSession() {
 }
 function escapeHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#39;');
 }
 function safeUrl(url) {
   if (!url) return '#';
@@ -497,7 +497,7 @@ function renderBetterNavbarNotifications(count, notifications) {
         item.style.paddingBottom = '0';
         item.style.overflow = 'hidden';
         setTimeout(() => item.remove(), 260);
-        const currentCount = Math.max((parseInt(badge?.textContent || '0', 10) || 1) - 1, 0);
+        const currentCount = Math.max((Number.parseInt(badge?.textContent || '0', 10) || 1) - 1, 0);
         if (badge) {
           badge.textContent = currentCount > 99 ? '99+' : String(currentCount);
           badge.style.display = currentCount > 0 ? 'inline-block' : 'none';

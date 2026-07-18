@@ -24,11 +24,11 @@ function readSessionUser() {
 
 export function escapeHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll('\'', '&#39;');
 }
 
 export function normalizeCode(value) {
@@ -50,7 +50,7 @@ export function formatDate(dateStr) {
   if (!dateStr) return '-';
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '-';
+    if (Number.isNaN(d.getTime())) return '-';
     return d.toLocaleDateString('es-EC', { year: 'numeric', month: 'long', day: 'numeric' });
   } catch { return '-'; }
 }
@@ -59,7 +59,7 @@ export function formatDateTime(dateStr) {
   if (!dateStr) return '-';
   try {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return '-';
+    if (Number.isNaN(d.getTime())) return '-';
     const today = new Date();
     const isToday = d.toDateString() === today.toDateString();
     if (isToday) {
