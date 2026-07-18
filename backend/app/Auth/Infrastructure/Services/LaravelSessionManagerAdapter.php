@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 
 final class LaravelSessionManagerAdapter implements SessionManagerPort
 {
+    private const TWO_FACTOR_CACHE_PREFIX = '2fa_token_';
     public function createForUser(int $userId, string $name): SessionTokenData
     {
         $user = User::findOrFail($userId);
@@ -42,20 +43,20 @@ final class LaravelSessionManagerAdapter implements SessionManagerPort
     public function createTwoFactorToken(int $userId): string
     {
         $token = Str::random(64);
-        Cache::put('2fa_token_'.$token, $userId, now()->addMinutes(10));
+        Cache::put(self::TWO_FACTOR_CACHE_PREFIX.$token, $userId, now()->addMinutes(10));
 
         return $token;
     }
 
     public function getUserIdFromTwoFactorToken(string $token): ?int
     {
-        $userId = Cache::get('2fa_token_'.$token);
+        $userId = Cache::get(self::TWO_FACTOR_CACHE_PREFIX.$token);
 
         return $userId ? (int) $userId : null;
     }
 
     public function deleteTwoFactorToken(string $token): void
     {
-        Cache::forget('2fa_token_'.$token);
+        Cache::forget(self::TWO_FACTOR_CACHE_PREFIX.$token);
     }
 }

@@ -2,34 +2,32 @@
 
 $normalizeOrigin = static function (string $origin): ?string {
     $origin = trim($origin);
+    $result = null;
 
-    if ($origin === '' || str_contains($origin, '*') || filter_var($origin, FILTER_VALIDATE_URL) === false) {
-        return null;
+    if ($origin !== '' && !str_contains($origin, '*') && filter_var($origin, FILTER_VALIDATE_URL) !== false) {
+        $parts = parse_url($origin);
+
+        if ($parts !== false) {
+            $scheme = strtolower($parts['scheme'] ?? '');
+            
+            $isValid = in_array($scheme, ['http', 'https'], true)
+                && isset($parts['host'])
+                && !isset($parts['user'])
+                && !isset($parts['pass'])
+                && !isset($parts['query'])
+                && !isset($parts['fragment'])
+                && (!isset($parts['path']) || $parts['path'] === '' || $parts['path'] === '/');
+
+            if ($isValid) {
+                $host = strtolower($parts['host']);
+                $port = $parts['port'] ?? null;
+                $isDefaultPort = ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
+                $result = $scheme.'://'.$host.($port !== null && !$isDefaultPort ? ':'.$port : '');
+            }
+        }
     }
 
-    $parts = parse_url($origin);
-
-    if ($parts === false) {
-        return null;
-    }
-
-    $scheme = strtolower($parts['scheme'] ?? '');
-
-    if (! in_array($scheme, ['http', 'https'], true)
-        || ! isset($parts['host'])
-        || isset($parts['user'])
-        || isset($parts['pass'])
-        || isset($parts['query'])
-        || isset($parts['fragment'])
-        || (isset($parts['path']) && $parts['path'] !== '' && $parts['path'] !== '/')) {
-        return null;
-    }
-
-    $host = strtolower($parts['host']);
-    $port = $parts['port'] ?? null;
-    $isDefaultPort = ($scheme === 'http' && $port === 80) || ($scheme === 'https' && $port === 443);
-
-    return $scheme.'://'.$host.($port !== null && ! $isDefaultPort ? ':'.$port : '');
+    return $result;
 };
 
 $allowedOrigins = array_values(array_unique(array_filter(array_map(
