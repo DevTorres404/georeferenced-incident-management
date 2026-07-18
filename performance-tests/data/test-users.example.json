@@ -1,0 +1,10 @@
+{
+  "comment": "Copia este archivo como test-users.json y completa las credenciales reales de PRUEBA.",
+  "users": [
+    {
+      "role": "operator",
+      "email": "",
+      "password": ""
+    }
+  ]
+}
