@@ -261,8 +261,8 @@ function addSearchControl(mapElement, onResult) {
       resultsEl.querySelectorAll('.map-search-result-item').forEach((btn) => {
         btn.addEventListener('click', (event) => {
           event.stopPropagation();
-          const lat = parseFloat(btn.dataset.lat);
-          const lon = parseFloat(btn.dataset.lon);
+          const lat = Number.parseFloat(btn.dataset.lat);
+          const lon = Number.parseFloat(btn.dataset.lon);
           resultsEl.style.display = 'none';
           resultsEl.innerHTML = '';
           input.value = btn.textContent.trim();

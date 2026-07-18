@@ -31,7 +31,7 @@ function formatCatalogLabel(value) {
     return exactMatches[upperValue];
   }
 
-  const normalized = String(value).replace(/_/g, ' ').trim();
+  const normalized = String(value).replaceAll('_', ' ').trim();
 
   if (/^[A-Z0-9\s]+$/.test(normalized)) {
     return normalized
@@ -106,7 +106,7 @@ function getStateBadgeClass(stateName) {
 }
 
 function getStateHexColor(stateName) {
-  const normalized = String(stateName || '').toUpperCase().replace(/_/g, ' ');
+  const normalized = String(stateName || '').toUpperCase().replaceAll('_', ' ');
   if (normalized === 'NUEVA' || normalized === 'PENDIENTE') return '#90A4AE';
   if (normalized === 'EN REVISION') return '#2196F3';
   if (normalized === 'EN PROGRESO' || normalized === 'EN ATENCION') return '#FFC107';

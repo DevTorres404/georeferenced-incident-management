@@ -463,7 +463,7 @@ export function getPriorityBadgeClass(value) {
 }
 
 export function formatLabel(value) {
-  const text = String(value || '-').replace(/_/g, ' ').trim();
+  const text = String(value || '-').replaceAll('_', ' ').trim();
   if (!text || text === '-') return '-';
 
   return text
