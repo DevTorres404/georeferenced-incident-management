@@ -2,19 +2,22 @@
 
 namespace App\Incidents\Application\UseCases;
 
+use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 final class ReportUseCase
 {
+    public function __construct(
+        private IncidentRepositoryInterface $incidentRepository
+    ) {}
+
     public function getAnalytics(array $filters, int $userId, bool $canManage): array
     {
         $query = Incident::query();
 
-        if (!$canManage) {
-            $query->where('user_id', $userId);
-        }
+        $this->incidentRepository->applyIncidentVisibilityScope($query, $userId);
 
         if (!empty($filters['start_date'])) {
             $query->where('created_at', '>=', Carbon::parse($filters['start_date'])->startOfDay());
@@ -36,7 +39,9 @@ final class ReportUseCase
             });
         }
 
-        $totalUniverse = Incident::when(!$canManage, fn($q) => $q->where('user_id', $userId))->count();
+        $totalUniverseQuery = Incident::query();
+        $this->incidentRepository->applyIncidentVisibilityScope($totalUniverseQuery, $userId);
+        $totalUniverse = $totalUniverseQuery->count();
 
         // Obtenemos los incidentes con las relaciones
         $incidents = $query->with(['state', 'priority', 'category', 'territorialUnit'])->get();

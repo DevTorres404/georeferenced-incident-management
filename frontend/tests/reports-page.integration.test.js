@@ -299,18 +299,20 @@ function mockRequestWith(backend, { states, incidents }) {
     if (requestUrl.pathname === '/incidents') {
       const categoryId = Number(requestUrl.searchParams.get('category_id'));
       const category = sampleCategories.find((item) => item.id === categoryId)?.name;
-      const state = requestUrl.searchParams.get('state_filter');
-      const startDate = requestUrl.searchParams.get('start_date');
-      const endDate = requestUrl.searchParams.get('end_date');
+      const stateId = Number(requestUrl.searchParams.get('state_id'));
+      const state = (states ?? sampleStates).find((item) => item.id === stateId)?.code;
       const filteredIncidents = sourceIncidents.filter((incident) => {
-        const createdDate = incident.created_at.slice(0, 10);
         return (!category || incident.category?.name === category)
-          && (!state || normalizeCatalogCode(incident.state?.name) === normalizeCatalogCode(state))
-          && (!startDate || createdDate >= startDate)
-          && (!endDate || createdDate <= endDate);
+          && (!state || normalizeCatalogCode(incident.state?.name) === normalizeCatalogCode(state));
       });
+      const perPage = Number(requestUrl.searchParams.get('per_page')) || 15;
+      const page = Number(requestUrl.searchParams.get('page')) || 1;
+      const offset = (page - 1) * perPage;
 
-      return Promise.resolve({ data: filteredIncidents, meta: { last_page: 1 } });
+      return Promise.resolve({
+        data: filteredIncidents.slice(offset, offset + perPage),
+        meta: { last_page: Math.max(Math.ceil(filteredIncidents.length / perPage), 1) },
+      });
     }
 
     if (requestUrl.pathname === '/catalogs/categories') {
@@ -425,6 +427,11 @@ describe('reports-page integration', () => {
       expect(summaryHtml).toContain('Infraestructura');
       expect(summaryHtml).toContain('Ruido');
       expect(summaryHtml).toContain('Higiene');
+      const infrastructureCells = [...document.querySelectorAll('#tablaResumen tr')][0]
+        .querySelectorAll('td');
+      expect([...infrastructureCells].map((cell) => cell.textContent.trim())).toEqual(['Infraestructura', '3', '0', '2']);
+      expect(summaryHtml).not.toContain('badge-progress');
+      expect(summaryHtml).not.toContain('reports-rate-bar');
 
       const totalHtml = document.getElementById('tablaResumenTotal').innerHTML;
       expect(totalHtml).toContain('TOTAL');
@@ -593,7 +600,7 @@ describe('reports-page integration', () => {
   // ── 4. Report export ──
 
   describe('export', () => {
-    it('triggers CSV download with filtered incidents', async () => {
+    it('exports only incidents matching canonical catalog and local date filters', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
       mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
@@ -604,6 +611,9 @@ describe('reports-page integration', () => {
       const removeChild = vi.spyOn(document.body, 'removeChild');
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
+      document.getElementById('selectEstadoFiltro').value = 'RESUELTA';
+      document.getElementById('fFechaInicial').value = '2026-01-12';
+      document.getElementById('fFechaFinal').value = '2026-01-31';
       document.getElementById('btnExportExcel').click();
 
       await vi.waitFor(() => expect(appendChild).toHaveBeenCalled());
@@ -613,7 +623,17 @@ describe('reports-page integration', () => {
       expect(link.download).toContain('.csv');
 
       expect(removeChild).toHaveBeenCalledWith(link);
-      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('category_id=1'));
+      const requestUrl = backend.request.mock.calls.map(([url]) => String(url))
+        .find((url) => url.startsWith('/incidents?'));
+      expect(requestUrl).toContain('category_id=1');
+      expect(requestUrl).toContain('state_id=4');
+      expect(requestUrl).not.toMatch(/start_date|end_date|state_filter/);
+      expect(document.getElementById('selectEstadoFiltro').value).toBe('RESUELTA');
+
+      const csv = await URL.createObjectURL.mock.calls[0][0].text();
+      expect(csv).toContain('INC-001');
+      expect(csv).not.toContain('INC-002');
+      expect(csv).not.toContain('INC-005');
     });
 
     it('triggers printable report for PDF export', async () => {

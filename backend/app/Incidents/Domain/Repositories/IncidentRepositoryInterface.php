@@ -94,4 +94,9 @@ interface IncidentRepositoryInterface
      * @return array<int, StateChangeRequestData>
      */
     public function pendingStateChangeRequestsForUser(int $userId): array;
+
+    /**
+     * Applies visibility scope rules to an Eloquent/Query builder.
+     */
+    public function applyIncidentVisibilityScope(mixed $query, int $userId): void;
 }

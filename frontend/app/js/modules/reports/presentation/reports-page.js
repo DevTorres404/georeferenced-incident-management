@@ -4,6 +4,7 @@ import {
   escapeHtml,
   formatCatalogLabel,
   hidePageLoading,
+  normalizeCatalogCode,
   showPageLoading,
 } from '../../incidents/presentation/incidents-ui.js?v=17';
 import {
@@ -84,22 +85,11 @@ export function adjustLayoutForRoles() {
     const isSupervisor = user.roles.some((r) => r.code === 'SUPERVISOR');
     const isAdmin = user.roles.some((r) => r.code === 'ADMIN');
     
-    if (isSupervisor && !isAdmin) {
-      const colCiudades = document.getElementById('colTopCiudades');
-      if (colCiudades) colCiudades.style.display = 'none';
-      
-      const colTipos = document.getElementById('colTopTipos');
-      if (colTipos) {
-        colTipos.classList.remove('col-lg-4');
-        colTipos.classList.add('col-lg-6');
+      if (isSupervisor && !isAdmin) {
+        // We leave 'Top Ciudades' visible now because some zones have multiple provinces/cities.
+        
+        // Ensure other columns look good (we keep them as col-lg-4, so no need to adjust)
       }
-      
-      const colEficiencia = document.getElementById('colEficiencia');
-      if (colEficiencia) {
-        colEficiencia.classList.remove('col-lg-4');
-        colEficiencia.classList.add('col-lg-6');
-      }
-    }
   } catch (error) {
     console.warn('Error al ajustar layout por roles:', error);
   }
@@ -605,35 +595,23 @@ function renderSummary(analytics) {
   if (!tbody || !tfoot) return;
 
   if (!analytics.summaryRows || !analytics.summaryRows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Sin datos para mostrar.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin datos para mostrar.</td></tr>';
   } else {
     tbody.innerHTML = analytics.summaryRows.map((row) => `
       <tr>
         <td><strong>${escapeHtml(row.category)}</strong></td>
-        <td class="text-center"><span class="badge badge-pending px-2 py-1">${row.pending}</span></td>
-        <td class="text-center"><span class="badge badge-progress px-2 py-1">${Math.max(row.total - row.pending - row.resolved, 0)}</span></td>
-        <td class="text-center"><span class="badge badge-resolved px-2 py-1">${row.resolved}</span></td>
         <td class="text-center font-weight-bold">${row.total}</td>
-        <td>
-          <div class="reports-rate-bar">
-            <div class="progress">
-              <div class="progress-fill" style="width:${row.resolution_rate}%;"></div>
-            </div>
-            <span>${row.resolution_rate}%</span>
-          </div>
-        </td>
+        <td class="text-center"><span class="badge badge-pending px-2 py-1">${row.pending}</span></td>
+        <td class="text-center"><span class="badge badge-resolved px-2 py-1">${row.resolved}</span></td>
       </tr>`).join('');
   }
 
-  const inProgress = Math.max(analytics.total - analytics.active - analytics.resolved - analytics.closed, 0);
   tfoot.innerHTML = `
     <tr>
       <td><strong>TOTAL</strong></td>
-      <td class="text-center font-weight-bold">${analytics.active}</td>
-      <td class="text-center font-weight-bold">${inProgress}</td>
-      <td class="text-center font-weight-bold">${analytics.resolved + analytics.closed}</td>
       <td class="text-center font-weight-bold">${analytics.total}</td>
-      <td class="font-weight-bold">${analytics.resolutionRate}%</td>
+      <td class="text-center font-weight-bold">${analytics.active}</td>
+      <td class="text-center font-weight-bold">${analytics.resolved}</td>
     </tr>`;
 }
 
@@ -664,10 +642,10 @@ async function exportFilteredIncidentsCsv() {
     let currentPage = 1;
     let lastPage = 1;
     const requestParams = { per_page: 100, page: currentPage };
-    if (filters.startDate) requestParams.start_date = filters.startDate;
-    if (filters.endDate) requestParams.end_date = filters.endDate;
-    if (filters.category) requestParams.category_id = state.categories.find(c => c.name === filters.category)?.id;
-    if (filters.state) requestParams.state_filter = filters.state;
+    const selectedCategory = state.categories.find((category) => category.name === filters.category);
+    const selectedState = state.states.find((item) => (item.code || item.name) === filters.state);
+    if (selectedCategory?.id != null) requestParams.category_id = selectedCategory.id;
+    if (selectedState?.id != null) requestParams.state_id = selectedState.id;
 
     do {
       requestParams.page = currentPage;
@@ -679,9 +657,17 @@ async function exportFilteredIncidentsCsv() {
       currentPage += 1;
     } while (currentPage <= lastPage);
 
+    const filteredIncidents = incidents.filter((incident) => {
+      const createdDate = String(incident.created_at || '').slice(0, 10);
+      return (!filters.category || incident.category?.name === filters.category)
+        && (!filters.state || normalizeCatalogCode(incident.state?.code || incident.state?.name) === normalizeCatalogCode(filters.state))
+        && (!filters.startDate || createdDate >= filters.startDate)
+        && (!filters.endDate || (createdDate && createdDate <= filters.endDate));
+    });
+
     const rows = [
       ['Código', 'Título', 'Categoría', 'Prioridad', 'Estado', 'Zona', 'Territorio', 'Fecha', 'Fecha resolución'],
-      ...incidents.map((incident) => [
+      ...filteredIncidents.map((incident) => [
         incident.code || `#${incident.id}`,
         incident.title || '',
         formatCatalogLabel(incident.category?.name || incident.subcategory?.name || ''),

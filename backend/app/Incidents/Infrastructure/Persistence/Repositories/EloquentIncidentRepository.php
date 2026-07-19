@@ -1530,7 +1530,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         $query->latest();
     }
 
-    private function applyIncidentVisibilityScope($query, int $userId): void
+    public function applyIncidentVisibilityScope(mixed $query, int $userId): void
     {
         $user = User::query()->with('roles')->find($userId);
 

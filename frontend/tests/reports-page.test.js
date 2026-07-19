@@ -65,7 +65,7 @@ describe('reports-page.js — pure functions', () => {
 
 
   describe('adjustLayoutForRoles', () => {
-    it('hides Top Cities and expands columns for SUPERVISOR', async () => {
+    it('leaves Top Cities visible and keeps columns as col-lg-4 for SUPERVISOR', async () => {
       // Mock localStorage with SUPERVISOR role
       localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: 'SUPERVISOR' }] }));
 
@@ -85,9 +85,10 @@ describe('reports-page.js — pure functions', () => {
       const colTipos = document.getElementById('colTopTipos');
       const colInd = document.getElementById('colEficiencia');
       
-      expect(colTop.style.display).toBe('none');
-      expect(colTipos.className).toBe('col-lg-6');
-      expect(colInd.className).toBe('col-lg-6');
+      expect(colTop.style.display).not.toBe('none');
+      expect(colTop.className).toBe('col-lg-4');
+      expect(colTipos.className).toBe('col-lg-4');
+      expect(colInd.className).toBe('col-lg-4');
     });
   });
 });

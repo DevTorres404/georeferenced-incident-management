@@ -233,14 +233,15 @@ function renderDoughnut(canvasId, dataMap) {
           pointStyle: 'circle',
         },
       },
-      plugins: {
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { size: 12, weight: '600' },
-          bodyFont: { size: 11 },
-          padding: 10,
-          cornerRadius: 8,
-        },
+      tooltips: {
+        backgroundColor: '#0f172a',
+        titleFontFamily: 'Source Sans Pro',
+        titleFontSize: 12,
+        titleFontStyle: 'bold',
+        bodyFontFamily: 'Source Sans Pro',
+        bodyFontSize: 11,
+        padding: 10,
+        cornerRadius: 8,
       },
     },
   });
@@ -267,29 +268,25 @@ function renderStateChart(countsByState) {
       }],
     },
     options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: true,
-      legend: { display: false },
       scales: {
-        x: {
-          beginAtZero: true,
-          ticks: { precision: 0, font: { size: 11 }, color: '#64748b' },
-          grid: { color: 'rgba(0,0,0,0.04)' },
-        },
-        y: {
-          ticks: { font: { size: 11 }, color: '#334155' },
-          grid: { display: false },
-        },
+        xAxes: [{
+          ticks: { fontColor: '#334155', fontSize: 11 },
+          gridLines: { display: false }
+        }],
+        yAxes: [{
+          ticks: { beginAtZero: true, precision: 0, fontColor: '#64748b', fontSize: 11 },
+          gridLines: { color: 'rgba(0,0,0,0.04)' }
+        }]
       },
-      plugins: {
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { size: 12, weight: '600' },
-          bodyFont: { size: 11 },
-          padding: 10,
-          cornerRadius: 8,
-        },
+      tooltips: {
+        backgroundColor: '#0f172a',
+        titleFontFamily: 'Source Sans Pro',
+        titleFontSize: 12,
+        titleFontStyle: 'bold',
+        bodyFontFamily: 'Source Sans Pro',
+        bodyFontSize: 11,
+        padding: 10,
+        cornerRadius: 8,
       },
     },
   });
@@ -323,30 +320,26 @@ function renderTrendChart(trend) {
         },
       },
       scales: {
-        x: {
-          grid: { color: 'rgba(0,0,0,0.04)' },
-          ticks: { font: { size: 11 }, color: '#64748b' },
-        },
-        y: {
-          beginAtZero: true,
-          ticks: { precision: 0, font: { size: 11 }, color: '#64748b' },
-          grid: { color: 'rgba(0,0,0,0.04)' },
-        },
+        xAxes: [{
+          ticks: { fontColor: '#64748b', fontSize: 11 },
+          gridLines: { color: 'rgba(0,0,0,0.04)' }
+        }],
+        yAxes: [{
+          ticks: { beginAtZero: true, precision: 0, fontColor: '#64748b', fontSize: 11 },
+          gridLines: { color: 'rgba(0,0,0,0.04)' }
+        }]
       },
-      plugins: {
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { size: 12, weight: '600' },
-          bodyFont: { size: 11 },
-          padding: 10,
-          cornerRadius: 8,
-          intersect: false,
-          mode: 'index',
-        },
-      },
-      interaction: {
-        intersect: false,
+      tooltips: {
         mode: 'index',
+        intersect: false,
+        backgroundColor: '#0f172a',
+        titleFontFamily: 'Source Sans Pro',
+        titleFontSize: 12,
+        titleFontStyle: 'bold',
+        bodyFontFamily: 'Source Sans Pro',
+        bodyFontSize: 11,
+        padding: 10,
+        cornerRadius: 8,
       },
     },
   });
