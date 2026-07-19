@@ -1195,7 +1195,7 @@ class IncidentsTest extends TestCase
         }
     }
 
-    public function test_resolved_incident_cannot_transition_directly_to_reopened(): void
+    public function test_resolved_incident_can_transition_to_reopened(): void
     {
         $this->seedCoreData();
 
@@ -1212,11 +1212,11 @@ class IncidentsTest extends TestCase
         $this->actingAsUser($admin['user'])
             ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $reopenedState->id,
-                'comment' => 'This path is obsolete.',
-            ])->assertUnprocessable()
-            ->assertJsonPath('message', 'La transicion de estado no esta permitida.');
+                'comment' => 'This path is now allowed.',
+            ])->assertOk()
+            ->assertJsonPath('data.state_id', $reopenedState->id);
 
-        $this->assertSame($resolvedState->id, $incident->fresh()->state_id);
+        $this->assertSame($reopenedState->id, $incident->fresh()->state_id);
     }
 
     public function test_resolution_request_notifies_supervisor_and_approval_notifies_requester_and_broadcasts(): void

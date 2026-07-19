@@ -13,7 +13,8 @@
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css"
+        integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/app.css?v=63">
     <link rel="stylesheet" href="/css/pages/incident-create.css?v=4">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
@@ -57,28 +58,34 @@
                                     <div class="card-body p-0">
                                         <section class="incident-map-pane" aria-label="Mapa de selección de ubicación">
                                             <div class="incident-map-toolbar">
-                                    <div> <span class="text-uppercase text-muted small font-weight-bold">Ubicación de la
-                                            incidencia</span>
-                                        <h2 class="h5 mb-1">Marca el punto exacto en el mapa</h2>
-                                        <p class="mb-0">Haz clic, arrastra el marcador o escribe coordenadas
-                                            manualmente.</p>
-                                    </div> <span id="locationStatusBadge" class="badge badge-light border px-3 py-2"
-                                        style="font-size:0.78rem;">Pendiente</span>
-                                </div>
-                                <div id="incidentLocationMap" class="coordinate-picker-map incident-create-map"
-                                    aria-label="Mapa para seleccionar coordenadas"></div>
-                                <div class="incident-location-strip">
-                                    <div class="location-pin" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i>
-                                    </div>
-                                    <div class="location-summary"> <span>Ubicación seleccionada</span> <strong
-                                            id="selectedLocationText">Sin ubicación seleccionada</strong> <small
-                                            id="selectedTerritoryText">Selecciona una provincia o pick en el
-                                            mapa.</small> </div>
-                                    <div class="location-metric"> <span>Latitud</span> <strong
-                                            id="selectedLatitude">-</strong> </div>
-                                    <div class="location-metric"> <span>Longitud</span> <strong
-                                            id="selectedLongitude">-</strong> </div>
-                                </div>
+                                                <div> <span
+                                                        class="text-uppercase text-muted small font-weight-bold">Ubicación
+                                                        de la
+                                                        incidencia</span>
+                                                    <h2 class="h5 mb-1">Marca el punto exacto en el mapa</h2>
+                                                    <p class="mb-0">Haz clic, arrastra el marcador o escribe coordenadas
+                                                        manualmente.</p>
+                                                </div> <span id="locationStatusBadge"
+                                                    class="badge badge-light border px-3 py-2"
+                                                    style="font-size:0.78rem;">Pendiente</span>
+                                            </div>
+                                            <div id="incidentLocationMap"
+                                                class="coordinate-picker-map incident-create-map"
+                                                aria-label="Mapa para seleccionar coordenadas"></div>
+                                            <div class="incident-location-strip">
+                                                <div class="location-pin" aria-hidden="true"> <i
+                                                        class="fas fa-map-marker-alt"></i>
+                                                </div>
+                                                <div class="location-summary"> <span>Ubicación seleccionada</span>
+                                                    <strong id="selectedLocationText">Sin ubicación
+                                                        seleccionada</strong> <small
+                                                        id="selectedTerritoryText">Selecciona una provincia o pick en el
+                                                        mapa.</small> </div>
+                                                <div class="location-metric"> <span>Latitud</span> <strong
+                                                        id="selectedLatitude">-</strong> </div>
+                                                <div class="location-metric"> <span>Longitud</span> <strong
+                                                        id="selectedLongitude">-</strong> </div>
+                                            </div>
                                         </section>
                                     </div>
                                 </div>
@@ -88,162 +95,195 @@
                                     <div class="card-body">
                                         <aside class="incident-create-assistant" aria-label="Asistente de registro">
                                             <div class="assistant-head">
-                                        <div> <span class="text-uppercase text-primary small font-weight-bold">Registro
-                                                guiado</span>
-                                            <h2 class="h5 mb-0">Nueva incidencia</h2>
-                                        </div>
-                                    </div>
-                                    <div class="wizard-progress" id="incidentWizardProgress"> <button type="button"
-                                            class="wizard-step-button is-active" data-step-target="location">
-                                            <span>1</span> <strong>Ubicación</strong> </button> <button type="button"
-                                            class="wizard-step-button" data-step-target="evidence"> <span>2</span>
-                                            <strong>Evidencia <small class="text-danger font-weight-normal">(obligatorio)</small></strong>
-                                        </button> <button type="button" class="wizard-step-button"
-                                            data-step-target="details"> <span>3</span>
-                                            <strong>Detalles</strong> </button> <button type="button"
-                                            class="wizard-step-button" data-step-target="review"> <span>4</span>
-                                            <strong>Revision</strong> </button> </div>
-                                    <div class="wizard-panel" data-step-panel="location">
-                                        <h3>1. Ubicación de la incidencia</h3>
-                                        <p>Selecciona el punto en el mapa y opcionalmente la division territorial.</p>
-                                        <div class="form-row">
-                                            <div class="form-group col-12"> <label for="fDireccion">Dirección
-                                                    aproximada</label> <input type="text" class="form-control"
-                                                    id="fDireccion" name="address"
-                                                    placeholder="Ej: Av. Principal, junto al parque"> </div>
-                                            <div class="form-group col-12"> <label for="fReferencia">Referencia del
-                                                    lugar</label> <input type="text" class="form-control"
-                                                    id="fReferencia" maxlength="120"
-                                                    placeholder="Ej: frente a la escuela, casa esquinera"> </div>
-                                            <div class="form-group col-6"> <label for="fLatitud">Latitud <span
-                                                        class="text-danger">*</span></label> <input type="number"
-                                                    class="form-control" id="fLatitud" name="latitude" step="0.000001"
-                                                    min="-90" max="90" placeholder="-1.831200"> </div>
-                                            <div class="form-group col-6"> <label for="fLongitud">Longitud <span
-                                                        class="text-danger">*</span></label> <input type="number"
-                                                    class="form-control" id="fLongitud" name="longitude" step="0.000001"
-                                                    min="-180" max="180" placeholder="-78.467800"> </div>
-                                            <div class="form-group col-12"> <label
-                                                    for="fTerritorialProvince">Provincia</label> <select
-                                                    class="form-control" id="fTerritorialProvince">
-                                                    <option value="">Seleccione provincia (opcional)</option>
-                                                </select> </div>
-                                            <div class="form-group col-12 col-md-6"> <label
-                                                    for="fTerritorialCanton">Canton</label> <select class="form-control"
-                                                    id="fTerritorialCanton" disabled>
-                                                    <option value="">Seleccione canton</option>
-                                                </select> </div>
-                                            <div class="form-group col-12 col-md-6"> <label
-                                                    for="fTerritorialParish">Parroquia</label> <select
-                                                    class="form-control" id="fTerritorialParish" disabled>
-                                                    <option value="">Seleccione parroquia</option>
-                                                </select> </div>
-                                            <div class="form-group col-12"> <label for="fManualSector">Sector /
-                                                    Barrio</label> <input type="text" class="form-control"
-                                                    id="fManualSector" maxlength="120"
-                                                    placeholder="Escribe el sector o barrio"> <small
-                                                    class="form-text text-muted">Opcional. Puedes ingresar barrio,
-                                                    ciudadela, comuna o referencia local.</small> </div>
-                                        </div>
-                                    </div>
-                                    <div class="wizard-panel d-none" data-step-panel="evidence">
-                                        <h3>2. Evidencia fotografica <span class="text-danger">*</span></h3>
-                                        <p>Sube al menos una foto clara del daño observado.</p> <input type="file"
-                                            class="d-none" id="fEvidence" accept="image/jpeg,image/png" multiple
-                                            aria-label="Seleccionar archivos de evidencia">
-                                        <div class="evidence-dropzone" id="evidenceDropzone" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
-                                            <div class="evidence-folder" aria-hidden="true">
-                                                <div class="evidence-folder-top"></div>
-                                                <div class="evidence-folder-bottom"></div>
-                                            </div> <strong>Subir evidencias</strong> <span>Arrastra tus fotos aqui o haz
-                                                clic para seleccionar</span> <small>Formatos: JPG, PNG. Maximo 10 MB por
-                                                foto.</small>
-                                        </div>
-                                        <div id="evidenceFeedback" class="invalid-feedback d-block"></div>
-                                        <div class="evidence-toolbar"> <strong>Fotos cargadas (<span
-                                                    id="evidenceCount">0</span>)</strong> <button type="button"
-                                                class="btn btn-sm btn-outline-primary" id="btnAddEvidence"> <i
-                                                    class="fas fa-plus mr-1"></i>Agregar mas </button> </div>
-                                        <div class="evidence-preview-list" id="evidencePreviewList"></div>
-                                    </div>
-                                    <div class="wizard-panel d-none" data-step-panel="details">
-                                        <h3>3. Información general</h3>
-                                        <p>Describe la incidencia para que el equipo pueda atenderla correctamente.</p>
-                                        <div class="form-group"> <label for="fTitulo">Título <span
-                                                    class="text-danger">*</span></label> <input type="text"
-                                                class="form-control" id="fTitulo" name="title" maxlength="120"
-                                                placeholder="Ej: Bache profundo en via principal">
-                                            <div class="d-flex justify-content-end mt-1"> <span class="char-counter"
-                                                    id="cntTitulo">0/120</span> </div>
-                                        </div>
-                                        <div class="form-row">
-                                            <div class="form-group col-12 col-md-6"> <label for="fTipo">Tipo de
-                                                    incidencia <span class="text-danger">*</span></label> <select
-                                                    class="form-control" id="fTipo" name="category_id">
-                                                    <option value="">Seleccione tipo</option>
-                                                </select> </div>
-                                            <div class="form-group col-12 col-md-6"> <label for="fSubtipo">Subtipo <span
-                                                        class="text-danger">*</span></label> <select
-                                                    class="form-control" id="fSubtipo" name="subcategory_id" disabled>
-                                                    <option value="">Primero seleccione tipo</option>
-                                                </select> </div>
-                                        </div>
-                                        <div class="form-group"> <label for="fDescripcion">Descripción <span
-                                                    class="text-danger">*</span></label> <textarea class="form-control"
-                                                id="fDescripcion" name="description" rows="5" maxlength="1000"
-                                                placeholder="Explica que ocurrio, desde cuando sucede y si representa riesgo para personas o bienes."></textarea>
-                                            <div class="d-flex justify-content-end mt-1"> <span class="char-counter"
-                                                    id="cntDescripcion">0/1000</span> </div>
-                                        </div>
-                                        <div class="form-group"> <label for="fCorreo">Correo de contacto <span
-                                                    class="text-danger">*</span></label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend"> <span class="input-group-text"><i
-                                                            class="fas fa-envelope"></i></span> </div> <input
-                                                    type="email" class="form-control" id="fCorreo" name="contact_email" maxlength="254"
-                                                    placeholder="usuario@correo.com" autocomplete="email">
+                                                <div> <span
+                                                        class="text-uppercase text-primary small font-weight-bold">Registro
+                                                        guiado</span>
+                                                    <h2 class="h5 mb-0">Nueva incidencia</h2>
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="wizard-panel d-none" data-step-panel="review">
-                                        <h3>4. Revisión y envío</h3>
-                                        <p>Confirma la información antes de registrar la incidencia.</p>
-                                        <div id="resumenIncidencia" class="incident-review"></div>
-                                        <div class="custom-control custom-checkbox mt-3"> <input type="checkbox"
-                                                class="custom-control-input" id="fConfirmacion" name="confirmation">
-                                            <label class="custom-control-label" for="fConfirmacion"> Confirmo que la
-                                                información registrada es verídica y corresponde a la ubicación
-                                                seleccionada. </label>
-                                        </div>
-                                    </div>
-                                    <div class="assistant-actions"> <button type="button"
-                                            class="btn btn-outline-secondary" id="btnPrevStep"> <i
-                                                class="fas fa-arrow-left mr-1"></i>Anterior </button> <button
-                                            type="button" class="btn btn-primary" id="btnNextStep"> Continuar <i
-                                                class="fas fa-arrow-right ml-1"></i> </button> <button type="submit"
-                                            class="btn btn-success d-none" id="btnRegistrar"> <span
-                                                id="spinnerRegistrar"
+                                            <div class="wizard-progress" id="incidentWizardProgress"> <button
+                                                    type="button" class="wizard-step-button is-active"
+                                                    data-step-target="location">
+                                                    <span>1</span> <strong>Ubicación</strong> </button> <button
+                                                    type="button" class="wizard-step-button"
+                                                    data-step-target="evidence"> <span>2</span>
+                                                    <strong>Evidencia <small
+                                                            class="text-danger font-weight-normal">(obligatorio)</small></strong>
+                                                </button> <button type="button" class="wizard-step-button"
+                                                    data-step-target="details"> <span>3</span>
+                                                    <strong>Detalles</strong> </button> <button type="button"
+                                                    class="wizard-step-button" data-step-target="review"> <span>4</span>
+                                                    <strong>Revision</strong> </button> </div>
+                                            <div class="wizard-panel" data-step-panel="location">
+                                                <h3>1. Ubicación de la incidencia</h3>
+                                                <p>Selecciona el punto en el mapa y opcionalmente la division
+                                                    territorial.</p>
+                                                <div class="form-row">
+                                                    <div class="form-group col-12"> <label for="fDireccion">Dirección
+                                                            aproximada</label> <input type="text" class="form-control"
+                                                            id="fDireccion" name="address"
+                                                            placeholder="Ej: Av. Principal, junto al parque"> </div>
+                                                    <div class="form-group col-12"> <label for="fReferencia">Referencia
+                                                            del
+                                                            lugar</label> <input type="text" class="form-control"
+                                                            id="fReferencia" maxlength="120"
+                                                            placeholder="Ej: frente a la escuela, casa esquinera">
+                                                    </div>
+                                                    <div class="form-group col-6"> <label for="fLatitud">Latitud <span
+                                                                class="text-danger">*</span></label> <input
+                                                            type="number" class="form-control" id="fLatitud"
+                                                            name="latitude" step="0.000001" min="-90" max="90"
+                                                            placeholder="-1.831200"> </div>
+                                                    <div class="form-group col-6"> <label for="fLongitud">Longitud <span
+                                                                class="text-danger">*</span></label> <input
+                                                            type="number" class="form-control" id="fLongitud"
+                                                            name="longitude" step="0.000001" min="-180" max="180"
+                                                            placeholder="-78.467800"> </div>
+                                                    <div class="form-group col-12"> <label
+                                                            for="fTerritorialProvince">Provincia</label> <select
+                                                            class="form-control" id="fTerritorialProvince">
+                                                            <option value="">Seleccione provincia (opcional)</option>
+                                                        </select> </div>
+                                                    <div class="form-group col-12 col-md-6"> <label
+                                                            for="fTerritorialCanton">Canton</label> <select
+                                                            class="form-control" id="fTerritorialCanton" disabled>
+                                                            <option value="">Seleccione canton</option>
+                                                        </select> </div>
+                                                    <div class="form-group col-12 col-md-6"> <label
+                                                            for="fTerritorialParish">Parroquia</label> <select
+                                                            class="form-control" id="fTerritorialParish" disabled>
+                                                            <option value="">Seleccione parroquia</option>
+                                                        </select> </div>
+                                                    <div class="form-group col-12"> <label for="fManualSector">Sector /
+                                                            Barrio</label> <input type="text" class="form-control"
+                                                            id="fManualSector" maxlength="120"
+                                                            placeholder="Escribe el sector o barrio"> <small
+                                                            class="form-text text-muted">Opcional. Puedes ingresar
+                                                            barrio,
+                                                            ciudadela, comuna o referencia local.</small> </div>
+                                                </div>
                                             </div>
-                                        </aside>
+                                            <div class="wizard-panel d-none" data-step-panel="evidence">
+                                                <h3>2. Evidencia fotografica <span class="text-danger">*</span></h3>
+                                                <p>Sube al menos una foto clara del daño observado.</p> <input
+                                                    type="file" class="d-none" id="fEvidence"
+                                                    accept="image/jpeg,image/png" multiple
+                                                    aria-label="Seleccionar archivos de evidencia">
+                                                <div class="evidence-dropzone" id="evidenceDropzone" role="button"
+                                                    tabindex="0"
+                                                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                                                    <div class="evidence-folder" aria-hidden="true">
+                                                        <div class="evidence-folder-top"></div>
+                                                        <div class="evidence-folder-bottom"></div>
+                                                    </div> <strong>Subir evidencias</strong> <span>Arrastra tus fotos
+                                                        aqui o haz
+                                                        clic para seleccionar</span> <small>Formatos: JPG, PNG. Maximo
+                                                        10 MB por
+                                                        foto.</small>
+                                                </div>
+                                                <div id="evidenceFeedback" class="invalid-feedback d-block"></div>
+                                                <div class="evidence-toolbar"> <strong>Fotos cargadas (<span
+                                                            id="evidenceCount">0</span>)</strong> <button type="button"
+                                                        class="btn btn-sm btn-outline-primary" id="btnAddEvidence"> <i
+                                                            class="fas fa-plus mr-1"></i>Agregar mas </button> </div>
+                                                <div class="evidence-preview-list" id="evidencePreviewList"></div>
+                                            </div>
+                                            <div class="wizard-panel d-none" data-step-panel="details">
+                                                <h3>3. Información general</h3>
+                                                <p>Describe la incidencia para que el equipo pueda atenderla
+                                                    correctamente.</p>
+                                                <div class="form-group"> <label for="fTitulo">Título <span
+                                                            class="text-danger">*</span></label> <input type="text"
+                                                        class="form-control" id="fTitulo" name="title" maxlength="120"
+                                                        placeholder="Ej: Bache profundo en via principal">
+                                                    <div class="d-flex justify-content-end mt-1"> <span
+                                                            class="char-counter" id="cntTitulo">0/120</span> </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="form-group col-12 col-md-6"> <label for="fTipo">Tipo de
+                                                            incidencia <span class="text-danger">*</span></label>
+                                                        <select class="form-control" id="fTipo" name="category_id">
+                                                            <option value="">Seleccione tipo</option>
+                                                        </select> </div>
+                                                    <div class="form-group col-12 col-md-6"> <label
+                                                            for="fSubtipo">Subtipo <span
+                                                                class="text-danger">*</span></label> <select
+                                                            class="form-control" id="fSubtipo" name="subcategory_id"
+                                                            disabled>
+                                                            <option value="">Primero seleccione tipo</option>
+                                                        </select> </div>
+                                                </div>
+                                                <div class="form-group"> <label for="fDescripcion">Descripción <span
+                                                            class="text-danger">*</span></label> <textarea
+                                                        class="form-control" id="fDescripcion" name="description"
+                                                        rows="5" maxlength="1000"
+                                                        placeholder="Explica que ocurrio, desde cuando sucede y si representa riesgo para personas o bienes."></textarea>
+                                                    <div class="d-flex justify-content-end mt-1"> <span
+                                                            class="char-counter" id="cntDescripcion">0/1000</span>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group"> <label for="fCorreo">Correo de contacto <span
+                                                            class="text-danger">*</span></label>
+                                                    <div class="input-group">
+                                                        <div class="input-group-prepend"> <span
+                                                                class="input-group-text"><i
+                                                                    class="fas fa-envelope"></i></span> </div> <input
+                                                            type="email" class="form-control" id="fCorreo"
+                                                            name="contact_email" maxlength="254"
+                                                            placeholder="usuario@correo.com" autocomplete="email">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="wizard-panel d-none" data-step-panel="review">
+                                                <h3>4. Revisión y envío</h3>
+                                                <p>Confirma la información antes de registrar la incidencia.</p>
+                                                <div id="resumenIncidencia" class="incident-review"></div>
+                                                <div class="custom-control custom-checkbox mt-3"> <input type="checkbox"
+                                                        class="custom-control-input" id="fConfirmacion"
+                                                        name="confirmation">
+                                                    <label class="custom-control-label" for="fConfirmacion"> Confirmo
+                                                        que la
+                                                        información registrada es verídica y corresponde a la ubicación
+                                                        seleccionada. </label>
+                                                </div>
+                                            </div>
+                                            <div class="assistant-actions"> <button type="button"
+                                                    class="btn btn-outline-secondary" id="btnPrevStep"> <i
+                                                        class="fas fa-arrow-left mr-1"></i>Anterior </button> <button
+                                                    type="button" class="btn btn-primary" id="btnNextStep"> Continuar <i
+                                                        class="fas fa-arrow-right ml-1"></i> </button> <button
+                                                    type="submit" class="btn btn-success d-none" id="btnRegistrar">
+                                                    <span id="spinnerRegistrar"
+                                                        class="spinner-border spinner-border-sm mr-2"></span>Registrar
+                                                    incidencia </button> <button type="button"
+                                                    class="btn btn-outline-secondary d-none" id="btnFinish"> Finalizar
+                                                </button>
+                                            </div>
                                     </div>
                                 </div>
                             </div>
+                            </aside>
                         </div>
-                    </form>
                 </div>
             </div>
         </div>
-        <footer class="main-footer text-sm">
-            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gestión de Incidencias
-                Georreferenciadas (SGI)</strong>
-        </footer>
-        <script src="/plugins/jquery/jquery.min.js"></script>
-        <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-        <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
-        <script src="/dist/js/adminlte.min.js"></script>
-        <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
-        <script type="module" src="/js/layout/layout.js?v=44"></script>
-        <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=40"></script>
+        </form>
+    </div>
+    </div>
+    </div>
+    <footer class="main-footer text-sm">
+        <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gestión de Incidencias
+            Georreferenciadas (SGI)</strong>
+    </footer>
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
+        integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"
+        crossorigin="anonymous"></script>
+    <script type="module" src="/js/layout/layout.js?v=44"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=40"></script>
     </div>
 </body>
 

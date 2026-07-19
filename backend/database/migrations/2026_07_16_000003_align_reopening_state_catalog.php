@@ -54,9 +54,8 @@ return new class extends Migration
                 ->where('target_state_id', $states['REABIERTA'])
                 ->delete();
 
-            foreach (['CERRADA', 'RECHAZADA'] as $source) {
-                $this->upsertReopeningTransition($states[$source], $states['REABIERTA']);
-            }
+            $this->upsertReopeningTransition($states['CERRADA'], $states['REABIERTA'], ['ADMIN']);
+            $this->upsertReopeningTransition($states['RECHAZADA'], $states['REABIERTA'], ['ADMIN', 'SUPERVISOR']);
         });
     }
 
@@ -79,7 +78,7 @@ return new class extends Migration
         });
     }
 
-    private function upsertReopeningTransition(int $sourceStateId, int $targetStateId): void
+    private function upsertReopeningTransition(int $sourceStateId, int $targetStateId, array $roles): void
     {
         $key = [
             'source_state_id' => $sourceStateId,
@@ -87,7 +86,7 @@ return new class extends Migration
         ];
         $values = [
             'requires_comment' => true,
-            'allowed_roles' => json_encode(['ADMIN', 'SUPERVISOR'], JSON_THROW_ON_ERROR),
+            'allowed_roles' => json_encode($roles, JSON_THROW_ON_ERROR),
             'is_active' => true,
             'updated_at' => now(),
         ];

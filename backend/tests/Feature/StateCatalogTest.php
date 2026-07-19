@@ -83,13 +83,19 @@ class StateCatalogTest extends TestCase
     {
         $this->seed(StateSeeder::class);
         $migration = require database_path('migrations/2026_07_16_000003_align_reopening_state_catalog.php');
+        $migration2 = require database_path('migrations/2026_07_19_080949_restrict_supervisor_reopening_closed_incidents.php');
+        $migration3 = require database_path('migrations/2026_07_19_083050_restore_resuelta_to_reabierta_transition.php');
 
         State::query()->update(['color' => '#000000']);
         State::where('name', 'REABIERTA')->update(['description' => 'Outdated']);
         $this->corruptReopeningTransitions();
 
         $migration->up();
+        $migration2->up();
+        $migration3->up();
         $migration->up();
+        $migration2->up();
+        $migration3->up();
         $this->assertCanonicalCatalog();
     }
 
