@@ -875,7 +875,7 @@ class IncidentsTest extends TestCase
         $this->assertNull($incident->fresh()->current_assigned_id);
     }
 
-    public function test_supervisor_can_reopen_closed_incident(): void
+    public function test_supervisor_cannot_reopen_closed_incident(): void
     {
         $this->seedCoreData();
 
@@ -893,8 +893,7 @@ class IncidentsTest extends TestCase
             ->patchJson("/api/incidents/{$incident->id}/state", [
                 'state_id' => $reopenedState->id,
                 'comment' => 'Supervisor requested a new review.',
-            ])->assertOk()
-            ->assertJsonPath('data.state_id', $reopenedState->id);
+            ])->assertForbidden();
     }
 
     public function test_admin_and_supervisor_without_reopen_permission_cannot_reopen_incidents(): void

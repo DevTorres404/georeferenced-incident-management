@@ -62,7 +62,8 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        // 4. Datos demo para desarrollo y pruebas manuales.
+        // 4. Datos demo para desarrollo y pruebas manuales. (COMENTADOS PARA LIMPIEZA)
+        /*
         $this->call(DemoUserSeeder::class);
         $this->call(DemoIncidentSeeder::class);
         $this->call(DemoNotificationSeeder::class);
@@ -70,5 +71,6 @@ class DatabaseSeeder extends Seeder
         $this->call(DemoAccessLogSeeder::class);
         $this->call(DemoIncidentAttachmentSeeder::class);
         $this->call(DemoUserIdentitySeeder::class);
+        */
     }
 }

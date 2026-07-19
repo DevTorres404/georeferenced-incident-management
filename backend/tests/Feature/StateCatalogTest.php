@@ -120,7 +120,7 @@ class StateCatalogTest extends TestCase
             'Customized after migration',
             State::where('name', 'REABIERTA')->value('description')
         );
-        $this->assertReopeningTransition('CERRADA');
+        $this->assertReopeningTransition('CERRADA', ['ADMIN']);
         $this->assertDatabaseMissing('core.state_transitions', ['id' => $transitionId]);
     }
 
@@ -140,7 +140,7 @@ class StateCatalogTest extends TestCase
         $migration->down();
 
         $this->assertDatabaseMissing('core.state_transitions', ['id' => $transition->id]);
-        $this->assertReopeningTransition('CERRADA');
+        $this->assertReopeningTransition('CERRADA', ['ADMIN']);
     }
 
     private function corruptReopeningTransitions(): void
@@ -171,15 +171,12 @@ class StateCatalogTest extends TestCase
             State::where('name', 'REABIERTA')->value('description')
         );
 
-        $this->assertReopeningTransition('CERRADA');
-        $this->assertReopeningTransition('RECHAZADA');
-        $this->assertDatabaseMissing('core.state_transitions', [
-            'source_state_id' => State::where('name', 'RESUELTA')->value('id'),
-            'target_state_id' => State::where('name', 'REABIERTA')->value('id'),
-        ]);
+        $this->assertReopeningTransition('RECHAZADA', ['ADMIN', 'SUPERVISOR']);
+        $this->assertReopeningTransition('RESUELTA', ['ADMIN', 'SUPERVISOR']);
+        $this->assertReopeningTransition('CERRADA', ['ADMIN']);
     }
 
-    private function assertReopeningTransition(string $source): void
+    private function assertReopeningTransition(string $source, array $roles): void
     {
         $transition = StateTransition::where(
             'source_state_id',
@@ -190,7 +187,7 @@ class StateCatalogTest extends TestCase
         )->firstOrFail();
 
         $this->assertTrue($transition->requires_comment);
-        $this->assertSame(['ADMIN', 'SUPERVISOR'], $transition->allowed_roles);
+        $this->assertSame($roles, $transition->allowed_roles);
         $this->assertTrue($transition->is_active);
     }
 }
