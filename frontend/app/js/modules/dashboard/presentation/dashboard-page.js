@@ -268,6 +268,9 @@ function renderStateChart(countsByState) {
       }],
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      legend: { display: false },
       scales: {
         xAxes: [{
           ticks: { fontColor: '#334155', fontSize: 11 },

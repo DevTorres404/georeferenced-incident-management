@@ -79,7 +79,7 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
         $result = [];
         // Inicializar todos los estados posibles en 0 para que siempre aparezcan en el gráfico
-        $allStates = DB::table('core.states')->pluck('name');
+        $allStates = DB::table('core.states')->orderBy('id')->pluck('name');
         foreach ($allStates as $stateName) {
             $result[$stateName] = 0;
         }
