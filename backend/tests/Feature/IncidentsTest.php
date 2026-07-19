@@ -826,24 +826,26 @@ class IncidentsTest extends TestCase
             ->assertJsonPath('message', 'No se pueden asignar operadores a una incidencia cerrada.');
     }
 
-    public function test_admin_can_reopen_closed_incident_without_reactivating_assignments(): void
+    public function test_admin_can_reopen_closed_incident_and_assignments_are_cloned(): void
     {
         $this->seedCoreData();
 
-        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-admin-reopen@incidencias.local');
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-reopen-admin@incidencias.local');
         $admin = $this->authenticateAs('ADMIN', 'admin-reopen@incidencias.local');
-        $primary = $this->authenticateAs('OPERADOR', 'primary-admin-reopen@incidencias.local');
-        $support = $this->authenticateAs('OPERADOR', 'support-admin-reopen@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'op-reopen@incidencias.local');
+        $support = $this->authenticateAs('OPERADOR', 'op-support-reopen@incidencias.local');
+
         $resolvedState = State::where('name', 'RESUELTA')->firstOrFail();
         $closedState = State::where('name', 'CERRADA')->firstOrFail();
         $reopenedState = State::where('name', 'REABIERTA')->firstOrFail();
+
         $incident = $this->createIncidentInState(
             'INC-ADMIN-REOPEN',
             $resolvedState->id,
             $citizen['user']->id
         );
 
-        $this->assignIncidentToOperator($incident, $primary['user']->id, $admin['user']->id);
+        $this->assignIncidentToOperator($incident, $operator['user']->id, $admin['user']->id);
         IncidentAssignment::query()->create([
             'incident_id' => $incident->id,
             'user_id' => $support['user']->id,
@@ -851,11 +853,6 @@ class IncidentsTest extends TestCase
             'assignment_role' => IncidentAssignment::ROLE_SUPPORT,
             'active' => true,
         ]);
-
-        $this->actingAsUser($admin['user'])
-            ->patchJson("/api/incidents/{$incident->id}/state", [
-                'state_id' => $closedState->id,
-            ])->assertOk();
 
         $this->actingAsUser($admin['user'])
             ->patchJson("/api/incidents/{$incident->id}/state", [
@@ -867,12 +864,10 @@ class IncidentsTest extends TestCase
         $assignments = IncidentAssignment::query()
             ->where('incident_id', $incident->id)
             ->get();
-        $this->assertCount(2, $assignments);
-        $this->assertTrue($assignments->every(
-            fn (IncidentAssignment $assignment): bool => ! $assignment->active
-                && $assignment->unassignment_date !== null
-        ));
-        $this->assertNull($incident->fresh()->current_assigned_id);
+        $this->assertCount(4, $assignments);
+        $this->assertSame(2, $assignments->where('active', true)->count());
+        $this->assertSame(2, $assignments->where('active', false)->count());
+        $this->assertSame($operator['user']->id, $incident->fresh()->current_assigned_id);
     }
 
     public function test_supervisor_cannot_reopen_closed_incident(): void

@@ -63,7 +63,7 @@ const AUTH_KEYS = {
   expiresAt: 'auth_expires_at',
   lastActivityAt: 'auth_last_activity_at',
 };
-const INACTIVITY_TIMEOUT_MS = 2 * 60 * 1000; // Cierre por inactividad: 2 minutos sin interaccion del usuario
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // Cierre por inactividad: 30 minutos sin interaccion del usuario
 const ACTIVITY_EVENTS = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown'];
 let inactivityTimer = null;
 let lastActivityWrite = 0;
@@ -467,11 +467,13 @@ function renderBetterNavbarNotifications(count, notifications) {
     const iconClass = getNotificationIconClass(notification.type);
     const typeClass = getNotificationTypeClass(notification.type);
     const time = formatRelativeTime(notification.created_at || notification.createdAt);
+    const isClosed = String(notification.message || '').toUpperCase().includes('CERRADA');
+    const incidentId = isClosed ? '' : (notification.incident_id ?? notification.incidentId ?? '');
 
     return `
       <button type="button" class="sgi-notif-item ${isUnread ? 'is-unread' : ''} js-notification-item"
               data-notification-id="${escapeHtml(String(notification.id))}"
-              data-incident-id="${escapeHtml(String(notification.incident_id ?? notification.incidentId ?? ''))}">
+              data-incident-id="${escapeHtml(String(incidentId))}">
         <div class="sgi-notif-icon ${typeClass}">
           <i class="fas ${iconClass}"></i>
         </div>

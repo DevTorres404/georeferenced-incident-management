@@ -1304,7 +1304,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 title: $title,
                 message: $message,
                 type: $type,
-                incidentId: $normalizedState === 'CERRADA' ? null : (int) $incident->id
+                incidentId: (int) $incident->id
             );
         }
     }
