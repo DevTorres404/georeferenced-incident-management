@@ -1,124 +1,124 @@
-# SGI - Sistema de Gestion de Incidencias Georreferenciadas
+# SGI — Sistema de Gestión de Incidencias Georreferenciadas
 
-SGI es una aplicacion web para registrar, consultar, asignar y dar seguimiento a incidencias georreferenciadas. El proyecto esta dividido en dos partes:
+[![Estado](https://img.shields.io/badge/Status-Producción_Ready-success?style=for-the-badge)](https://app.labtorres.me/)
+[![Arquitectura](https://img.shields.io/badge/Architecture-Hexagonal_%7C_DDD-blue?style=for-the-badge)](#arquitectura-del-backend)
+[![Backend](https://img.shields.io/badge/Backend-Laravel_11-red?style=for-the-badge)](https://laravel.com/)
+[![DB](https://img.shields.io/badge/Database-PostgreSQL_%2B_PostGIS-316192?style=for-the-badge)](https://postgis.net/)
+[![Despliegue](https://img.shields.io/badge/Deploy-Docker_%7C_Vercel-black?style=for-the-badge)](#infraestructura-y-despliegue-de-producción)
+[![Tests](https://img.shields.io/badge/Tests-197_passed_%7C_1201_assertions-brightgreen?style=for-the-badge)](#pruebas-automatizadas)
 
-- `backend/`: API REST en Laravel, organizada con enfoque Hexagonal / DDD.
-- `frontend/`: frontend estatico con HTML, CSS, JavaScript, Bootstrap y AdminLTE.
+> **Demo en Producción:** [https://app.labtorres.me/](https://app.labtorres.me/)
+>
+> Backend desplegado en homelab (Docker) · Frontend estático en Vercel (CDN global)
 
-El backend se ejecuta localmente con PHP y Composer. Docker se usa para servicios de apoyo como PostgreSQL/PostGIS, Redis, Mailpit y el servidor nginx del frontend.
+---
 
-## Requisitos
+SGI es una plataforma web de nivel industria para registrar, consultar, asignar y dar seguimiento a incidencias con coordenadas georreferenciadas reales. El sistema gestiona el ciclo de vida completo de una incidencia: desde el reporte ciudadano, pasando por la revisión del supervisor, la asignación a operadores, hasta el cierre y reapertura con trazabilidad histórica completa.
 
-- PHP 8.3 o superior.
-- Composer.
-- Docker Desktop.
-- Node.js solo si se van a compilar assets del backend o trabajar dependencias del template.
-- Extensiones PHP necesarias: `pdo_pgsql`, `pgsql`, `curl`, `openssl`, `sodium`, `mbstring`, `fileinfo`, `zip`.
+---
 
-## Puertos usados
+## Decisiones de Arquitectura
 
-- Frontend: `http://localhost:5500`
-- Backend Laravel: `http://127.0.0.1:8000`
-- API desde el frontend: `http://localhost:5500/api`
-- PostgreSQL/PostGIS: `127.0.0.1:5432`
-- Redis: `127.0.0.1:6379`
-- Mailpit: `http://localhost:8025`
-- RustFS API S3: `http://127.0.0.1:9000`
-- RustFS consola: `http://127.0.0.1:9001`
+### Por qué Hexagonal + DDD
 
-## Despliegue local completo recomendado
+El proyecto **no usa el MVC clásico de Laravel**. Cambiar de repositorio o de framework de persistencia (Eloquent → otro ORM) no debería tocar la lógica de negocio. Por eso se adoptó una separación explícita de capas:
 
-Este es el flujo recomendado para trabajar el proyecto completo en local sin meter Laravel en Docker:
+```
+app/
+├── Incidents/
+│   ├── Domain/         → Entidades, Value Objects, contratos de repositorio
+│   │                     (agnóstico al framework, sin Eloquent)
+│   ├── Application/    → Casos de Uso, DTOs, orquestación de flujos
+│   └── Infrastructure/ → Controladores HTTP, Repositorios Eloquent, integraciones externas
+├── Auth/
+├── Users/
+└── Catalogs/
+```
 
-- **Backend Laravel local** con PHP y Composer.
-- **Base de datos y servicios de apoyo en Docker**: PostgreSQL/PostGIS, Redis y Mailpit.
-- **Frontend en Docker** sirviendo `frontend/app` por nginx en `http://localhost:5500`.
+### Por qué Headless (Backend separado del Frontend)
 
-Este modo no afecta el levantamiento sin Docker porque no requiere cambiar el codigo del frontend ni modificar `frontend/app/js/core/config.js`. El frontend usa el proxy `/api` de nginx y el backend sigue corriendo normalmente en `http://127.0.0.1:8000`.
+- **Frontend estático en Vercel:** CDN global, zero-server, carga ultra-rápida en cualquier región.
+- **Backend en contenedores propios:** PostgreSQL, Redis y la lógica de negocio quedan en una red privada, sin exposición directa.
+- **Resultado:** Escalabilidad independiente. Si el tráfico del frontend explota, Vercel lo absorbe sin tocar el backend. Si se necesita más potencia de cómputo, se migra la imagen Docker a un VPS sin tocar una línea de frontend.
 
-### Resumen rapido
+### Por qué Vanilla JS modular (sin React/Vue/Angular)
 
-Terminal 1, servicios de apoyo:
+El frontend aplica los mismos principios DDD del backend: módulos por dominio con capas internas (`application/`, `infrastructure/`, `presentation/`). Esto evita el "código espagueti" típico de Vanilla JS sin añadir overhead de un SPA framework para una app de gestión con renderizado server-first.
+
+---
+
+## Stack Tecnológico
+
+| Capa | Tecnología |
+|:---|:---|
+| Backend API | PHP 8.3 + Laravel 11 (Sanctum · Reverb · Queues) |
+| Base de Datos | PostgreSQL 16 + **PostGIS** (datos geoespaciales reales) |
+| Caché / Colas | Redis |
+| Almacenamiento S3 | RustFS (compatible con AWS S3 SDK) |
+| WebSockets | Laravel Reverb |
+| Frontend | Vanilla JS ES6 Modules · Bootstrap · AdminLTE |
+| Mapas | MapLibre GL JS + OpenFreeMap (sin token, sin costo) |
+| Servidor Web | Nginx (Alpine) |
+| Contenedores | Docker & Docker Compose |
+| Testing | PHPUnit · 197 tests · 1201 assertions |
+| CI/CD Frontend | Vercel |
+
+---
+
+## Características Técnicas Destacadas
+
+### Base de Datos
+- **Triggers y Funciones PL/pgSQL nativos** creados mediante migraciones:
+  - `trg_actualizar_ubicacion` — sincroniza `latitude`/`longitude` con `GEOMETRY(Point, 4326)` de PostGIS automáticamente en cada `INSERT`/`UPDATE`.
+  - `trg_calcular_fecha_limite` — calcula el `due_date` de una incidencia aplicando el SLA (en horas) de la prioridad asignada.
+- **Esquemas separados:** `core` (incidencias, asignaciones, ciclos, catálogos) y `auth` (usuarios, roles, permisos, tokens).
+- **Ciclos de vida (`incident_cycles`):** cada reapertura genera un nuevo ciclo histórico; las asignaciones anteriores se desactivan y se clonan al ciclo nuevo, preservando la trazabilidad completa.
+- **Normalización estricta (3NF):** estados, prioridades, categorías, unidades territoriales y roles viven en tablas propias. La UI los consume desde la API; nada está hardcodeado.
+
+### Seguridad
+- **Doble validación:** el frontend previene (UX), el backend es el juez final (seguridad real con Policies y Middleware).
+- **Permisos granulares:** cada endpoint valida el permiso específico del usuario autenticado, no solo su rol.
+- **Sanctum Tokens:** autenticación stateless por Bearer token con rotación y revocación.
+- **Sanitización XSS:** todo dato externo insertado en el DOM pasa por `shared/sanitizer.js`.
+
+### Infraestructura Docker (Producción)
+El `docker-compose.prod.yml` levanta:
+- `app` — PHP-FPM con la API Laravel.
+- `nginx` — proxy reverso, sirve assets estáticos y enruta a PHP-FPM.
+- `migrate` — servicio one-shot que corre migraciones antes de que `app` arranque (`condition: service_completed_successfully`).
+- `queue` — worker de colas para jobs asíncronos (notificaciones, procesamiento de imágenes).
+- `scheduler` — cron interno para tareas programadas de Laravel.
+- `pgsql` y `redis` — con health checks nativos de Docker.
+- `reverb` — servidor WebSocket para notificaciones en tiempo real.
+
+---
+
+## Despliegue Local (Entorno Docker Recomendado)
+
+Este modo emula la arquitectura de producción sin instalar dependencias del sistema operativo directamente.
+
+### Requisitos
+- PHP 8.3+ y Composer (solo para correr Laravel local)
+- Docker Desktop
+
+### 1 — Servicios de apoyo (DB, Redis, Storage, SMTP)
 
 ```bash
 cd backend
 docker compose -f docker.compose.yml up -d
 ```
 
-Terminal 2, backend Laravel:
+Levanta: PostgreSQL/PostGIS · Redis · Mailpit · RustFS
+
+### 2 — Configurar el backend
 
 ```bash
-cd backend
 composer install
-copy .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
-
-Terminal 3, frontend:
-
-```bash
-cd frontend
-docker compose up -d
-```
-
-Abrir:
-
-```text
-http://localhost:5500
-```
-
-Si ya tienes `.env`, dependencias y migraciones listas, normalmente solo necesitas:
-
-```bash
-cd backend
-docker compose -f docker.compose.yml up -d
-php artisan serve
-```
-
-y en otra terminal:
-
-```bash
-cd frontend
-docker compose up -d
-```
-
-## Paso a paso del despliegue local recomendado
-
-### 1. Servicios del backend con Docker
-
-Desde la carpeta del backend:
-
-```bash
-cd backend
-docker compose -f docker.compose.yml up -d
-```
-
-Esto levanta:
-
-- PostgreSQL con PostGIS.
-- Redis.
-- Mailpit para probar correos.
-- RustFS para almacenar evidencias y adjuntos compatibles con S3.
-
-Para detenerlos:
-
-```bash
-docker compose -f docker.compose.yml down
-```
-
-### 2. Configurar el backend local
-
-Desde `backend/`:
-
-```bash
-composer install
-copy .env.example .env
+cp .env.example .env   # En Windows: copy .env.example .env
 php artisan key:generate
 ```
 
-En `.env`, para correr Laravel local contra los servicios Docker, usa valores como estos:
+Variables mínimas en `.env`:
 
 ```env
 APP_URL=http://127.0.0.1:8000
@@ -147,384 +147,60 @@ RUSTFS_URL=http://127.0.0.1:9000/sgi-incidents
 RUSTFS_USE_PATH_STYLE_ENDPOINT=true
 ```
 
-Si cambias `DB_USERNAME`, `DB_PASSWORD` o `DB_DATABASE`, asegurate de que coincidan con los valores usados por `backend/docker.compose.yml`.
-
-### 3. Migraciones y seeders
-
-Desde `backend/`:
-
-```bash
-php artisan migrate
-php artisan db:seed
-```
-
-Si necesitas reiniciar la base de datos en desarrollo:
+### 3 — Migraciones y seeders
 
 ```bash
 php artisan migrate:fresh --seed
 ```
 
-### 4. Ejecutar backend
-
-Desde `backend/`:
+### 4 — Arrancar la API
 
 ```bash
 php artisan serve
-```
-
-El backend queda disponible en:
-
-```text
-http://127.0.0.1:8000
+# API disponible en http://127.0.0.1:8000
 ```
 
 Procesos opcionales durante desarrollo:
 
 ```bash
-php artisan queue:listen
-php artisan reverb:start
-php artisan pail
+php artisan queue:listen   # Workers de colas (notificaciones, jobs)
+php artisan reverb:start   # WebSockets
+php artisan pail           # Logs en tiempo real
 ```
 
-## Almacenamiento de evidencias con RustFS
-
-Las imagenes y archivos adjuntos de incidencias no se guardan como binarios en PostgreSQL. El backend guarda el archivo en RustFS y registra en la base de datos solo la metadata en `core.incident_attachments`:
-
-- `incident_id`
-- `user_id`
-- `original_name`
-- `file_path`
-- `mime_type`
-- `file_size_bytes`
-- `file_hash`
-
-Laravel usa el disco configurado en:
-
-```env
-INCIDENT_FILESYSTEM_DISK=rustfs
-```
-
-El disco `rustfs` esta definido en `backend/config/filesystems.php` usando el driver `s3`, por lo que requiere la dependencia:
-
-```bash
-composer require league/flysystem-aws-s3-v3:^3.0
-```
-
-En desarrollo local, el `docker.compose.yml` del backend levanta RustFS y crea automaticamente el bucket `sgi-incidents`. La consola queda disponible en:
-
-```text
-http://127.0.0.1:9001
-```
-
-Usa las credenciales definidas en `.env`:
-
-```env
-RUSTFS_ACCESS_KEY_ID=rustfsadmin
-RUSTFS_SECRET_ACCESS_KEY=rustfsadmin123
-```
-
-Si RustFS no esta disponible temporalmente durante pruebas locales, se puede volver al almacenamiento local sin cambiar codigo:
-
-```env
-INCIDENT_FILESYSTEM_DISK=public
-```
-
-Despues de cambiar variables de entorno, limpiar configuracion:
-
-```bash
-php artisan config:clear
-```
-
-### 5. Levantar frontend en Docker
-
-Desde la carpeta del frontend:
-
-```bash
-cd ../frontend
-docker compose up -d
-```
-
-Abrir:
-
-```text
-http://localhost:5500
-```
-
-El nginx del frontend sirve `frontend/app` y proxya las llamadas `/api` hacia el backend local en `host.docker.internal:8000`.
-
-Para reiniciar el frontend despues de cambios:
-
-```bash
-docker compose restart frontend
-```
-
-En la mayoria de cambios HTML/CSS/JS basta con refrescar el navegador. Si el navegador mantiene cache, usar `Ctrl + F5`.
-
-### 6. Verificar conexion frontend-backend
-
-Con este modo recomendado no debes abrir archivos con `file://`. Siempre entra por:
-
-```text
-http://localhost:5500
-```
-
-El frontend llama a:
-
-```text
-http://localhost:5500/api
-```
-
-y nginx lo reenvia al backend local:
-
-```text
-http://127.0.0.1:8000/api
-```
-
-Por eso, para este modo no agregues manualmente:
-
-```html
-<script>
-  window.SGI_API_URL = 'http://127.0.0.1:8000/api';
-</script>
-```
-
-Ese ajuste solo aplica cuando levantas el frontend sin Docker.
-
-### 7. Apagar el entorno recomendado
-
-Detener el frontend:
+### 5 — Frontend
 
 ```bash
 cd frontend
-docker compose down
+docker compose up -d
+# Aplicación en http://localhost:5500
 ```
 
-Detener servicios de apoyo del backend:
+El Nginx del frontend sirve `frontend/app` y proxya `/api` hacia `http://host.docker.internal:8000/api` automáticamente.
+
+### Flujo mínimo (si ya tenés todo configurado)
 
 ```bash
-cd backend
-docker compose -f docker.compose.yml down
+# Terminal 1
+cd backend && docker compose -f docker.compose.yml up -d && php artisan serve
+
+# Terminal 2
+cd frontend && docker compose up -d
 ```
 
-El backend local se detiene con `Ctrl + C` en la terminal donde corre `php artisan serve`.
+Abrir: `http://localhost:5500`
 
-## Levantamiento sin Docker
+---
 
-Tambien se puede levantar el proyecto sin Docker, siempre que tengas instalados localmente PostgreSQL con PostGIS, Redis, PHP y Composer.
+## Mapas con MapLibre GL JS
 
-Este modo es independiente del despliegue recomendado. Usalo solo si no quieres usar Docker Desktop para ningun servicio. En este caso si debes configurar la URL directa del backend en el frontend, porque no existe el proxy nginx `/api`.
+El sistema incluye una pantalla de mapa interactivo (`frontend/app/html/incident-map.html`) que visualiza todas las incidencias georreferenciadas en tiempo real.
 
-### 1. Base de datos y servicios locales
+- Motor: MapLibre GL JS + OpenFreeMap (sin token, sin tarjeta, sin costo).
+- Datos: el backend expone `GET /api/incidents/map` con coordenadas PostGIS.
+- Creación interactiva: el formulario de nueva incidencia permite hacer clic en el mapa para seleccionar coordenadas, mover el marcador y autocompletar lat/lng.
 
-Instalar y dejar corriendo:
-
-- PostgreSQL 16 o compatible.
-- Extension PostGIS habilitada.
-- Redis.
-- Un servidor SMTP real o Mailpit instalado localmente si se quieren probar correos.
-
-Crear la base de datos y habilitar PostGIS:
-
-```sql
-CREATE DATABASE incident_management_system;
-\c incident_management_system
-CREATE EXTENSION IF NOT EXISTS postgis;
-```
-
-Crear el usuario que usara Laravel o ajustar `.env` con un usuario existente:
-
-```sql
-CREATE USER user_im WITH PASSWORD 'your_database_password_here';
-GRANT ALL PRIVILEGES ON DATABASE incident_management_system TO user_im;
-```
-
-En `backend/.env` usar valores locales:
-
-```env
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=incident_management_system
-DB_USERNAME=user_im
-DB_PASSWORD=your_database_password_here
-
-REDIS_HOST=127.0.0.1
-REDIS_PORT=6379
-```
-
-### 2. Backend sin Docker
-
-Desde `backend/`:
-
-```bash
-composer install
-copy .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
-
-El backend queda en:
-
-```text
-http://127.0.0.1:8000
-```
-
-### 3. Frontend sin Docker
-
-El frontend es estatico, pero debe servirse por HTTP, no abrirse con `file://`.
-
-Opcion con PHP:
-
-```bash
-cd frontend/app
-php -S localhost:5500
-```
-
-Opcion con Node, si tienes `npx` disponible:
-
-```bash
-cd frontend/app
-npx http-server -p 5500
-```
-
-Abrir:
-
-```text
-http://localhost:5500
-```
-
-Importante: sin nginx Docker no existe el proxy `/api` hacia Laravel. En ese caso el frontend debe apuntar directamente al backend local. La forma mas simple es definir antes de cargar los modulos:
-
-```html
-<script>
-  window.SGI_API_URL = 'http://127.0.0.1:8000/api';
-</script>
-```
-
-Si se usa este modo, revisar que el backend permita CORS desde `http://localhost:5500`.
-
-Cuando vuelvas al modo recomendado con frontend en Docker, quita ese `window.SGI_API_URL` si lo agregaste en un HTML, o deja el valor por defecto de `frontend/app/js/core/config.js` para que vuelva a usar `/api`.
-
-## Arquitectura del backend
-
-El backend sigue estrictamente una **Arquitectura Modular basada en DDD (Domain-Driven Design) y Arquitectura Hexagonal**. En lugar de la estructura tradicional MVC de Laravel, el código en `backend/app/` está organizado por **módulos o contextos funcionales** (ej: `Auth/`, `Incidents/`, `Users/`, `Catalogs/`).
-
-Dentro de cada módulo, se aplican las siguientes capas:
-
-- **`Domain/`**: Contiene la lógica central de negocio (Entidades, Value Objects, contratos/interfaces de repositorios y eventos del dominio). Esta capa es **agnóstica** al framework, no depende de Laravel ni de Eloquent.
-- **`Application/`**: Contiene los Casos de Uso (Use Cases o Services) y DTOs. Orquesta los flujos del sistema utilizando las interfaces del dominio, sin interactuar directamente con peticiones HTTP o la base de datos directamente.
-- **`Infrastructure/`**: Contiene la implementación técnica de las interfaces del dominio. Aquí residen los Controladores HTTP, Modelos de Eloquent, Repositorios concretos y recursos de integración externos.
-
-Reglas importantes del backend:
-
-- Las rutas están centralizadas en `backend/routes/api.php`.
-- La autenticación principal usa **Laravel Sanctum**.
-- La base de datos, el sistema de roles y los catálogos no deben estar hardcodeados; todo proviene de la base de datos a través de las capas de infraestructura.
-- Los permisos se validan robustamente en el backend mediante middleware o policies. El frontend solo adapta la UI (oculta botones/menús), pero la verdadera regla y seguridad reside en el backend.
-
-## Conexión Frontend - Backend
-
-El SGI opera bajo un modelo desacoplado (Headless), donde el frontend (Vanilla JS) y el backend (Laravel) se comunican exclusivamente mediante una **API REST**.
-
-### Configurar la URL del backend según el modo de ejecución
-
-El backend no necesita cambios especiales para conectarse al frontend: normalmente se mantiene corriendo en:
-
-```text
-http://127.0.0.1:8000
-```
-
-El ajuste importante está en el frontend, en:
-
-```text
-frontend/app/js/core/config.js
-```
-
-Ese archivo define la URL base de la API:
-
-```js
-export const API_URL = window.SGIG_API_URL || window.SGI_API_URL || `${window.location.origin}/api`;
-```
-
-#### Frontend con Docker
-
-Si el frontend corre con Docker en `http://localhost:5500`, se puede dejar el valor por defecto:
-
-```js
-`${window.location.origin}/api`
-```
-
-En ese modo, nginx del frontend recibe las peticiones en:
-
-```text
-http://localhost:5500/api
-```
-
-y las redirige al backend local en:
-
-```text
-http://127.0.0.1:8000/api
-```
-
-#### Frontend sin Docker
-
-Si el frontend se levanta sin Docker con `php -S localhost:5500` o `npx http-server -p 5500`, no existe el proxy nginx de `/api`. En ese caso se debe apuntar directamente al backend local.
-
-Opción recomendada: definir la URL antes de cargar los módulos principales en los HTML:
-
-```html
-<script>
-  window.SGI_API_URL = 'http://127.0.0.1:8000/api';
-</script>
-```
-
-Opción alternativa: cambiar temporalmente `frontend/app/js/core/config.js` durante desarrollo local:
-
-```js
-export const API_URL = 'http://127.0.0.1:8000/api';
-```
-
-Cuando se usa frontend sin Docker, revisar también `backend/.env` para permitir el origen del frontend:
-
-```env
-FRONTEND_URL=http://localhost:5500
-SANCTUM_STATEFUL_DOMAINS=localhost:5500,127.0.0.1:5500
-SESSION_DOMAIN=localhost
-```
-
-Después de cambiar `.env`, limpiar configuración del backend:
-
-```bash
-cd backend
-php artisan config:clear
-```
-
-## Mapa con MapLibre GL JS y OpenFreeMap
-
-El sistema incluye una pantalla de mapa para visualizar incidencias georreferenciadas:
-
-```text
-frontend/app/html/incident-map.html
-```
-
-El backend expone los puntos desde:
-
-```text
-GET /api/incidents/map
-```
-
-La pantalla usa **MapLibre GL JS** con **OpenFreeMap** como proveedor de estilo y mapa base vectorial. No requiere token, tarjeta ni configuracion externa. La base de datos sigue siendo PostgreSQL/PostGIS; MapLibre solo se usa como capa visual en el frontend.
-
-La pantalla de creacion de incidencias tambien usa MapLibre:
-
-- Permite seleccionar coordenadas haciendo clic en el mapa.
-- Permite mover un marcador arrastrable.
-- Autocompleta los campos de latitud y longitud.
-- Si el usuario escribe coordenadas manualmente, el marcador se mueve a esa ubicacion.
-- Valida que latitud y longitud esten completas y dentro de rango antes de enviar.
-
-Por defecto el mapa centra en Santa Elena, Ecuador. Opcionalmente se puede ajustar el centro inicial o el estilo:
+Configuración opcional del mapa (centrado en Santa Elena, Ecuador por defecto):
 
 ```html
 <script>
@@ -534,68 +210,44 @@ Por defecto el mapa centra en Santa Elena, Ecuador. Opcionalmente se puede ajust
 </script>
 ```
 
-### Flujo de Comunicación:
+---
 
-1. **Cliente HTTP Centralizado**: Todas las peticiones desde el frontend hacia el backend pasan por un único punto: `frontend/app/js/core/api-client.js`. Este módulo se encarga de inyectar automáticamente el token de autenticación (`Bearer`) y las cabeceras requeridas (como `Accept: application/json`).
-2. **Autenticación (Sanctum/Firebase)**: El usuario inicia sesión y obtiene un token (ya sea manejado por Firebase y luego intercambiado en el backend, o emitido directamente por Sanctum). El frontend guarda este token en `storage.js` y el `api-client.js` lo usa en subsiguientes peticiones HTTP.
-3. **Manejo de CORS y Proxy**: En el entorno Docker, el servidor Nginx del frontend (`localhost:5500`) actúa como un proxy inverso para la ruta `/api`, reenviando internamente las peticiones al contenedor del backend. Cuando se ejecuta sin Docker, el frontend debe apuntar a la URL completa del backend local (ej. `http://127.0.0.1:8000/api`) y el backend de Laravel debe estar configurado para aceptar peticiones CORS desde el origen del frontend.
-4. **Respuestas Globales**: El `api-client.js` intercepta errores globales (como `401 Unauthorized` o `403 Forbidden`) para destruir la sesión del frontend y redirigir al login o mostrar alertas genéricas de denegación de acceso.
-5. **Carga de UI Dinámica**: Tras autenticarse, el frontend consume los endpoints del backend para obtener el perfil del usuario, roles, permisos y menús habilitados para renderizar dinámicamente el `sidebar` y `topbar` basado en las restricciones impuestas por Laravel.
+## Comunicación Frontend / Backend
 
-## Arquitectura del frontend
+1. **Cliente HTTP centralizado:** todas las peticiones pasan por `frontend/app/js/core/api-client.js`, que inyecta el Bearer token y las cabeceras requeridas.
+2. **Autenticación:** Sanctum emite un token al login. El frontend lo persiste en `storage.js` y lo reutiliza en cada request.
+3. **Proxy Nginx:** en entorno Docker, el Nginx del frontend reenvía `/api` al backend local. Sin Docker, configurar `window.SGI_API_URL = 'http://127.0.0.1:8000/api'` antes de cargar los módulos.
+4. **Errores globales:** `api-client.js` intercepta `401`/`403` y destruye la sesión redirigiendo al login.
+5. **UI dinámica:** roles, permisos, menús y estados de incidencias se obtienen de la API y nunca están hardcodeados en el HTML.
 
-El frontend no usa React, Vue ni Angular. Se mantiene como un **frontend Vanilla JS altamente modular** (utilizando ES6 Modules nativos), montado sobre Bootstrap y AdminLTE. Para evitar el típico código espagueti de Vanilla JS, se implementó una **Arquitectura por Módulos y Capas (inspirada en DDD)**, lo cual mantiene una fuerte consistencia conceptual con el diseño del backend.
+---
 
-### Estructura Principal (`frontend/app/js/`)
+## Arquitectura del Frontend
 
-- **`core/`**: Infraestructura base de la aplicación. Aquí vive el `api-client.js` (cliente HTTP centralizado que maneja tokens), `router.js` (enrutamiento en el cliente), `auth-session.js` y `storage.js`.
-- **`layout/`**: Componentes globales de la interfaz (Application Shell). Contiene la lógica del `sidebar.js`, `topbar.js` y `loader.js`.
-- **`shared/`**: Utilidades puras compartidas entre múltiples dominios, como `sanitizer.js` para evitar ataques XSS, utilidades de manipulación del DOM y validadores genéricos.
-- **`modules/`**: El corazón del sistema (Vertical Slicing). Cada funcionalidad principal (ej. `auth`, `incidents`, `roles`, `users`) es un módulo independiente que agrupa todo su código.
-
-### Capas dentro de cada Módulo (`modules/`)
-
-Al igual que en el backend, los módulos complejos se subdividen en sus propias capas internas:
-- **`application/`**: Contiene los "Services" (ej. `incidents-service.js`). Agrupa la lógica de flujos del frontend y delega las peticiones HTTP a `core/api-client.js`.
-- **`infrastructure/`**: Para configuraciones o SDKs externos específicos de ese módulo (ej. `firebase-config.js` dentro del módulo `auth`).
-- **`presentation/`**: Contiene las "Pages" o controladores de "UI" (ej. `incidents-page.js`). Es la única capa que interactúa con el DOM, inyecta datos HTML y captura eventos de usuario, delegando la lógica de procesamiento a `application/`.
-
-### Reglas Críticas del Frontend:
-
-- Las pantallas y controladores (`presentation`) **NUNCA** deben llamar directamente a `fetch` ni manipular cabeceras HTTP o tokens. Todo pasa por sus respectivos services en `application` y finalmente por el único `fetch` en `core/api-client.js`.
-- El frontend usa importaciones de módulos nativos (`<script type="module">`), por lo que el desarrollo local es inmediato y no depende de compilar con Webpack o Vite en tiempo real.
-- Todos los textos visibles en la interfaz para el usuario final van estrictamente en **español**.
-- Los nombres técnicos de archivos, carpetas, clases, funciones y variables van estrictamente en **inglés**.
-- **Regla de Oro:** No se deben hardcodear usuarios, roles, permisos, menús, estados de incidencias ni prioridades. La UI debe construirse dinámicamente según la información provista por la API del backend.
-- Siempre se debe usar `shared/sanitizer.js` o helpers equivalentes antes de insertar datos externos o no confiables en el DOM mediante `innerHTML`.
-
-## CSS
-
-El CSS personalizado se carga desde `frontend/app/css/app.css`, que importa archivos por responsabilidad:
-
-```text
-frontend/app/css/
-  app.css
-  base/
-  components/
-  layout/
-  pages/
+```
+frontend/app/js/
+├── core/          → api-client.js, auth-session.js, storage.js, router.js
+├── layout/        → sidebar.js, topbar.js, loader.js (Application Shell)
+├── shared/        → sanitizer.js (anti-XSS), dom utils, validators
+└── modules/       → Vertical Slicing por dominio
+    ├── incidents/
+    │   ├── application/    → incidents-service.js (lógica, sin DOM)
+    │   ├── infrastructure/ → SDKs externos específicos del módulo
+    │   └── presentation/   → incidents-page.js (DOM, eventos, render)
+    ├── auth/
+    ├── users/
+    └── ...
 ```
 
-Bootstrap y AdminLTE siguen siendo la base visual. El CSS propio debe limitarse a identidad SGI, sidebar, logo, loader, estados, tablas y ajustes puntuales.
+**Regla de Oro:** las capas `presentation` nunca llaman `fetch` directamente. Todo fluye `presentation → application → core/api-client.js`.
 
-## Pruebas del backend
+---
 
-El backend usa PHPUnit a traves de `php artisan test`. La configuracion de testing esta en `backend/phpunit.xml` y apunta a PostgreSQL/PostGIS:
+## Pruebas Automatizadas
 
-- Base de datos: `incident_management_system_testing`
-- Usuario: `user_im`
-- Password: `pass_im`
-- Broadcast: `null`
-- Queue: `sync`
-- Cache y sesion: memoria local de testing
+**197 tests · 1201 assertions** (PHPUnit vía `php artisan test`)
 
-Crear la base de pruebas una sola vez:
+### Crear la base de datos de testing (una sola vez)
 
 ```sql
 CREATE DATABASE incident_management_system_testing;
@@ -603,68 +255,124 @@ CREATE DATABASE incident_management_system_testing;
 CREATE EXTENSION IF NOT EXISTS postgis;
 ```
 
-Ejecutar pruebas desde `backend/`:
+### Ejecutar la suite
 
 ```bash
+cd backend
 php artisan config:clear
 php artisan migrate:fresh --seed --env=testing
 php artisan test
 ```
 
-Comandos frecuentes:
+### Comandos frecuentes
 
 ```bash
 php artisan test --testsuite=Feature
 php artisan test --testsuite=Unit
 php artisan test tests/Feature/IncidentsTest.php
 php artisan test --stop-on-failure
-composer test
 ```
 
-## Comandos utiles
+> Nota: no correr múltiples instancias de `php artisan test` en paralelo contra la misma base de datos. Los índices únicos y las transacciones concurrentes de PostgreSQL generan deadlocks.
 
-Backend:
+---
+
+## Infraestructura y Despliegue de Producción
+
+### Arquitectura de producción real
+
+```
+Internet
+   |
+   v
+[Vercel CDN] → Frontend estático (HTML/CSS/JS)
+   | (llamadas API)
+   v
+[Homelab / VPS]
+   └── Docker Compose
+         ├── nginx          (proxy reverso, puerto 8000)
+         ├── app            (PHP-FPM Laravel)
+         ├── migrate        (one-shot, precondición de app)
+         ├── queue          (workers asíncronos)
+         ├── scheduler      (cron de Laravel)
+         ├── reverb         (WebSockets)
+         ├── pgsql          (PostgreSQL + PostGIS)
+         └── redis          (caché, sesiones, colas)
+```
+
+### Despliegue de producción
 
 ```bash
 cd backend
+SGI_ENV_FILE=.env.production docker compose -f docker-compose.prod.yml up -d
+```
+
+Con `RUN_SEEDERS=true` en el `.env` de producción, el servicio `migrate` también siembra los datos base en el primer arranque.
+
+---
+
+## Almacenamiento de Evidencias (RustFS / S3)
+
+Los archivos adjuntos a incidencias no se almacenan como binarios en PostgreSQL. El backend los sube a RustFS y registra solo la metadata:
+
+| Campo | Descripción |
+|:---|:---|
+| `incident_id` | Incidencia relacionada |
+| `original_name` | Nombre original del archivo |
+| `file_path` | Ruta en el bucket S3 |
+| `mime_type` | Tipo MIME validado |
+| `file_size_bytes` | Tamaño en bytes |
+| `file_hash` | Hash para verificación de integridad |
+
+Para cambiar a almacenamiento local en desarrollo sin cambiar código:
+
+```env
+INCIDENT_FILESYSTEM_DISK=public
+```
+
+---
+
+## Comandos de Referencia Rápida
+
+```bash
+# Backend
 php artisan serve
 php artisan migrate
-php artisan db:seed
-php artisan migrate:fresh --seed
+php artisan migrate:fresh --seed      # Reset completo de la DB
 php artisan queue:listen
 php artisan reverb:start
 php artisan test
-```
 
-Servicios Docker del backend:
-
-```bash
+# Docker (servicios de apoyo)
 cd backend
 docker compose -f docker.compose.yml up -d
 docker compose -f docker.compose.yml down
-```
 
-Frontend:
-
-```bash
+# Frontend
 cd frontend
 docker compose up -d
 docker compose restart frontend
 docker compose down
 ```
 
-## Notas de desarrollo
+---
 
-- Si el login con Google falla en backend por certificados de PHP/cURL, revisar la configuracion de certificados en `php.ini`.
-- Si Composer pide `ext-sodium`, habilitar `sodium` en el `php.ini` usado por CLI.
-- Si Redis no conecta desde Laravel local, revisar que `REDIS_HOST=127.0.0.1`.
-- Si el frontend muestra una version anterior, refrescar con `Ctrl + F5` o subir el query string de cache (`?v=...`) del recurso modificado.
-- No subir credenciales reales, llaves Firebase, contrasenas ni archivos `.env`.
+## Notas de Desarrollo
 
-## Flujo recomendado para trabajar
+- Si el login con Google falla por certificados cURL, revisar `curl.cainfo` en `php.ini`.
+- Si Composer pide `ext-sodium`, habilitar la extensión en el `php.ini` del CLI.
+- Si Redis no conecta desde Laravel local, verificar `REDIS_HOST=127.0.0.1` en `.env`.
+- Si el frontend muestra una versión anterior, `Ctrl + F5` o incrementar el query string `?v=...` del recurso modificado.
+- No subir credenciales reales, llaves Firebase, contraseñas ni archivos `.env`.
 
-1. Levantar servicios Docker del backend.
-2. Ejecutar Laravel local con `php artisan serve`.
-3. Levantar frontend con Docker.
-4. Abrir `http://localhost:5500`.
-5. Hacer cambios por modulo, evitando mezclar backend y frontend en el mismo commit cuando no sea necesario.
+---
+
+## Reglas Críticas del Proyecto
+
+| Regla | Descripción |
+|:---|:---|
+| **UI esclava del backend** | No se hardcodean estados, roles, permisos ni menús. La interfaz se construye dinámicamente desde la API. |
+| **Doble validación** | El frontend previene (UX). El backend valida con Policies (seguridad real). |
+| **Idioma híbrido** | Código, archivos y variables en inglés. Textos de UI para el usuario en español. |
+| **Sin `fetch` directo en Presentación** | Todo HTTP pasa por `core/api-client.js`. |
+| **Sanitización obligatoria** | Datos externos en `innerHTML` siempre por `shared/sanitizer.js`. |
