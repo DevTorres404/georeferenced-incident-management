@@ -111,3 +111,4 @@ opencode.jsonc
 backend/boost.json
 
 # Nota: La carpeta .opencode/ ahora se ignora a pedido del usuario.
+comandos-produccion.md
