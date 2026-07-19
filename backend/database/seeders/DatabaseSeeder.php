@@ -63,14 +63,14 @@ class DatabaseSeeder extends Seeder
         }
 
         // 4. Datos demo para desarrollo y pruebas manuales. (COMENTADOS PARA LIMPIEZA)
-        /*
         $this->call(DemoUserSeeder::class);
+        /*
         $this->call(DemoIncidentSeeder::class);
         $this->call(DemoNotificationSeeder::class);
         $this->call(DemoAuditLogSeeder::class);
         $this->call(DemoAccessLogSeeder::class);
         $this->call(DemoIncidentAttachmentSeeder::class);
-        $this->call(DemoUserIdentitySeeder::class);
         */
+        $this->call(DemoUserIdentitySeeder::class);
     }
 }
