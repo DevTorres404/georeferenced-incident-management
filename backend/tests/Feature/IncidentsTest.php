@@ -988,8 +988,8 @@ class IncidentsTest extends TestCase
             ->map(fn ($date): string => $date->format('Y-m-d H:i:s.u'))
             ->unique()
             ->count());
-        $this->assertNull($incident->fresh()->current_assigned_id);
-        $this->assertSame(0, IncidentAssignment::query()
+        $this->assertSame($primary['user']->id, $incident->fresh()->current_assigned_id);
+        $this->assertSame(2, IncidentAssignment::query()
             ->where('incident_id', $incident->id)
             ->where('active', true)
             ->count());
@@ -2181,7 +2181,7 @@ class IncidentsTest extends TestCase
             ->get();
         $this->assertCount(1, $oldAssignments);
         $this->assertNotNull($oldAssignments->first()->resolved_at, 'Historical resolved_at must be preserved after reopen');
-        $this->assertNull($incident->fresh()->current_assigned_id);
+        $this->assertSame($firstPrimary['user']->id, $incident->fresh()->current_assigned_id);
 
         $this->assertDatabaseHas('core.incident_assignments', [
             'incident_id' => $incident->id,

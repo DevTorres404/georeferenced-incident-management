@@ -817,15 +817,15 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
                 $updateData['current_cycle_id'] = $newCycle->id;
 
-                // Clone active assignments to the new cycle
-                $activeAssignments = IncidentAssignment::query()
+                // Clone assignments from the previous cycle to the new cycle
+                $lastAssignments = IncidentAssignment::query()
                     ->where('incident_id', $incident->id)
-                    ->where('active', true)
+                    ->where('incident_cycle_id', $incident->current_cycle_id)
                     ->lockForUpdate()
                     ->get();
 
-                if ($activeAssignments->isNotEmpty()) {
-                    // Close old assignments
+                if ($lastAssignments->isNotEmpty()) {
+                    // Close old assignments if they are still active
                     IncidentAssignment::query()
                         ->where('incident_id', $incident->id)
                         ->where('active', true)
@@ -834,7 +834,31 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                             'unassignment_date' => now(),
                         ]);
 
-                    $incident->forceFill(['current_assigned_id' => null])->save();
+                    // Clone assignments to new cycle
+                    $newAssignments = [];
+                    $primaryId = null;
+                    foreach ($lastAssignments as $assignment) {
+                        $newAssignments[] = [
+                            'incident_id' => $assignment->incident_id,
+                            'incident_cycle_id' => $newCycle->id,
+                            'user_id' => $assignment->user_id,
+                            'assignment_role' => $assignment->assignment_role,
+                            'assigned_by_id' => $userId,
+                            'assignment_date' => now(),
+                            'active' => true,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        
+                        if ($assignment->assignment_role === 'primary') {
+                            $primaryId = $assignment->user_id;
+                        }
+                    }
+                    IncidentAssignment::insert($newAssignments);
+                    
+                    if ($primaryId) {
+                        $updateData['current_assigned_id'] = $primaryId;
+                    }
                 }
             } else {
                 if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {
@@ -1280,7 +1304,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 title: $title,
                 message: $message,
                 type: $type,
-                incidentId: (int) $incident->id
+                incidentId: $normalizedState === 'CERRADA' ? null : (int) $incident->id
             );
         }
     }

@@ -131,7 +131,9 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
   const isOperatorRole = isOperator();
   const isFinalState = Boolean(incident.state?.is_final_state);
-  const isReadOnly = isFinalState || normalizeCode(incident.state?.name) === 'RESUELTA';
+  const isReadOnly = isFinalState || 
+                     normalizeCode(incident.state?.name) === 'RESUELTA' || 
+                     (isOperatorRole && normalizeCode(incident.state?.name) !== 'EN_PROGRESO');
   const canChangeState = hasPermission('incidents.edit') && !isOperatorRole && !isFinalState;
   const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION' && !isFinalState;
   const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state) && !isFinalState;
@@ -1786,29 +1788,12 @@ document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async 
     showGlobalAlert('Solicitud aprobada correctamente. El estado se ha actualizado.', 'success');
     pendingReviewRequest = null;
 
-    // Dynamically update the state after approval
-    pendingStateRequests = pendingStateRequests.filter((r) => Number(r.id) !== Number(request.id));
-    removePendingRequestRow(request.id);
-
-    // Re-fetch the full incident to get correct state color, history, and dates
-    try {
-      const response = await getIncident(incident.id, { noCache: true });
-      const fresh = response?.data;
-      if (fresh) {
-        Object.assign(incident, fresh);
-        updateStatePresentation(incident, cachedTransitions);
-      }
-    } catch (e) {
-      console.warn('[SGI] No se pudo refrescar detalle tras aprobar, usando datos locales.', e);
-      // Fallback: at least update state name so the badge isn't stale
-      if (request.requested_state_id || request.requestedStateId) {
-        const newStateId = request.requested_state_id ?? request.requestedStateId;
-        const newStateName = request.requested_state_name ?? request.requestedStateName ?? request.requested_state?.name ?? '-';
-        incident.state_id = newStateId;
-        incident.state = { id: newStateId, name: newStateName };
-        updateStatePresentation(incident, cachedTransitions);
-      }
-    }
+    setTimeout(() => {
+      globalThis.jQuery?.('.modal-backdrop').remove();
+      document.body.classList.remove('modal-open');
+      clearApiCache();
+      window.location.reload();
+    }, 400);
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger');
   } finally {
@@ -1820,7 +1805,15 @@ document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async 
 document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async () => {
   if (!pendingReviewRequest || pendingReviewRequest.action !== 'reject') return;
   const { incident, request } = pendingReviewRequest;
-  const comment = document.getElementById('modalRevisarComentario')?.value.trim() || '';
+  const commentEl = document.getElementById('modalRevisarComentario');
+  const comment = commentEl?.value.trim() || '';
+
+  if (!comment) {
+    commentEl?.classList.add('is-invalid');
+    commentEl?.focus();
+    return;
+  }
+  commentEl?.classList.remove('is-invalid');
 
   const btn = document.getElementById('btnConfirmarRechazar');
   if (btn) btn.disabled = true;
@@ -1828,12 +1821,15 @@ document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async
   try {
     await rejectStateChangeRequest(incident.id, request.id, { comment: comment || undefined });
     globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
-    showGlobalAlert('Solicitud rechazada correctamente.', 'success');
+    showGlobalAlert('Solicitud rechazada correctamente.', 'info');
     pendingReviewRequest = null;
 
-    // Remove the rejected request from the list
-    pendingStateRequests = pendingStateRequests.filter((r) => Number(r.id) !== Number(request.id));
-    removePendingRequestRow(request.id);
+    setTimeout(() => {
+      globalThis.jQuery?.('.modal-backdrop').remove();
+      document.body.classList.remove('modal-open');
+      clearApiCache();
+      window.location.reload();
+    }, 400);
   } catch (error) {
     showGlobalAlert(error.message || 'No se pudo rechazar la solicitud.', 'danger');
   } finally {
