@@ -5,10 +5,10 @@ namespace App\Auth\Application\UseCases;
 use App\Auth\Application\DTOs\AuthActionResultData;
 use App\Auth\Application\DTOs\CreateUserInputData;
 use App\Auth\Application\DTOs\GoogleAuthInputData;
-use App\Auth\Application\Ports\ProfilePhotoStoragePort;
 use App\Auth\Application\Ports\SessionManagerPort;
 use App\Auth\Application\Ports\UserNotificationPort;
 use App\Auth\Domain\Exceptions\AuthException;
+use App\Auth\Infrastructure\Jobs\DownloadGoogleProfilePhotoJob;
 use App\Auth\Domain\Repositories\LoginAttemptRepositoryInterface;
 use App\Auth\Domain\Repositories\UserRepositoryInterface;
 use App\Auth\Domain\Services\GoogleTokenVerifierInterface;
@@ -25,8 +25,7 @@ final class GoogleRegistrationUseCase
         private SessionManagerPort $sessionManager,
         private UserNotificationPort $notificationPort,
         private LoggerPort $logger,
-        private DateTimeProviderPort $dateTimeProvider,
-        private ProfilePhotoStoragePort $profilePhotoStorage
+        private DateTimeProviderPort $dateTimeProvider
     ) {}
 
     public function execute(GoogleAuthInputData $input): AuthActionResultData
@@ -81,7 +80,6 @@ final class GoogleRegistrationUseCase
                 throw AuthException::userNotFound();
             }
             [$firstName, $lastName] = $this->resolverNombreGoogle($payload);
-            $profilePhoto = $this->storeGoogleProfilePhoto($payload, $firebaseUid);
             $user = $this->userRepository->create(new CreateUserInputData(
                 firstName: $firstName,
                 lastName: $lastName,
@@ -89,10 +87,14 @@ final class GoogleRegistrationUseCase
                 email: $email,
                 password: bin2hex(random_bytes(32)),
                 phone: null,
-                profilePhoto: $profilePhoto,
+                profilePhoto: null,
                 emailVerifiedAt: $this->dateTimeProvider->nowIso8601(),
                 isActive: true
             ));
+
+            if (!empty($payload['picture'])) {
+                dispatch(new DownloadGoogleProfilePhotoJob($user->id, $payload['picture'], $firebaseUid))->afterResponse();
+            }
 
             $this->userRepository->assignRoleByCode($user->id, 'CIUDADANO');
             $this->sendWelcomeEmail($user->id, $user->email);
@@ -100,10 +102,7 @@ final class GoogleRegistrationUseCase
             $this->registrarIntentoGoogle($email, false, 'cuenta_inactiva', $input, $user->id);
             throw AuthException::accountInactive();
         } elseif ($this->shouldImportGoogleProfilePhoto($user->profilePhoto, $payload)) {
-            $profilePhoto = $this->storeGoogleProfilePhoto($payload, $firebaseUid);
-            if ($profilePhoto !== null) {
-                $user = $this->userRepository->updateProfilePhoto($user->id, $profilePhoto);
-            }
+            dispatch(new DownloadGoogleProfilePhotoJob($user->id, $payload['picture'], $firebaseUid))->afterResponse();
         }
 
         if (! $user->isActive) {
@@ -206,24 +205,7 @@ final class GoogleRegistrationUseCase
             || filter_var($currentPhoto, FILTER_VALIDATE_URL) !== false;
     }
 
-    private function storeGoogleProfilePhoto(array $payload, string $firebaseUid): ?string
-    {
-        $sourceUrl = trim((string) ($payload['picture'] ?? ''));
-        if ($sourceUrl === '') {
-            return null;
-        }
 
-        try {
-            return $this->profilePhotoStorage->storeGoogleProfilePhoto($sourceUrl, $firebaseUid);
-        } catch (Throwable $e) {
-            $this->logger->error('No se pudo importar la foto de perfil de Google en RustFS.', [
-                'provider_uid_hash' => hash('sha256', $firebaseUid),
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-    }
 
     private function registrarIntentoGoogle(
         ?string $email,
