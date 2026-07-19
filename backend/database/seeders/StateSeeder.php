@@ -89,14 +89,6 @@ class StateSeeder extends Seeder
             );
         }
 
-        $resolvedId = State::where('name', 'RESUELTA')->value('id');
-        $reopenedId = State::where('name', 'REABIERTA')->value('id');
-
-        if ($resolvedId && $reopenedId) {
-            StateTransition::where('source_state_id', $resolvedId)
-                ->where('target_state_id', $reopenedId)
-                ->delete();
-        }
 
         // ──────────────────────────────────────────────
         // Transiciones válidas entre states
@@ -117,6 +109,8 @@ class StateSeeder extends Seeder
 
             // RESUELTA → CERRADA (Supervisor confirma)
             ['origen' => 'RESUELTA',    'destino' => 'CERRADA',      'comment' => false, 'roles' => ['ADMIN', 'SUPERVISOR']],
+            // RESUELTA → REABIERTA (Supervisor rechaza el trabajo del operador)
+            ['origen' => 'RESUELTA',    'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN', 'SUPERVISOR']],
 
             // CERRADA → REABIERTA (Solo ADMIN puede reabrir desde cerrada)
             ['origen' => 'CERRADA',     'destino' => 'REABIERTA',    'comment' => true,  'roles' => ['ADMIN']],
