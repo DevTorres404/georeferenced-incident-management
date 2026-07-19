@@ -10,12 +10,11 @@ import {
   formatCatalogLabel,
   formatShortDate,
   getPriorityHexColor,
-  getStateBadgeClass,
   getStateHexColor,
   hidePageLoading,
   showGlobalAlert,
   showPageLoading,
-} from './incidents-ui.js?v=16';
+} from './incidents-ui.js?v=17';
 
 document.addEventListener('DOMContentLoaded', initAssignmentManagementPage);
 
@@ -376,9 +375,6 @@ function renderAssignmentModal(state) {
   if (summary) {
     const priorityLabel = formatCatalogLabel(incident.priority?.name || 'Sin definir');
     const stateLabel = formatCatalogLabel(incident.state?.name || 'Sin definir');
-    const priorityBadge = `badge`;
-    const priorityStyle = `background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name || '')}; color: #fff;`;
-    const stateBadge = `badge ${getStateBadgeClass(incident.state?.name || '')}`;
     summary.innerHTML = `
       <div class="font-weight-bold mb-1">${escapeHtml(incident.code || `#${incident.id}`)} · ${escapeHtml(incident.title || 'Incidencia')}</div>
       <div class="text-muted small mb-1">${escapeHtml(incident.zone_name || incident.territorial_unit?.full_path || 'Sin territorio')}</div>
