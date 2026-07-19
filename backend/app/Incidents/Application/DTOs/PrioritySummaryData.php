@@ -9,7 +9,8 @@ final class PrioritySummaryData implements JsonSerializable
     public function __construct(
         public readonly int $id,
         public readonly string $name,
-        public readonly int $level
+        public readonly int $level,
+        public readonly ?string $color = null
     ) {}
 
     public function jsonSerialize(): array
@@ -18,6 +19,7 @@ final class PrioritySummaryData implements JsonSerializable
             'id' => $this->id,
             'name' => $this->name,
             'level' => $this->level,
+            'color' => $this->color,
         ];
     }
 }

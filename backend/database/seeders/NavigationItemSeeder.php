@@ -19,7 +19,6 @@ class NavigationItemSeeder extends Seeder
                 'children' => [
                     ['code' => 'dashboard', 'label' => 'Panel principal', 'icon' => 'fa-tachometer-alt', 'route' => 'dashboard.html', 'permission_code' => 'dashboard.view', 'sort_order' => 10],
                     ['code' => 'reports', 'label' => 'Reportes y estadisticas', 'icon' => 'fa-chart-bar', 'route' => 'reports.html', 'permission_code' => 'reportes.ver', 'sort_order' => 20],
-                    ['code' => 'notifications', 'label' => 'Notificaciones', 'icon' => 'fa-bell', 'route' => 'notifications.html', 'permission_code' => 'notifications.view', 'sort_order' => 30],
                 ],
             ],
             [
@@ -29,7 +28,7 @@ class NavigationItemSeeder extends Seeder
                 'permission_code' => 'incidents.view',
                 'sort_order' => 20,
                 'children' => [
-                    ['code' => 'incidents', 'label' => 'Listado general', 'icon' => 'fa-list-alt', 'route' => 'incidents.html', 'permission_code' => 'incidents.view', 'sort_order' => 10],
+                    ['code' => 'incidents', 'label' => 'Listado general', 'icon' => 'fa-list-alt', 'route' => 'incidents.html', 'permission_code' => 'incidents.list', 'sort_order' => 10],
                     ['code' => 'assignment-management', 'label' => 'Gestion de asignaciones', 'icon' => 'fa-tasks', 'route' => 'assignment-management.html', 'permission_code' => 'incidents.assign', 'sort_order' => 20],
                     ['code' => 'incident-map', 'label' => 'Mapa de incidencias', 'icon' => 'fa-map-marked-alt', 'route' => 'incident-map.html', 'permission_code' => 'incidents.map', 'sort_order' => 30],
                     ['code' => 'incident-create', 'label' => 'Nueva incidencia', 'icon' => 'fa-plus-circle', 'route' => 'incident-create.html', 'permission_code' => 'incidents.create', 'sort_order' => 40],

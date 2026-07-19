@@ -24,6 +24,23 @@ describe('assignment-management-page.js — pure functions', () => {
   beforeEach(() => {
     vi.resetModules();
     localStorage.clear();
+    
+    // Mock globalThis.$ for DataTable usage in renderTable
+    const mockDataTable = {
+      clear: vi.fn().mockReturnThis(),
+      destroy: vi.fn().mockReturnThis(),
+      rows: vi.fn().mockReturnThis(),
+      add: vi.fn().mockReturnThis(),
+      draw: vi.fn().mockReturnThis(),
+    };
+    mockDataTable.DataTable = vi.fn().mockReturnValue(mockDataTable);
+    
+    globalThis.$ = vi.fn().mockReturnValue(mockDataTable);
+    globalThis.$.fn = {
+      DataTable: {
+        isDataTable: vi.fn().mockReturnValue(false)
+      }
+    };
   });
 
   afterEach(() => {
@@ -291,8 +308,8 @@ describe('assignment-management-page.js — pure functions', () => {
             id: 1,
             code: 'INC-001',
             title: 'Fuga de agua',
-            priority: { name: 'Crítica' },
-            state: { name: 'Pendiente' },
+            priority: { name: 'Crítica', color: '#ff0000' },
+            state: { name: 'Pendiente', color: '#ffa500' },
             zone_name: 'Norte',
             territorial_unit: { full_path: 'Provincia > Cantón' },
             created_at: '2024-01-15',
@@ -311,6 +328,8 @@ describe('assignment-management-page.js — pure functions', () => {
       expect(html).toContain('Ana Gómez');
       expect(html).toContain('Principal');
       expect(html).toContain('Apoyo');
+      expect(html).toContain('background-color: #ff0000');
+      expect(html).toContain('background-color: #ffa500');
     });
 
     it('renders "Sin asignación" when no assignments', async () => {

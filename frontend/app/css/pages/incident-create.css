@@ -2,37 +2,7 @@
    Crear Incidencia - Estilos Premium
    ========================================================================== */
 
-/* ---- Layout Shell ---- */
-.incident-create-wrapper {
-  background: var(--sgi-background);
-}
-
-.incident-create-header {
-  padding-bottom: 4px;
-}
-
-.incident-create-header p {
-  font-size: 0.88rem;
-}
-
-/* ---- Two-Column Grid ---- */
-.incident-create-shell {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 1.25rem;
-  align-items: start;
-  padding-bottom: 1.5rem;
-}
-
 /* ---- Map Pane ---- */
-.incident-map-pane,
-.assistant-card {
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
-}
-
 .incident-map-pane {
   overflow: hidden;
 }
@@ -140,10 +110,6 @@
 .incident-create-assistant {
   position: sticky;
   top: 76px;
-}
-
-.assistant-card {
-  padding: 1.25rem;
 }
 
 .assistant-head {
@@ -527,10 +493,6 @@
 
 /* ---- Responsive ---- */
 @media (max-width: 1199.98px) {
-  .incident-create-shell {
-    grid-template-columns: 1fr;
-  }
-
   .incident-create-assistant {
     position: static;
   }
@@ -542,10 +504,6 @@
 }
 
 @media (min-width: 1600px) {
-  .incident-create-shell {
-    grid-template-columns: minmax(0, 1fr) 420px;
-  }
-
   .incident-create-map {
     min-height: 740px;
   }

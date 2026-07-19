@@ -7,6 +7,7 @@ use App\Catalogs\Infrastructure\Http\Controllers\CatalogController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
 use App\Incidents\Infrastructure\Http\Controllers\DashboardController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
+use App\Incidents\Infrastructure\Http\Controllers\ReportController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
 use App\Operations\Infrastructure\Http\Controllers\OperationalStructureController;
 use App\Operations\Infrastructure\Http\Controllers\TeamController;
@@ -90,6 +91,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/incidents/datatable', [IncidentController::class, 'dataTable'])
             ->middleware('throttle:120,1');
         Route::get('/incidents/kpi-counts', [IncidentController::class, 'kpiCounts']);
+        Route::get('/incidents/reports/analytics', [ReportController::class, 'analytics'])
+            ->middleware('permission:reportes.ver');
         Route::apiResource('/incidents', IncidentController::class)
             ->parameters(['incidents' => 'incident'])
             ->except(['store']);

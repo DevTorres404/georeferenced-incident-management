@@ -33,19 +33,24 @@ const FIXTURE = `
     </tr></thead>
     <tbody id="tablaBody"></tbody>
   </table>
-  <div class="inc-kpi-grid"></div>
   <input id="incidentSearch" />
-  <div id="incidentScopeFilters"></div>
-  <div id="incidentScopeContext"></div>
+  <select id="filterScope"></select>
+  <div id="incidentScopeSection">
+      <div id="incidentScopeContext"></div>
+  </div>
+  <select id="filterState">
+      <option value="todos">Todos los estados</option>
+  </select>
+  <select id="filterPriority">
+      <option value="todas">Todas</option>
+      <option value="critica">Crítica</option>
+      <option value="alta">Alta</option>
+      <option value="media">Media</option>
+      <option value="baja">Baja</option>
+  </select>
+  <button id="btnLimpiarFiltros"></button>
   <button id="btnCreateIncident" style="display:none"></button>
   <button id="btnViewMap" style="display:none"></button>
-  <div>
-    <button class="priority-btn btn bg-white" data-prioridad="todas">Todas</button>
-    <button class="priority-btn btn bg-white" data-prioridad="crítica">Crítica</button>
-    <button class="priority-btn btn bg-white" data-prioridad="alta">Alta</button>
-    <button class="priority-btn btn bg-white" data-prioridad="media">Media</button>
-    <button class="priority-btn btn bg-white" data-prioridad="baja">Baja</button>
-  </div>
   <div id="modalEliminar">
     <span id="codigoEliminar"></span>
     <button id="btnConfirmarEliminar"></button>
@@ -164,13 +169,8 @@ describe('Integration — incidents-page', () => {
       expect(listStates).toHaveBeenCalled();
       expect(listPriorities).toHaveBeenCalled();
 
-      const kpiGrid = document.querySelector('.inc-kpi-grid');
-      expect(kpiGrid.innerHTML).toContain('Nueva');
-      expect(kpiGrid.innerHTML).toContain('En progreso');
-      expect(kpiGrid.innerHTML).toContain('Resuelta');
-
-      const scopeFilters = document.getElementById('incidentScopeFilters');
-      expect(scopeFilters.innerHTML).toContain('Todas');
+      const scopeFilters = document.getElementById('filterScope');
+      expect(scopeFilters.innerHTML).toContain('Todas las incidencias');
       expect(scopeFilters.innerHTML).toContain('Mis reportes');
 
       expect(globalThis.jQuery).toHaveBeenCalledWith('#tablaIncidencias');
@@ -191,8 +191,8 @@ describe('Integration — incidents-page', () => {
       expect(document.getElementById('btnCreateIncident').hidden).toBe(false);
       expect(document.getElementById('btnViewMap').style.display).not.toBe('none');
 
-      const context = document.getElementById('incidentScopeContext');
-      expect(context.textContent).toContain('Vista administrativa nacional');
+      const scopeFilters = document.getElementById('filterScope');
+      expect(scopeFilters.innerHTML).toContain('Todas las incidencias');
     });
 
     it.each([
@@ -404,49 +404,48 @@ describe('Integration — incidents-page', () => {
       return globalThis.$.mock.results[0].value.DataTable.mock.results[0].value;
     }
 
-    it('state filter click updates active filter and reloads DataTable', async () => {
+    it('state filter change updates active filter and reloads DataTable', async () => {
       const dt = await initWithRequestMock();
 
-      const pendienteBtn = document.querySelector('.filtro-btn[data-filtro="1"]');
-      expect(pendienteBtn).not.toBeNull();
-      pendienteBtn.click();
+      const filterState = document.getElementById('filterState');
+      expect(filterState).not.toBeNull();
+      filterState.value = '1';
+      filterState.dispatchEvent(new Event('change'));
       await flushMicrotasks();
 
       expect(dt.ajax.reload).toHaveBeenCalled();
-      expect(pendienteBtn.classList.contains('active')).toBe(true);
     });
 
-    it('priority filter click updates active filter and reloads DataTable', async () => {
+    it('priority filter change updates active filter and reloads DataTable', async () => {
       const dt = await initWithRequestMock();
 
-      const altaBtn = document.querySelector('.priority-btn[data-prioridad="alta"]');
-      expect(altaBtn).not.toBeNull();
-      altaBtn.click();
+      const filterPriority = document.getElementById('filterPriority');
+      expect(filterPriority).not.toBeNull();
+      filterPriority.value = 'alta';
+      filterPriority.dispatchEvent(new Event('change'));
       await flushMicrotasks();
 
       expect(dt.ajax.reload).toHaveBeenCalled();
-      expect(altaBtn.classList.contains('active')).toBe(true);
-      expect(altaBtn.classList.contains('btn-dark')).toBe(true);
     });
 
-    it('scope filter click updates scope and reloads DataTable', async () => {
+    it('scope filter change updates scope and reloads DataTable', async () => {
       const dt = await initWithRequestMock();
 
-      const mineBtn = document.querySelector('.incident-scope-btn[data-scope="mine"]');
-      expect(mineBtn).not.toBeNull();
-      mineBtn.click();
+      const filterScope = document.getElementById('filterScope');
+      expect(filterScope).not.toBeNull();
+      filterScope.value = 'mine';
+      filterScope.dispatchEvent(new Event('change'));
       await flushMicrotasks();
 
       expect(dt.ajax.reload).toHaveBeenCalled();
-      expect(mineBtn.classList.contains('active')).toBe(true);
     });
 
-    it('"todas" priority filter resets to default', async () => {
+    it('btnLimpiarFiltros resets to default and reloads DataTable', async () => {
       const dt = await initWithRequestMock();
 
-      const todasBtn = document.querySelector('.priority-btn[data-prioridad="todas"]');
-      expect(todasBtn).not.toBeNull();
-      todasBtn.click();
+      const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+      expect(btnLimpiar).not.toBeNull();
+      btnLimpiar.click();
       await flushMicrotasks();
 
       expect(dt.ajax.reload).toHaveBeenCalled();
@@ -474,20 +473,7 @@ describe('Integration — incidents-page', () => {
       }));
     });
 
-    it('fetchKpis is called after init', async () => {
-      const { request } = await import('../app/js/infrastructure/backend-client.js');
-      request.mockResolvedValue({ data: { pendiente: 1, en_proceso: 2, resuelta: 3 } });
 
-      await initWithDefaults();
-      await flushMicrotasks();
-
-      await vi.waitFor(() => {
-        const kpiCall = request.mock.calls.find(c => c[0].includes('kpi-counts'));
-        expect(kpiCall).toBeTruthy();
-      });
-
-      expect(document.getElementById('cnt-todos').textContent).toBe('6');
-    });
   });
 
   // ─── 6. Delete flow ─────────────────────────────────────────

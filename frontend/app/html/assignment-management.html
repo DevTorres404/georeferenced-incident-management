@@ -11,9 +11,10 @@
         href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/assignment-management.css?v=2">
+    <link rel="stylesheet" href="/css/pages/assignment-management.css?v=3">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -103,7 +104,7 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
+                                <table id="assignmentTable" class="table table-hover align-middle mb-0">
                                     <thead>
                                         <tr>
                                             <th>Código</th>
@@ -155,11 +156,13 @@
     </div>
     <script src="/plugins/jquery/jquery.min.js"></script>
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/datatables/jquery.dataTables.min.js"></script>
+    <script src="/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=43"></script>
-    <script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=3"></script>
+    <script type="module" src="/js/layout/layout.js?v=44"></script>
+    <script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=20"></script>
 </body>
 
 </html>
-

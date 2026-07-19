@@ -16,6 +16,7 @@ class PermissionSeeder extends Seeder
             ['code' => 'dashboard.view', 'name' => 'Ver panel principal', 'description' => 'Permite acceder al panel principal del sistema.', 'module' => 'dashboard'],
 
             ['code' => 'incidents.view', 'name' => 'Ver incidencias', 'description' => 'Permite consultar el listado y detalle de incidencias segun el alcance del rol.', 'module' => 'incidents'],
+            ['code' => 'incidents.list', 'name' => 'Ver listado de incidencias', 'description' => 'Permite acceder a la pantalla de listado general de incidencias.', 'module' => 'incidents'],
             ['code' => 'incidents.detail', 'name' => 'Ver detalle de incidencias', 'description' => 'Permite acceder a la pantalla de detalle de una incidencia.', 'module' => 'incidents'],
             ['code' => 'incidents.create', 'name' => 'Crear incidencias', 'description' => 'Permite registrar nuevas incidencias en el sistema.', 'module' => 'incidents'],
             ['code' => 'incidents.map', 'name' => 'Ver mapa de incidencias', 'description' => 'Permite acceder al mapa georreferenciado de incidencias.', 'module' => 'incidents'],
@@ -88,6 +89,7 @@ class PermissionSeeder extends Seeder
             'OPERADOR' => Permission::whereIn('code', [
                 'about.view',
                 'incidents.view',
+                'incidents.list',
                 'incidents.detail',
                 'incidents.map',
                 'incidents.edit',
@@ -100,6 +102,7 @@ class PermissionSeeder extends Seeder
             'CIUDADANO' => Permission::whereIn('code', [
                 'about.view',
                 'incidents.view',
+                'incidents.list',
                 'incidents.detail',
                 'incidents.create',
                 'profile.view',

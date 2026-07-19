@@ -119,6 +119,10 @@ describe('assignment-management-page.js — integration', () => {
     localStorage.clear();
     localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: ['ADMIN'] }));
     globalThis.renderLayout = vi.fn();
+    globalThis.$ = vi.fn(() => ({
+      DataTable: vi.fn(() => ({ clear: vi.fn().mockReturnThis(), destroy: vi.fn().mockReturnThis() }))
+    }));
+    globalThis.$.fn = { DataTable: { isDataTable: vi.fn(() => true) } };
 
     insertPageFixtures();
 
@@ -155,7 +159,10 @@ describe('assignment-management-page.js — integration', () => {
   // ====================================================================
   describe('DOMContentLoaded init', () => {
     it('loads incidents and operators, renders table and KPIs', async () => {
-      backendClient.request.mockResolvedValue({ data: [INCIDENT_WITH_ASSIGNMENTS, INCIDENT_UNASSIGNED] });
+      backendClient.request.mockImplementation((url) => {
+        if (String(url).includes('assignment-operators')) return Promise.resolve({ data: OPERATORS });
+        return Promise.resolve({ data: [INCIDENT_WITH_ASSIGNMENTS, INCIDENT_UNASSIGNED] });
+      });
 
       await mod.initAssignmentManagementPage();
       await flush();
@@ -193,7 +200,10 @@ describe('assignment-management-page.js — integration', () => {
     });
 
     it('handles missing data fields gracefully', async () => {
-      backendClient.request.mockResolvedValue({ data: [{ id: 99 }] });
+      backendClient.request.mockImplementation((url) => {
+        if (String(url).includes('assignment-operators')) return Promise.resolve({ data: [] });
+        return Promise.resolve({ data: [{ id: 99 }] });
+      });
 
       await mod.initAssignmentManagementPage();
       await flush();
@@ -270,7 +280,7 @@ describe('assignment-management-page.js — integration', () => {
         <label><input type="checkbox" value="12"></label>
       `;
 
-      backendClient.request.mockResolvedValue({});
+      backendClient.request.mockResolvedValue({ data: [] });
 
       await mod.submitAssignment(state);
       await flush();

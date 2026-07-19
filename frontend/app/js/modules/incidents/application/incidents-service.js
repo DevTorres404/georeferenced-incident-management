@@ -13,6 +13,19 @@ async function listIncidents(filters = {}) {
   return request(`/incidents${suffix}`);
 }
 
+async function getReportAnalytics(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.start_date) query.append('start_date', filters.start_date);
+  if (filters.end_date) query.append('end_date', filters.end_date);
+  if (filters.category) query.append('category', filters.category);
+  if (filters.state) query.append('state', filters.state);
+  
+  query.append('_t', Date.now());
+
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return request(`/incidents/reports/analytics${suffix}`);
+}
+
 async function getIncident(incidentId, options = {}) {
   return request(`/incidents/${incidentId}`, options);
 }
@@ -132,6 +145,7 @@ const incidentsService = {
   rejectStateChangeRequest,
   getStateChangeRequests,
   getPendingStateChangeRequests,
+  getReportAnalytics,
 };
 
 globalThis.SGIGIncidentsService = incidentsService;
@@ -155,4 +169,5 @@ export {
   requestStateChange,
   updateIncident,
   uploadIncidentAttachment,
+  getReportAnalytics,
 };

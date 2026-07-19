@@ -9,8 +9,9 @@ import {
   escapeHtml,
   formatCatalogLabel,
   formatShortDate,
-  getPriorityBadgeClass,
+  getPriorityHexColor,
   getStateBadgeClass,
+  getStateHexColor,
   hidePageLoading,
   showGlobalAlert,
   showPageLoading,
@@ -233,6 +234,11 @@ export function renderKpis(incidents, operators) {
 }
 
 export function renderTable(state) {
+  const $table = globalThis.$('#assignmentTable');
+  if (globalThis.$.fn.DataTable.isDataTable($table)) {
+    $table.DataTable().clear().destroy();
+  }
+
   const tbody = document.getElementById('assignmentTableBody');
   if (!tbody) return;
 
@@ -268,8 +274,8 @@ export function renderTable(state) {
           <div class="font-weight-bold text-dark">${escapeHtml(incident.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
-        <td><span class="badge ${getPriorityBadgeClass(incident.priority?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
-        <td><span class="badge ${getStateBadgeClass(incident.state?.name || '-')}">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
+        <td><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
+        <td><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
         <td>${escapeHtml(incident.zone_name || 'Sin zona')}</td>
         <td>${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
         <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
@@ -284,6 +290,32 @@ export function renderTable(state) {
         </td>
       </tr>`;
   }).join('');
+
+  $table.DataTable({
+    responsive: true,
+    autoWidth: false,
+    paging: true,
+    lengthChange: false,
+    pageLength: 10,
+    searching: false,
+    language: {
+      sProcessing: 'Procesando...',
+      sLengthMenu: 'Mostrar _MENU_ registros',
+      sZeroRecords: 'No se encontraron resultados',
+      sEmptyTable: 'No hay incidencias disponibles para esta vista',
+      sInfo: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+      sInfoEmpty: 'Mostrando 0 a 0 de 0 registros',
+      sInfoFiltered: '(filtrado de _MAX_ registros totales)',
+      sSearch: 'Buscar:',
+      oPaginate: {
+        sFirst: 'Primero',
+        sLast: 'Último',
+        sNext: 'Siguiente',
+        sPrevious: 'Anterior',
+      },
+    },
+    order: []
+  });
 }
 
 async function openAssignmentModal(state, incidentId) {
@@ -344,15 +376,16 @@ function renderAssignmentModal(state) {
   if (summary) {
     const priorityLabel = formatCatalogLabel(incident.priority?.name || 'Sin definir');
     const stateLabel = formatCatalogLabel(incident.state?.name || 'Sin definir');
-    const priorityBadge = `badge ${getPriorityBadgeClass(incident.priority?.name || '')}`;
+    const priorityBadge = `badge`;
+    const priorityStyle = `background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name || '')}; color: #fff;`;
     const stateBadge = `badge ${getStateBadgeClass(incident.state?.name || '')}`;
     summary.innerHTML = `
       <div class="font-weight-bold mb-1">${escapeHtml(incident.code || `#${incident.id}`)} · ${escapeHtml(incident.title || 'Incidencia')}</div>
       <div class="text-muted small mb-1">${escapeHtml(incident.zone_name || incident.territorial_unit?.full_path || 'Sin territorio')}</div>
       <div class="d-flex gap-2 mt-1">
-        <span class="${priorityBadge} px-2 py-1">${escapeHtml(priorityLabel)}</span>
-        <span class="${stateBadge} px-2 py-1">${escapeHtml(stateLabel)}</span>
-        ${incident.has_pending_state_request ? `<span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}
+        <span class="badge px-2 py-1" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name || '')}; color: #fff;">${escapeHtml(priorityLabel)}</span>
+        <span class="badge px-2 py-1" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name || '')}; color: #fff;">${escapeHtml(stateLabel)}</span>
+        ${incident.has_pending_state_request ? `<span class="badge badge-warning px-2 py-1" style="background-color: #ffc107; color: #000;"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}
       </div>
     `;
   }

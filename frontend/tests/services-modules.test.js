@@ -48,6 +48,7 @@ import {
   changeIncidentState,
   createIncident,
   getIncident,
+  getReportAnalytics,
   listIncidents,
   listPriorities,
   listStates,
@@ -514,6 +515,16 @@ describe('incidents-service.js', () => {
         body: JSON.stringify({ operator_ids: [1, 2] }),
       });
       expect(result).toEqual({ success: true });
+    });
+  });
+
+  describe('getReportAnalytics', () => {
+    it('sends GET /incidents/reports/analytics with cache buster _t', async () => {
+      request.mockResolvedValue({ total: 10 });
+      const result = await getReportAnalytics({ state: 'open' });
+      expect(request).toHaveBeenCalledWith(expect.stringMatching(/_t=\d+/));
+      expect(request).toHaveBeenCalledWith(expect.stringMatching(/state=open/));
+      expect(result).toEqual({ total: 10 });
     });
   });
 

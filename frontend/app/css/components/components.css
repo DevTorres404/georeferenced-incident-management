@@ -240,6 +240,30 @@
   .stat-card    { flex-direction: column; text-align: center; }
 }
 
+/* ---- Estandarización de Cards Globales (UI Premium) ---- */
+.card {
+  background: var(--sgi-surface, #ffffff);
+  border: 1px solid rgba(8, 32, 51, 0.08);
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 15px rgba(8, 32, 51, 0.03);
+  margin-bottom: 1.5rem;
+}
 
+.card.shadow-sm {
+  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04) !important;
+}
 
+.card-header {
+  border-bottom: 1px solid rgba(8, 32, 51, 0.06);
+  background-color: transparent;
+  padding: 1.2rem 1.25rem;
+}
 
+.card-body {
+  padding: 1.25rem;
+}
+
+.card-footer {
+  background-color: transparent;
+  border-top: 1px solid rgba(8, 32, 51, 0.06);
+}

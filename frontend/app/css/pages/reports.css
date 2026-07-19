@@ -2,29 +2,13 @@
    Reportes y Estadísticas - Estilos Premium
    ========================================================================== */
 
-/* ---- Reports Shell ---- */
-.reports-wrapper {
-  background: var(--sgi-background);
-}
-
-.reports-header {
-  padding-bottom: 4px;
-}
-
-.reports-header p {
-  font-size: 0.88rem;
-}
-
 /* ---- Filter Bar ---- */
 .reports-filter-bar {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 1.25rem;
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 4px 12px rgba(8, 32, 51, 0.03);
   flex-wrap: wrap;
 }
 
@@ -66,9 +50,6 @@
 /* ---- Executive Brief ---- */
 .reports-brief-card {
   background: linear-gradient(135deg, #ffffff 0%, var(--sgi-primary-soft) 100%);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 24px rgba(8, 32, 51, 0.04);
   padding: 1.1rem 1.2rem;
 }
 
@@ -256,13 +237,8 @@ body.dark-mode .reports-brief-item {
 
 /* ---- Chart Cards ---- */
 .reports-chart-card {
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   overflow: hidden;
   transition: all 0.3s ease;
-  height: 100%;
 }
 
 .reports-chart-card:hover {
@@ -294,13 +270,8 @@ body.dark-mode .reports-brief-item {
 
 /* ---- Ranking Cards ---- */
 .reports-ranking-card {
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   overflow: hidden;
   transition: all 0.3s ease;
-  height: 100%;
 }
 
 .reports-ranking-card:hover {
@@ -389,13 +360,8 @@ body.dark-mode .reports-brief-item {
 
 /* ---- Efficiency Indicators ---- */
 .reports-efficiency-card {
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   overflow: hidden;
   transition: all 0.3s ease;
-  height: 100%;
 }
 
 .reports-efficiency-card:hover {
@@ -478,10 +444,6 @@ body.dark-mode .reports-brief-item {
 
 /* ---- Summary Table ---- */
 .reports-summary-card {
-  background: var(--sgi-surface);
-  border: 1px solid rgba(8, 32, 51, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(8, 32, 51, 0.04);
   overflow: hidden;
 }
 

@@ -1,10 +1,11 @@
-import { listIncidents, listStates } from '../../incidents/application/incidents-service.js?v=14';
+import { listIncidents, listStates, getReportAnalytics } from '../../incidents/application/incidents-service.js?v=20';
+import { getCategories } from '../../catalogs/application/catalog-service.js?v=2';
 import {
   escapeHtml,
   formatCatalogLabel,
   hidePageLoading,
   showPageLoading,
-} from '../../incidents/presentation/incidents-ui.js?v=16';
+} from '../../incidents/presentation/incidents-ui.js?v=17';
 import {
   handleBackendErrors,
   setFieldError,
@@ -40,10 +41,9 @@ export const CHART_DEFAULTS = {
 };
 
 const state = {
-  incidents: [],
-  filteredIncidents: [],
   charts: {},
   states: [],
+  categories: [],
 };
 
 document.addEventListener('DOMContentLoaded', initReportsPage);
@@ -51,19 +51,22 @@ document.addEventListener('DOMContentLoaded', initReportsPage);
 export async function initReportsPage() {
   globalThis.renderLayout?.('reports');
 
+  adjustLayoutForRoles();
+
   bindActions();
   showPageLoading('Generando reportes', 'Consolidando tendencias e indicadores...');
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
-    const [incidents, statesResponse] = await Promise.all([
-      fetchIncidents(),
+    const [statesResponse, categoriesResponse] = await Promise.all([
       listStates(),
+      getCategories(),
     ]);
-    state.incidents = incidents;
     state.states = Array.isArray(statesResponse?.data) ? statesResponse.data : [];
-    hydrateFilterOptions(state.incidents);
-    applyCurrentFilters();
+    state.categories = Array.isArray(categoriesResponse) ? categoriesResponse : [];
+    
+    hydrateFilterOptions();
+    await applyCurrentFilters();
   } catch (error) {
     handleBackendErrors(error, null, document.getElementById('alertaGlobal'));
   } finally {
@@ -72,21 +75,34 @@ export async function initReportsPage() {
   }
 }
 
-async function fetchIncidents() {
-  const incidents = [];
-  let currentPage = 1;
-  let lastPage = 1;
-
-  do {
-    const response = await listIncidents({ per_page: 100, page: currentPage });
-    const pageData = Array.isArray(response?.data) ? response.data : [];
-    incidents.push(...pageData);
-
-    lastPage = Number(response?.meta?.last_page || response?.last_page || currentPage);
-    currentPage += 1;
-  } while (currentPage <= lastPage);
-
-  return incidents;
+export function adjustLayoutForRoles() {
+  try {
+    const raw = localStorage.getItem('user_data');
+    const user = raw ? JSON.parse(raw) : null;
+    if (!user || !Array.isArray(user.roles)) return;
+    
+    const isSupervisor = user.roles.some((r) => r.code === 'SUPERVISOR');
+    const isAdmin = user.roles.some((r) => r.code === 'ADMIN');
+    
+    if (isSupervisor && !isAdmin) {
+      const colCiudades = document.getElementById('colTopCiudades');
+      if (colCiudades) colCiudades.style.display = 'none';
+      
+      const colTipos = document.getElementById('colTopTipos');
+      if (colTipos) {
+        colTipos.classList.remove('col-lg-4');
+        colTipos.classList.add('col-lg-6');
+      }
+      
+      const colEficiencia = document.getElementById('colEficiencia');
+      if (colEficiencia) {
+        colEficiencia.classList.remove('col-lg-4');
+        colEficiencia.classList.add('col-lg-6');
+      }
+    }
+  } catch (error) {
+    console.warn('Error al ajustar layout por roles:', error);
+  }
 }
 
 function bindActions() {
@@ -105,9 +121,9 @@ function bindActions() {
   document.getElementById('btnExportPDF')?.addEventListener('click', exportPrintableReport);
 }
 
-function hydrateFilterOptions(incidents) {
-  populateSelect('selectTipoFiltro', uniqueSortedValues(incidents.map((incident) => incident.category?.name)));
-  populateSelect('selectEstadoFiltro', uniqueSortedValues(incidents.map((incident) => incident.state?.name)));
+function hydrateFilterOptions() {
+  populateSelect('selectTipoFiltro', uniqueSortedValues(state.categories.map((c) => c.name)));
+  populateSelect('selectEstadoFiltro', uniqueSortedValues(state.states.map((s) => s.code || s.name)));
 }
 
 function populateSelect(id, values) {
@@ -137,22 +153,36 @@ export function resetFilters() {
   applyCurrentFilters();
 }
 
-export function applyCurrentFilters() {
+export async function applyCurrentFilters() {
   if (!validateFilters()) {
     return;
   }
 
   const filters = getFilters();
-  state.filteredIncidents = state.incidents.filter((incident) => matchesFilters(incident, filters));
-  const analytics = buildAnalytics(state.filteredIncidents, state.incidents.length);
-
-  renderKpis(analytics);
-  renderInsights(analytics, filters);
-  renderCharts(analytics);
-  renderRankings(analytics);
-  renderEfficiency(analytics);
-  renderSummary(analytics);
-  renderAppliedFilterFeedback(filters, analytics.total);
+  showPageLoading('Actualizando reportes', 'Calculando estadísticas en tiempo real...');
+  
+  try {
+    const response = await getReportAnalytics({
+      start_date: filters.startDate,
+      end_date: filters.endDate,
+      category: filters.category,
+      state: filters.state,
+    });
+    
+    const analytics = response.data;
+    
+    renderKpis(analytics);
+    renderInsights(analytics, filters);
+    renderCharts(analytics);
+    renderRankings(analytics);
+    renderEfficiency(analytics);
+    renderSummary(analytics);
+    renderAppliedFilterFeedback(filters, analytics.total);
+  } catch (error) {
+    handleBackendErrors(error, null, document.getElementById('alertaGlobal'));
+  } finally {
+    hidePageLoading();
+  }
 }
 
 function validateFilters() {
@@ -179,190 +209,6 @@ function getFilters() {
   };
 }
 
-export function matchesFilters(incident, filters) {
-  const createdAt = parseDate(incident.created_at);
-  const category = String(incident.category?.name || '');
-  const stateName = String(incident.state?.name || '');
-
-  if (filters.startDate && (!createdAt || createdAt < startOfDay(filters.startDate))) {
-    return false;
-  }
-
-  if (filters.endDate && (!createdAt || createdAt > endOfDay(filters.endDate))) {
-    return false;
-  }
-
-  if (filters.category && !equalsNormalized(category, filters.category)) {
-    return false;
-  }
-
-  if (filters.state && !equalsNormalized(stateName, filters.state)) {
-    return false;
-  }
-
-  return true;
-}
-
-function buildAnalytics(incidents, totalUniverse) {
-  const countsByPriority = {};
-  const countsByCategory = {};
-  const cities = new Map();
-  const monthlyBuckets = new Map();
-  const resolvedDurations = [];
-  const categoryResolutionStats = new Map();
-  const today = new Date();
-
-  let resolved = 0;
-  let closed = 0;
-  let active = 0;
-  let overdue = 0;
-  let critical = 0;
-  let high = 0;
-  let recentSevenDays = 0;
-
-  incidents.forEach((incident) => {
-    const createdAt = parseDate(incident.created_at);
-    const resolvedAt = parseDate(incident.resolution_date || incident.resolutionDate);
-    const dueDate = parseDate(incident.due_date || incident.dueDate);
-    const stateCode = normalizeState(incident.state?.name);
-    const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin prioridad');
-    const categoryName = formatCatalogLabel(incident.category?.name || incident.subcategory?.name || 'Sin categoría');
-    const cityName = territoryTail(incident.territorial_unit?.full_path || incident.territorialUnit?.full_path || incident.territorial_unit?.name || incident.territorialUnit?.name || incident.address_reference || incident.address || 'Sin territorio');
-
-    countsByPriority[priorityName] = Number(countsByPriority[priorityName] || 0) + 1;
-    countsByCategory[categoryName] = Number(countsByCategory[categoryName] || 0) + 1;
-    cities.set(cityName, Number(cities.get(cityName) || 0) + 1);
-
-    if (createdAt) {
-      const key = monthKey(createdAt);
-      if (!monthlyBuckets.has(key)) {
-        monthlyBuckets.set(key, { registered: 0, resolved: 0, pending: 0 });
-      }
-      monthlyBuckets.get(key).registered += 1;
-
-      if (daysBetween(createdAt, today) <= 7) {
-        recentSevenDays += 1;
-      }
-    }
-
-    if (matchesStateCategory(stateCode, isResolvedState())) {
-      resolved += 1;
-      if (createdAt && resolvedAt) {
-        const resolutionDays = daysBetween(createdAt, resolvedAt);
-        resolvedDurations.push(resolutionDays);
-        const categoryStats = categoryResolutionStats.get(categoryName) || [];
-        categoryStats.push(resolutionDays);
-        categoryResolutionStats.set(categoryName, categoryStats);
-      }
-
-      if (resolvedAt) {
-        const resolvedKey = monthKey(resolvedAt);
-        if (!monthlyBuckets.has(resolvedKey)) {
-          monthlyBuckets.set(resolvedKey, { registered: 0, resolved: 0, pending: 0 });
-        }
-        monthlyBuckets.get(resolvedKey).resolved += 1;
-      }
-    } else if (matchesStateCategory(stateCode, isClosedState())) {
-      closed += 1;
-    } else if (matchesStateCategory(stateCode, isActiveState())) {
-      active += 1;
-      if (createdAt) {
-        const activeKey = monthKey(createdAt);
-        if (!monthlyBuckets.has(activeKey)) {
-          monthlyBuckets.set(activeKey, { registered: 0, resolved: 0, pending: 0 });
-        }
-        monthlyBuckets.get(activeKey).pending += 1;
-      }
-    }
-
-    if (dueDate && !matchesStateCategory(stateCode, [...isResolvedState(), ...isClosedState()]) && dueDate < today) {
-      overdue += 1;
-    }
-
-    if (includesNormalized(priorityName, 'critica')) critical += 1;
-    if (includesNormalized(priorityName, 'alta')) high += 1;
-  });
-
-  const total = incidents.length;
-  const finished = resolved + closed;
-  const resolutionRate = total > 0 ? Math.round((finished / total) * 100) : 0;
-  const averageResolutionDays = resolvedDurations.length
-    ? resolvedDurations.reduce((sum, value) => sum + value, 0) / resolvedDurations.length
-    : 0;
-
-  const monthlyTrend = normalizeMonthlyTrend(monthlyBuckets);
-  const topCities = Array.from(cities.entries())
-    .sort((left, right) => right[1] - left[1])
-    .slice(0, 5)
-    .map(([city, count]) => ({
-      city,
-      count,
-      pct: total > 0 ? Math.round((count / total) * 100) : 0,
-    }));
-
-  const categoryAverageResolution = Object.fromEntries(
-    Array.from(categoryResolutionStats.entries()).map(([category, values]) => [
-      category,
-      values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0,
-    ])
-  );
-
-  return {
-    total,
-    totalUniverse,
-    resolutionRate,
-    averageResolutionDays,
-    recentSevenDays,
-    active,
-    resolved,
-    closed,
-    overdue,
-    critical,
-    high,
-    countsByPriority,
-    countsByCategory,
-    topCities,
-    categoryAverageResolution,
-    monthlyTrend,
-    summaryRows: buildSummaryRows(incidents, countsByCategory),
-  };
-}
-
-export function normalizeMonthlyTrend(monthlyBuckets) {
-  const sortedKeys = Array.from(monthlyBuckets.keys()).sort((a, b) => a.localeCompare(b));
-  return {
-    months: sortedKeys.map((key) => formatMonthLabel(key)),
-    registered: sortedKeys.map((key) => monthlyBuckets.get(key)?.registered || 0),
-    resolved: sortedKeys.map((key) => monthlyBuckets.get(key)?.resolved || 0),
-    pending: sortedKeys.map((key) => monthlyBuckets.get(key)?.pending || 0),
-  };
-}
-
-function buildSummaryRows(incidents, countsByCategory) {
-  return Object.keys(countsByCategory).sort((left, right) => left.localeCompare(right, 'es', { sensitivity: 'base' }))
-    .map((categoryName) => {
-      const categoryIncidents = incidents.filter((incident) => {
-        const current = formatCatalogLabel(incident.category?.name || incident.subcategory?.name || 'Sin categoria');
-        return equalsNormalized(current, categoryName);
-      });
-
-      const pending = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isActiveState())).length;
-      const resolved = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isResolvedState())).length;
-      const closed = categoryIncidents.filter((incident) => matchesStateCategory(normalizeState(incident.state?.name), isClosedState())).length;
-      const total = categoryIncidents.length;
-      const rate = total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0;
-
-      return {
-        label: categoryName,
-        pending,
-        progress: Math.max(total - pending - resolved - closed, 0),
-        resolved: resolved + closed,
-        total,
-        rate,
-      };
-    });
-}
-
 function renderKpis(analytics) {
   const container = document.getElementById('kpiCards');
   if (!container) return;
@@ -370,9 +216,9 @@ function renderKpis(analytics) {
   const cards = [
     { num: analytics.total, label: 'Incidencias', sub: 'Bajo el filtro actual', icon: 'fa-clipboard-list', variant: 'kpi-total' },
     { num: analytics.active, label: 'Activas', sub: 'Carga operativa actual', icon: 'fa-bolt', variant: 'kpi-pending' },
-    { num: analytics.critical, label: 'Criticas', sub: 'Requieren seguimiento', icon: 'fa-radiation-alt', variant: 'kpi-progress' },
+    { num: analytics.critical, label: 'Críticas', sub: 'Requieren seguimiento', icon: 'fa-radiation-alt', variant: 'kpi-progress' },
     { num: `${analytics.resolutionRate}%`, label: 'Resolución', sub: 'Cierre efectivo', icon: 'fa-check-double', variant: 'kpi-resolved' },
-    { num: `${analytics.averageResolutionDays.toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolución media', icon: 'fa-stopwatch', variant: 'kpi-time' },
+    { num: `${Number(analytics.averageResolutionDays || 0).toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolución media', icon: 'fa-stopwatch', variant: 'kpi-time' },
     { num: analytics.overdue, label: 'Vencidas', sub: 'Fuera de plazo', icon: 'fa-hourglass-end', variant: 'kpi-rate' },
   ];
 
@@ -410,8 +256,19 @@ function renderInsights(analytics, filters) {
   const coverage = analytics.totalUniverse > 0
     ? Math.round((analytics.total / analytics.totalUniverse) * 100)
     : 0;
-  const dominantCategory = getTopEntry(analytics.countsByCategory);
-  const dominantPriority = getTopEntry(analytics.countsByPriority);
+  
+  let dominantCategory = null;
+  if (analytics.countsByCategory && Object.keys(analytics.countsByCategory).length > 0) {
+    const entries = Object.entries(analytics.countsByCategory).sort((a,b) => b[1] - a[1]);
+    if (entries.length > 0) dominantCategory = { label: entries[0][0], count: entries[0][1] };
+  }
+
+  let dominantPriority = null;
+  if (analytics.countsByPriority && Object.keys(analytics.countsByPriority).length > 0) {
+    const entries = Object.entries(analytics.countsByPriority).sort((a,b) => b[1] - a[1]);
+    if (entries.length > 0) dominantPriority = { label: entries[0][0], count: entries[0][1] };
+  }
+
   const pressure = analytics.active > analytics.resolved ? 'La carga activa supera a los cierres del periodo.' : 'El volumen resuelto mantiene el ritmo operativo.';
 
   const insightCards = [
@@ -422,7 +279,7 @@ function renderInsights(analytics, filters) {
       icon: 'fa-layer-group',
     },
     {
-      title: 'Mayor concentracion',
+      title: 'Mayor concentración',
       value: dominantCategory?.label || 'Sin categoría',
       meta: dominantCategory ? `${dominantCategory.count} registros` : 'Sin datos suficientes',
       icon: 'fa-folder-open',
@@ -450,10 +307,17 @@ function renderInsights(analytics, filters) {
   narrativeContainer.innerHTML = `
     <p class="mb-0">
       <strong>Lectura operativa:</strong> ${escapeHtml(pressure)}
-      ${analytics.overdue > 0 ? ` Hay ${analytics.overdue} incidencias vencidas que merecen priorizacion.` : ' No hay incidencias vencidas dentro del filtro seleccionado.'}
+      ${analytics.overdue > 0 ? ` Hay ${analytics.overdue} incidencias vencidas que merecen priorización.` : ' No hay incidencias vencidas dentro del filtro seleccionado.'}
       ${rangeLabel ? ` Periodo analizado: ${escapeHtml(rangeLabel)}.` : ''}
     </p>
   `;
+}
+
+function buildRangeLabel(filters) {
+  if (filters.startDate && filters.endDate) return `Del ${filters.startDate} al ${filters.endDate}`;
+  if (filters.startDate) return `Desde el ${filters.startDate}`;
+  if (filters.endDate) return `Hasta el ${filters.endDate}`;
+  return '';
 }
 
 function renderCharts(analytics) {
@@ -462,9 +326,9 @@ function renderCharts(analytics) {
   configureChartDefaults();
   destroyCharts();
   safeRenderChart(() => renderMonthlyChart(analytics.monthlyTrend));
-  safeRenderChart(() => renderPriorityChart(analytics.countsByPriority));
+  safeRenderChart(() => renderPriorityChart(analytics.countsByPriority || {}));
   safeRenderChart(() => renderResolutionRateChart(analytics.monthlyTrend));
-  safeRenderChart(() => renderAverageTimeChart(analytics.categoryAverageResolution));
+  safeRenderChart(() => renderAverageTimeChart(analytics.categoryAverageResolution || {}));
 }
 
 function configureChartDefaults() {
@@ -497,7 +361,7 @@ function renderMonthlyChart(trend) {
   const canvas = document.getElementById('graficoMesTipo');
   if (!canvas) return;
 
-  if (!trend.months.length) {
+  if (!trend.months || !trend.months.length) {
     renderEmptyCanvas(canvas, 'Sin incidencias para graficar en el periodo');
     return;
   }
@@ -559,7 +423,7 @@ function renderResolutionRateChart(trend) {
   const canvas = document.getElementById('graficoTasa');
   if (!canvas) return;
 
-  if (!trend.months.length) {
+  if (!trend.months || !trend.months.length) {
     renderEmptyCanvas(canvas, 'Sin tasa de resolución para el filtro actual');
     return;
   }
@@ -568,6 +432,7 @@ function renderResolutionRateChart(trend) {
     value > 0 ? Math.round((Number(trend.resolved[index] || 0) / Number(value)) * 100) : 0
   );
   const ctx = canvas.getContext('2d');
+  if (!ctx) return;
   const gradient = ctx.createLinearGradient(0, 0, 0, 240);
   gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
   gradient.addColorStop(1, 'rgba(16, 185, 129, 0.01)');
@@ -588,20 +453,20 @@ function renderResolutionRateChart(trend) {
         pointBorderColor: CHART_COLORS.success,
         pointBorderWidth: 2,
         pointHoverRadius: 6,
-        tension: 0.3,
+        lineTension: 0.3,
       }],
     },
     options: {
       ...CHART_DEFAULTS,
       scales: {
         yAxes: [{
-          ticks: { min: 0, max: 100, callback: (value) => `${value}%` },
+          ticks: { min: 0, callback: (value) => `${value}%` }, // Eliminado el max: 100 para evitar recortes cuando la tasa supera el 100%
           gridLines: { color: 'rgba(0,0,0,0.04)' },
         }],
         xAxes: [{ gridLines: { display: false } }],
       },
       legend: { display: false },
-      tooltips: { callbacks: { label: (ctx) => `${ctx.yLabel}%` } },
+      tooltips: { callbacks: { label: (tooltipCtx) => `${tooltipCtx.yLabel}%` } },
     },
   });
 }
@@ -625,7 +490,7 @@ function renderAverageTimeChart(categoryAverageResolution) {
       labels: entries.map(([label]) => formatCatalogLabel(label)),
       datasets: [{
         label: 'Dias promedio',
-        data: entries.map(([, value]) => Number(value.toFixed(1))),
+        data: entries.map(([, value]) => Number(Number(value).toFixed(1))),
         backgroundColor: CHART_COLORS.palette.slice(0, entries.length),
         borderRadius: 4,
         borderSkipped: false,
@@ -655,8 +520,8 @@ function renderEmptyCanvas(canvas, message) {
 }
 
 function renderRankings(analytics) {
-  renderCityRanking(analytics.topCities);
-  renderCategoryRanking(analytics.countsByCategory, analytics.total);
+  renderCityRanking(analytics.topCities || []);
+  renderCategoryRanking(analytics.countsByCategory || {}, analytics.total);
 }
 
 function renderCityRanking(cities) {
@@ -719,9 +584,9 @@ function renderEfficiency(analytics) {
 
   const indicators = [
     { label: 'Tasa de resolución', value: `${analytics.resolutionRate}%`, icon: 'fa-percentage', iconClass: 'icon-success' },
-    { label: 'Tiempo promedio', value: `${analytics.averageResolutionDays.toFixed(1)}d`, icon: 'fa-stopwatch', iconClass: 'icon-warning' },
+    { label: 'Tiempo promedio', value: `${Number(analytics.averageResolutionDays || 0).toFixed(1)}d`, icon: 'fa-stopwatch', iconClass: 'icon-warning' },
     { label: 'Activas', value: analytics.active, icon: 'fa-exclamation-triangle', iconClass: 'icon-danger' },
-    { label: 'Ingreso 7 dias', value: analytics.recentSevenDays, icon: 'fa-wave-square', iconClass: 'icon-info' },
+    { label: 'Ingreso 7 días', value: analytics.recentSevenDays, icon: 'fa-wave-square', iconClass: 'icon-info' },
   ];
 
   container.innerHTML = indicators.map((item) => `
@@ -739,32 +604,33 @@ function renderSummary(analytics) {
   const tfoot = document.getElementById('tablaResumenTotal');
   if (!tbody || !tfoot) return;
 
-  if (!analytics.summaryRows.length) {
+  if (!analytics.summaryRows || !analytics.summaryRows.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Sin datos para mostrar.</td></tr>';
   } else {
     tbody.innerHTML = analytics.summaryRows.map((row) => `
       <tr>
-        <td><strong>${escapeHtml(row.label)}</strong></td>
+        <td><strong>${escapeHtml(row.category)}</strong></td>
         <td class="text-center"><span class="badge badge-pending px-2 py-1">${row.pending}</span></td>
-        <td class="text-center"><span class="badge badge-progress px-2 py-1">${row.progress}</span></td>
+        <td class="text-center"><span class="badge badge-progress px-2 py-1">${Math.max(row.total - row.pending - row.resolved, 0)}</span></td>
         <td class="text-center"><span class="badge badge-resolved px-2 py-1">${row.resolved}</span></td>
         <td class="text-center font-weight-bold">${row.total}</td>
         <td>
           <div class="reports-rate-bar">
             <div class="progress">
-              <div class="progress-fill" style="width:${row.rate}%;"></div>
+              <div class="progress-fill" style="width:${row.resolution_rate}%;"></div>
             </div>
-            <span>${row.rate}%</span>
+            <span>${row.resolution_rate}%</span>
           </div>
         </td>
       </tr>`).join('');
   }
 
+  const inProgress = Math.max(analytics.total - analytics.active - analytics.resolved - analytics.closed, 0);
   tfoot.innerHTML = `
     <tr>
       <td><strong>TOTAL</strong></td>
       <td class="text-center font-weight-bold">${analytics.active}</td>
-      <td class="text-center font-weight-bold">${Math.max(analytics.total - analytics.active - analytics.resolved - analytics.closed, 0)}</td>
+      <td class="text-center font-weight-bold">${inProgress}</td>
       <td class="text-center font-weight-bold">${analytics.resolved + analytics.closed}</td>
       <td class="text-center font-weight-bold">${analytics.total}</td>
       <td class="font-weight-bold">${analytics.resolutionRate}%</td>
@@ -789,32 +655,60 @@ function renderAppliedFilterFeedback(filters, total) {
   globalThis.setTimeout(() => alertDiv.classList.add('d-none'), 2500);
 }
 
-function exportFilteredIncidentsCsv() {
-  const rows = [
-    ['Código', 'Título', 'Categoría', 'Prioridad', 'Estado', 'Zona', 'Territorio', 'Fecha', 'Fecha resolución'],
-    ...state.filteredIncidents.map((incident) => [
-      incident.code || `#${incident.id}`,
-      incident.title || '',
-      formatCatalogLabel(incident.category?.name || incident.subcategory?.name || ''),
-      formatCatalogLabel(incident.priority?.name || ''),
-      formatCatalogLabel(incident.state?.name || ''),
-      incident.zone_name || incident.zoneName || '',
-      incident.territorial_unit?.full_path || incident.territorialUnit?.full_path || incident.territorial_unit?.name || '',
-      incident.created_at || '',
-      incident.resolution_date || incident.resolutionDate || '',
-    ]),
-  ];
+async function exportFilteredIncidentsCsv() {
+  const filters = getFilters();
+  showPageLoading('Exportando datos', 'Recopilando registros para el CSV...');
+  
+  try {
+    const incidents = [];
+    let currentPage = 1;
+    let lastPage = 1;
+    const requestParams = { per_page: 100, page: currentPage };
+    if (filters.startDate) requestParams.start_date = filters.startDate;
+    if (filters.endDate) requestParams.end_date = filters.endDate;
+    if (filters.category) requestParams.category_id = state.categories.find(c => c.name === filters.category)?.id;
+    if (filters.state) requestParams.state_filter = filters.state;
 
-  const csv = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `reporte-incidencias-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+    do {
+      requestParams.page = currentPage;
+      const response = await listIncidents(requestParams);
+      const pageData = Array.isArray(response?.data) ? response.data : [];
+      incidents.push(...pageData);
+
+      lastPage = Number(response?.meta?.last_page || response?.last_page || currentPage);
+      currentPage += 1;
+    } while (currentPage <= lastPage);
+
+    const rows = [
+      ['Código', 'Título', 'Categoría', 'Prioridad', 'Estado', 'Zona', 'Territorio', 'Fecha', 'Fecha resolución'],
+      ...incidents.map((incident) => [
+        incident.code || `#${incident.id}`,
+        incident.title || '',
+        formatCatalogLabel(incident.category?.name || incident.subcategory?.name || ''),
+        formatCatalogLabel(incident.priority?.name || ''),
+        formatCatalogLabel(incident.state?.name || ''),
+        incident.zone_name || incident.zoneName || '',
+        incident.territorial_unit?.full_path || incident.territorialUnit?.full_path || incident.territorial_unit?.name || '',
+        incident.created_at || '',
+        incident.resolution_date || incident.resolutionDate || '',
+      ]),
+    ];
+
+    const csv = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-incidencias-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    handleBackendErrors(error, null, document.getElementById('alertaGlobal'));
+  } finally {
+    hidePageLoading();
+  }
 }
 
 function exportPrintableReport() {
@@ -824,104 +718,4 @@ function exportPrintableReport() {
 export function escapeCsvValue(value) {
   const normalized = String(value ?? '').replaceAll('"', '""');
   return `"${normalized}"`;
-}
-
-export function parseDate(value) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-export function startOfDay(value) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-export function endOfDay(value) {
-  const date = new Date(value);
-  date.setHours(23, 59, 59, 999);
-  return date;
-}
-
-export function normalizeText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toUpperCase();
-}
-
-export function normalizeState(value) {
-  return normalizeText(value).replace(/\s+/g, '_');
-}
-
-export function equalsNormalized(left, right) {
-  return normalizeText(left) === normalizeText(right);
-}
-
-export function includesNormalized(value, expected) {
-  return normalizeText(value).includes(normalizeText(expected));
-}
-
-function isActiveState() {
-  return state.states.filter((s) => s.is_initial_state).map((s) => normalizeState(s.name));
-}
-
-function isResolvedState() {
-  return state.states.filter((s) => s.is_final_state).map((s) => normalizeState(s.name));
-}
-
-function isClosedState() {
-  return [];
-}
-
-function isFinishedState() {
-  return isResolvedState();
-}
-
-function matchesStateCategory(stateCode, validCodes) {
-  return validCodes.includes(stateCode) || validCodes.includes(stateCode.replaceAll('_', ' '));
-}
-
-export function monthKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${year}-${month}`;
-}
-
-export function formatMonthLabel(value) {
-  const [year, month] = String(value).split('-');
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString('es-EC', { month: 'short', year: 'numeric' });
-}
-
-export function daysBetween(start, end) {
-  const diff = end.getTime() - start.getTime();
-  return Math.max(diff / (1000 * 60 * 60 * 24), 0);
-}
-
-export function territoryTail(path) {
-  const parts = String(path || '')
-    .split('/')
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-  return parts.length ? parts[parts.length - 1] : 'Sin territorio';
-}
-
-export function getTopEntry(collection) {
-  const entries = Object.entries(collection || {}).sort((left, right) => Number(right[1]) - Number(left[1]));
-  if (!entries.length) return null;
-
-  return {
-    label: formatCatalogLabel(entries[0][0]),
-    count: Number(entries[0][1]),
-  };
-}
-
-export function buildRangeLabel(filters) {
-  const values = [];
-  if (filters.startDate) values.push(`desde ${filters.startDate}`);
-  if (filters.endDate) values.push(`hasta ${filters.endDate}`);
-  return values.join(' ');
 }

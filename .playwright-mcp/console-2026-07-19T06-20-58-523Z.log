@@ -1,0 +1,61 @@
+[   81303ms] [ERROR] Access to script at 'file:///C:/js/layout/layout.js?v=44' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/layout/layout.js?v=44:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/fontawesome-free/css/all.min.css:0
+[   81303ms] [ERROR] Access to script at 'file:///C:/js/modules/reports/presentation/reports-page.js?v=28' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/modules/reports/presentation/reports-page.js?v=28:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/css/OverlayScrollbars.min.css:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/css/adminlte.min.css:0
+[   81303ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/app.css?v=63:0
+[   81303ms] [ERROR] Access to manifest at 'file:///C:/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/manifest.json:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/pages/reports.css?v=2:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/js/core/protected-page-guard.js?v=5:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/SGI_LOGO.png:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/jquery/jquery.min.js:0
+[   81304ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/bootstrap/js/bootstrap.bundle.min.js:0
+[   81305ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js:0
+[   81305ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/chart.js/Chart.min.js:0
+[   81305ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/js/adminlte.min.js:0
+[   81852ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/favicon.png:0
+[   92445ms] [ERROR] Access to fetch at 'file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/.git/index' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[   92445ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/.git/index:0
+[  133872ms] [ERROR] Access to script at 'file:///C:/js/layout/layout.js?v=44' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  133872ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/layout/layout.js?v=44:0
+[  133872ms] [ERROR] Access to script at 'file:///C:/js/modules/reports/presentation/reports-page.js?v=28' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/modules/reports/presentation/reports-page.js?v=28:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/fontawesome-free/css/all.min.css:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/css/OverlayScrollbars.min.css:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/css/adminlte.min.css:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/app.css?v=63:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/pages/reports.css?v=2:0
+[  133873ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/js/core/protected-page-guard.js?v=5:0
+[  133874ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/SGI_LOGO.png:0
+[  133878ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/jquery/jquery.min.js:0
+[  133878ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/bootstrap/js/bootstrap.bundle.min.js:0
+[  133878ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js:0
+[  133878ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/chart.js/Chart.min.js:0
+[  133878ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/js/adminlte.min.js:0
+[  133879ms] [ERROR] Access to manifest at 'file:///C:/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  133879ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/manifest.json:0
+[  133881ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/favicon.png:0
+[  133887ms] [ERROR] Access to fetch at 'file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/.git/index' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  133888ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/.git/index:0
+[  341725ms] [ERROR] Access to script at 'file:///C:/js/layout/layout.js?v=44' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  341725ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/layout/layout.js?v=44:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/fontawesome-free/css/all.min.css:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/css/OverlayScrollbars.min.css:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/css/adminlte.min.css:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/app.css?v=63:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/css/pages/reports.css?v=2:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/SGI_LOGO.png:0
+[  341726ms] [ERROR] Access to script at 'file:///C:/js/modules/reports/presentation/reports-page.js?v=28' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:0
+[  341726ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/js/modules/reports/presentation/reports-page.js?v=28:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/js/core/protected-page-guard.js?v=5:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/jquery/jquery.min.js:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/bootstrap/js/bootstrap.bundle.min.js:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/plugins/chart.js/Chart.min.js:0
+[  341727ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/dist/js/adminlte.min.js:0
+[  341727ms] [ERROR] Access to manifest at 'file:///C:/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. @ file:///C:/Users/Damian/Documents/Desarrollo%20Web/georeferenced-incident-management/frontend/app/html/reports.html:17
+[  341729ms] [ERROR] Failed to load resource: net::ERR_FAILED @ file:///C:/manifest.json:0
+[  341813ms] [ERROR] Failed to load resource: net::ERR_FILE_NOT_FOUND @ file:///C:/img/favicon.png:0

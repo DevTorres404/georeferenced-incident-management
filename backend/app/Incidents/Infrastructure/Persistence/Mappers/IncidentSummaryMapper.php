@@ -47,7 +47,7 @@ final class IncidentSummaryMapper
                 ? new CategorySummaryData((int) $incident->subcategory->id, $incident->subcategory->name)
                 : null,
             priority: $incident->relationLoaded('priority') && $incident->priority
-                ? new PrioritySummaryData((int) $incident->priority->id, $incident->priority->name, (int) $incident->priority->level)
+                ? new PrioritySummaryData((int) $incident->priority->id, $incident->priority->name, (int) $incident->priority->level, $incident->priority->color)
                 : null,
             territorialUnit: $incident->relationLoaded('territorialUnit') && $incident->territorialUnit
                 ? new TerritorialUnitSummaryData(

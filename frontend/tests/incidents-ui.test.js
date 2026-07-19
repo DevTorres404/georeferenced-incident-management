@@ -40,6 +40,25 @@ describe('A. incidents-ui.js — pure functions', () => {
       expect(formatCatalogLabel('RESUELTA')).toBe('Resuelta');
       expect(formatCatalogLabel('CERRADA')).toBe('Cerrada');
       expect(formatCatalogLabel('RECHAZADA')).toBe('Rechazada');
+      expect(formatCatalogLabel('REABIERTA')).toBe('Reabierta');
+    });
+
+    it('normalizes spacing, case and accents before formatting known state labels', async () => {
+      const { formatCatalogLabel, normalizeCatalogCode } = await import('../app/js/modules/incidents/presentation/incidents-ui.js');
+
+      expect(normalizeCatalogCode('EN_PROGRESO')).toBe('EN_PROGRESO');
+      expect(normalizeCatalogCode('  En   progreso  ')).toBe('EN_PROGRESO');
+      expect(normalizeCatalogCode('En revisión')).toBe('EN_REVISION');
+      expect(formatCatalogLabel('  En   progreso  ')).toBe('En progreso');
+      expect(formatCatalogLabel('En revisión')).toBe('En revisión');
+    });
+
+    it('renders unknown future state codes as readable labels', async () => {
+      const { formatCatalogLabel } = await import('../app/js/modules/incidents/presentation/incidents-ui.js');
+      const label = formatCatalogLabel('PENDIENTE_VALIDACION');
+
+      expect(label).toBe('Pendiente Validacion');
+      expect(label).not.toContain('_');
     });
 
     it('converts ALL_UPPERCASE to Title Case', async () => {
@@ -176,6 +195,17 @@ describe('A. incidents-ui.js — pure functions', () => {
       expect(countByState(incidents, ['NUEVA'])).toBe(2);
       expect(countByState(incidents, ['EN_REVISION'])).toBe(1);
       expect(countByState(incidents, ['RESUELTA', 'CERRADA'])).toBe(1);
+    });
+
+    it('matches canonical and display-name state variants', async () => {
+      const { countByState } = await import('../app/js/modules/incidents/presentation/incidents-ui.js');
+      const incidents = [
+        { state: { name: 'EN_PROGRESO' } },
+        { state: { name: ' En progreso ' } },
+        { state: { name: 'en   progreso' } },
+      ];
+
+      expect(countByState(incidents, ['EN_PROGRESO'])).toBe(3);
     });
 
     it('returns 0 for empty incidents array', async () => {

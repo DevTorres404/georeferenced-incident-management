@@ -66,6 +66,7 @@ export async function initIncidentsPage() {
     const isCitizenOnly = !userHasRole(state.currentUser, 'ADMIN') && 
                           !userHasRole(state.currentUser, 'SUPERVISOR') && 
                           !userHasRole(state.currentUser, 'OPERADOR');
+
     state.isCitizenOnly = isCitizenOnly;
     
     if (isCitizenOnly) {
@@ -350,83 +351,44 @@ function initDataTable(state) {
   });
 
   bindSearchInput(state);
-  fetchKpis(state);
-}
-
-function fetchKpis(state) {
-  const params = new URLSearchParams();
-
-  if (state.activeScopeFilter === 'mine') {
-    params.set('mine', '1');
-  } else if (state.activeScopeFilter === 'assigned') {
-    params.set('assigned_to_me', '1');
-  }
-
-  request(`/incidents/kpi-counts?${params.toString()}`)
-    .then((response) => {
-      if (response.data) {
-        updateKpiCounters(response.data);
-      }
-    })
-    .catch(() => {
-      // KPIs no críticos — si fallan no bloquean la tabla
-    });
 }
 
 function renderStateFilters(state) {
-  const container = document.querySelector('.inc-kpi-grid');
-  if (!container) return;
+  const select = document.getElementById('filterState');
+  const label = document.querySelector('label[for="filterState"]');
+  if (!select) return;
 
-  const total = state.states.length > 0 ? null : 0;
+  const isAdmin = userHasRole(state.currentUser, 'ADMIN');
+  const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin;
 
-  let htmlStr = `
-    <div class="inc-kpi-card active filtro-btn" data-filtro="todos">
-      <div class="inc-kpi-content">
-        <span class="inc-kpi-label">Todas las Incidencias</span>
-        <strong class="inc-kpi-number" id="cnt-todos">${total !== null ? total : '0'}</strong>
-      </div>
-      <div class="inc-kpi-icon"><i class="fas fa-layer-group"></i></div>
-    </div>
-  `;
+  if (isOperator) {
+    select.classList.add('d-none');
+    if (label) label.classList.add('d-none');
+    return;
+  } else {
+    select.classList.remove('d-none');
+    if (label) label.classList.remove('d-none');
+  }
+
+  // Limpiar opciones previas excepto la primera (Todos los estados)
+  select.innerHTML = '<option value="todos">Todos los estados</option>';
 
   state.states.forEach((s) => {
-    let icon = 'fas fa-cogs';
-    if (s.is_initial_state) icon = 'fas fa-exclamation-circle';
-    else if (s.is_final_state) icon = 'fas fa-check-circle';
-
-    const normalizedName = String(s.name || '').toUpperCase().replaceAll('_', ' ');
-    if (normalizedName === 'EN REVISION') icon = 'fas fa-search';
-    if (normalizedName === 'RECHAZADA') icon = 'fas fa-times-circle';
-
-    htmlStr += `
-      <div class="inc-kpi-card filtro-btn" data-filtro="${escapeHtml(s.id)}">
-        <div class="inc-kpi-content">
-          <span class="inc-kpi-label">${escapeHtml(formatCatalogLabel(s.name))}</span>
-          <strong class="inc-kpi-number" style="color: ${escapeHtml(s.color || '#6c757d')}" id="cnt-state-${escapeHtml(s.id)}">0</strong>
-        </div>
-        <div class="inc-kpi-icon" style="color: ${escapeHtml(s.color || '#6c757d')}"><i class="${icon}"></i></div>
-      </div>
-    `;
+    const option = document.createElement('option');
+    option.value = escapeHtml(s.id);
+    option.textContent = escapeHtml(formatCatalogLabel(s.name));
+    select.appendChild(option);
   });
 
   // Filtro "En revisión" (solicitudes pendientes)
-  htmlStr += `
-      <div class="inc-kpi-card filtro-btn${state.activePendingStateRequest ? ' active' : ''}" data-filtro="pending_review">
-        <div class="inc-kpi-content">
-          <span class="inc-kpi-label">Cambios pendientes</span>
-          <strong class="inc-kpi-number text-warning" id="cnt-pending-review">0</strong>
-        </div>
-        <div class="inc-kpi-icon text-warning"><i class="fas fa-clock"></i></div>
-      </div>
-  `;
+  const pendingOption = document.createElement('option');
+  pendingOption.value = 'pending_review';
+  pendingOption.textContent = 'Cambios pendientes';
+  select.appendChild(pendingOption);
 
-  container.innerHTML = htmlStr;
-
-  if (!container.dataset.eventsBound) {
-    delegateEvent(container, '.filtro-btn', 'click', (e, button) => {
-      container.querySelectorAll('.filtro-btn').forEach((item) => item.classList.remove('active'));
-      button.classList.add('active');
-      const filtro = String(button.dataset.filtro || '');
+  if (!select.dataset.eventsBound) {
+    select.addEventListener('change', (e) => {
+      const filtro = e.target.value;
       if (filtro === 'pending_review') {
         state.activePendingStateRequest = true;
         state.activeStateFilter = 'todos';
@@ -438,7 +400,7 @@ function renderStateFilters(state) {
         state.dataTable.ajax.reload();
       }
     });
-    container.dataset.eventsBound = 'true';
+    select.dataset.eventsBound = 'true';
   }
 }
 
@@ -484,59 +446,72 @@ export function storeSearch(query) {
 }
 
 function configureScopeFilters(state) {
-  const container = document.getElementById('incidentScopeFilters');
+  const container = document.getElementById('incidentScopeSection');
   const context = document.getElementById('incidentScopeContext');
   if (!container) return;
 
   const isAdmin = userHasRole(state.currentUser, 'ADMIN');
   const isSupervisor = userHasRole(state.currentUser, 'SUPERVISOR') && !isAdmin;
   const isOperator = userHasRole(state.currentUser, 'OPERADOR') && !isAdmin;
+  
+  const territoryName = state.currentUser?.operational_zone?.name || state.currentUser?.zone?.name || state.currentUser?.territorial_unit?.name || state.currentUser?.territory?.name || state.currentUser?.territory || '';
+  const supervisorLabel = territoryName ? territoryName : 'Zona Operativa';
+
   const options = isSupervisor
     ? [
-        { value: 'role', label: 'Mi zona', icon: 'fa-map-marker-alt' },
+        { value: 'role', label: supervisorLabel },
       ]
     : isOperator
-      ? [{ value: 'assigned', label: 'Asignadas a mí', icon: 'fa-user-check' }]
+      ? [{ value: 'assigned', label: 'Asignadas a mí' }]
       : isAdmin
         ? [
-            { value: 'role', label: 'Todas', icon: 'fa-globe-americas' },
-            { value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' },
+            { value: 'role', label: 'Todas las incidencias' },
+            { value: 'mine', label: 'Mis reportes' },
           ]
-        : [{ value: 'mine', label: 'Mis reportes', icon: 'fa-user-edit' }];
+        : [{ value: 'mine', label: 'Mis reportes' }];
 
-  state.activeScopeFilter = options[0].value;
-  container.innerHTML = options.map((option, index) => html`
-    <button type="button" class="btn btn-sm ${index === 0 ? 'btn-primary active' : 'btn-outline-primary'} incident-scope-btn"
-            data-scope="${option.value}">
-      <i class="fas ${option.icon} mr-1"></i>${option.label}
-    </button>`).join('');
+  if (options.length === 1) {
+    state.activeScopeFilter = options[0].value;
+    container.innerHTML = `
+      <label class="mb-0">Alcance:</label>
+      <span class="badge badge-light border px-2 py-1 text-muted" style="font-size: 0.85rem;">
+        <i class="fas fa-map-marker-alt mr-1 text-primary"></i>${options[0].label}
+      </span>
+    `;
+  } else {
+    container.innerHTML = `
+      <label for="filterScope" class="mb-0">Alcance:</label>
+      <select class="form-control form-control-sm" id="filterScope" style="width:160px;"></select>
+    `;
+    const select = document.getElementById('filterScope');
+    options.forEach((opt) => {
+      const option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      select.appendChild(option);
+    });
 
-  if (!container.dataset.eventsBound) {
-    delegateEvent(container, '.incident-scope-btn', 'click', (e, button) => {
-      container.querySelectorAll('.incident-scope-btn').forEach((item) => {
-        item.classList.remove('active', 'btn-primary');
-        item.classList.add('btn-outline-primary');
-      });
-      button.classList.add('active', 'btn-primary');
-      button.classList.remove('btn-outline-primary');
-      state.activeScopeFilter = button.dataset.scope || 'role';
+    state.activeScopeFilter = options[0].value;
+    select.value = state.activeScopeFilter;
+
+    select.addEventListener('change', (e) => {
+      state.activeScopeFilter = e.target.value;
       if (state.dataTable) {
         state.dataTable.ajax.reload();
       }
-      fetchKpis(state);
     });
-    container.dataset.eventsBound = 'true';
   }
 
-  if (!context) return;
-  if (isSupervisor) {
-    context.textContent = 'La vista operativa está limitada a tu zona asignada.';
-  } else if (isOperator) {
-    context.textContent = 'Solo puedes gestionar incidencias asignadas a ti.';
-  } else if (isAdmin) {
-    context.textContent = 'Vista administrativa nacional.';
-  } else {
-    context.textContent = 'Solo puedes consultar tus reportes.';
+  if (context) {
+    if (isSupervisor) {
+      context.textContent = 'La vista operativa está limitada a tu zona asignada.';
+    } else if (isOperator) {
+      context.textContent = 'Solo puedes gestionar incidencias asignadas a ti.';
+    } else if (isAdmin) {
+      context.textContent = 'Vista administrativa nacional.';
+    } else {
+      context.textContent = 'Solo puedes consultar tus reportes.';
+    }
   }
 }
 
@@ -550,15 +525,10 @@ function userHasRole(user, roleCode) {
 }
 
 function bindPriorityFilters(state) {
-  document.querySelectorAll('.priority-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      document.querySelectorAll('.priority-btn').forEach((item) => {
-        item.classList.remove('active', 'btn-dark');
-        item.classList.add('bg-white');
-      });
-      button.classList.add('active', 'btn-dark');
-      button.classList.remove('bg-white');
-      const filterValue = String(button.dataset.prioridad || '').toLowerCase();
+  const prioritySelect = document.getElementById('filterPriority');
+  if (prioritySelect && !prioritySelect.dataset.eventsBound) {
+    prioritySelect.addEventListener('change', (e) => {
+      const filterValue = String(e.target.value || '').toLowerCase();
       if (filterValue === 'todas') {
         state.activePriorityFilter = 'todas';
       } else {
@@ -568,7 +538,36 @@ function bindPriorityFilters(state) {
         state.dataTable.ajax.reload();
       }
     });
-  });
+    prioritySelect.dataset.eventsBound = 'true';
+  }
+
+  const btnLimpiar = document.getElementById('btnLimpiarFiltros');
+  if (btnLimpiar && !btnLimpiar.dataset.eventsBound) {
+    btnLimpiar.addEventListener('click', () => {
+      const scopeSelect = document.getElementById('filterScope');
+      if (scopeSelect) {
+        scopeSelect.selectedIndex = 0;
+        state.activeScopeFilter = scopeSelect.value;
+      }
+      
+      const stateSelect = document.getElementById('filterState');
+      if (stateSelect) {
+        stateSelect.value = 'todos';
+        state.activeStateFilter = 'todos';
+        state.activePendingStateRequest = false;
+      }
+
+      if (prioritySelect) {
+        prioritySelect.value = 'todas';
+        state.activePriorityFilter = 'todas';
+      }
+      
+      if (state.dataTable) {
+        state.dataTable.ajax.reload();
+      }
+    });
+    btnLimpiar.dataset.eventsBound = 'true';
+  }
 }
 
 function configureRoleActions(state) {
@@ -624,14 +623,7 @@ function openDeleteModal(state, incidentId, code) {
   globalThis.jQuery?.('#modalEliminar').modal('show');
 }
 
-function updateKpiCounters(kpiCounts) {
-  let total = 0;
-  for (const [code, count] of Object.entries(kpiCounts)) {
-    total += count;
-    setText(`cnt-state-${code}`, count);
-  }
-  setText('cnt-todos', total);
-}
+
 
 function renderErrorRow(message) {
   const tbody = document.getElementById('tablaBody');

@@ -9,29 +9,36 @@ function escapeHtml(value) {
     .replaceAll('\'', '&#39;');
 }
 
+function normalizeCatalogCode(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .trim()
+    .replace(/[\s_]+/g, '_')
+    .toUpperCase();
+}
+
 function formatCatalogLabel(value) {
   if (!value) return '-';
 
   const exactMatches = {
     'EN_REVISION': 'En revisión',
-    'EN REVISION': 'En revisión',
     'EN_PROGRESO': 'En progreso',
-    'EN PROGRESO': 'En progreso',
     'EN_ATENCION': 'En atención',
-    'EN ATENCION': 'En atención',
     'NUEVA': 'Nueva',
     'PENDIENTE': 'Pendiente',
     'RESUELTA': 'Resuelta',
     'CERRADA': 'Cerrada',
     'RECHAZADA': 'Rechazada',
+    'REABIERTA': 'Reabierta',
   };
 
-  const upperValue = String(value).toUpperCase().trim();
-  if (exactMatches[upperValue]) {
-    return exactMatches[upperValue];
+  const normalizedCode = normalizeCatalogCode(value);
+  if (exactMatches[normalizedCode]) {
+    return exactMatches[normalizedCode];
   }
 
-  const normalized = String(value).replaceAll('_', ' ').trim();
+  const normalized = String(value).replace(/[\s_]+/g, ' ').trim();
 
   if (/^[A-Z0-9\s]+$/.test(normalized)) {
     return normalized
@@ -118,8 +125,8 @@ function getStateHexColor(stateName) {
 }
 
 function countByState(incidents, names) {
-  const expected = new Set(names.map((item) => item.toUpperCase()));
-  return incidents.filter((incident) => expected.has(String(incident.state?.name || '').toUpperCase())).length;
+  const expected = new Set(names.map(normalizeCatalogCode));
+  return incidents.filter((incident) => expected.has(normalizeCatalogCode(incident.state?.name))).length;
 }
 
 function showGlobalAlert(message, type = 'success') {
@@ -165,6 +172,7 @@ export {
   getPriorityHexColor,
   getStateBadgeClass,
   getStateHexColor,
+  normalizeCatalogCode,
   showGlobalAlert,
   showPageLoading,
   hidePageLoading,

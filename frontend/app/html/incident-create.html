@@ -30,11 +30,11 @@
                 <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span> </a>
             <div id="mainSidebar"></div>
         </aside>
-        <div class="content-wrapper incident-create-wrapper">
+        <div class="content-wrapper">
             <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
                 <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i> </div>
             </div>
-            <div class="content-header incident-create-header">
+            <div class="content-header">
                 <div class="container-fluid">
                     <div class="row align-items-center">
                         <div class="col">
@@ -51,9 +51,12 @@
                 <div class="container-fluid">
                     <div id="alertaFormulario" class="d-none" role="alert"></div>
                     <form id="formNuevaIncidencia" novalidate>
-                        <div class="incident-create-shell">
-                            <section class="incident-map-pane" aria-label="Mapa de selección de ubicación">
-                                <div class="incident-map-toolbar">
+                        <div class="row">
+                            <div class="col-xl-8 col-lg-7 mb-4">
+                                <div class="card shadow-sm h-100">
+                                    <div class="card-body p-0">
+                                        <section class="incident-map-pane" aria-label="Mapa de selección de ubicación">
+                                            <div class="incident-map-toolbar">
                                     <div> <span class="text-uppercase text-muted small font-weight-bold">Ubicación de la
                                             incidencia</span>
                                         <h2 class="h5 mb-1">Marca el punto exacto en el mapa</h2>
@@ -76,10 +79,15 @@
                                     <div class="location-metric"> <span>Longitud</span> <strong
                                             id="selectedLongitude">-</strong> </div>
                                 </div>
-                            </section>
-                            <aside class="incident-create-assistant" aria-label="Asistente de registro">
-                                <div class="assistant-card">
-                                    <div class="assistant-head">
+                                        </section>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-4 col-lg-5 mb-4">
+                                <div class="card shadow-sm h-100">
+                                    <div class="card-body">
+                                        <aside class="incident-create-assistant" aria-label="Asistente de registro">
+                                            <div class="assistant-head">
                                         <div> <span class="text-uppercase text-primary small font-weight-bold">Registro
                                                 guiado</span>
                                             <h2 class="h5 mb-0">Nueva incidencia</h2>
@@ -215,10 +223,11 @@
                                                 class="fas fa-arrow-right ml-1"></i> </button> <button type="submit"
                                             class="btn btn-success d-none" id="btnRegistrar"> <span
                                                 id="spinnerRegistrar"
-                                                class="spinner-border spinner-border-sm mr-2 d-none" role="status"
-                                                aria-hidden="true"></span> Registrar incidencia </button> </div>
+                                            </div>
+                                        </aside>
+                                    </div>
                                 </div>
-                            </aside>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -232,8 +241,8 @@
         <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
         <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
         <script src="/dist/js/adminlte.min.js"></script>
-        <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous">
-        <script type="module" src="/js/layout/layout.js?v=43"></script>
+        <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
+        <script type="module" src="/js/layout/layout.js?v=44"></script>
         <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=40"></script>
     </div>
 </body>

@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { normalizeCatalogCode } from '../app/js/modules/incidents/presentation/incidents-ui.js';
 
 // ── Global mocks (hoisted before any import) ─────────────────────
 
@@ -41,13 +42,12 @@ vi.hoisted(() => {
 
 vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   request: vi.fn(),
+  requestBackend: vi.fn(),
   requestAfter: vi.fn(),
 }));
 
-vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
-  escapeHtml: (v) => String(v ?? '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'),
-  formatCatalogLabel: (v) => v || '-',
+vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', async (importOriginal) => ({
+  ...await importOriginal(),
   hidePageLoading: vi.fn(),
   showPageLoading: vi.fn(),
 }));
@@ -58,6 +58,9 @@ vi.mock('../app/js/shared/validators/validation-utils.js', () => ({
   clearFieldError: vi.fn(),
   setupValidationListeners: vi.fn(),
 }));
+
+const nativeDocumentAddEventListener = document.addEventListener.bind(document);
+let domContentLoadedListeners = [];
 
 // ── DOM fixture matching every id reports-page.js looks up ─────
 
@@ -113,17 +116,26 @@ const DOM_FIXTURE = `
 // ── Sample data ─────────────────────────────────────────────────
 
 const sampleStates = [
-  { id: 1, name: 'Nueva', is_initial_state: true, is_final_state: false },
-  { id: 2, name: 'En proceso', is_initial_state: false, is_final_state: false },
-  { id: 3, name: 'Resuelta', is_initial_state: false, is_final_state: true },
-  { id: 4, name: 'Cerrada', is_initial_state: false, is_final_state: false },
+  { id: 1, code: 'NUEVA', name: 'NUEVA', is_initial_state: true, is_final_state: false },
+  { id: 2, code: 'EN_REVISION', name: 'EN_REVISION', is_initial_state: false, is_final_state: false },
+  { id: 3, code: 'EN_PROGRESO', name: 'EN_PROGRESO', is_initial_state: false, is_final_state: false },
+  { id: 4, code: 'RESUELTA', name: 'RESUELTA', is_initial_state: false, is_final_state: false },
+  { id: 5, code: 'CERRADA', name: 'CERRADA', is_initial_state: false, is_final_state: true },
+  { id: 6, code: 'RECHAZADA', name: 'RECHAZADA', is_initial_state: false, is_final_state: true },
+  { id: 7, code: 'REABIERTA', name: 'REABIERTA', is_initial_state: false, is_final_state: false },
+];
+
+const sampleCategories = [
+  { id: 1, name: 'Infraestructura' },
+  { id: 2, name: 'Ruido' },
+  { id: 3, name: 'Higiene' },
 ];
 
 const sampleIncidents = [
   {
     id: 1, code: 'INC-001', title: 'Fuga de agua',
     category: { name: 'Infraestructura' },
-    state: { name: 'Resuelta' },
+    state: { name: 'RESUELTA' },
     priority: { name: 'Crítica' },
     created_at: '2026-01-15T10:00:00Z',
     resolution_date: '2026-01-20T10:00:00Z',
@@ -132,7 +144,7 @@ const sampleIncidents = [
   {
     id: 2, code: 'INC-002', title: 'Bache en calle',
     category: { name: 'Infraestructura' },
-    state: { name: 'Resuelta' },
+    state: { name: 'RESUELTA' },
     priority: { name: 'Alta' },
     created_at: '2026-01-10T10:00:00Z',
     resolution_date: '2026-01-18T10:00:00Z',
@@ -141,7 +153,7 @@ const sampleIncidents = [
   {
     id: 3, code: 'INC-003', title: 'Ruido molesto',
     category: { name: 'Ruido' },
-    state: { name: 'Nueva' },
+    state: { name: 'NUEVA' },
     priority: { name: 'Media' },
     created_at: '2026-02-01T10:00:00Z',
     territorial_unit: { full_path: 'Ecuador / Guayas / Guayaquil' },
@@ -149,7 +161,7 @@ const sampleIncidents = [
   {
     id: 4, code: 'INC-004', title: 'Basura acumulada',
     category: { name: 'Higiene' },
-    state: { name: 'En proceso' },
+    state: { name: 'EN_PROGRESO' },
     priority: { name: 'Alta' },
     created_at: '2026-02-05T10:00:00Z',
     territorial_unit: { full_path: 'Ecuador / Guayas / Guayaquil' },
@@ -157,7 +169,7 @@ const sampleIncidents = [
   {
     id: 5, code: 'INC-005', title: 'Alumbrado público',
     category: { name: 'Infraestructura' },
-    state: { name: 'Cerrada' },
+    state: { name: 'CERRADA' },
     priority: { name: 'Baja' },
     created_at: '2026-01-05T10:00:00Z',
     resolution_date: '2026-01-08T10:00:00Z',
@@ -165,16 +177,159 @@ const sampleIncidents = [
   },
 ];
 
-function mockRequestWith(request, { states, incidents }) {
-  request.mockImplementation((url) => {
-    if (String(url).startsWith('/incidents')) {
-      return Promise.resolve({ data: incidents ?? sampleIncidents, meta: { last_page: 1 } });
+const ACTIVE_STATE_CODES = new Set(['NUEVA', 'PENDIENTE', 'EN_PROGRESO', 'ASIGNADA', 'EN_REVISION', 'ABIERTA']);
+const RESOLVED_STATE_CODES = new Set(['RESUELTA']);
+const CLOSED_STATE_CODES = new Set(['CERRADA', 'RECHAZADA']);
+
+function hasStateCode(incident, stateCodes) {
+  return stateCodes.has(normalizeCatalogCode(incident.state?.name));
+}
+
+function buildReportAnalytics(incidents, totalUniverse) {
+  const resolved = incidents.filter((incident) => hasStateCode(incident, RESOLVED_STATE_CODES)).length;
+  const closed = incidents.filter((incident) => hasStateCode(incident, CLOSED_STATE_CODES)).length;
+  const total = incidents.length;
+
+  const countsByCategory = incidents.reduce((counts, incident) => {
+    const category = incident.category?.name || 'Desconocida';
+    counts[category] = (counts[category] || 0) + 1;
+    return counts;
+  }, {});
+
+  const countsByPriority = incidents.reduce((counts, incident) => {
+    const priority = incident.priority?.name || 'Media';
+    counts[priority] = (counts[priority] || 0) + 1;
+    return counts;
+  }, {});
+
+  const cityCounts = incidents.reduce((counts, incident) => {
+    const city = incident.territorial_unit?.full_path?.split(' / ').pop() || 'Desconocida';
+    counts[city] = (counts[city] || 0) + 1;
+    return counts;
+  }, {});
+
+  const resolutionDaysByCategory = incidents.reduce((groups, incident) => {
+    if (!hasStateCode(incident, RESOLVED_STATE_CODES) || !incident.resolution_date) return groups;
+
+    const category = incident.category?.name || 'Desconocida';
+    const duration = (new Date(incident.resolution_date) - new Date(incident.created_at)) / 86400000;
+    groups[category] = [...(groups[category] || []), duration];
+    return groups;
+  }, {});
+
+  const categoryAverageResolution = Object.fromEntries(
+    Object.entries(resolutionDaysByCategory).map(([category, durations]) => [
+      category,
+      durations.reduce((sum, duration) => sum + duration, 0) / durations.length,
+    ]),
+  );
+
+  const monthKeys = [...new Set(incidents.map((incident) => incident.created_at.slice(0, 7)))].sort();
+  const monthlyTrend = {
+    months: monthKeys,
+    registered: monthKeys.map((month) => incidents.filter((incident) => incident.created_at.startsWith(month)).length),
+    resolved: monthKeys.map((month) => incidents.filter((incident) => (
+      hasStateCode(incident, RESOLVED_STATE_CODES) && incident.resolution_date?.startsWith(month)
+    )).length),
+    pending: monthKeys.map((month) => incidents.filter((incident) => (
+      hasStateCode(incident, ACTIVE_STATE_CODES) && incident.created_at.startsWith(month)
+    )).length),
+  };
+
+  const summaryRows = Object.keys(countsByCategory).map((category) => {
+    const categoryIncidents = incidents.filter((incident) => incident.category?.name === category);
+    const pending = categoryIncidents.filter((incident) => hasStateCode(incident, ACTIVE_STATE_CODES)).length;
+    const categoryResolved = categoryIncidents.filter((incident) => hasStateCode(incident, RESOLVED_STATE_CODES)).length;
+
+    return {
+      category,
+      pending,
+      resolved: categoryResolved,
+      total: categoryIncidents.length,
+      resolution_rate: Math.round((categoryResolved / categoryIncidents.length) * 100),
+    };
+  });
+
+  return {
+    total,
+    totalUniverse,
+    active: incidents.filter((incident) => hasStateCode(incident, ACTIVE_STATE_CODES)).length,
+    critical: incidents.filter((incident) => ['Crítica', 'Critica'].includes(incident.priority?.name)).length,
+    resolutionRate: total > 0 ? Math.round(((resolved + closed) / total) * 100) : 0,
+    averageResolutionDays: total > 0 ? 6.5 : 0,
+    overdue: 0,
+    resolved,
+    closed,
+    recentSevenDays: total > 0 ? 1 : 0,
+    countsByCategory,
+    countsByPriority,
+    topCities: Object.entries(cityCounts).map(([city, count]) => ({
+      city,
+      count,
+      pct: Math.round((count / total) * 100),
+    })),
+    categoryAverageResolution,
+    monthlyTrend,
+    summaryRows,
+  };
+}
+
+function mockRequestWith(backend, { states, incidents }) {
+  const handler = (url) => {
+    const sourceIncidents = incidents ?? sampleIncidents;
+    const requestUrl = new URL(String(url), 'http://localhost');
+
+    if (requestUrl.pathname === '/incidents/reports/analytics') {
+      const filteredIncidents = sourceIncidents.filter((incident) => {
+        const category = requestUrl.searchParams.get('category');
+        const state = requestUrl.searchParams.get('state');
+        const startDate = requestUrl.searchParams.get('start_date');
+        const endDate = requestUrl.searchParams.get('end_date');
+        const createdDate = incident.created_at.slice(0, 10);
+
+        return (!category || incident.category?.name === category)
+          && (!state || normalizeCatalogCode(incident.state?.name) === normalizeCatalogCode(state))
+          && (!startDate || createdDate >= startDate)
+          && (!endDate || createdDate <= endDate);
+      });
+
+      return Promise.resolve({ data: buildReportAnalytics(filteredIncidents, sourceIncidents.length) });
     }
-    if (String(url) === '/catalogs/states') {
+
+    if (requestUrl.pathname === '/incidents') {
+      const categoryId = Number(requestUrl.searchParams.get('category_id'));
+      const category = sampleCategories.find((item) => item.id === categoryId)?.name;
+      const state = requestUrl.searchParams.get('state_filter');
+      const startDate = requestUrl.searchParams.get('start_date');
+      const endDate = requestUrl.searchParams.get('end_date');
+      const filteredIncidents = sourceIncidents.filter((incident) => {
+        const createdDate = incident.created_at.slice(0, 10);
+        return (!category || incident.category?.name === category)
+          && (!state || normalizeCatalogCode(incident.state?.name) === normalizeCatalogCode(state))
+          && (!startDate || createdDate >= startDate)
+          && (!endDate || createdDate <= endDate);
+      });
+
+      return Promise.resolve({ data: filteredIncidents, meta: { last_page: 1 } });
+    }
+
+    if (requestUrl.pathname === '/catalogs/categories') {
+      return Promise.resolve({ data: sampleCategories });
+    }
+    if (requestUrl.pathname === '/catalogs/states') {
       return Promise.resolve({ data: states ?? sampleStates });
     }
     return Promise.resolve({});
-  });
+  };
+  backend.request.mockImplementation(handler);
+  backend.requestBackend.mockImplementation(handler);
+}
+
+function getKpiValue(label) {
+  const card = [...document.querySelectorAll('#kpiCards .reports-kpi-card')]
+    .find((item) => item.querySelector('.reports-kpi-label')?.textContent === label);
+
+  return card?.querySelector('.reports-kpi-number')?.textContent;
 }
 
 // ── Tests ───────────────────────────────────────────────────────
@@ -182,12 +337,36 @@ function mockRequestWith(request, { states, incidents }) {
 describe('reports-page integration', () => {
   beforeEach(() => {
     vi.resetModules();
+    vi.useFakeTimers();
     document.body.innerHTML = DOM_FIXTURE;
     vi.clearAllMocks();
     globalThis.Chart.instances = [];
+    domContentLoadedListeners = [];
+
+    vi.spyOn(document, 'addEventListener').mockImplementation((type, listener, options) => {
+      if (type === 'DOMContentLoaded') domContentLoadedListeners.push({ listener, options });
+      nativeDocumentAddEventListener(type, listener, options);
+    });
+
+    const gradient = { addColorStop: vi.fn() };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      clearRect: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      fillText: vi.fn(),
+      createLinearGradient: vi.fn(() => gradient),
+    });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:reports-test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    domContentLoadedListeners.forEach(({ listener, options }) => {
+      document.removeEventListener('DOMContentLoaded', listener, options);
+    });
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
     document.body.innerHTML = '';
   });
 
@@ -196,28 +375,26 @@ describe('reports-page integration', () => {
   describe('module exports', () => {
     it('exports all expected functions', async () => {
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(mod.initReportsPage).toBeTypeOf('function');
-      expect(mod.applyCurrentFilters).toBeTypeOf('function');
-      expect(mod.resetFilters).toBeTypeOf('function');
-      expect(mod.matchesFilters).toBeTypeOf('function');
-      expect(mod.normalizeMonthlyTrend).toBeTypeOf('function');
-      expect(mod.uniqueSortedValues).toBeTypeOf('function');
-      expect(mod.parseDate).toBeTypeOf('function');
-      expect(mod.startOfDay).toBeTypeOf('function');
-      expect(mod.endOfDay).toBeTypeOf('function');
-      expect(mod.normalizeText).toBeTypeOf('function');
-      expect(mod.normalizeState).toBeTypeOf('function');
-      expect(mod.equalsNormalized).toBeTypeOf('function');
-      expect(mod.includesNormalized).toBeTypeOf('function');
-      expect(mod.monthKey).toBeTypeOf('function');
-      expect(mod.formatMonthLabel).toBeTypeOf('function');
-      expect(mod.daysBetween).toBeTypeOf('function');
-      expect(mod.territoryTail).toBeTypeOf('function');
-      expect(mod.getTopEntry).toBeTypeOf('function');
-      expect(mod.buildRangeLabel).toBeTypeOf('function');
-      expect(mod.escapeCsvValue).toBeTypeOf('function');
-      expect(mod.CHART_COLORS).toBeTypeOf('object');
-      expect(mod.CHART_DEFAULTS).toBeTypeOf('object');
+      expect(Object.keys(mod).sort()).toEqual([
+        'CHART_COLORS',
+        'CHART_DEFAULTS',
+        'adjustLayoutForRoles',
+        'applyCurrentFilters',
+        'escapeCsvValue',
+        'initReportsPage',
+        'resetFilters',
+        'uniqueSortedValues',
+      ]);
+      expect(mod).toMatchObject({
+        initReportsPage: expect.any(Function),
+        applyCurrentFilters: expect.any(Function),
+        resetFilters: expect.any(Function),
+        adjustLayoutForRoles: expect.any(Function),
+        uniqueSortedValues: expect.any(Function),
+        escapeCsvValue: expect.any(Function),
+        CHART_COLORS: expect.any(Object),
+        CHART_DEFAULTS: expect.any(Object),
+      });
     });
   });
 
@@ -226,16 +403,15 @@ describe('reports-page integration', () => {
   describe('page initialisation', () => {
     it('initialises KPI cards, insights, rankings, summary and efficiency', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
-      expect(document.getElementById('kpiCards').innerHTML).toContain('Incidencias');
-      expect(document.getElementById('kpiCards').innerHTML).toContain('>5<');
-      expect(document.getElementById('kpiCards').innerHTML).toContain('Activas');
-      expect(document.getElementById('kpiCards').innerHTML).toContain('>40%<');
-      expect(document.getElementById('kpiCards').innerHTML).toContain('>6.5d<');
+      expect(getKpiValue('Incidencias')).toBe('5');
+      expect(getKpiValue('Activas')).toBe('2');
+      expect(getKpiValue('Resolución')).toBe('60%');
+      expect(getKpiValue('Tiempo prom.')).toBe('6.5d');
 
       expect(document.getElementById('reportInsightCards').innerHTML).not.toBe('');
       expect(document.getElementById('reportInsightNarrative').innerHTML).not.toBe('');
@@ -256,9 +432,35 @@ describe('reports-page integration', () => {
       expect(document.getElementById('alertaGlobal').innerHTML).toContain('5');
     });
 
+    it('renders every backend state with canonical values and readable labels', async () => {
+      const backend = await import('../app/js/infrastructure/backend-client.js');
+      const states = [
+        ...sampleStates,
+        { id: 8, code: 'PENDIENTE_VALIDACION', name: 'PENDIENTE_VALIDACION' },
+      ];
+      mockRequestWith(backend, { states, incidents: sampleIncidents });
+
+      const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
+      await mod.initReportsPage();
+
+      const options = [...document.querySelectorAll('#selectEstadoFiltro option')].slice(1);
+      const values = options.map((option) => option.value);
+      const labelsByValue = Object.fromEntries(options.map((option) => [option.value, option.textContent]));
+
+      expect(options).toHaveLength(states.length);
+      expect(values).toEqual(expect.arrayContaining(states.map((item) => item.code)));
+      expect(options.every((option) => !option.textContent.includes('_'))).toBe(true);
+      expect(labelsByValue).toMatchObject({
+        EN_REVISION: 'En revisión',
+        EN_PROGRESO: 'En progreso',
+        REABIERTA: 'Reabierta',
+        PENDIENTE_VALIDACION: 'Pendiente Validacion',
+      });
+    });
+
     it('renders empty state when no incidents exist', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: [] });
+      mockRequestWith(backend, { states: sampleStates, incidents: [] });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -283,13 +485,11 @@ describe('reports-page integration', () => {
 
     it('initialises via DOMContentLoaded event', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       await import('../app/js/modules/reports/presentation/reports-page.js');
       document.dispatchEvent(new Event('DOMContentLoaded'));
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      expect(document.getElementById('kpiCards').innerHTML).toContain('Incidencias');
+      await vi.waitFor(() => expect(getKpiValue('Incidencias')).toBe('5'));
     });
   });
 
@@ -298,50 +498,66 @@ describe('reports-page integration', () => {
   describe('filtering', () => {
     it('filters by category', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
-      const kpiHtml = document.getElementById('kpiCards').innerHTML;
-      expect(kpiHtml).toContain('>3<');
+      expect(getKpiValue('Incidencias')).toBe('3');
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('category=Infraestructura'));
     });
 
     it('filters by state', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
-      document.getElementById('selectEstadoFiltro').value = 'Resuelta';
-      mod.applyCurrentFilters();
+      document.getElementById('selectEstadoFiltro').value = 'RESUELTA';
+      await mod.applyCurrentFilters();
 
-      const kpiHtml = document.getElementById('kpiCards').innerHTML;
-      expect(kpiHtml).toContain('>2<');
+      expect(getKpiValue('Incidencias')).toBe('2');
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('state=RESUELTA'));
+    });
+
+    it('filters canonical EN_PROGRESO as an active state', async () => {
+      const backend = await import('../app/js/infrastructure/backend-client.js');
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
+
+      const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
+      await mod.initReportsPage();
+
+      document.getElementById('selectEstadoFiltro').value = 'EN_PROGRESO';
+      await mod.applyCurrentFilters();
+
+      expect(getKpiValue('Incidencias')).toBe('1');
+      expect(getKpiValue('Activas')).toBe('1');
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('state=EN_PROGRESO'));
     });
 
     it('filters by date range', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
       document.getElementById('fFechaInicial').value = '2026-02-01';
       document.getElementById('fFechaFinal').value = '2026-02-28';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
-      const kpiHtml = document.getElementById('kpiCards').innerHTML;
-      expect(kpiHtml).toContain('>2<');
+      expect(getKpiValue('Incidencias')).toBe('2');
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('start_date=2026-02-01'));
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('end_date=2026-02-28'));
     });
 
     it('rejects invalid date range with validation error', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -350,26 +566,27 @@ describe('reports-page integration', () => {
       document.getElementById('fFechaFinal').value = '2026-02-01';
 
       const valUtils = await import('../app/js/shared/validators/validation-utils.js');
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
       expect(valUtils.setFieldError).toHaveBeenCalled();
     });
 
     it('resets filters and re-renders with full data', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
-      expect(document.getElementById('kpiCards').innerHTML).toContain('>3<');
+      expect(getKpiValue('Incidencias')).toBe('3');
 
       mod.resetFilters();
 
-      expect(document.getElementById('kpiCards').innerHTML).toContain('>5<');
+      await vi.waitFor(() => expect(getKpiValue('Incidencias')).toBe('5'));
+      expect(document.getElementById('selectTipoFiltro').value).toBe('');
     });
   });
 
@@ -378,7 +595,7 @@ describe('reports-page integration', () => {
   describe('export', () => {
     it('triggers CSV download with filtered incidents', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -386,20 +603,22 @@ describe('reports-page integration', () => {
       const appendChild = vi.spyOn(document.body, 'appendChild');
       const removeChild = vi.spyOn(document.body, 'removeChild');
 
+      document.getElementById('selectTipoFiltro').value = 'Infraestructura';
       document.getElementById('btnExportExcel').click();
 
-      expect(appendChild).toHaveBeenCalled();
+      await vi.waitFor(() => expect(appendChild).toHaveBeenCalled());
       const link = appendChild.mock.calls[0][0];
       expect(link.tagName).toBe('A');
       expect(link.download).toContain('reporte-incidencias');
       expect(link.download).toContain('.csv');
 
       expect(removeChild).toHaveBeenCalledWith(link);
+      expect(backend.request).toHaveBeenCalledWith(expect.stringContaining('category_id=1'));
     });
 
     it('triggers printable report for PDF export', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -415,27 +634,27 @@ describe('reports-page integration', () => {
   describe('summary statistics', () => {
     it('shows aggregate data in efficiency indicators', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
       const effHtml = document.getElementById('indicadoresEficiencia').innerHTML;
       expect(effHtml).toContain('Tasa de resolución');
-      expect(effHtml).toContain('40%');
+      expect(effHtml).toContain('60%');
       expect(effHtml).toContain('Tiempo promedio');
       expect(effHtml).toContain('6.5d');
     });
 
     it('updates after filter change', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
       const summaryHtml = document.getElementById('tablaResumen').innerHTML;
       expect(summaryHtml).toContain('Infraestructura');
@@ -449,17 +668,17 @@ describe('reports-page integration', () => {
   describe('chart integration', () => {
     it('renders charts when Chart.js is available and data exists', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
-      expect(globalThis.Chart.instances.length).toBeGreaterThanOrEqual(1);
+      expect(globalThis.Chart.instances).toHaveLength(4);
     });
 
     it('does not create charts when no incident data', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: [] });
+      mockRequestWith(backend, { states: sampleStates, incidents: [] });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -469,7 +688,7 @@ describe('reports-page integration', () => {
 
     it('destroys previous charts on re-render', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -477,14 +696,14 @@ describe('reports-page integration', () => {
       const destroySpy = vi.spyOn(globalThis.Chart.instances[0], 'destroy');
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
       expect(destroySpy).toHaveBeenCalled();
     });
 
     it('updates chart data when filter changes', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
-      mockRequestWith(backend.request, { states: sampleStates, incidents: sampleIncidents });
+      mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
@@ -492,14 +711,16 @@ describe('reports-page integration', () => {
       const initialCount = globalThis.Chart.instances.length;
 
       document.getElementById('selectTipoFiltro').value = 'Infraestructura';
-      mod.applyCurrentFilters();
+      await mod.applyCurrentFilters();
 
       const newInstances = globalThis.Chart.instances.slice(initialCount);
-      expect(newInstances.length).toBeGreaterThanOrEqual(1);
+      expect(newInstances).toHaveLength(4);
       newInstances.forEach((instance) => {
         expect(instance.config).toBeDefined();
         expect(instance.config.data).toBeDefined();
       });
+      const monthlyChart = newInstances.find((instance) => instance.config.type === 'bar');
+      expect(monthlyChart.config.data.datasets[0].data).toEqual([3]);
     });
   });
 });

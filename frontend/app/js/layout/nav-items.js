@@ -50,7 +50,7 @@ const NAV_ITEMS = [
         label: 'Listado general',
         icon: 'fa-list-alt',
         route: 'incidents.html',
-        permission: 'incidents.view',
+        permission: 'incidents.list',
       },
       {
         id: 'assignment-management',
@@ -127,7 +127,7 @@ const PAGE_ACCESS = {
   notifications: { permission: 'notifications.view' },
   'incident-detail': { permission: 'incidents.detail' },
   dashboard: { permission: 'dashboard.view' },
-  incidents: { permission: 'incidents.view' },
+  incidents: { permission: 'incidents.list' },
   'incident-map': { permission: 'incidents.map' },
   'incident-create': { permission: 'incidents.create' },
   'assignment-management': { permission: 'incidents.assign' },

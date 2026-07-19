@@ -95,6 +95,15 @@ class AccessControlTest extends TestCase
     public function test_navigation_includes_authorized_child_when_parent_uses_another_permission(): void
     {
         $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+        
+        $workspaceNode = \App\Auth\Infrastructure\Persistence\Models\NavigationItem::where('code', 'workspace')->firstOrFail();
+        \App\Auth\Infrastructure\Persistence\Models\NavigationItem::create([
+            'code' => 'notifications',
+            'label' => 'Notificaciones',
+            'permission_code' => 'notifications.view',
+            'parent_id' => $workspaceNode->id,
+            'active' => true,
+        ]);
 
         $citizen = User::factory()->create(['two_factor_confirmed_at' => now()]);
         $citizenRole = Role::where('code', 'CIUDADANO')->firstOrFail();

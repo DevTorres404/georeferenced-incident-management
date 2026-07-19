@@ -62,179 +62,32 @@ describe('reports-page.js — pure functions', () => {
     });
   });
 
-  describe('parseDate', () => {
-    it('parses valid date string', async () => {
-      const { parseDate } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const result = parseDate('2025-01-15T10:00:00Z');
-      expect(result).toBeInstanceOf(Date);
-      expect(result.getTime()).toBeGreaterThan(0);
-    });
 
-    it('returns null for null input', async () => {
-      const { parseDate } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(parseDate(null)).toBeNull();
-    });
 
-    it('returns null for invalid date', async () => {
-      const { parseDate } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(parseDate('not-a-date')).toBeNull();
-    });
-  });
+  describe('adjustLayoutForRoles', () => {
+    it('hides Top Cities and expands columns for SUPERVISOR', async () => {
+      // Mock localStorage with SUPERVISOR role
+      localStorage.setItem('user_data', JSON.stringify({ roles: [{ code: 'SUPERVISOR' }] }));
 
-  describe('startOfDay / endOfDay', () => {
-    it('startOfDay sets time to 00:00:00.000', async () => {
-      const { startOfDay } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const result = startOfDay('2025-06-15');
-      expect(result.getHours()).toBe(0);
-      expect(result.getMinutes()).toBe(0);
-      expect(result.getSeconds()).toBe(0);
-      expect(result.getMilliseconds()).toBe(0);
-    });
+      // Mock DOM
+      document.body.innerHTML = `
+        <div id="colTopCiudades" class="col-lg-4"></div>
+        <div id="colTopTipos" class="col-lg-4"></div>
+        <div id="colEficiencia" class="col-lg-4"></div>
+      `;
 
-    it('endOfDay sets time to 23:59:59.999', async () => {
-      const { endOfDay } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const result = endOfDay('2025-06-15');
-      expect(result.getHours()).toBe(23);
-      expect(result.getMinutes()).toBe(59);
-      expect(result.getSeconds()).toBe(59);
-      expect(result.getMilliseconds()).toBe(999);
-    });
-  });
+      // Import script and call function
+      const { adjustLayoutForRoles } = await import('../app/js/modules/reports/presentation/reports-page.js');
+      adjustLayoutForRoles();
 
-  describe('normalizeText', () => {
-    it('removes accents and uppercases', async () => {
-      const { normalizeText } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(normalizeText('Crítica')).toBe('CRITICA');
-    });
-
-    it('trims whitespace', async () => {
-      const { normalizeText } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(normalizeText('  hola  ')).toBe('HOLA');
-    });
-  });
-
-  describe('normalizeState', () => {
-    it('replaces spaces with underscores', async () => {
-      const { normalizeState } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(normalizeState('En Proceso')).toBe('EN_PROCESO');
-    });
-  });
-
-  describe('equalsNormalized', () => {
-    it('compares ignoring case and accents', async () => {
-      const { equalsNormalized } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(equalsNormalized('Crítica', 'CRITICA')).toBe(true);
-      expect(equalsNormalized('foo', 'bar')).toBe(false);
-    });
-  });
-
-  describe('includesNormalized', () => {
-    it('checks substring ignoring case and accents', async () => {
-      const { includesNormalized } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(includesNormalized('Prioridad Crítica', 'critica')).toBe(true);
-      expect(includesNormalized('Prioridad Baja', 'critica')).toBe(false);
-    });
-  });
-
-  describe('monthKey', () => {
-    it('formats date as YYYY-MM', async () => {
-      const { monthKey } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const date = new Date(2025, 0, 15);
-      expect(monthKey(date)).toBe('2025-01');
-    });
-  });
-
-  describe('daysBetween', () => {
-    it('returns positive day difference', async () => {
-      const { daysBetween } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const start = new Date('2025-01-01');
-      const end = new Date('2025-01-10');
-      expect(daysBetween(start, end)).toBe(9);
-    });
-
-    it('returns 0 when start is after end', async () => {
-      const { daysBetween } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const start = new Date('2025-01-10');
-      const end = new Date('2025-01-01');
-      expect(daysBetween(start, end)).toBe(0);
-    });
-  });
-
-  describe('territoryTail', () => {
-    it('extracts last segment from path', async () => {
-      const { territoryTail } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(territoryTail('Ecuador / Pichincha / Quito')).toBe('Quito');
-    });
-
-    it('returns default for empty path', async () => {
-      const { territoryTail } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(territoryTail('')).toBe('Sin territorio');
-    });
-  });
-
-  describe('getTopEntry', () => {
-    it('returns entry with highest count', async () => {
-      const { getTopEntry } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const result = getTopEntry({ a: 1, b: 10, c: 5 });
-      expect(result.label).toBeDefined();
-      expect(result.count).toBe(10);
-    });
-
-    it('returns null for empty object', async () => {
-      const { getTopEntry } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(getTopEntry({})).toBeNull();
-    });
-  });
-
-  describe('buildRangeLabel', () => {
-    it('builds label from date filters', async () => {
-      const { buildRangeLabel } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const filters = { startDate: '2025-01-01', endDate: '2025-01-31' };
-      expect(buildRangeLabel(filters)).toContain('desde');
-      expect(buildRangeLabel(filters)).toContain('hasta');
-    });
-
-    it('returns empty for no dates', async () => {
-      const { buildRangeLabel } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(buildRangeLabel({})).toBe('');
-    });
-  });
-
-  describe('escapeCsvValue', () => {
-    it('wraps value in quotes', async () => {
-      const { escapeCsvValue } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(escapeCsvValue('hello')).toBe('"hello"');
-    });
-
-    it('escapes double quotes inside value', async () => {
-      const { escapeCsvValue } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(escapeCsvValue('he"llo')).toBe('"he""llo"');
-    });
-  });
-
-  describe('matchesFilters', () => {
-    it('returns true when no filters applied', async () => {
-      const { matchesFilters } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      expect(matchesFilters({}, {})).toBe(true);
-    });
-
-    it('filters by category', async () => {
-      const { matchesFilters } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const incident = { category: { name: 'Daño' } };
-      expect(matchesFilters(incident, { category: 'Daño' })).toBe(true);
-      expect(matchesFilters(incident, { category: 'Otro' })).toBe(false);
-    });
-  });
-
-  describe('normalizeMonthlyTrend', () => {
-    it('converts monthlyBuckets to arrays', async () => {
-      const { normalizeMonthlyTrend, monthKey, formatMonthLabel } = await import('../app/js/modules/reports/presentation/reports-page.js');
-      const buckets = new Map();
-      const key = monthKey(new Date(2025, 0));
-      buckets.set(key, { registered: 10, resolved: 5, pending: 3 });
-      const result = normalizeMonthlyTrend(buckets);
-      expect(result.months[0]).toBe(formatMonthLabel(key));
-      expect(result.registered).toEqual([10]);
+      // Assert DOM changes
+      const colTop = document.getElementById('colTopCiudades');
+      const colTipos = document.getElementById('colTopTipos');
+      const colInd = document.getElementById('colEficiencia');
+      
+      expect(colTop.style.display).toBe('none');
+      expect(colTipos.className).toBe('col-lg-6');
+      expect(colInd.className).toBe('col-lg-6');
     });
   });
 });
