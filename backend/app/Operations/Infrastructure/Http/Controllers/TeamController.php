@@ -10,10 +10,14 @@ use App\Operations\Application\DTOs\OperatorTeamSummaryData;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
+use App\Operations\Application\UseCases\OperatorWorkReportUseCase;
 use App\Shared\Infrastructure\Http\Controllers\ApiController;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 final class TeamController extends ApiController
 {
@@ -188,5 +192,62 @@ final class TeamController extends ApiController
             ->get()
             ->keyBy('user_id')
             ->all();
+    }
+
+    /**
+     * Genera el reporte de trabajo en PDF para un operador.
+     *
+     * @group Mi equipo
+     * @authenticated
+     */
+    public function workReportData(int $operatorId, Request $request, OperatorWorkReportUseCase $useCase): JsonResponse
+    {
+        $supervisor = $request->user();
+
+        // Security check
+        $isAssigned = SupervisorOperatorAssignment::query()
+            ->where('supervisor_user_id', $supervisor->id)
+            ->where('operator_user_id', $operatorId)
+            ->where('is_active', true)
+            ->exists();
+
+        if (!$isAssigned) {
+            return response()->json(['message' => 'No tienes permisos para ver el reporte de este operador.'], 403);
+        }
+
+        $limit = $request->query('limit', 50);
+        $limit = $limit === 'all' ? null : (int) $limit;
+        if ($limit !== null && $limit <= 0) $limit = 50;
+
+        $data = $useCase->generate($operatorId, $limit);
+
+        return response()->json($data);
+    }
+
+    public function workReport(int $operatorId, Request $request, OperatorWorkReportUseCase $useCase): Response
+    {
+        $supervisorId = auth()->id();
+
+        // Validar que el operador pertenece al supervisor
+        $isAssigned = SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $supervisorId)
+            ->where('operator_user_id', $operatorId)
+            ->exists();
+
+        if (! $isAssigned) {
+            return response()->json(['message' => 'El operador solicitado no pertenece a tu equipo.'], 403);
+        }
+
+        $limit = $request->query('limit', 50);
+        $limit = $limit === 'all' ? null : (int) $limit;
+        if ($limit !== null && $limit <= 0) $limit = 50;
+
+        $data = $useCase->generate($operatorId, $limit);
+
+        $pdf = Pdf::loadView('pdf.operator-work-report', $data->toArray());
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download("reporte_operador_{$operatorId}.pdf");
     }
 }

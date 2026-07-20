@@ -162,8 +162,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
                 ->middleware('permission:operations.manage');
         });
 
-        Route::get('/team/operators', [TeamController::class, 'operators'])
-            ->middleware('permission:operations.view_team');
+        Route::get('/team/operators', [TeamController::class, 'operators'])->middleware('permission:operations.view_team');
+        Route::get('/team/operators/{id}/work-report-data', [TeamController::class, 'workReportData'])->middleware('permission:operations.view_team');
+        Route::get('/team/operators/{id}/work-report', [TeamController::class, 'workReport'])->middleware('permission:operations.view_team');
 
         Route::middleware('permission:catalogs.manage')->group(function () {
             Route::get('/admin/catalogs/{catalog}', [CatalogManagementController::class, 'index']);

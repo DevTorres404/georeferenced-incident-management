@@ -66,7 +66,163 @@
                 </div>
             </section>
         </div>
-        <footer class="main-footer"> <strong>Sistema de Gestión de Incidencias</strong> </footer>
+        <footer class="main-footer text-sm">
+            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gestión de Incidencias
+                Georreferenciadas (SGI)</strong>
+        </footer>
+    </div>
+    
+    <!-- Modal Report Preview -->
+    <div class="modal fade" id="reportPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-file-alt mr-2"></i>Vista Previa de Reporte</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body bg-light" id="reportPreviewBody">
+                    <div class="text-center py-5" id="reportPreviewLoading">
+                        <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                        <p class="text-muted">Cargando datos del reporte...</p>
+                    </div>
+                    
+                    <div id="reportPreviewContent" class="d-none">
+                        <div class="card card-outline card-primary mb-3">
+                            <div class="card-body py-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-6">
+                                        <h5 class="m-0 text-primary font-weight-bold" id="previewOpName"></h5>
+                                        <p class="text-muted mb-0 text-sm" id="previewOpEmail"></p>
+                                    </div>
+                                    <div class="col-md-6 text-md-right mt-2 mt-md-0">
+                                        <span class="badge badge-info px-3 py-2" id="previewOpId"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
+                                <div class="info-box bg-white">
+                                    <span class="info-box-icon bg-primary"><i class="fas fa-tachometer-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Carga Laboral</span>
+                                        <span class="info-box-number" id="previewCurrentWorkload">0 pts</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
+                                <div class="info-box bg-white">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-tasks"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Carga Histórica</span>
+                                        <span class="info-box-number" id="previewTotalAssigned">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
+                                <div class="info-box bg-white">
+                                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Resueltos</span>
+                                        <span class="info-box-number" id="previewTotalResolved">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-lg-6 col-md-6 col-sm-6 col-12">
+                                <div class="info-box bg-white">
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Prom. Respuesta</span>
+                                        <span class="info-box-number"><span id="previewAvgHours">0</span> <small>hrs</small></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl col-lg-6 col-md-6 col-sm-6 col-12">
+                                <div class="info-box bg-white">
+                                    <span class="info-box-icon bg-danger"><i class="fas fa-undo"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text">Tasa Reapertura</span>
+                                        <span class="info-box-number"><span id="previewReopenRate">0</span> <small>%</small></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card card-outline card-secondary">
+                            <div class="card-header border-0 pb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title text-sm font-weight-bold text-muted text-uppercase mb-0">Últimas Intervenciones</h3>
+                                    <span class="badge badge-info text-xs"><i class="fas fa-info-circle mr-1"></i>Vista resumida</span>
+                                </div>
+                                <div class="text-xs text-muted mt-2">
+                                    * Esta tabla solo muestra las últimas <strong>50 intervenciones</strong>. Para revisar el historial de ciclos completo, métricas detalladas y todos los registros históricos, se recomienda descargar el Reporte PDF.
+                                </div>
+                            </div>
+                            <div class="card-body p-0 table-responsive" style="max-height: 400px;">
+                                <table class="table table-sm table-striped table-hover text-sm mb-0">
+                                    <thead class="bg-light sticky-top">
+                                        <tr>
+                                            <th>Ticket</th>
+                                            <th>Título</th>
+                                            <th>Categoría</th>
+                                            <th>Estado</th>
+                                            <th>Territorio</th>
+                                            <th>Asignación</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewTicketsTable">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cerrar</button>
+                    <div id="reportActionsContainer" class="d-none">
+                        <button type="button" class="btn btn-primary px-4" id="btnDownloadPreviewReport">
+                            <i class="fas fa-download mr-1"></i> Descargar Reporte PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Download Options -->
+    <div class="modal fade" id="downloadOptionsModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-light border-0">
+                    <h5 class="modal-title font-weight-bold text-primary"><i class="fas fa-file-pdf mr-2"></i>Opciones de descarga</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pb-0">
+                    <p class="text-muted small mb-3">Selecciona cuántas intervenciones querés incluir en el reporte PDF del operador.</p>
+                    <div class="form-group">
+                        <label for="downloadLimitSelect" class="font-weight-bold text-sm">Cantidad a incluir:</label>
+                        <select class="form-control" id="downloadLimitSelect">
+                            <option value="50">Últimas 50 (Recomendado)</option>
+                            <option value="100">Últimas 100</option>
+                            <option value="150">Últimas 150</option>
+                            <option value="200">Últimas 200</option>
+                            <option value="all">Histórico completo (Todas)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary btn-block mt-0 mb-2" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary btn-block m-0" id="btnConfirmDownload">
+                        <i class="fas fa-download mr-1"></i> Descargar
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="/plugins/jquery/jquery.min.js"></script>
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>

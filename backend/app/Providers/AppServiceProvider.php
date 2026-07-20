@@ -79,6 +79,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(AccessControlRepositoryInterface::class, EloquentAccessControlRepository::class);
         $this->app->bind(TerritorialUnitRepositoryInterface::class, EloquentTerritorialUnitRepository::class);
         $this->app->bind(OperationalStructureRepositoryInterface::class, EloquentOperationalStructureRepository::class);
+        $this->app->bind(\App\Operations\Application\Ports\OperatorWorkReportRepositoryInterface::class, \App\Operations\Infrastructure\Persistence\Repositories\EloquentOperatorWorkReportRepository::class);
         $this->app->bind(PasswordHasherPort::class, LaravelPasswordHasherAdapter::class);
         $this->app->bind(SessionManagerPort::class, LaravelSessionManagerAdapter::class);
         $this->app->bind(UserNotificationPort::class, LaravelUserNotificationAdapter::class);

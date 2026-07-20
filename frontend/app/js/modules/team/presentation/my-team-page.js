@@ -15,6 +15,7 @@ async function initMyTeamPage() {
         state.operators = operators;
 
         await renderTeamPage(operators);
+        setupEventListeners();
     } catch (err) {
         console.error('Error al cargar el equipo:', err);
         renderError();
@@ -83,6 +84,7 @@ function renderOperatorCard(op) {
     const maxWorkloadPoints = op.max_workload_points ?? 20;
     const zoneName = op.territory ? escapeHtml(op.territory) : 'Sin zona asignada';
     const loadPercent = maxWorkloadPoints > 0 ? Math.round((workloadPoints / maxWorkloadPoints) * 100) : 0;
+    const visualPercent = Math.min(100, loadPercent);
 
     let loadBarClass = 'bg-success';
     let loadLabel = 'Baja';
@@ -97,11 +99,18 @@ function renderOperatorCard(op) {
         loadLabel = 'Moderada';
     }
 
-    let incidentBadgeClass = 'badge-success';
+    let incidentBarClass = 'bg-success';
+    let incidentLabel = 'Baja';
+    // Asumimos un máximo visual referencial de 10 incidencias para la barra
+    const maxVisualIncidents = 10;
+    const incidentPercent = Math.min(100, Math.round((activeIncidents / maxVisualIncidents) * 100));
+
     if (activeIncidents >= 5) {
-        incidentBadgeClass = 'badge-danger';
+        incidentBarClass = 'bg-danger';
+        incidentLabel = 'Crítica';
     } else if (activeIncidents >= 3) {
-        incidentBadgeClass = 'badge-warning';
+        incidentBarClass = 'bg-warning';
+        incidentLabel = 'Alta';
     }
 
     return `
@@ -110,9 +119,9 @@ function renderOperatorCard(op) {
                 <div class="card-header">
                     <h3 class="card-title"><i class="fas fa-user-circle text-primary mr-2"></i>${name}</h3>
                     <div class="card-tools">
-                        <span class="badge ${incidentBadgeClass} badge-pill" title="Incidencias activas">
-                            <i class="fas fa-exclamation-circle mr-1"></i>${activeIncidents}
-                        </span>
+                        <button class="btn btn-sm btn-outline-primary btn-download-report" data-id="${op.id}" title="Descargar reporte de trabajo">
+                            <i class="fas fa-file-pdf mr-1"></i> Reporte
+                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -127,14 +136,25 @@ function renderOperatorCard(op) {
                         </div>
                     </div>
                     <hr>
-                    <p class="detalle-label">Carga laboral</p>
+                    <p class="detalle-label mb-1">Incidencias activas</p>
+                    <div class="mb-1 d-flex justify-content-between">
+                        <span>${activeIncidents} tickets</span>
+                        <span class="text-muted">${incidentLabel}</span>
+                    </div>
+                    <div class="progress progress-sm mb-3">
+                        <div class="progress-bar ${incidentBarClass}" role="progressbar"
+                            style="width: ${incidentPercent}%;" aria-valuenow="${incidentPercent}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    
+                    <p class="detalle-label mb-1">Carga laboral</p>
                     <div class="mb-1 d-flex justify-content-between">
                         <span>${workloadPoints} / ${maxWorkloadPoints} pts</span>
                         <span class="text-muted">${loadLabel}</span>
                     </div>
                     <div class="progress progress-sm">
                         <div class="progress-bar ${loadBarClass}" role="progressbar"
-                            style="width: ${loadPercent}%;" aria-valuenow="${loadPercent}" aria-valuemin="0" aria-valuemax="100">
+                            style="width: ${visualPercent}%;" aria-valuenow="${loadPercent}" aria-valuemin="0" aria-valuemax="100">
                         </div>
                     </div>
                 </div>
@@ -177,6 +197,223 @@ function renderError() {
         </div>
     `;
     document.getElementById('teamSummary').innerHTML = '';
+}
+
+function setupEventListeners() {
+    document.getElementById('teamCards').addEventListener('click', async (e) => {
+        const btn = e.target.closest('.btn-download-report');
+        if (btn) {
+            const id = btn.getAttribute('data-id');
+            await openPreviewModal(id);
+        }
+    });
+
+    const btnDownload = document.getElementById('btnDownloadPreviewReport');
+    
+    if (btnDownload) {
+        btnDownload.addEventListener('click', () => {
+            // Mostrar modal de opciones de descarga
+            $('#downloadOptionsModal').modal('show');
+        });
+    }
+
+    const btnConfirmDownload = document.getElementById('btnConfirmDownload');
+    if (btnConfirmDownload) {
+        btnConfirmDownload.addEventListener('click', async () => {
+            const id = document.getElementById('btnDownloadPreviewReport').getAttribute('data-id');
+            const limitSelect = document.getElementById('downloadLimitSelect');
+            const limit = limitSelect ? limitSelect.value : '50';
+            
+            if (id) {
+                // Cerramos el modal de opciones
+                $('#downloadOptionsModal').modal('hide');
+                
+                const downloadBtn = document.getElementById('btnDownloadPreviewReport');
+                await downloadWorkReport(id, downloadBtn, limit);
+            }
+        });
+    }
+}
+
+async function openPreviewModal(id) {
+    // Show modal in loading state
+    $('#reportPreviewModal').modal('show');
+    document.getElementById('reportPreviewLoading').classList.remove('d-none');
+    document.getElementById('reportPreviewContent').classList.add('d-none');
+    
+    const actionsContainer = document.getElementById('reportActionsContainer');
+    if (actionsContainer) actionsContainer.classList.add('d-none');
+
+    try {
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const baseUrl = window.SGI_API_URL || '/api';
+        
+        // Vista previa siempre pide 50 por defecto para velocidad
+        const response = await fetch(`${baseUrl}/team/operators/${id}/work-report-data?limit=50`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar la vista previa del reporte');
+        }
+        
+        const data = await response.json();
+        
+        // Populate modal data
+        document.getElementById('previewOpName').textContent = `${data.operator.first_name} ${data.operator.last_name}`;
+        document.getElementById('previewOpEmail').textContent = data.operator.email;
+        document.getElementById('previewOpId').textContent = `ID #${String(data.operator.id).padStart(5, '0')}`;
+        
+        document.getElementById('previewCurrentWorkload').textContent = data.metrics.current_workload;
+        document.getElementById('previewTotalAssigned').textContent = data.metrics.total_assigned;
+        document.getElementById('previewTotalResolved').textContent = data.metrics.total_resolved;
+        document.getElementById('previewAvgHours').textContent = data.metrics.avg_response_hours;
+        document.getElementById('previewReopenRate').textContent = data.metrics.reopen_rate;
+        
+        // Populate table
+        const tbody = document.getElementById('previewTicketsTable');
+        tbody.innerHTML = '';
+        
+        if (!data.recent_incidents || data.recent_incidents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay intervenciones registradas.</td></tr>';
+        } else {
+            data.recent_incidents.forEach(item => {
+                const tr = document.createElement('tr');
+                const inc = item.incident;
+                const title = inc.title ? escapeHtml(inc.title) : '-';
+                
+                let cyclesHtml = '';
+                if (item.history && item.history.length > 0) {
+                    const filteredHistory = item.history.filter(h => {
+                        if (!h.state_name) return false;
+                        const state = h.state_name.toUpperCase();
+                        return state.includes('PROGRESO') || state.includes('PROCESO');
+                    });
+                    
+                    if (filteredHistory.length > 0) {
+                        cyclesHtml = '<div class="mt-1" style="font-size: 0.75rem;">';
+                        filteredHistory.forEach((h, idx) => {
+                            let dateStr = h.assignment_date ? h.assignment_date.substring(0, 16).replace('T', ' ') : '';
+                            let endStr = '';
+                            
+                            if (h.assignment_date && h.duration_minutes !== null) {
+                                const startDate = new Date(h.assignment_date);
+                                startDate.setMinutes(startDate.getMinutes() + h.duration_minutes);
+                                const day = String(startDate.getDate()).padStart(2, '0');
+                                const mon = String(startDate.getMonth() + 1).padStart(2, '0');
+                                const yr = startDate.getFullYear();
+                                const hr = String(startDate.getHours()).padStart(2, '0');
+                                const min = String(startDate.getMinutes()).padStart(2, '0');
+                                endStr = ` \nFinalizó: ${day}/${mon}/${yr} ${hr}:${min}`;
+                            }
+                            
+                            const dur = (h.duration_minutes !== undefined && h.duration_minutes !== null) ? ` \nTiempo: ${h.duration_minutes}m` : '';
+                            const by = h.assigned_by_name ? ` \nPor: ${h.assigned_by_name}` : '';
+                            
+                            cyclesHtml += `<span class="badge badge-light border mr-1 mb-1" title="Inició: ${dateStr}${endStr}${dur}${by}">#${idx+1} ${h.state_name} - ${h.priority_name}</span>`;
+                        });
+                        
+                        if (inc.state && inc.state.is_final_state) {
+                            const closedDate = inc.updated_at ? inc.updated_at.substring(0, 16).replace('T', ' ') : '';
+                            const closedIdx = filteredHistory.length + 1;
+                            const stateName = inc.state.name ? inc.state.name.toUpperCase() : 'CERRADA';
+                            cyclesHtml += `<span class="badge badge-success border mr-1 mb-1" title="Fecha de cierre: ${closedDate} \n* La incidencia ya no admite actualizaciones">${stateName} (DEFINITIVO)</span>`;
+                        }
+                        
+                        cyclesHtml += '</div>';
+                    }
+                }
+
+                let titleHtml = `<td>
+                    <div class="text-truncate" style="max-width: 250px;" title="${title}">
+                        ${title}
+                        ${item.reopen_count > 0 ? `<span class="badge badge-danger ml-1" title="Reasignado ${item.reopen_count} veces tras resolverse">Reabierto: ${item.reopen_count}</span>` : ''}
+                    </div>
+                    ${cyclesHtml}
+                </td>`;
+
+                const catName = inc.category ? escapeHtml(inc.category.name) : '-';
+                const stateColor = inc.state ? escapeHtml(inc.state.color) : '#95a5a6';
+                const stateName = inc.state ? escapeHtml(inc.state.name).toUpperCase() : 'DESCONOCIDO';
+                const terrName = inc.territorial_unit ? escapeHtml(inc.territorial_unit.name) : 'No especificada';
+                
+                // Format date manually if it's ISO, or just show it as is
+                let dateStr = '-';
+                if (item.latest_assignment_date) {
+                    const d = new Date(item.latest_assignment_date);
+                    if (!isNaN(d.getTime())) {
+                        const day = String(d.getDate()).padStart(2, '0');
+                        const mon = String(d.getMonth() + 1).padStart(2, '0');
+                        const yr = d.getFullYear();
+                        const hr = String(d.getHours()).padStart(2, '0');
+                        const min = String(d.getMinutes()).padStart(2, '0');
+                        dateStr = `${day}/${mon}/${yr} ${hr}:${min}`;
+                    }
+                }
+                
+                tr.innerHTML = `
+                    <td><strong>#${String(inc.id).padStart(6, '0')}</strong></td>
+                    ${titleHtml}
+                    <td>${catName}</td>
+                    <td><span style="color: ${stateColor}; font-weight: bold;">${stateName}</span></td>
+                    <td>${terrName}</td>
+                    <td>${dateStr}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        document.getElementById('btnDownloadPreviewReport').setAttribute('data-id', id);
+        
+        document.getElementById('reportPreviewLoading').classList.add('d-none');
+        document.getElementById('reportPreviewContent').classList.remove('d-none');
+        if (actionsContainer) actionsContainer.classList.remove('d-none');
+        
+    } catch (err) {
+        console.error('Error al obtener datos de preview:', err);
+        $('#reportPreviewModal').modal('hide');
+        alert('No se pudo cargar la vista previa del reporte.');
+    }
+}
+
+async function downloadWorkReport(id, btn, limit = '50') {
+    try {
+        btn.disabled = true;
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = 'fas fa-spinner fa-spin mr-1';
+
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const baseUrl = window.SGI_API_URL || '/api';
+        
+        const response = await fetch(`${baseUrl}/team/operators/${id}/work-report?limit=${limit}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al generar el reporte');
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte_operador_${id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('Error al descargar el PDF', err);
+        alert('No se pudo descargar el reporte.');
+    } finally {
+        btn.disabled = false;
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = 'fas fa-download mr-1';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initMyTeamPage);
