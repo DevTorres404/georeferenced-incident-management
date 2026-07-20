@@ -99,7 +99,23 @@ class MyTeamReportTest extends TestCase
                 'reopen_rate',
                 'current_workload',
             ],
-            'recent_incidents'
+            'recent_incidents' => [
+                '*' => [
+                    'incident' => ['id', 'code', 'title', 'state'],
+                    'latest_assignment_date',
+                    'history' => [
+                        '*' => [
+                            'assignment_date',
+                            'resolved_at',
+                            'duration_minutes',
+                            'priority_name',
+                            'state_name',
+                            'final_cycle_state',
+                            'assigned_by_name',
+                        ]
+                    ]
+                ]
+            ]
         ]);
     }
 

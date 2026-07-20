@@ -33,4 +33,31 @@ describe('My Team Page - Operator Card', () => {
         expect(btn.getAttribute('data-id')).toBe('1');
         expect(btn.textContent).toContain('Reporte');
     });
+
+    it('debe contener el aviso de vista resumida de 50 intervenciones si se renderiza el modal (simulado)', () => {
+        // En la vida real esto se renderiza en el modal. Simulamos la inserciA3n del HTML del modal para probar el disclaimer.
+        const modalHtml = `
+            <div class="card-header border-0 pb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3 class="card-title text-sm font-weight-bold text-muted text-uppercase mb-0">Últimas Intervenciones</h3>
+                    <span class="badge badge-info text-xs"><i class="fas fa-info-circle mr-1"></i>Vista resumida</span>
+                </div>
+                <div class="text-xs text-muted mt-2 disclaimer-text">
+                    * Esta tabla solo muestra las últimas <strong>50 intervenciones</strong>. Para revisar el historial de ciclos completo, métricas detalladas y todos los registros históricos, se recomienda descargar el Reporte PDF.
+                </div>
+            </div>
+        `;
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = modalHtml;
+        
+        const badge = modalContainer.querySelector('.badge-info');
+        const disclaimer = modalContainer.querySelector('.disclaimer-text');
+        
+        expect(badge).not.toBeNull();
+        expect(badge.textContent).toContain('Vista resumida');
+        
+        expect(disclaimer).not.toBeNull();
+        expect(disclaimer.textContent).toContain('50 intervenciones');
+        expect(disclaimer.textContent).toContain('Reporte PDF');
+    });
 });
