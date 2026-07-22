@@ -797,14 +797,6 @@ async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI 
 
       normalizeMobileSidebar();
 
-      // Mostrar el loader global antes de que el navegador cambie de página
-      const loader = document.getElementById('pageLoader');
-      if (loader) {
-        loader.removeAttribute('hidden');
-        loader.classList.remove('d-none');
-        loader.style.display = 'flex';
-      }
-
       // Ejecutar la navegación
       globalThis.location.href = href;
     });
@@ -838,13 +830,6 @@ async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI 
 
       if (globalThis.SGINavigationStore) {
         globalThis.SGINavigationStore.startNavigation(targetHref);
-      }
-
-      const loader = document.getElementById('pageLoader');
-      if (loader) {
-        loader.removeAttribute('hidden');
-        loader.classList.remove('d-none');
-        loader.style.display = 'flex';
       }
 
       globalThis.location.href = targetHref;
