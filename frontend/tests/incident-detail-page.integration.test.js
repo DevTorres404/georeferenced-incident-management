@@ -81,16 +81,16 @@ const sampleIncident = {
   created_at: '2026-07-10T10:00:00',
   resolution_date: null,
   comments: [
-    { id: 1, comment: 'Ya enviamos una cuadrilla', user: { first_name: 'Carlos', last_name: 'Mendez' }, created_at: '2026-07-10T11:00:00', is_internal: false },
-    { id: 2, comment: 'Trabajo en progreso', user: { first_name: 'Ana', last_name: 'Lopez' }, created_at: '2026-07-10T12:00:00', is_internal: true },
+    { id: 1, comment: 'Ya enviamos una cuadrilla', user: { first_name: 'Carlos', last_name: 'Mendez', role_name: 'Operador' }, created_at: '2026-07-10T11:00:00', is_internal: false },
+    { id: 2, comment: 'Trabajo en progreso', user: { first_name: 'Ana', last_name: 'Lopez', role_name: 'Supervisor' }, created_at: '2026-07-10T12:00:00', is_internal: true },
   ],
   history: [
     { id: 1, previous_state_id: null, previous_state_name: null, new_state_id: 1, new_state_name: 'Nueva', user: { first_name: 'Sistema', last_name: '' }, comment: 'Incidencia registrada', created_at: '2026-07-10T10:00:00' },
     { id: 2, previous_state_id: 1, previous_state_name: 'Nueva', new_state_id: 2, new_state_name: 'En Progreso', user: { first_name: 'Carlos', last_name: 'Mendez' }, comment: 'Asignado a cuadrilla', created_at: '2026-07-10T11:30:00' },
   ],
   attachments: [
-    { id: 1, original_name: 'foto.jpg', mime_type: 'image/jpeg', file_url: '/storage/incidents/foto.jpg', file_size_bytes: 204800, user: { first_name: 'Carlos', last_name: 'Mendez' }, created_at: '2026-07-10T11:00:00' },
-    { id: 2, original_name: 'reporte.pdf', mime_type: 'application/pdf', file_url: '/storage/incidents/reporte.pdf', file_size_bytes: 1048576, user: { first_name: 'Ana', last_name: 'Lopez' }, created_at: '2026-07-10T12:00:00' },
+    { id: 1, original_name: 'foto.jpg', mime_type: 'image/jpeg', file_url: '/storage/incidents/foto.jpg', file_size_bytes: 204800, user: { first_name: 'Carlos', last_name: 'Mendez', role_name: 'Operador' }, created_at: '2026-07-10T11:00:00' },
+    { id: 2, original_name: 'reporte.pdf', mime_type: 'application/pdf', file_url: '/storage/incidents/reporte.pdf', file_size_bytes: 1048576, user: { first_name: 'Ana', last_name: 'Lopez', role_name: 'Supervisor' }, created_at: '2026-07-10T12:00:00' },
   ],
 };
 
@@ -267,6 +267,39 @@ describe('Integration — incident-detail-page', () => {
         const container = document.getElementById('contenidoDetalle');
         expect(container.innerHTML).toContain('INC-001');
       });
+    });
+
+    it('renders pending state requests with mobile card labels and complete actions', async () => {
+      const service = await import('../app/js/modules/incidents/application/incidents-service.js');
+      service.getIncident.mockResolvedValue({ data: sampleIncident });
+      service.listStateTransitions.mockResolvedValue({ data: sampleTransitions });
+      service.listPriorities.mockResolvedValue({ data: [] });
+      service.getStateChangeRequests.mockResolvedValue({
+        data: [{
+          id: 17,
+          status: 'pending',
+          requestedByUserName: 'Luis Fernando Peñafiel',
+          requestedStateName: 'RESUELTA',
+          requestedStateColor: '#7fbd42',
+          reason: 'La atención fue completada.',
+          created_at: '2026-07-21T18:30:00',
+        }],
+      });
+      localStorage.setItem('user_data', JSON.stringify({
+        roles: [{ code: 'SUPERVISOR' }],
+        permissions: ['incidents.edit'],
+      }));
+
+      const { initIncidentDetailPage } = await import('../app/js/modules/incidents/presentation/incident-detail-page.js');
+      await initIncidentDetailPage();
+
+      const card = document.querySelector('.pending-state-requests-card');
+      expect(card).not.toBeNull();
+      expect(card.querySelector('[data-label="Solicitante"]')?.textContent).toContain('Luis Fernando Peñafiel');
+      expect(card.querySelector('[data-label="Estado solicitado"]')?.textContent).toContain('Resuelta');
+      expect(card.querySelector('[data-label="Razón"]')?.textContent).toContain('La atención fue completada.');
+      expect(card.querySelector('[data-label="Fecha"]')).not.toBeNull();
+      expect(card.querySelectorAll('.pending-state-request-actions .btn')).toHaveLength(2);
     });
 
     it.each([
@@ -452,9 +485,9 @@ describe('Integration — incident-detail-page', () => {
       const container = document.createElement('div');
       container.innerHTML = renderComments(sampleIncident.comments);
 
-      expect(container.textContent).toContain('Carlos Mendez');
+      expect(container.textContent).toContain('Carlos Mendez (Operador)');
       expect(container.textContent).toContain('Ya enviamos una cuadrilla');
-      expect(container.textContent).toContain('Ana Lopez');
+      expect(container.textContent).toContain('Ana Lopez (Supervisor)');
       expect(container.textContent).toContain('Trabajo en progreso');
     });
 
@@ -501,8 +534,9 @@ describe('Integration — incident-detail-page', () => {
 
       expect(container.textContent).toContain('foto.jpg');
       expect(container.textContent).toContain('reporte.pdf');
-      expect(container.textContent).toContain('Carlos Mendez');
-      expect(container.textContent).toContain('Ana Lopez');
+      expect(container.textContent).toContain('Subido por Carlos Mendez (Operador)');
+      expect(container.textContent).toContain('Subido por Ana Lopez (Supervisor)');
+      expect(container.querySelectorAll('.attachment-card')).toHaveLength(2);
     });
 
     it('shows empty state when no attachments', async () => {

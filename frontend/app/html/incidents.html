@@ -15,8 +15,8 @@
     <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/incidents.css">
+    <link rel="stylesheet" href="/css/app.css?v=68">
+    <link rel="stylesheet" href="/css/pages/incidents.css?v=4">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -55,14 +55,14 @@
                     <form class="card shadow-sm reports-filter-bar mb-4" id="filtroIncidencias">
                         <div id="incidentScopeSection" class="d-flex align-items-center" style="gap: 10px;">
                             <label for="filterScope" class="mb-0">Alcance:</label>
-                            <select class="form-control form-control-sm" id="filterScope" style="width:150px;"></select>
+                            <select class="form-control form-control-sm incident-filter-scope" id="filterScope"></select>
                         </div>
                         <label for="filterState" class="mb-0 ml-2">Estado:</label>
-                        <select class="form-control form-control-sm" id="filterState" style="width:160px;">
+                        <select class="form-control form-control-sm incident-filter-state" id="filterState">
                             <option value="todos">Todos los estados</option>
                         </select>
                         <label for="filterPriority" class="mb-0 ml-2">Prioridad:</label>
-                        <select class="form-control form-control-sm" id="filterPriority" style="width:120px;">
+                        <select class="form-control form-control-sm incident-filter-priority" id="filterPriority">
                             <option value="todas">Todas</option>
                             <option value="critica">Crítica</option>
                             <option value="alta">Alta</option>

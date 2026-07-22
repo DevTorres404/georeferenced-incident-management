@@ -108,7 +108,7 @@ function bindActions() {
   document.getElementById('btnFiltrar')?.addEventListener('click', applyCurrentFilters);
   document.getElementById('btnLimpiarFiltros')?.addEventListener('click', resetFilters);
   document.getElementById('btnExportExcel')?.addEventListener('click', exportFilteredIncidentsCsv);
-  document.getElementById('btnExportPDF')?.addEventListener('click', exportPrintableReport);
+  document.getElementById('btnExportPDF')?.addEventListener('click', exportAnalyticsPdf);
 }
 
 function hydrateFilterOptions() {
@@ -697,8 +697,56 @@ async function exportFilteredIncidentsCsv() {
   }
 }
 
-function exportPrintableReport() {
-  globalThis.print();
+export async function exportAnalyticsPdf() {
+  const filters = getFilters();
+  const query = new URLSearchParams();
+  if (filters.startDate) query.set('start_date', filters.startDate);
+  if (filters.endDate) query.set('end_date', filters.endDate);
+  if (filters.category) query.set('category', filters.category);
+  if (filters.state) query.set('state', filters.state);
+
+  const button = document.getElementById('btnExportPDF');
+  const originalHtml = button?.innerHTML;
+  showPageLoading('Generando PDF', 'Preparando el informe estadístico institucional...');
+
+  try {
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Generando...';
+    }
+
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    const baseUrl = globalThis.SGI_API_URL || '/api';
+    const suffix = query.toString() ? `?${query.toString()}` : '';
+    const response = await fetch(`${baseUrl}/incidents/reports/analytics/pdf${suffix}`, {
+      headers: {
+        Accept: 'application/pdf',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('No se pudo generar el reporte PDF.');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `reporte-estadistico-sgi-${new Date().toISOString().slice(0, 10)}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    handleBackendErrors(error, null, document.getElementById('alertaGlobal'));
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+    hidePageLoading();
+  }
 }
 
 export function escapeCsvValue(value) {

@@ -1,4 +1,5 @@
 import { $, hide, showErrorAlert } from '../../../presentation/dom-utils.js?v=14';
+import { readUser, userHasPermission } from '../../../core/auth-session.js?v=16';
 
 import { getDashboardMetrics } from '../application/dashboard-service.js?v=14';
 import {
@@ -45,16 +46,19 @@ globalThis.addEventListener('pagehide', (event) => {
 });
 
 export async function initDashboardPage() {
-  globalThis.renderLayout?.('dashboard');
+  await globalThis.renderLayout?.('dashboard');
+  const user = readUser();
+  const incidentNavigation = configureRecentIncidentsNavigation(user);
 
   showPageLoading('Cargando panel', 'Consultando métricas...');
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000);
 
   try {
     const metrics = await getDashboardMetrics();
+    renderDashboardKpis(metrics.kpis || {}, incidentNavigation);
     renderPriorityBars(metrics.countsByPriority || {}, metrics.kpis?.total || 0);
     renderInfoCards(metrics);
-    renderRecentIncidents(metrics.recentIncidents || []);
+    renderRecentIncidents(metrics.recentIncidents || [], incidentNavigation);
     renderCharts(metrics);
   } catch (error) {
     showErrorAlert(error.message || 'No se pudieron cargar las métricas del panel.');
@@ -62,6 +66,28 @@ export async function initDashboardPage() {
     globalThis.clearTimeout(loadingFallback);
     hidePageLoading();
   }
+}
+
+export function renderDashboardKpis(kpis, navigation = getDashboardIncidentNavigation(readUser())) {
+  const container = document.getElementById('kpiRow');
+  if (!container) return;
+
+  const cards = [
+    { label: 'Incidencias totales', value: kpis.total || 0, caption: 'Registros visibles', icon: 'fa-clipboard-list', accent: 'info' },
+    { label: 'Pendientes', value: kpis.pending || 0, caption: 'Requieren clasificación', icon: 'fa-inbox', accent: 'warning' },
+    { label: 'En progreso', value: kpis.progress || 0, caption: 'Atención operativa', icon: 'fa-tools', accent: 'primary' },
+    { label: 'Resueltas', value: kpis.resolved || 0, caption: 'Casos completados', icon: 'fa-check-circle', accent: 'success' },
+  ];
+
+  container.innerHTML = cards.map((card) => `
+    <a class="dash-kpi-card" data-accent="${card.accent}" href="${navigation.listHref}">
+      <div class="dash-kpi-content">
+        <span class="dash-kpi-label">${escapeHtml(card.label)}</span>
+        <strong class="dash-kpi-number">${Number(card.value)}</strong>
+        <span class="dash-kpi-caption">${escapeHtml(card.caption)}</span>
+      </div>
+      <span class="dash-kpi-icon"><i class="fas ${card.icon}"></i></span>
+    </a>`).join('');
 }
 
 /* ── Priority Bars ───────────────────────────────────────────────────────── */
@@ -150,14 +176,48 @@ export function renderInfoCards(metrics) {
 
 /* ── Recent Incidents Table ──────────────────────────────────────────────── */
 
-export function renderRecentIncidents(incidents) {
+export function getDashboardIncidentNavigation(user) {
+  const assignmentOnly = userHasPermission(user, 'incidents.assign')
+    && !userHasPermission(user, 'incidents.list');
+
+  return assignmentOnly
+    ? {
+        title: 'Gestión de asignaciones',
+        listHref: 'assignment-management.html',
+        listLabel: 'Gestionar asignaciones',
+        actionTitle: 'Gestionar asignación',
+        incidentHref: (incidentId) => `assignment-management.html?incident_id=${incidentId}`,
+      }
+    : {
+        title: 'Últimas Incidencias',
+        listHref: 'incidents.html',
+        listLabel: 'Ver todas',
+        actionTitle: 'Ver detalle',
+        incidentHref: (incidentId) => `incident-detail.html?id=${incidentId}`,
+      };
+}
+
+export function configureRecentIncidentsNavigation(user) {
+  const navigation = getDashboardIncidentNavigation(user);
+  const title = document.getElementById('recentIncidentsTitle');
+  const link = document.getElementById('recentIncidentsLink');
+  const linkLabel = document.getElementById('recentIncidentsLinkLabel');
+
+  if (title) title.innerHTML = `<i class="fas fa-list"></i>${navigation.title}`;
+  if (link) link.href = navigation.listHref;
+  if (linkLabel) linkLabel.textContent = navigation.listLabel;
+
+  return navigation;
+}
+
+export function renderRecentIncidents(incidents, navigation = getDashboardIncidentNavigation(readUser())) {
   const tbody = $('#tablaUltimasBody');
   if (!tbody) return;
 
   if (!incidents.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="text-center text-muted py-4">
+        <td colspan="7" class="text-center text-muted py-4 dash-table-empty-state">
           <i class="fas fa-inbox mr-1"></i>Sin incidencias recientes.
         </td>
       </tr>`;
@@ -171,14 +231,14 @@ export function renderRecentIncidents(incidents) {
 
     return `
       <tr>
-        <td><span class="dash-table-code">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
-        <td class="dash-table-title" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin título')}</td>
-        <td>${escapeHtml(category)}</td>
-        <td><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(priority)}; color: #fff">${escapeHtml(priority)}</span></td>
-        <td><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(state)}; color: #fff">${escapeHtml(state)}</span></td>
-        <td style="white-space:nowrap;">${escapeHtml(formatShortDate(incident.created_at))}</td>
-        <td>
-          <a href="incident-detail.html?id=${incident.id}" class="btn btn-xs btn-outline-primary" title="Ver detalle">
+        <td data-label="Código"><span class="dash-table-code">${escapeHtml(incident.code || `#${incident.id}`)}</span></td>
+        <td class="dash-table-title" data-label="Título" title="${escapeHtml(incident.title || '')}">${escapeHtml(incident.title || 'Sin título')}</td>
+        <td data-label="Tipo">${escapeHtml(category)}</td>
+        <td data-label="Prioridad"><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(priority)}; color: #fff">${escapeHtml(priority)}</span></td>
+        <td data-label="Estado"><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(state)}; color: #fff">${escapeHtml(state)}</span></td>
+        <td data-label="Fecha" style="white-space:nowrap;">${escapeHtml(formatShortDate(incident.created_at))}</td>
+        <td data-label="Acciones">
+          <a href="${navigation.incidentHref(incident.id)}" class="btn btn-xs btn-outline-primary" title="${navigation.actionTitle}">
             <i class="fas fa-eye"></i>
           </a>
         </td>

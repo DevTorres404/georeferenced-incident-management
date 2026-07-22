@@ -305,14 +305,8 @@
   }
 }
 
-/* ---- Grid de KPIs en dos columnas en mobile mediano ---- */
+/* ---- KPIs compactos en móviles estrechos ---- */
 @media (max-width: 450px) {
-  .inc-kpi-grid,
-  .dash-kpi-grid,
-  .report-kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
   .inc-kpi-card,
   .dash-kpi-card,
   .report-kpi-card {

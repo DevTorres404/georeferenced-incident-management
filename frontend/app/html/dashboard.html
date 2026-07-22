@@ -17,8 +17,8 @@
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
     <!-- Estilos propios del sistema -->
-    <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/dashboard.css">
+    <link rel="stylesheet" href="/css/app.css?v=69">
+    <link rel="stylesheet" href="/css/pages/dashboard.css?v=5">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -38,14 +38,13 @@
             <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
                 <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i> </div>
             </div> <!-- Encabezado -->
-            <div class="content-header">
+            <div class="content-header dashboard-page-header">
                 <div class="container-fluid">
                     <div class="row mb-2">
                         <div class="col-sm-6">
-                            <h1 class="m-0"> <i class="fas fa-tachometer-alt text-primary mr-2"></i>Panel principal
-                            </h1>
-                            <p class="text-muted mb-0 mt-1" style="font-size: 0.9rem;">Resumen general del estado y
-                                distribución de incidencias.</p>
+                            <span class="dashboard-eyebrow">Centro de control operativo</span>
+                            <h1 class="m-0">Panel principal</h1>
+                            <p class="text-muted mb-0 mt-1">Seguimiento ejecutivo de la operación territorial.</p>
                         </div>
                         <div class="col-sm-6 d-flex justify-content-sm-end align-items-center mt-3 mt-sm-0">
                             <a href="incident-map.html" class="btn btn-primary shadow-sm">
@@ -56,8 +55,16 @@
                 </div>
             </div> <!-- Contenido -->
             <div class="content">
+                <div class="container-fluid">
+                    <section class="dash-kpi-grid mb-4" id="kpiRow" aria-label="Indicadores principales">
+                        <div class="dash-kpi-card dash-kpi-skeleton"><div class="dash-kpi-content"><span class="skeleton-line skeleton-line--short"></span><span class="skeleton-line skeleton-line--long"></span></div></div>
+                        <div class="dash-kpi-card dash-kpi-skeleton"><div class="dash-kpi-content"><span class="skeleton-line skeleton-line--short"></span><span class="skeleton-line skeleton-line--long"></span></div></div>
+                        <div class="dash-kpi-card dash-kpi-skeleton"><div class="dash-kpi-content"><span class="skeleton-line skeleton-line--short"></span><span class="skeleton-line skeleton-line--long"></span></div></div>
+                        <div class="dash-kpi-card dash-kpi-skeleton"><div class="dash-kpi-content"><span class="skeleton-line skeleton-line--short"></span><span class="skeleton-line skeleton-line--long"></span></div></div>
+                    </section>
+
                     <!-- ===== FILA 2: Charts + Prioridad ===== -->
-                    <div class="row mt-4"> <!-- Gráfico de Tipos -->
+                    <div class="row"> <!-- Gráfico de Tipos -->
                         <div class="col-lg-7 col-md-6">
                             <div class="dash-chart-card mb-4">
                                 <div class="dash-chart-header">
@@ -95,15 +102,32 @@
                         </div> <!-- Info Cards -->
                         <div class="col-lg-4">
                             <div class="dash-info-stack" id="infoStack"> <!-- Renderizadas por JS --> </div>
+                            <a href="incident-map.html" class="dash-map-card mt-3" aria-label="Abrir mapa operativo">
+                                <div class="dash-map-header">
+                                    <h3><i class="fas fa-map-marked-alt"></i>Cobertura territorial</h3>
+                                    <span class="dash-map-badge">Abrir mapa</span>
+                                </div>
+                                <div class="dash-map-body">
+                                    <div id="dashMapPreview" class="dash-map-preview" aria-hidden="true"></div>
+                                    <div class="dash-map-row">
+                                        <div class="dash-map-figure"><i class="fas fa-map-marker-alt"></i></div>
+                                        <div class="dash-map-meta">
+                                            <strong>Vista georreferenciada</strong>
+                                            <span>Explorá incidencias y concentración territorial.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
                         </div>
                     </div> <!-- ===== FILA 4: Tabla + Estado ===== -->
                     <div class="row"> <!-- Tabla ultimas incidencias -->
                         <div class="col-lg-8">
                             <div class="dash-table-card mb-4">
                                 <div class="dash-table-header">
-                                    <h2 class="h3"><i class="fas fa-list"></i>Últimas Incidencias</h2> <a href="incidents.html"
+                                    <h2 class="h3" id="recentIncidentsTitle"><i class="fas fa-list"></i>Últimas Incidencias</h2> <a
+                                        href="incidents.html" id="recentIncidentsLink"
                                         class="btn btn-sm btn-outline-primary"> <i
-                                            class="fas fa-arrow-right mr-1"></i>Ver todas </a>
+                                            class="fas fa-arrow-right mr-1"></i><span id="recentIncidentsLinkLabel">Ver todas</span> </a>
                                 </div>
                                 <div class="dash-table-wrap">
                                     <table class="dash-table" id="tablaUltimas">
@@ -152,7 +176,7 @@
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
     <script type="module" src="/js/layout/layout.js?v=44"></script>
-    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=27"></script>
+    <script type="module" src="/js/modules/dashboard/presentation/dashboard-page.js?v=30"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         var container = document.getElementById('dashMapPreview');

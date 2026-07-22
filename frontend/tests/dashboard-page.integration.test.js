@@ -41,6 +41,8 @@ const FIXTURE = `
   <div id="kpiRow"></div>
   <div id="barrasPrioridad"></div>
   <div id="infoStack"></div>
+  <h2 id="recentIncidentsTitle"></h2>
+  <a id="recentIncidentsLink"><span id="recentIncidentsLinkLabel"></span></a>
   <table><tbody id="tablaUltimasBody"></tbody></table>
   <canvas id="graficoPorTipo"></canvas>
   <canvas id="graficoPorEstado"></canvas>
@@ -104,6 +106,7 @@ async function initWithSampleMetrics() {
 describe('dashboard-page — integration', () => {
   beforeEach(() => {
     vi.resetModules();
+    localStorage.clear();
     document.body.innerHTML = FIXTURE;
     setupGlobals();
   });
@@ -121,9 +124,12 @@ describe('dashboard-page — integration', () => {
       const mod = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
       expect(typeof mod.initDashboardPage).toBe('function');
       expect(typeof mod.renderPriorityBars).toBe('function');
+      expect(typeof mod.renderDashboardKpis).toBe('function');
       expect(typeof mod.priorityColor).toBe('function');
       expect(typeof mod.renderInfoCards).toBe('function');
       expect(typeof mod.renderRecentIncidents).toBe('function');
+      expect(typeof mod.getDashboardIncidentNavigation).toBe('function');
+      expect(typeof mod.configureRecentIncidentsNavigation).toBe('function');
       expect(typeof mod.topEntry).toBe('function');
       expect(typeof mod.CHART_COLORS).toBe('object');
       expect(typeof mod.CATEGORY_PALETTE).toBe('object');
@@ -139,8 +145,27 @@ describe('dashboard-page — integration', () => {
 
       expect(globalThis.renderLayout).toHaveBeenCalledWith('dashboard');
       expect(document.getElementById('barrasPrioridad').innerHTML).toContain('CRITICA');
+      expect(document.getElementById('kpiRow').querySelectorAll('.dash-kpi-card')).toHaveLength(4);
+      expect(document.getElementById('kpiRow').textContent).toContain('150');
       expect(document.getElementById('infoStack').innerHTML).toContain('Quito');
       expect(document.getElementById('tablaUltimasBody').innerHTML).toContain('INC-001');
+    });
+
+    it('routes assignment-only supervisors to assignment management', async () => {
+      localStorage.setItem('user_data', JSON.stringify({
+        id: 7,
+        roles: ['SUPERVISOR'],
+        permissions: ['dashboard.view', 'incidents.assign'],
+      }));
+
+      await initWithSampleMetrics();
+
+      expect(document.getElementById('recentIncidentsTitle').textContent).toContain('Gestión de asignaciones');
+      expect(document.getElementById('recentIncidentsLink').getAttribute('href')).toBe('assignment-management.html');
+      expect(document.getElementById('recentIncidentsLinkLabel').textContent).toBe('Gestionar asignaciones');
+      expect(document.getElementById('tablaUltimasBody').innerHTML)
+        .toContain('assignment-management.html?incident_id=1');
+      expect(document.getElementById('tablaUltimasBody').innerHTML).toContain('title="Gestionar asignación"');
     });
 
     it('calls showPageLoading and hidePageLoading on success', async () => {
@@ -344,6 +369,8 @@ describe('dashboard-page — integration', () => {
       expect(html).toContain('Bache en calle');
       expect(html).toContain('incident-detail.html?id=1');
       expect(html).toContain('incident-detail.html?id=2');
+      expect(html.match(/data-label=/g)).toHaveLength(14);
+      expect(html).toContain('data-label="Acciones"');
     });
 
     it('shows empty message when no recent incidents', async () => {

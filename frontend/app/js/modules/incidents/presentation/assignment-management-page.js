@@ -1,4 +1,5 @@
 import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
+import { userHasPermission } from '../../../core/auth-session.js?v=16';
 import {
   assignIncidentOperators,
   getIncident,
@@ -30,6 +31,7 @@ export async function initAssignmentManagementPage() {
     operators: [],
     selectedIncident: null,
   };
+  configureAssignmentBackLink(state.currentUser);
 
   bindStaticEvents(state);
 
@@ -244,7 +246,7 @@ export function renderTable(state) {
   if (!state.filteredIncidents.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" class="text-center text-muted py-4">
+        <td colspan="9" class="text-center text-muted py-4 assignment-empty-state">
           <i class="fas fa-inbox d-block mb-2"></i>No hay incidencias disponibles para esta vista.
         </td>
       </tr>`;
@@ -268,30 +270,32 @@ export function renderTable(state) {
 
     return `
       <tr>
-        <td class="font-weight-bold">${escapeHtml(incident.code || `#${incident.id}`)}</td>
-        <td>
+        <td class="font-weight-bold" data-label="Código">${escapeHtml(incident.code || `#${incident.id}`)}</td>
+        <td data-label="Título">
           <div class="font-weight-bold text-dark">${escapeHtml(incident.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
-        <td><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
-        <td><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
-        <td>${escapeHtml(incident.zone_name || 'Sin zona')}</td>
-        <td>${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
-        <td>${escapeHtml(formatShortDate(incident.created_at))}</td>
-        <td>${assignmentChips}</td>
-        <td class="text-right assignment-row-actions">
-          <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-secondary mr-1" title="Ver detalle">
-            <i class="fas fa-eye"></i>
-          </a>
-          <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : 'disabled title="La incidencia debe estar en progreso"'}>
-            <i class="fas fa-user-check mr-1"></i><span>${activeAssignments.length ? 'Reasignar' : 'Asignar'}</span>
-          </button>
+        <td data-label="Prioridad"><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
+        <td data-label="Estado"><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
+        <td data-label="Zona">${escapeHtml(incident.zone_name || 'Sin zona')}</td>
+        <td data-label="Territorio">${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
+        <td data-label="Fecha">${escapeHtml(formatShortDate(incident.created_at))}</td>
+        <td data-label="Operadores">${assignmentChips}</td>
+        <td class="text-right assignment-row-actions" data-label="Acciones">
+          <div class="assignment-actions-buttons">
+            <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-secondary" title="Ver detalle">
+              <i class="fas fa-eye"></i><span class="sr-only">Ver detalle</span>
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : 'disabled title="La incidencia debe estar en progreso"'}>
+              <i class="fas fa-user-check mr-1"></i><span>${activeAssignments.length ? 'Reasignar' : 'Asignar'}</span>
+            </button>
+          </div>
         </td>
       </tr>`;
   }).join('');
 
   $table.DataTable({
-    responsive: true,
+    responsive: false,
     autoWidth: false,
     paging: true,
     lengthChange: false,
@@ -481,7 +485,7 @@ export function renderError(message) {
 
   tbody.innerHTML = `
     <tr>
-      <td colspan="9" class="text-center text-danger py-4">
+      <td colspan="9" class="text-center text-danger py-4 assignment-empty-state">
         <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
       </td>
     </tr>`;
@@ -498,6 +502,16 @@ export function readSessionUser() {
   } catch {
     return null;
   }
+}
+
+export function configureAssignmentBackLink(user) {
+  const link = document.getElementById('assignmentBackLink');
+  const label = document.getElementById('assignmentBackLinkLabel');
+  if (!link) return;
+
+  const canListIncidents = userHasPermission(user, 'incidents.list');
+  link.href = canListIncidents ? 'incidents.html' : 'dashboard.html';
+  if (label) label.textContent = canListIncidents ? 'Volver al listado' : 'Volver al panel';
 }
 
 export function userHasRole(user, roleCode) {

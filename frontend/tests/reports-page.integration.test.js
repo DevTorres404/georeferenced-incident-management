@@ -369,6 +369,7 @@ describe('reports-page integration', () => {
     vi.clearAllTimers();
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     document.body.innerHTML = '';
   });
 
@@ -383,6 +384,7 @@ describe('reports-page integration', () => {
         'adjustLayoutForRoles',
         'applyCurrentFilters',
         'escapeCsvValue',
+        'exportAnalyticsPdf',
         'initReportsPage',
         'resetFilters',
         'uniqueSortedValues',
@@ -394,6 +396,7 @@ describe('reports-page integration', () => {
         adjustLayoutForRoles: expect.any(Function),
         uniqueSortedValues: expect.any(Function),
         escapeCsvValue: expect.any(Function),
+        exportAnalyticsPdf: expect.any(Function),
         CHART_COLORS: expect.any(Object),
         CHART_DEFAULTS: expect.any(Object),
       });
@@ -636,16 +639,28 @@ describe('reports-page integration', () => {
       expect(csv).not.toContain('INC-005');
     });
 
-    it('triggers printable report for PDF export', async () => {
+    it('downloads the institutional PDF using the active filters', async () => {
       const backend = await import('../app/js/infrastructure/backend-client.js');
       mockRequestWith(backend, { states: sampleStates, incidents: sampleIncidents });
+      localStorage.setItem('auth_token', 'test-token');
+      const pdfBlob = new Blob(['%PDF-test'], { type: 'application/pdf' });
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, blob: vi.fn().mockResolvedValue(pdfBlob) });
+      vi.stubGlobal('fetch', fetchMock);
 
       const mod = await import('../app/js/modules/reports/presentation/reports-page.js');
       await mod.initReportsPage();
 
-      document.getElementById('btnExportPDF').click();
+      document.getElementById('fFechaInicial').value = '2026-07-01';
+      document.getElementById('selectTipoFiltro').value = 'Infraestructura';
+      await mod.exportAnalyticsPdf();
 
-      expect(globalThis.print).toHaveBeenCalled();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [url, options] = fetchMock.mock.calls[0];
+      expect(url).toContain('/incidents/reports/analytics/pdf?');
+      expect(url).toContain('start_date=2026-07-01');
+      expect(url).toContain('category=Infraestructura');
+      expect(options.headers.Authorization).toBe('Bearer test-token');
+      expect(URL.createObjectURL).toHaveBeenCalledWith(pdfBlob);
     });
   });
 

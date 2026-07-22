@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=65">
+    <link rel="stylesheet" href="/css/app.css?v=68">
+    <link rel="stylesheet" href="/css/pages/my-team.css?v=3">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -74,95 +75,63 @@
     
     <!-- Modal Report Preview -->
     <div class="modal fade" id="reportPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary text-white border-0">
-                    <h5 class="modal-title font-weight-bold"><i class="fas fa-file-alt mr-2"></i>Vista Previa de Reporte</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable operator-report-dialog" role="document">
+            <div class="modal-content border-0 shadow-lg operator-report-modal">
+                <div class="modal-header border-0 operator-report-header">
+                    <div>
+                        <span class="operator-report-eyebrow">Informe operativo</span>
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-file-alt mr-2"></i>Desempeño del operador</h5>
+                        <p class="mb-0">Indicadores actuales e historial reciente de intervenciones.</p>
+                    </div>
+                    <button type="button" class="close text-white operator-report-close" data-dismiss="modal" aria-label="Cerrar">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body bg-light" id="reportPreviewBody">
+                <div class="modal-body operator-report-body" id="reportPreviewBody">
                     <div class="text-center py-5" id="reportPreviewLoading">
                         <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
                         <p class="text-muted">Cargando datos del reporte...</p>
                     </div>
                     
                     <div id="reportPreviewContent" class="d-none">
-                        <div class="card card-outline card-primary mb-3">
-                            <div class="card-body py-2">
+                        <section class="operator-report-identity mb-3" aria-label="Datos del operador">
+                            <div class="card-body">
                                 <div class="row align-items-center">
                                     <div class="col-md-6">
-                                        <h5 class="m-0 text-primary font-weight-bold" id="previewOpName"></h5>
-                                        <p class="text-muted mb-0 text-sm" id="previewOpEmail"></p>
+                                        <span class="operator-report-label">Operador evaluado</span>
+                                        <h5 class="m-0 font-weight-bold" id="previewOpName"></h5>
+                                        <p class="mb-0 text-sm" id="previewOpEmail"></p>
                                     </div>
                                     <div class="col-md-6 text-md-right mt-2 mt-md-0">
-                                        <span class="badge badge-info px-3 py-2" id="previewOpId"></span>
+                                        <span class="operator-report-id" id="previewOpId"></span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
                         
-                        <div class="row">
-                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
-                                <div class="info-box bg-white">
-                                    <span class="info-box-icon bg-primary"><i class="fas fa-tachometer-alt"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Carga Laboral</span>
-                                        <span class="info-box-number" id="previewCurrentWorkload">0 pts</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
-                                <div class="info-box bg-white">
-                                    <span class="info-box-icon bg-info"><i class="fas fa-tasks"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Carga Histórica</span>
-                                        <span class="info-box-number" id="previewTotalAssigned">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl col-lg-4 col-md-6 col-sm-6 col-12">
-                                <div class="info-box bg-white">
-                                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Resueltos</span>
-                                        <span class="info-box-number" id="previewTotalResolved">0</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl col-lg-6 col-md-6 col-sm-6 col-12">
-                                <div class="info-box bg-white">
-                                    <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Prom. Respuesta</span>
-                                        <span class="info-box-number"><span id="previewAvgHours">0</span> <small>hrs</small></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-xl col-lg-6 col-md-6 col-sm-6 col-12">
-                                <div class="info-box bg-white">
-                                    <span class="info-box-icon bg-danger"><i class="fas fa-undo"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Tasa Reapertura</span>
-                                        <span class="info-box-number"><span id="previewReopenRate">0</span> <small>%</small></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <section class="operator-report-kpis mb-3" aria-label="Indicadores de desempeño">
+                            <article class="operator-report-kpi kpi-workload"><i class="fas fa-tachometer-alt"></i><div><span>Carga laboral</span><strong id="previewCurrentWorkload">0 pts</strong><small>Esfuerzo activo</small></div></article>
+                            <article class="operator-report-kpi kpi-assigned"><i class="fas fa-tasks"></i><div><span>Carga histórica</span><strong id="previewTotalAssigned">0</strong><small>Casos asignados</small></div></article>
+                            <article class="operator-report-kpi kpi-resolved"><i class="fas fa-check-circle"></i><div><span>Resueltos</span><strong id="previewTotalResolved">0</strong><small>Casos completados</small></div></article>
+                            <article class="operator-report-kpi kpi-response"><i class="fas fa-clock"></i><div><span>Prom. respuesta</span><strong id="previewAvgHours">0 h</strong><small>Tiempo histórico</small></div></article>
+                            <article class="operator-report-kpi kpi-reopen"><i class="fas fa-undo"></i><div><span>Tasa reapertura</span><strong><span id="previewReopenRate">0</span> <small>%</small></strong><small>Casos reabiertos</small></div></article>
+                        </section>
                         
-                        <div class="card card-outline card-secondary">
-                            <div class="card-header border-0 pb-2">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <h3 class="card-title text-sm font-weight-bold text-muted text-uppercase mb-0">Últimas Intervenciones</h3>
-                                    <span class="badge badge-info text-xs"><i class="fas fa-info-circle mr-1"></i>Vista resumida</span>
+                        <div class="card border-0 operator-report-history">
+                            <div class="card-header border-0">
+                                <div class="d-flex justify-content-between align-items-center operator-report-section-title">
+                                    <div>
+                                        <span class="operator-report-label">Actividad operativa</span>
+                                        <h3 class="card-title font-weight-bold mb-0">Últimas intervenciones</h3>
+                                    </div>
+                                    <span class="operator-report-summary-badge"><i class="fas fa-info-circle mr-1"></i>Vista resumida</span>
                                 </div>
-                                <div class="text-xs text-muted mt-2">
-                                    * Esta tabla solo muestra las últimas <strong>50 intervenciones</strong>. Para revisar el historial de ciclos completo, métricas detalladas y todos los registros históricos, se recomienda descargar el Reporte PDF.
+                                <div class="operator-report-note mt-3">
+                                    <i class="fas fa-lightbulb"></i><span>La vista previa muestra las últimas <strong>50 intervenciones</strong>. El PDF permite elegir entre 50, 100, 150, 200 o el histórico completo.</span>
                                 </div>
                             </div>
-                            <div class="card-body p-0 table-responsive" style="max-height: 400px;">
-                                <table class="table table-sm table-striped table-hover text-sm mb-0">
+                            <div class="card-body p-0 table-responsive team-preview-table-wrap" style="max-height: 400px;">
+                                <table class="table table-sm table-striped table-hover text-sm mb-0 team-preview-table">
                                     <thead class="bg-light sticky-top">
                                         <tr>
                                             <th>Ticket</th>
@@ -180,11 +149,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-white border-top-0 d-flex justify-content-between align-items-center">
-                    <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Cerrar</button>
+                <div class="modal-footer border-top-0 operator-report-footer">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-dismiss="modal">Cerrar</button>
                     <div id="reportActionsContainer" class="d-none">
-                        <button type="button" class="btn btn-primary px-4" id="btnDownloadPreviewReport">
-                            <i class="fas fa-download mr-1"></i> Descargar Reporte PDF
+                        <button type="button" class="btn btn-primary px-4 operator-report-download" id="btnDownloadPreviewReport">
+                            <i class="fas fa-file-pdf mr-1"></i> Configurar y descargar PDF
                         </button>
                     </div>
                 </div>
@@ -230,7 +199,7 @@
     <script src="/dist/js/adminlte.min.js"></script>
     <script type="module" src="/js/layout/layout.js?v=44"></script>
     <script src="/js/app.js?v=60" type="module"></script>
-    <script type="module" src="/js/modules/team/presentation/my-team-page.js?v=5"></script>
+    <script type="module" src="/js/modules/team/presentation/my-team-page.js?v=9"></script>
 </body>
 
 </html>

@@ -108,14 +108,14 @@
 
 .attachment-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 0.75rem;
 }
 
 .attachment-card {
   display: flex;
-  flex-direction: column;
-  height: 100%;
+  min-height: 112px;
+  flex-direction: row;
   overflow: hidden;
   border: 1px solid rgba(8, 32, 51, 0.08);
   border-radius: 1rem;
@@ -125,13 +125,15 @@
 }
 
 .attachment-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: 0 15px 35px rgba(8, 32, 51, 0.08);
 }
 
 .attachment-preview {
   display: flex;
-  min-height: 180px;
+  width: 112px;
+  min-width: 112px;
+  min-height: 112px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -150,14 +152,14 @@
 }
 
 .attachment-preview-image {
-  min-height: 180px;
+  min-height: 112px;
   object-fit: cover;
 }
 
 .attachment-preview-placeholder {
   display: flex;
   width: 100%;
-  min-height: 180px;
+  min-height: 112px;
   align-items: center;
   justify-content: center;
   color: #10b981;
@@ -169,11 +171,12 @@
   flex: 1 1 auto;
   flex-direction: column;
   justify-content: space-between;
-  padding: 1.25rem;
+  min-width: 0;
+  padding: 0.85rem 1rem;
 }
 
 .attachment-title {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.3rem;
   color: var(--sgi-text);
   font-size: 1rem;
   font-weight: 700;
@@ -187,7 +190,7 @@
 .attachment-details {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1rem;
+  gap: 0.2rem 0.75rem;
   color: var(--sgi-text-muted);
   font-size: 0.83rem;
 }
@@ -207,7 +210,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin-top: 0.45rem;
 }
 
 .attachment-preview-modal-body {
@@ -240,6 +243,11 @@
   font-size: 3rem;
 }
 
+.pending-state-request-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
 @media (max-width: 991.98px) {
   .incident-detail-map {
     min-height: 420px;
@@ -251,10 +259,8 @@
     flex-direction: column;
   }
 
-  .attachment-preview,
-  .attachment-preview-placeholder,
-  .attachment-preview-image {
-    min-height: 160px;
+  .attachment-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -263,9 +269,94 @@
     min-height: 340px;
   }
 
+  .attachment-preview {
+    width: 82px;
+    min-width: 82px;
+    min-height: 100px;
+  }
+
+  .attachment-preview-placeholder,
+  .attachment-preview-image {
+    min-height: 100px;
+  }
+
+  .attachment-body {
+    padding: 0.7rem 0.8rem;
+  }
+
+  .attachment-type-badge {
+    display: none;
+  }
+
   .attachment-footer {
-    align-items: stretch;
-    flex-direction: column;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .pending-state-requests-card .card-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    line-height: 1.35;
+  }
+
+  .pending-state-requests-card .card-title .badge {
+    margin-left: 0 !important;
+  }
+
+  .pending-state-requests-table-wrap {
+    overflow-x: visible;
+  }
+
+  .pending-state-requests-table,
+  .pending-state-requests-table tbody,
+  .pending-state-requests-table tr,
+  .pending-state-requests-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .pending-state-requests-table thead {
+    display: none;
+  }
+
+  .pending-state-requests-table tr {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--sgi-border);
+  }
+
+  .pending-state-requests-table tr:last-child {
+    border-bottom: 0;
+  }
+
+  .pending-state-requests-table td {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 38%) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.45rem 0 !important;
+    border-top: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .pending-state-requests-table td::before {
+    content: attr(data-label);
+    color: var(--sgi-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .pending-state-request-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .pending-state-request-actions .btn {
+    width: 100%;
+    margin: 0 !important;
   }
 }
 

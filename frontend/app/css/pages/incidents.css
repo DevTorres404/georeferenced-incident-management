@@ -114,10 +114,33 @@
   border-radius: 0.4rem;
 }
 
+.incident-filter-scope {
+  width: 150px;
+}
+
+.incident-filter-state {
+  width: 160px;
+}
+
+.incident-filter-priority {
+  width: 120px;
+}
+
 /* Responsiveness */
 @media (max-width: 1200px) {
   .inc-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
   .inc-kpi-grid { grid-template-columns: 1fr; }
+
+  .incident-filter-scope,
+  .incident-filter-state,
+  .incident-filter-priority {
+    width: 100%;
+  }
+
+  #incidentScopeSection {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
 }

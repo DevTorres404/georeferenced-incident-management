@@ -1,4 +1,11 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { formatHours, formatMinutesInHours } from '../app/js/modules/team/presentation/my-team-page.js';
+
+const myTeamHtml = fs.readFileSync(path.resolve('app/html/my-team.html'), 'utf8');
+const myTeamCss = fs.readFileSync(path.resolve('app/css/pages/my-team.css'), 'utf8');
+const myTeamJs = fs.readFileSync(path.resolve('app/js/modules/team/presentation/my-team-page.js'), 'utf8');
 
 describe('My Team Page - Operator Card', () => {
     let container;
@@ -59,5 +66,33 @@ describe('My Team Page - Operator Card', () => {
         expect(disclaimer).not.toBeNull();
         expect(disclaimer.textContent).toContain('50 intervenciones');
         expect(disclaimer.textContent).toContain('Reporte PDF');
+    });
+
+    it('define una jerarquía visual específica para la vista previa del reporte', () => {
+        expect(myTeamHtml).toContain('operator-report-header');
+        expect(myTeamHtml).toContain('operator-report-identity');
+        expect(myTeamHtml.match(/operator-report-kpi kpi-/g)).toHaveLength(5);
+        expect(myTeamHtml).toContain('Configurar y descargar PDF');
+        expect(myTeamHtml).toContain('/css/pages/my-team.css?v=3');
+        expect(myTeamHtml).toContain('my-team-page.js?v=9');
+        expect(myTeamJs).toContain('`${data.metrics.current_workload} pts`');
+    });
+
+    it('adapta los indicadores y acciones del reporte a tablet y móvil', () => {
+        expect(myTeamCss.trimStart().startsWith('.operator-report-dialog')).toBe(true);
+        expect(myTeamCss.indexOf('@media')).toBeGreaterThan(myTeamCss.indexOf('.operator-report-footer'));
+        expect(myTeamCss).toContain('grid-template-columns: repeat(5, minmax(0, 1fr))');
+        expect(myTeamCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
+        expect(myTeamCss).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
+        expect(myTeamCss).toContain('.operator-report-footer');
+        expect(myTeamCss).toContain('flex-direction: column-reverse');
+    });
+
+    it('muestra promedios y duraciones de ciclos en horas y minutos', () => {
+        expect(formatHours(0.05)).toBe('0 h 03 min');
+        expect(formatHours(2)).toBe('2 h 00 min');
+        expect(formatMinutesInHours(185)).toBe('3 h 05 min');
+        expect(formatMinutesInHours(60)).toBe('1 h 00 min');
+        expect(myTeamJs).toContain('· ${durationLabel}');
     });
 });

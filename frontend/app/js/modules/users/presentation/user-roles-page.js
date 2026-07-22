@@ -22,9 +22,9 @@ export const ROLE_BADGE_DEFAULTS = {
 
 // ─── Role descriptions ──────────────────────────────────────────────
 export const ROLE_DESCRIPTIONS = {
-  ADMIN: 'Acceso completo al sistema. Gesti&oacute;n de usuarios, roles, cat&aacute;logos y configuraci&oacute;n general.',
-  SUPERVISOR: 'Supervisi&oacute;n operativa por zona. Asignaci&oacute;n de incidentes y gesti&oacute;n del equipo de operadores.',
-  OPERADOR: 'Gesti&oacute;n de incidentes asignados. Actualizaci&oacute;n de estado, comentarios y evidencia.',
+  ADMIN: 'Acceso completo al sistema. Gestión de usuarios, roles, catálogos y configuración general.',
+  SUPERVISOR: 'Supervisión operativa por zona. Asignación de incidentes y gestión del equipo de operadores.',
+  OPERADOR: 'Gestión de incidentes asignados. Actualización de estado, comentarios y evidencia.',
   CIUDADANO: 'Reporte de incidentes como ciudadano. Solo puede ver y gestionar sus propios reportes.',
 };
 
@@ -273,7 +273,7 @@ function openAssignModal(state) {
   // Reset description and confirm button
   document.getElementById('assignRoleDescription').textContent =
     currentRoleCode
-      ? 'El rol actual est&aacute; preseleccionado. Elige otro si deseas cambiar.'
+      ? 'El rol actual está preseleccionado. Elige otro si deseas cambiar.'
       : 'Selecciona un rol para asignarlo al usuario.';
   document.getElementById('btnConfirmAssignRole').disabled = false;
 
@@ -522,12 +522,12 @@ export function renderPagination(state, total, totalPages, startIndex, count) {
       </button>
     </li>
     ${pages.map((page) =>
-      page === 'ellipsis'
-        ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
-        : `<li class="page-item ${page === String(state.page) ? 'active' : ''}">
+    page === 'ellipsis'
+      ? '<li class="page-item disabled"><span class="page-link">...</span></li>'
+      : `<li class="page-item ${page === String(state.page) ? 'active' : ''}">
             <button type="button" class="page-link" data-page="${page}">${page}</button>
           </li>`
-    ).join('')}
+  ).join('')}
     <li class="page-item ${state.page === totalPages ? 'disabled' : ''}">
       <button type="button" class="page-link" data-page="${state.page + 1}" aria-label="Siguiente">
         <i class="fas fa-chevron-right"></i>

@@ -85,6 +85,7 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 function insertPageFixtures() {
   document.body.innerHTML = `
+    <a id="assignmentBackLink"><span id="assignmentBackLinkLabel"></span></a>
     <input id="filterSearch">
     <select id="filterPriority"><option value="">Todos</option></select>
     <select id="filterState"><option value="">Todos</option></select>
@@ -117,7 +118,7 @@ describe('assignment-management-page.js — integration', () => {
   beforeEach(async () => {
     vi.resetModules();
     localStorage.clear();
-    localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: ['ADMIN'] }));
+    localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: ['ADMIN'], permissions: ['incidents.list', 'incidents.assign'] }));
     globalThis.renderLayout = vi.fn();
     globalThis.$ = vi.fn(() => ({
       DataTable: vi.fn(() => ({ clear: vi.fn().mockReturnThis(), destroy: vi.fn().mockReturnThis() }))
@@ -146,7 +147,7 @@ describe('assignment-management-page.js — integration', () => {
         'renderError', 'uniqueValues', 'readSessionUser', 'userHasRole',
         'includesNormalized', 'isResolvedState', 'buildOperatorOptionLabel',
         'buildOperatorCapacityLabel', 'initAssignmentManagementPage',
-        'submitAssignment',
+        'submitAssignment', 'configureAssignmentBackLink',
       ];
       expected.forEach((name) => {
         expect(mod[name]).toBeTypeOf('function');
@@ -158,6 +159,16 @@ describe('assignment-management-page.js — integration', () => {
   // 2. DOMContentLoaded init
   // ====================================================================
   describe('DOMContentLoaded init', () => {
+    it('returns assignment-only supervisors to the dashboard', () => {
+      mod.configureAssignmentBackLink({
+        roles: ['SUPERVISOR'],
+        permissions: ['incidents.assign'],
+      });
+
+      expect(document.getElementById('assignmentBackLink').getAttribute('href')).toBe('dashboard.html');
+      expect(document.getElementById('assignmentBackLinkLabel').textContent).toBe('Volver al panel');
+    });
+
     it('loads incidents and operators, renders table and KPIs', async () => {
       backendClient.request.mockImplementation((url) => {
         if (String(url).includes('assignment-operators')) return Promise.resolve({ data: OPERATORS });
@@ -181,6 +192,10 @@ describe('assignment-management-page.js — integration', () => {
       expect(tableHtml).toContain('Principal');
       expect(tableHtml).toContain('Apoyo');
       expect(tableHtml).toContain('Sin asignación');
+      expect(tableHtml.match(/data-label=/g)).toHaveLength(18);
+      expect(tableHtml).toContain('data-label="Operadores"');
+      expect(tableHtml).toContain('data-label="Acciones"');
+      expect(tableHtml).toContain('assignment-actions-buttons');
 
       const kpisHtml = document.getElementById('assignmentKpis').innerHTML;
       expect(kpisHtml).toContain('Sin asignar');

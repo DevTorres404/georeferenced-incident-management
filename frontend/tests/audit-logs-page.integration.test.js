@@ -12,7 +12,6 @@ vi.hoisted(() => {
   globalThis.$.ajax = vi.fn();
   globalThis.$.getJSON = vi.fn();
   globalThis.renderLayout = vi.fn();
-  vi.stubGlobal('renderSummary', vi.fn());
 });
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
@@ -54,6 +53,9 @@ const DOM_FIXTURE = `
     <button type="button" id="audit-clear-filters">Limpiar</button>
   </form>
   <ul id="audit-pagination" class="pagination"></ul>
+  <strong id="audit-total">0</strong>
+  <strong id="audit-page-summary">1</strong>
+  <small id="audit-pagination-info">Sin registros</small>
   <div id="audit-alert" class="d-none"></div>
   <table>
     <tbody id="audit-log-table-body"></tbody>
@@ -140,6 +142,7 @@ describe('audit-logs-page integration', () => {
       expect(mod.initAuditLogsPage).toBeTypeOf('function');
       expect(mod.loadAuditLogs).toBeTypeOf('function');
       expect(mod.renderAuditLogs).toBeTypeOf('function');
+      expect(mod.renderSummary).toBeTypeOf('function');
       expect(mod.renderPagination).toBeTypeOf('function');
       expect(mod.resetFilters).toBeTypeOf('function');
       expect(mod.bindFilters).toBeTypeOf('function');
@@ -191,6 +194,8 @@ describe('audit-logs-page integration', () => {
       expect(html).toContain('admin@example.com');
       expect(html).toContain('op@example.com');
       expect(html).toContain('Incidencia');
+      expect(html.match(/data-label=/g)).toHaveLength(18);
+      expect(html).toContain('data-label="Cambios"');
       expect(html).toContain('Usuario');
       expect(html).toContain('192.168.1.1');
       expect(html).toContain('10.0.0.1');
@@ -434,9 +439,12 @@ describe('audit-logs-page integration', () => {
       );
     });
 
-    it('calls renderSummary with pagination meta', async () => {
+    it('renders the pagination summary from response metadata', async () => {
       await initPage(sampleLogs, paginationMeta);
-      expect(globalThis.renderSummary).toHaveBeenCalledWith(paginationMeta);
+      expect(document.getElementById('audit-total').textContent).toBe('100');
+      expect(document.getElementById('audit-page-summary').textContent).toBe('2 de 4');
+      expect(document.getElementById('audit-pagination-info').textContent)
+        .toBe('Mostrando 26-50 de 100 registros');
     });
 
     it('renders ellipsis for large page counts', async () => {
@@ -488,7 +496,7 @@ describe('audit-logs-page integration', () => {
       expect(tbody.innerHTML).toContain('No se encontraron logs');
     });
 
-    it('renders empty pagination and calls renderSummary with defaults on error', async () => {
+    it('renders empty pagination and summary defaults on error', async () => {
       const service = await importService();
       service.listAuditLogs.mockRejectedValue(new Error('Network error'));
 
@@ -496,9 +504,9 @@ describe('audit-logs-page integration', () => {
       await mod.initAuditLogsPage();
       await flushMicrotasks();
 
-      expect(globalThis.renderSummary).toHaveBeenCalledWith({
-        currentPage: 1, total: 0, lastPage: 1, perPage: 25,
-      });
+      expect(document.getElementById('audit-total').textContent).toBe('0');
+      expect(document.getElementById('audit-page-summary').textContent).toBe('1 de 1');
+      expect(document.getElementById('audit-pagination-info').textContent).toBe('Sin registros');
     });
 
     it('uses generic fallback message when error has no message', async () => {

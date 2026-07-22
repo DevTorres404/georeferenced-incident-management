@@ -12,7 +12,8 @@
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=63">
+    <link rel="stylesheet" href="/css/app.css?v=68">
+    <link rel="stylesheet" href="/css/pages/audit.css?v=4">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -92,7 +93,7 @@
                             </form>
                         </div>
                         <div class="card-body p-0">
-                            <div class="table-responsive">
+                            <div class="table-responsive audit-log-table-wrap">
                                 <table class="table table-hover mb-0 audit-log-table">
                                     <thead>
                                         <tr>
@@ -106,7 +107,7 @@
                                     </thead>
                                     <tbody id="audit-log-table-body">
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted py-4">Cargando registros...
+                                            <td colspan="6" class="text-center text-muted py-4 audit-log-empty-state">Cargando registros...
                                             </td>
                                         </tr>
                                     </tbody>
@@ -134,7 +135,7 @@
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script type="module" src="/js/layout/layout.js?v=44"></script>
-    <script type="module" src="/js/modules/audit/presentation/audit-logs-page.js?v=2"></script>
+    <script type="module" src="/js/modules/audit/presentation/audit-logs-page.js?v=4"></script>
 </body>
 
 </html>

@@ -13,8 +13,8 @@
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/assignment-management.css?v=3">
+    <link rel="stylesheet" href="/css/app.css?v=68">
+    <link rel="stylesheet" href="/css/pages/assignment-management.css?v=5">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -31,7 +31,7 @@
         </aside>
         <div class="content-wrapper">
             <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
-                <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-user-check"></i> </div>
+                <div class="loader-orbit" aria-hidden="true"> <i class="fas fa-map-marker-alt"></i> </div>
             </div>
             <div class="content-header">
                 <div class="container-fluid">
@@ -42,8 +42,8 @@
                                 entre responsables principales y apoyos.</p>
                         </div>
                         <div class="col-sm-4 d-flex justify-content-sm-end align-items-center mt-3 mt-sm-0"> <a
-                                href="incidents.html" class="btn btn-outline-secondary btn-sm"> <i
-                                    class="fas fa-list mr-1"></i>Volver al listado </a> </div>
+                                href="incidents.html" id="assignmentBackLink" class="btn btn-outline-secondary btn-sm"> <i
+                                    class="fas fa-list mr-1"></i><span id="assignmentBackLinkLabel">Volver al listado</span> </a> </div>
                     </div>
                 </div>
             </div> <!-- Zona asignada (solo supervisores) -->
@@ -103,7 +103,7 @@
                                     class="fas fa-clipboard-list mr-2"></i>Incidencias por asignar o reasignar </h2>
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
+                            <div class="table-responsive assignment-table-wrap">
                                 <table id="assignmentTable" class="table table-hover align-middle mb-0">
                                     <thead>
                                         <tr>
@@ -162,7 +162,7 @@
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script type="module" src="/js/layout/layout.js?v=44"></script>
-    <script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=21"></script>
+    <script type="module" src="/js/modules/incidents/presentation/assignment-management-page.js?v=23"></script>
 </body>
 
 </html>

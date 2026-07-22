@@ -13,8 +13,8 @@
     <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
     <link rel="stylesheet" href="/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/css/app.css?v=63">
-    <link rel="stylesheet" href="/css/pages/reports.css?v=2">
+    <link rel="stylesheet" href="/css/app.css?v=69">
+    <link rel="stylesheet" href="/css/pages/reports.css?v=5">
     <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -50,14 +50,12 @@
             <div class="content">
                 <div class="container-fluid"> <!-- FILTRO DE PERIODO -->
                     <form class="reports-filter-bar mb-4" id="filtroReporte"> <label for="fFechaInicial">Desde:</label> <input type="date"
-                            class="form-control form-control-sm" id="fFechaInicial" name="fecha_inicial"
-                            style="width:150px;"> <label for="fFechaFinal">Hasta:</label> <input type="date"
-                            class="form-control form-control-sm" id="fFechaFinal" name="fecha_final"
-                            style="width:150px;"> <label for="selectTipoFiltro">Categoría:</label> <select class="form-control form-control-sm"
-                            id="selectTipoFiltro" style="width:160px;">
+                            class="form-control form-control-sm reports-filter-date" id="fFechaInicial" name="fecha_inicial"> <label for="fFechaFinal">Hasta:</label> <input type="date"
+                            class="form-control form-control-sm reports-filter-date" id="fFechaFinal" name="fecha_final"> <label for="selectTipoFiltro">Categoría:</label> <select class="form-control form-control-sm reports-filter-select"
+                            id="selectTipoFiltro">
                             <option value="">Todas las categorías</option>
-                        </select> <label for="selectEstadoFiltro">Estado:</label> <select class="form-control form-control-sm"
-                            id="selectEstadoFiltro" style="width:160px;">
+                        </select> <label for="selectEstadoFiltro">Estado:</label> <select class="form-control form-control-sm reports-filter-select"
+                            id="selectEstadoFiltro">
                             <option value="">Todos los estados</option>
                         </select> <button type="button" class="btn btn-sm btn-primary" id="btnFiltrar"> <i
                                 class="fas fa-filter mr-1"></i>Filtrar </button> <button type="button"
@@ -67,7 +65,7 @@
                                 class="btn btn-sm btn-outline-success" id="btnExportExcel"> <i
                                     class="fas fa-file-excel mr-1"></i>Excel </button> <button type="button"
                                 class="btn btn-sm btn-outline-danger" id="btnExportPDF"> <i
-                                    class="fas fa-file-pdf mr-1"></i>PDF </button> </div>
+                                    class="fas fa-file-pdf mr-1"></i>Generar PDF </button> </div>
                     </form>
                     <section class="reports-brief-card mb-4">
                         <div class="reports-brief-header">
@@ -195,7 +193,7 @@
     <script src="/plugins/chart.js/Chart.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script type="module" src="/js/layout/layout.js?v=44"></script>
-    <script type="module" src="/js/modules/reports/presentation/reports-page.js?v=29"></script>
+    <script type="module" src="/js/modules/reports/presentation/reports-page.js?v=30"></script>
 </body>
 
 </html>

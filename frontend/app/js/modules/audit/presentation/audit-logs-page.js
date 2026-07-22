@@ -105,7 +105,7 @@ export function renderAuditLogs(logs) {
   if (!logs.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="text-center text-muted py-4">
+        <td colspan="6" class="text-center text-muted py-4 audit-log-empty-state">
           <i class="fas fa-search d-block mb-2"></i>No se encontraron logs de auditoría.
         </td>
       </tr>`;
@@ -114,26 +114,26 @@ export function renderAuditLogs(logs) {
 
   tbody.innerHTML = logs.map((log) => `
     <tr>
-      <td>
+      <td data-label="Fecha">
         <span class="font-weight-bold">${escapeHtml(formatDateTime(log.createdAt))}</span>
         <small class="d-block text-muted">#${escapeHtml(log.id || '-')}</small>
       </td>
-      <td>${eventBadge(log.event)}</td>
-      <td>
+      <td data-label="Evento">${eventBadge(log.event)}</td>
+      <td data-label="Registro">
         <span class="font-weight-bold">${escapeHtml(formatAuditableType(log.auditableType))}</span>
         <small class="d-block text-muted">ID ${escapeHtml(log.auditableId || '-')}</small>
       </td>
-      <td>
+      <td data-label="Usuario">
         <span>${escapeHtml(log.user.name || 'Sistema')}</span>
         <small class="d-block text-muted">${escapeHtml(log.user.email || (log.user.id ? `Usuario #${log.user.id}` : 'Proceso interno'))}</small>
       </td>
-      <td>
+      <td data-label="Origen">
         <span>${escapeHtml(log.ipAddress || '-')}</span>
         <small class="d-block text-muted text-truncate audit-log-url" title="${escapeHtml(log.url || '')}">
           ${escapeHtml(log.url || 'Sin endpoint')}
         </small>
       </td>
-      <td>${renderChanges(log)}</td>
+      <td data-label="Cambios">${renderChanges(log)}</td>
     </tr>
   `).join('');
 }
@@ -183,6 +183,25 @@ export function formatDiffValue(value) {
   if (typeof value === 'boolean') return value ? 'Si' : 'No';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+}
+
+export function renderSummary(meta) {
+  const current = Math.max(Number(meta.currentPage || 1), 1);
+  const perPage = Math.max(Number(meta.perPage || 25), 1);
+  const total = Math.max(Number(meta.total || 0), 0);
+  const last = Math.max(Number(meta.lastPage || 1), 1);
+
+  setText('audit-total', String(total));
+  setText('audit-page-summary', `${current} de ${last}`);
+
+  if (total === 0) {
+    setText('audit-pagination-info', 'Sin registros');
+    return;
+  }
+
+  const first = ((current - 1) * perPage) + 1;
+  const lastVisible = Math.min(current * perPage, total);
+  setText('audit-pagination-info', `Mostrando ${first}-${lastVisible} de ${total} registros`);
 }
 
 export function renderPagination(meta) {

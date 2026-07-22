@@ -5,6 +5,21 @@ const state = {
     operators: [],
 };
 
+export function formatHours(value) {
+    const hours = Number(value);
+    if (!Number.isFinite(hours) || hours < 0) return '0 h 00 min';
+
+    return formatMinutesInHours(Math.round(hours * 60));
+}
+
+export function formatMinutesInHours(minutes) {
+    const totalMinutes = Math.max(0, Math.round(Number(minutes) || 0));
+    const hours = Math.floor(totalMinutes / 60);
+    const remainingMinutes = String(totalMinutes % 60).padStart(2, '0');
+
+    return `${hours} h ${remainingMinutes} min`;
+}
+
 async function initMyTeamPage() {
     await globalThis.renderLayout('my-team');
 
@@ -266,10 +281,10 @@ async function openPreviewModal(id) {
         document.getElementById('previewOpEmail').textContent = data.operator.email;
         document.getElementById('previewOpId').textContent = `ID #${String(data.operator.id).padStart(5, '0')}`;
         
-        document.getElementById('previewCurrentWorkload').textContent = data.metrics.current_workload;
+        document.getElementById('previewCurrentWorkload').textContent = `${data.metrics.current_workload} pts`;
         document.getElementById('previewTotalAssigned').textContent = data.metrics.total_assigned;
         document.getElementById('previewTotalResolved').textContent = data.metrics.total_resolved;
-        document.getElementById('previewAvgHours').textContent = data.metrics.avg_response_hours;
+        document.getElementById('previewAvgHours').textContent = formatHours(data.metrics.avg_response_hours);
         document.getElementById('previewReopenRate').textContent = data.metrics.reopen_rate;
         
         // Populate table
@@ -277,7 +292,7 @@ async function openPreviewModal(id) {
         tbody.innerHTML = '';
         
         if (!data.recent_incidents || data.recent_incidents.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay intervenciones registradas.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3 team-preview-empty-state">No hay intervenciones registradas.</td></tr>';
         } else {
             data.recent_incidents.forEach(item => {
                 const tr = document.createElement('tr');
@@ -309,10 +324,13 @@ async function openPreviewModal(id) {
                                 endStr = ` \nFinalizó: ${day}/${mon}/${yr} ${hr}:${min}`;
                             }
                             
-                            const dur = (h.duration_minutes !== undefined && h.duration_minutes !== null) ? ` \nTiempo: ${h.duration_minutes}m` : '';
+                            const durationLabel = (h.duration_minutes !== undefined && h.duration_minutes !== null)
+                                ? formatMinutesInHours(h.duration_minutes)
+                                : '';
+                            const dur = durationLabel ? ` \nTiempo: ${durationLabel}` : '';
                             const by = h.assigned_by_name ? ` \nPor: ${h.assigned_by_name}` : '';
                             
-                            cyclesHtml += `<span class="badge badge-light border mr-1 mb-1" title="Inició: ${dateStr}${endStr}${dur}${by}">#${idx+1} ${h.state_name} - ${h.priority_name}</span>`;
+                            cyclesHtml += `<span class="badge badge-light border mr-1 mb-1" title="Inició: ${dateStr}${endStr}${dur}${by}">#${idx+1} ${h.state_name} - ${h.priority_name}${durationLabel ? ` · ${durationLabel}` : ''}</span>`;
                         });
                         
                         if (inc.state && inc.state.is_final_state) {
@@ -326,7 +344,7 @@ async function openPreviewModal(id) {
                     }
                 }
 
-                let titleHtml = `<td>
+                let titleHtml = `<td data-label="Título">
                     <div class="text-truncate" style="max-width: 250px;" title="${title}">
                         ${title}
                         ${item.reopen_count > 0 ? `<span class="badge badge-danger ml-1" title="Reasignado ${item.reopen_count} veces tras resolverse">Reabierto: ${item.reopen_count}</span>` : ''}
@@ -354,12 +372,12 @@ async function openPreviewModal(id) {
                 }
                 
                 tr.innerHTML = `
-                    <td><strong>#${String(inc.id).padStart(6, '0')}</strong></td>
+                    <td data-label="Ticket"><strong>#${String(inc.id).padStart(6, '0')}</strong></td>
                     ${titleHtml}
-                    <td>${catName}</td>
-                    <td><span style="color: ${stateColor}; font-weight: bold;">${stateName}</span></td>
-                    <td>${terrName}</td>
-                    <td>${dateStr}</td>
+                    <td data-label="Categoría">${catName}</td>
+                    <td data-label="Estado"><span style="color: ${stateColor}; font-weight: bold;">${stateName}</span></td>
+                    <td data-label="Territorio">${terrName}</td>
+                    <td data-label="Asignación">${dateStr}</td>
                 `;
                 tbody.appendChild(tr);
             });

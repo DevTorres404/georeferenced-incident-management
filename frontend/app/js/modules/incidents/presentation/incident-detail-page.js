@@ -1221,14 +1221,16 @@ export function renderComments(comments) {
     const author = comment.user
       ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ')
       : 'Usuario';
+    const role = resolveUserRoleLabel(comment.user);
+    const authorWithRole = role ? `${author} (${role})` : author;
 
     return `
-      <div class="d-flex mb-3" style="gap:12px;">
+      <div class="d-flex mb-3 incident-comment" style="gap:12px;">
         <div class="comentario-avatar" style="background:${comment.is_internal ? '#6c757d' : '#007bff'};">
           ${escapeHtml(author.charAt(0).toUpperCase())}
         </div>
         <div class="comentario-card flex-grow-1">
-          <strong>${escapeHtml(author)}</strong>
+          <strong>${escapeHtml(authorWithRole)}</strong>
           <small class="text-muted ml-2">${escapeHtml(formatDateTime(comment.created_at))}</small>
           <p class="mb-0 mt-1">${escapeHtml(comment.comment || '')}</p>
         </div>
@@ -1258,6 +1260,8 @@ function renderAttachmentCard(attachment) {
   const author = attachment?.user
     ? [attachment.user.first_name, attachment.user.last_name].filter(Boolean).join(' ')
     : 'Usuario del sistema';
+  const role = resolveUserRoleLabel(attachment?.user);
+  const authorWithRole = role ? `${author} (${role})` : author;
   const resolvedUrl = resolveAttachmentUrl(attachment);
   const isImage = mimeType.startsWith('image/');
   const fileIconClass = attachmentIconClass(mimeType, fileName);
@@ -1275,11 +1279,11 @@ function renderAttachmentCard(attachment) {
     <article class="attachment-card">
       <div class="attachment-preview">${preview}</div>
       <div class="attachment-body">
-        <div class="d-flex justify-content-between align-items-start mb-2" style="gap:10px;">
+        <div class="d-flex justify-content-between align-items-start" style="gap:10px;">
           <div class="attachment-meta">
             <h4 class="attachment-title" title="${escapeHtml(fileName)}">${escapeHtml(fileName)}</h4>
             <div class="attachment-details">
-              <span><i class="fas fa-user mr-1"></i>${escapeHtml(author)}</span>
+              <span><i class="fas fa-user mr-1"></i>Subido por ${escapeHtml(authorWithRole)}</span>
               <span><i class="fas fa-clock mr-1"></i>${escapeHtml(formatDateTime(attachment?.created_at))}</span>
             </div>
           </div>
@@ -1297,6 +1301,18 @@ function renderAttachmentCard(attachment) {
         </div>
       </div>
     </article>`;
+}
+
+function resolveUserRoleLabel(user) {
+  if (!user) return '';
+
+  const roles = Array.isArray(user.roles) ? user.roles : [];
+  const role = roles.find((item) => item && (typeof item === 'string' || item.name || item.code));
+  const value = typeof role === 'string'
+    ? role
+    : role?.name || role?.code || user.role_name || user.role;
+
+  return value ? formatCatalogLabel(value) : '';
 }
 
 export function renderHistory(history) {
@@ -1572,7 +1588,7 @@ function removePendingRequestRow(requestId) {
   
   // If no more requests, remove the whole panel
   if (pendingStateRequests.length === 0) {
-    const tableContainer = document.querySelector('.table-responsive');
+    const tableContainer = document.querySelector('.pending-state-requests-table-wrap');
     if (tableContainer) {
       const card = tableContainer.closest('.card');
       if (card) {
@@ -1584,7 +1600,7 @@ function removePendingRequestRow(requestId) {
 
 function renderPendingStateRequests(requests) {
   return `
-    <div class="card card-outline card-warning mt-3">
+    <div class="card card-outline card-warning mt-3 pending-state-requests-card">
       <div class="card-header">
         <h3 class="card-title">
           <i class="fas fa-clock mr-2"></i>Solicitudes de cambio pendientes
@@ -1592,8 +1608,8 @@ function renderPendingStateRequests(requests) {
         </h3>
       </div>
       <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
+        <div class="table-responsive pending-state-requests-table-wrap">
+          <table class="table table-hover mb-0 pending-state-requests-table">
             <thead>
               <tr>
                 <th>Solicitante</th>
@@ -1610,17 +1626,19 @@ function renderPendingStateRequests(requests) {
                 const stateColor = r.requestedStateColor || r.requested_state_color || getStateHexColor(stateName);
                 return `
                   <tr>
-                    <td>${escapeHtml(requesterName)}</td>
-                    <td><span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
-                    <td>${escapeHtml(r.reason || '-')}</td>
-                    <td><small>${escapeHtml(formatDateTime(r.created_at || r.createdAt))}</small></td>
-                    <td>
-                      <button class="btn btn-sm btn-success mr-1" data-action="approve-request" data-request-id="${r.id}">
-                        <i class="fas fa-check mr-1"></i>Aprobar
-                      </button>
-                      <button class="btn btn-sm btn-danger" data-action="reject-request" data-request-id="${r.id}">
-                        <i class="fas fa-times mr-1"></i>Rechazar
-                      </button>
+                    <td data-label="Solicitante">${escapeHtml(requesterName)}</td>
+                    <td data-label="Estado solicitado"><span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
+                    <td data-label="Razón">${escapeHtml(r.reason || '-')}</td>
+                    <td data-label="Fecha"><small>${escapeHtml(formatDateTime(r.created_at || r.createdAt))}</small></td>
+                    <td data-label="Acciones">
+                      <div class="pending-state-request-actions">
+                        <button class="btn btn-sm btn-success" data-action="approve-request" data-request-id="${r.id}">
+                          <i class="fas fa-check mr-1"></i>Aprobar
+                        </button>
+                        <button class="btn btn-sm btn-danger" data-action="reject-request" data-request-id="${r.id}">
+                          <i class="fas fa-times mr-1"></i>Rechazar
+                        </button>
+                      </div>
                     </td>
                   </tr>`;
               }).join('')}

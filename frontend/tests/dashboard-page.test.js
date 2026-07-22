@@ -109,10 +109,13 @@ describe('dashboard-page.js — pure functions', () => {
 describe('dashboard-page.js — DOM rendering', () => {
   beforeEach(() => {
     vi.resetModules();
+    localStorage.clear();
     document.body.innerHTML = `
       <div id="kpiRow"></div>
       <div id="barrasPrioridad"></div>
       <div id="infoStack"></div>
+      <h2 id="recentIncidentsTitle"></h2>
+      <a id="recentIncidentsLink"><span id="recentIncidentsLinkLabel"></span></a>
       <table><tbody id="tablaUltimasBody"></tbody></table>
     `;
   });
@@ -156,6 +159,14 @@ describe('dashboard-page.js — DOM rendering', () => {
   });
 
   describe('renderRecentIncidents', () => {
+    it('resolves assignment navigation from permissions instead of a hardcoded role', async () => {
+      const { getDashboardIncidentNavigation } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
+      const navigation = getDashboardIncidentNavigation({ permissions: ['incidents.assign'] });
+
+      expect(navigation.listHref).toBe('assignment-management.html');
+      expect(navigation.incidentHref(12)).toBe('assignment-management.html?incident_id=12');
+    });
+
     it('renders table rows for incidents', async () => {
       const { renderRecentIncidents } = await import('../app/js/modules/dashboard/presentation/dashboard-page.js');
       const incidents = [{
