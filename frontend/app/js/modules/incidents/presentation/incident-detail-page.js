@@ -496,8 +496,8 @@ export function bindClassificationForm(incident, transitions, priorities, contai
   openButton.addEventListener('click', async () => {
     try {
       const response = await globalThis.SGIGIncidentsService?.listIncidentCategories?.()
-      categories = (Array.isArray(response?.data) ? response.data : [])
-        .filter(category => !category.is_fallback)
+      const rawCategories = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : [])
+      categories = rawCategories.filter(category => !category.is_fallback)
       fillClassificationSelect(categorySelect, categories, 'Seleccione categoría')
       fillClassificationSelect(subcategorySelect, [], 'Primero seleccione categoría')
       subcategorySelect.disabled = true
