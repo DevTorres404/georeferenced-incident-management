@@ -4,6 +4,7 @@ namespace App\Incidents\Infrastructure\Persistence\Repositories;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Domain\Repositories\IncidentMetricsRepositoryInterface;
+use App\Incidents\Domain\States\IncidentStateType;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
@@ -21,12 +22,23 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
     public function getKpis(int $userId): array
     {
+        $pendingStates = IncidentStateType::Pending->persistedNames();
+        $progressStates = array_merge(
+            IncidentStateType::InProgress->persistedNames(),
+            IncidentStateType::Assigned->persistedNames(),
+            IncidentStateType::Reopened->persistedNames(),
+        );
+        $resolvedStates = array_merge(
+            IncidentStateType::Resolved->persistedNames(),
+            IncidentStateType::Closed->persistedNames(),
+        );
+
         $totals = $this->visibleIncidentQuery($userId)->selectRaw("
             COUNT(*) as total,
-            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ('NUEVA', 'PENDIENTE')) THEN 1 ELSE 0 END) as pending,
-            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ('EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION')) THEN 1 ELSE 0 END) as progress,
-            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ('RESUELTA', 'CERRADA')) THEN 1 ELSE 0 END) as resolved
-        ")->first();
+            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ({$this->placeholders($pendingStates)})) THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ({$this->placeholders($progressStates)})) THEN 1 ELSE 0 END) as progress,
+            SUM(CASE WHEN state_id IN (SELECT id FROM core.states WHERE name IN ({$this->placeholders($resolvedStates)})) THEN 1 ELSE 0 END) as resolved
+        ", array_merge($pendingStates, $progressStates, $resolvedStates))->first();
 
         return [
             'total' => (int) ($totals->total ?? 0),
@@ -143,6 +155,17 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
 
     public function getTopCities(int $userId, int $limit = 6): array
     {
+        $pendingStates = IncidentStateType::Pending->persistedNames();
+        $progressStates = array_merge(
+            IncidentStateType::InProgress->persistedNames(),
+            IncidentStateType::Assigned->persistedNames(),
+            IncidentStateType::Reopened->persistedNames(),
+        );
+        $resolvedStates = array_merge(
+            IncidentStateType::Resolved->persistedNames(),
+            IncidentStateType::Closed->persistedNames(),
+        );
+
         $territories = $this->visibleIncidentQuery($userId)
             ->leftJoin('core.territorial_units as unit', 'core.incidents.territorial_unit_id', '=', 'unit.id')
             ->leftJoin('core.territorial_units as parent', 'unit.parent_id', '=', 'parent.id')
@@ -154,10 +177,19 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
                 'parent.name as parent',
                 'grandparent.name as grandparent',
                 'greatgrandparent.name as greatgrandparent',
-                DB::raw('COUNT(*) as total'),
-                DB::raw("SUM(CASE WHEN core.states.name IN ('NUEVA', 'PENDIENTE') THEN 1 ELSE 0 END) as pending"),
-                DB::raw("SUM(CASE WHEN core.states.name IN ('EN_REVISION', 'EN_PROGRESO', 'EN PROCESO', 'EN_ATENCION') THEN 1 ELSE 0 END) as progress"),
-                DB::raw("SUM(CASE WHEN core.states.name IN ('RESUELTA', 'CERRADA') THEN 1 ELSE 0 END) as resolved")
+                DB::raw('COUNT(*) as total')
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN core.states.name IN ({$this->placeholders($pendingStates)}) THEN 1 ELSE 0 END) as pending",
+                $pendingStates
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN core.states.name IN ({$this->placeholders($progressStates)}) THEN 1 ELSE 0 END) as progress",
+                $progressStates
+            )
+            ->selectRaw(
+                "SUM(CASE WHEN core.states.name IN ({$this->placeholders($resolvedStates)}) THEN 1 ELSE 0 END) as resolved",
+                $resolvedStates
             )
             ->groupBy('unit.name', 'parent.name', 'grandparent.name', 'greatgrandparent.name')
             ->orderByDesc('total')
@@ -189,7 +221,10 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
     {
         $avg = $this->visibleIncidentQuery($userId)
             ->join('core.states', 'core.incidents.state_id', '=', 'core.states.id')
-            ->whereIn('core.states.name', ['RESUELTA', 'CERRADA'])
+            ->whereIn('core.states.name', array_merge(
+                IncidentStateType::Resolved->persistedNames(),
+                IncidentStateType::Closed->persistedNames(),
+            ))
             ->whereNotNull('resolution_date')
             ->whereNotNull('core.incidents.created_at')
             ->selectRaw('AVG(EXTRACT(EPOCH FROM (resolution_date - core.incidents.created_at)) / 86400) as avg_days')
@@ -234,6 +269,14 @@ class EloquentIncidentMetricsRepository implements IncidentMetricsRepositoryInte
         }
 
         return $query->where('core.incidents.reported_by_id', $userId);
+    }
+
+    /**
+     * @param  array<int, string>  $values
+     */
+    private function placeholders(array $values): string
+    {
+        return implode(', ', array_fill(0, count($values), '?'));
     }
 
     private function applyZoneFilterToTerritoryQuery(Builder $query, array $zoneIds): void

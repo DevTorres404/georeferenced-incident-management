@@ -243,10 +243,10 @@ class IncidentUseCaseTest extends TestCase
             ->with(1, 5)
             ->times(8)
             ->andReturn($transition);
-        $this->incidentRepository->shouldReceive('stateNameById')
+        $this->incidentRepository->shouldReceive('stateById')
             ->with(5)
             ->times(8)
-            ->andReturn('REABIERTA');
+            ->andReturn($this->state('REABIERTA'));
         $this->incidentRepository->shouldReceive('changeState')
             ->with(1, 2, Mockery::on(
                 fn (ChangeStateInputData $data): bool => $data->comment === "\u{200B}Visible reason\u{200B}"
@@ -301,8 +301,8 @@ class IncidentUseCaseTest extends TestCase
         $this->incidentRepository->shouldReceive('loadForUpdate')->with(1)->twice()->andReturn($incident);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 5)->once()->andReturn($reopeningTransition);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($unrelatedTransition);
-        $this->incidentRepository->shouldReceive('stateNameById')->with(5)->once()->andReturn('REABIERTA');
-        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('EN_REVISION');
+        $this->incidentRepository->shouldReceive('stateById')->with(5)->once()->andReturn($this->state('REABIERTA'));
+        $this->incidentRepository->shouldReceive('stateById')->with(3)->once()->andReturn($this->state('EN_REVISION'));
         $this->incidentRepository->shouldReceive('changeState')
             ->with(1, 2, Mockery::on(fn (ChangeStateInputData $data): bool => $data->stateId === 3))
             ->once()
@@ -336,7 +336,7 @@ class IncidentUseCaseTest extends TestCase
             ->andReturnUsing(fn ($operation) => $operation());
         $this->incidentRepository->shouldReceive('loadForUpdate')->with(1)->once()->andReturn($incident);
         $this->incidentRepository->shouldReceive('findTransition')->with(1, 3)->once()->andReturn($transition);
-        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('EN_PROGRESO');
+        $this->incidentRepository->shouldReceive('stateById')->with(3)->once()->andReturn($this->state('EN_PROGRESO'));
         $this->incidentRepository->shouldReceive('changeState')
             ->with(1, 2, Mockery::type(ChangeStateInputData::class))
             ->once()
@@ -378,10 +378,10 @@ class IncidentUseCaseTest extends TestCase
             ->once()
             ->andReturn($this->incidentWithState($incidentId, 'EN_PROGRESO'));
 
-        $this->incidentRepository->shouldReceive('stateNameById')
+        $this->incidentRepository->shouldReceive('stateById')
             ->with(3)
             ->once()
-            ->andReturn('RESUELTA');
+            ->andReturn($this->state('RESUELTA'));
 
         $this->incidentRepository->shouldReceive('hasActiveAssignment')
             ->with($incidentId, $userId)
@@ -442,7 +442,7 @@ class IncidentUseCaseTest extends TestCase
             ->with(10)
             ->once()
             ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
-        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('RESUELTA');
+        $this->incidentRepository->shouldReceive('stateById')->with(3)->once()->andReturn($this->state('RESUELTA'));
         $this->incidentRepository->shouldReceive('hasActiveAssignment')->with(10, 5)->once()->andReturn(true);
 
         $this->incidentRepository->shouldReceive('findPendingStateChangeRequest')
@@ -480,7 +480,7 @@ class IncidentUseCaseTest extends TestCase
             ->with(10)
             ->once()
             ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
-        $this->incidentRepository->shouldReceive('stateNameById')->with(5)->once()->andReturn('CERRADA');
+        $this->incidentRepository->shouldReceive('stateById')->with(5)->once()->andReturn($this->state('CERRADA'));
 
         $this->expectException(IncidentException::class);
         $this->expectExceptionMessage('Los operadores solo pueden solicitar el estado RESUELTA.');
@@ -499,7 +499,7 @@ class IncidentUseCaseTest extends TestCase
             ->with(10)
             ->once()
             ->andReturn($this->incidentWithState(10, 'EN_PROGRESO'));
-        $this->incidentRepository->shouldReceive('stateNameById')->with(3)->once()->andReturn('RESUELTA');
+        $this->incidentRepository->shouldReceive('stateById')->with(3)->once()->andReturn($this->state('RESUELTA'));
         $this->incidentRepository->shouldReceive('hasActiveAssignment')->with(10, 5)->once()->andReturn(false);
 
         $this->expectException(IncidentException::class);
@@ -661,7 +661,12 @@ class IncidentUseCaseTest extends TestCase
             reporterUserId: 1,
             assigneeUserId: null,
             stateId: 1,
-            state: new IncidentState(id: 1, name: $stateName, allowsEdition: false, isFinal: false)
+            state: $this->state($stateName)
         );
+    }
+
+    private function state(string $name): IncidentState
+    {
+        return new IncidentState(id: 1, name: $name, allowsEdition: false, isFinal: false);
     }
 }

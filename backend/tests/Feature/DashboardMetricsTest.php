@@ -30,6 +30,7 @@ class DashboardMetricsTest extends TestCase
         $admin = $this->authenticateAs('ADMIN', 'admin@incidencias.local');
 
         $stateN = State::where('name', 'NUEVA')->firstOrFail();
+        $stateP = State::where('name', 'EN_PROGRESO')->firstOrFail();
         $stateR = State::where('name', 'RESUELTA')->firstOrFail();
         $cat = Category::firstOrFail();
         $pri = Priority::firstOrFail();
@@ -64,6 +65,18 @@ class DashboardMetricsTest extends TestCase
             ]);
         }
 
+        Incident::create([
+            'code' => 'PROGRESS-1',
+            'title' => 'Incident in progress',
+            'description' => 'Test',
+            'state_id' => $stateP->id,
+            'category_id' => $cat->id,
+            'priority_id' => $pri->id,
+            'reported_by_id' => $admin['user']->id,
+            'latitude' => 0,
+            'longitude' => 0,
+        ]);
+
         $response = $this->actingAsUser($admin['user'])
             ->getJson('/api/dashboard/metrics');
 
@@ -80,8 +93,9 @@ class DashboardMetricsTest extends TestCase
                     'averageResolutionDays',
                 ],
             ])
-            ->assertJsonPath('data.kpis.total', 5)
+            ->assertJsonPath('data.kpis.total', 6)
             ->assertJsonPath('data.kpis.pending', 3)
+            ->assertJsonPath('data.kpis.progress', 1)
             ->assertJsonPath('data.kpis.resolved', 2);
     }
 

@@ -7,6 +7,7 @@ use App\Auth\Domain\Entities\AuthUser;
 use App\Incidents\Domain\Entities\Incident;
 use App\Incidents\Domain\Entities\IncidentState;
 use App\Incidents\Domain\Entities\IncidentTransition;
+use App\Incidents\Domain\States\IncidentStateType;
 use App\TerritorialUnits\Domain\Services\TerritorialHierarchyRules;
 use App\TerritorialUnits\Domain\ValueObjects\TerritorialUnitType;
 use DomainException;
@@ -36,6 +37,26 @@ class DomainRulesTest extends TestCase
         $this->assertFalse($incident->canChangeTo($transition, ['CIUDADANO'], 'Validado.'));
         $this->assertFalse($incident->canChangeTo($transition, ['SUPERVISOR'], '   '));
         $this->assertTrue($incident->canChangeTo($transition, ['SUPERVISOR'], 'Validado por supervisor.'));
+    }
+
+    public function test_incident_delegates_workflow_rules_to_polymorphic_state(): void
+    {
+        $inProgress = $this->incidentWithNamedState('EN_PROGRESO');
+        $closed = $this->incidentWithNamedState('CERRADA');
+        $resolvedState = new IncidentState(
+            id: 3,
+            name: 'RESUELTA',
+            allowsEdition: false,
+            isFinal: true
+        );
+
+        $this->assertTrue($inProgress->canBeAssigned());
+        $this->assertTrue($inProgress->canRequestResolution());
+        $this->assertFalse($closed->canBeAssigned());
+        $this->assertTrue($closed->isInState(IncidentStateType::Closed));
+        $this->assertFalse($closed->state?->countsAsActiveWorkload());
+        $this->assertTrue($resolvedState->requiresPriority());
+        $this->assertTrue($resolvedState->is(IncidentStateType::Resolved));
     }
 
     public function test_transition_without_role_restrictions_allows_any_role(): void
@@ -153,6 +174,25 @@ class DomainRulesTest extends TestCase
                 name: 'NUEVA',
                 allowsEdition: $allowsEdition,
                 isFinal: ! $allowsEdition
+            )
+        );
+    }
+
+    private function incidentWithNamedState(string $stateName): Incident
+    {
+        return new Incident(
+            id: 1,
+            code: 'INC-2026-00001',
+            title: 'Incidencia de prueba',
+            description: 'Descripcion de prueba',
+            reporterUserId: 10,
+            assigneeUserId: null,
+            stateId: 1,
+            state: new IncidentState(
+                id: 1,
+                name: $stateName,
+                allowsEdition: false,
+                isFinal: false
             )
         );
     }

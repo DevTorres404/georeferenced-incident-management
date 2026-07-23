@@ -22,9 +22,12 @@ use App\Incidents\Application\DTOs\RequestStateChangeInputData;
 use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
+use App\Incidents\Domain\Entities\IncidentState as DomainIncidentState;
 use App\Incidents\Domain\Entities\IncidentTransition;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Domain\States\IncidentStateBehaviorFactory;
+use App\Incidents\Domain\States\IncidentStateType;
 use App\Incidents\Infrastructure\Broadcasting\CommentCreated;
 use App\Incidents\Infrastructure\Broadcasting\IncidentAssigned;
 use App\Incidents\Infrastructure\Broadcasting\IncidentStateChanged;
@@ -35,6 +38,7 @@ use App\Incidents\Infrastructure\Persistence\Mappers\AttachmentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\CommentMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentDetailMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentMapper;
+use App\Incidents\Infrastructure\Persistence\Mappers\IncidentStateMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentSummaryMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentTransitionMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\NotificationMapper;
@@ -62,15 +66,6 @@ use Illuminate\Support\Str;
 
 final class EloquentIncidentRepository implements IncidentRepositoryInterface // NOSONAR - Infrastructure repository implementing a domain interface; public methods match the repository contract and support methods are private
 {
-    private const INACTIVE_WORKLOAD_STATE_NAMES = [
-        'CERRADA',
-        'CANCELADA',
-        'RECHAZADA',
-        'CLOSED',
-        'CANCELLED',
-        'REJECTED',
-    ];
-
     private const RELATIONS = [
         'category',
         'subcategory',
@@ -84,6 +79,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     public function __construct(
         private IncidentMapper $incidentMapper,
+        private IncidentStateMapper $incidentStateMapper,
         private IncidentTransitionMapper $incidentTransitionMapper,
         private IncidentSummaryMapper $incidentSummaryMapper,
         private IncidentDetailMapper $incidentDetailMapper,
@@ -602,12 +598,12 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 throw IncidentException::stateRequiredForAssignment();
             }
 
-            $currentStateName = strtoupper((string) ($incident->state?->name ?? ''));
-            if (in_array($currentStateName, ['CERRADA', 'CLOSED'], true)) {
+            $domainIncident = $this->incidentMapper->fromModel($incident);
+            if ($domainIncident->isInState(IncidentStateType::Closed)) {
                 throw IncidentException::closedIncidentAssignmentNotAllowed();
             }
 
-            if ($currentStateName !== 'EN_PROGRESO' && $currentStateName !== 'IN_PROGRESS') {
+            if (! $domainIncident->canBeAssigned()) {
                 throw IncidentException::inProgressRequiredForAssignment();
             }
 
@@ -673,7 +669,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
             if ($this->shouldMoveIncidentToAssignedState($incident)) {
                 $assignedStateId = State::query()
-                    ->whereIn('name', ['ASIGNADA', 'ASSIGNED'])
+                    ->whereIn('name', IncidentStateType::Assigned->persistedNames())
                     ->value('id');
 
                 if ($assignedStateId) {
@@ -757,10 +753,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     public function changeState(int $incidentId, int $userId, ChangeStateInputData $data): \App\Incidents\Domain\Entities\Incident
     {
         $newState = State::findOrFail($data->stateId);
-        $normalizedNewState = strtoupper((string) $newState->name);
-        $isClosing = in_array($normalizedNewState, ['CERRADA', 'CLOSED'], true);
-        $isReopening = in_array($normalizedNewState, ['REABIERTA', 'REOPENED'], true);
-        $isResolved = in_array($normalizedNewState, ['RESUELTA', 'RESOLVED'], true);
+        $domainNewState = $this->incidentStateMapper->fromModel($newState);
+        $isClosing = $domainNewState->is(IncidentStateType::Closed);
+        $isReopening = $domainNewState->is(IncidentStateType::Reopened);
+        $isResolved = $domainNewState->is(IncidentStateType::Resolved);
         $releasesAssignments = $isClosing;
         [$assignedOperatorIds, $previousStateId] = DB::transaction(function () use (
             $incidentId,
@@ -770,12 +766,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             $isClosing,
             $isResolved,
             $isReopening,
-            $releasesAssignments
+            $releasesAssignments,
+            $domainNewState
         ): array {
             $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
             $previousStateId = $incident->state_id;
 
-            if (! $incident->priority_id && in_array(strtoupper((string) $newState->name), ['EN_PROGRESO', 'RESUELTA', 'CERRADA'], true)) {
+            if (! $incident->priority_id && $domainNewState->requiresPriority()) {
                 throw IncidentException::priorityRequiredForState();
             }
 
@@ -849,19 +846,19 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                        
+
                         if ($assignment->assignment_role === 'primary') {
                             $primaryId = $assignment->user_id;
                         }
                     }
                     IncidentAssignment::insert($newAssignments);
-                    
+
                     if ($primaryId) {
                         $updateData['current_assigned_id'] = $primaryId;
                     }
                 }
             } else {
-                if (in_array(strtoupper((string) $newState->name), ['RECHAZADA', 'REJECTED'], true)) {
+                if ($domainNewState->is(IncidentStateType::Rejected)) {
                     $updateData['rejected_at'] = $incident->rejected_at ?? now();
                 } elseif ($newState->is_final_state) {
                     $updateData['resolution_date'] = $incident->resolution_date ?? now();
@@ -940,7 +937,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         [$title, $message, $type] = $this->stateNotificationPayload(
             incidentCode: $incident->code,
             previousStateName: $previousState?->name,
-            newStateName: $newState->name,
+            newState: $domainNewState,
             comment: $data->comment
         );
 
@@ -966,11 +963,12 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             $this->notifyAssignedOperatorsForStateChange(
                 $incident,
                 $newState,
+                $domainNewState,
                 $isClosing ? $assignedOperatorIds : null
             );
         }
 
-        $this->notifySupervisorsForStateChange($incident, $newState);
+        $this->notifySupervisorsForStateChange($incident, $domainNewState);
 
         $changer = User::query()->find($userId);
 
@@ -1249,18 +1247,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         return null;
     }
 
-    private function notifySupervisorsForStateChange(Incident $incident, State $newState): void
-    {
-        $normalizedState = strtoupper(str_replace(' ', '_', $newState->name));
-
-        match ($normalizedState) {
-            'RECHAZADA' => $this->notifyZoneSupervisorsForIncident(
+    private function notifySupervisorsForStateChange(
+        Incident $incident,
+        DomainIncidentState $domainState
+    ): void {
+        match ($domainState->type()) {
+            IncidentStateType::Rejected => $this->notifyZoneSupervisorsForIncident(
                 incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Incidencia rechazada',
                 message: "Una incidencia fue rechazada por el operador: {$incident->code}.",
                 type: 'STATUS_CHANGE'
             ),
-            'CERRADA' => $this->notifyZoneSupervisorsForIncident(
+            IncidentStateType::Closed => $this->notifyZoneSupervisorsForIncident(
                 incident: $incident->loadMissing('territorialUnit.'.TerritorialUnit::PARENT_CHAIN),
                 title: 'Incidencia cerrada',
                 message: "Se cerro la incidencia {$incident->code}.",
@@ -1273,6 +1271,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     private function notifyAssignedOperatorsForStateChange(
         Incident $incident,
         State $newState,
+        DomainIncidentState $domainState,
         ?array $operatorIds = null
     ): void {
         $operatorIds ??= IncidentAssignment::query()
@@ -1286,9 +1285,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             return;
         }
 
-        $normalizedState = strtoupper(str_replace(' ', '_', $newState->name));
-
-        if ($normalizedState === 'REABIERTA') {
+        if ($domainState->is(IncidentStateType::Reopened)) {
             $title = 'Incidencia reabierta';
             $message = "La incidencia {$incident->code} fue reabierta por el supervisor. Por favor, revisela nuevamente.";
             $type = 'STATUS_CHANGE';
@@ -1315,25 +1312,24 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
     private function stateNotificationPayload(
         string $incidentCode,
         ?string $previousStateName,
-        string $newStateName,
+        DomainIncidentState $newState,
         ?string $comment
     ): array {
-        $normalizedState = strtoupper(str_replace(' ', '_', $newStateName));
         $previousLabel = $this->formatStateLabel($previousStateName ?: 'Pendiente');
-        $newLabel = $this->formatStateLabel($newStateName);
+        $newLabel = $this->formatStateLabel($newState->name);
 
-        return match ($normalizedState) {
-            'RECHAZADA' => [
+        return match ($newState->type()) {
+            IncidentStateType::Rejected => [
                 'Incidencia rechazada',
                 trim("Tu incidencia {$incidentCode} fue rechazada.".($comment ? " Motivo: {$comment}" : '')),
                 'STATUS_CHANGE',
             ],
-            'RESUELTA' => [
+            IncidentStateType::Resolved => [
                 'Incidencia resuelta',
                 "Tu incidencia {$incidentCode} fue marcada como resuelta.",
                 'STATUS_CHANGE',
             ],
-            'CERRADA' => [
+            IncidentStateType::Closed => [
                 'Incidencia cerrada',
                 "Tu incidencia {$incidentCode} fue cerrada correctamente.",
                 'INCIDENT_CLOSED',
@@ -1442,7 +1438,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 $assignmentQuery->where('user_id', $assigneeUserId)
                     ->where('active', true);
             })
-            ->whereDoesntHave('state', fn ($stateQuery) => $stateQuery->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->whereDoesntHave(
+                'state',
+                fn ($stateQuery) => $stateQuery->whereIn('name', IncidentStateType::inactiveWorkloadNames())
+            )
             ->count();
     }
 
@@ -1456,7 +1455,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             })
             ->leftJoin('core.priorities', 'core.priorities.id', '=', 'core.incidents.priority_id')
             ->join('core.states', 'core.states.id', '=', 'core.incidents.state_id')
-            ->whereNotIn('core.states.name', self::INACTIVE_WORKLOAD_STATE_NAMES)
+            ->whereNotIn('core.states.name', IncidentStateType::inactiveWorkloadNames())
             ->sum(DB::raw('COALESCE(core.priorities.weight, 0)'));
     }
 
@@ -1466,7 +1465,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             return true;
         }
 
-        return ! in_array($stateName, self::INACTIVE_WORKLOAD_STATE_NAMES, true);
+        return IncidentStateBehaviorFactory::fromName($stateName)
+            ->countsAsActiveWorkload();
     }
 
     private function applyFilterCriteria($query, IncidentFiltersData $filters, int $userId): void
@@ -1686,9 +1686,9 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
 
     private function shouldMoveIncidentToAssignedState(Incident $incident): bool
     {
-        $stateName = strtoupper((string) ($incident->state?->name ?? ''));
-
-        return in_array($stateName, ['NUEVA', 'PENDIENTE', 'PENDING'], true);
+        return $this->incidentMapper
+            ->fromModel($incident)
+            ->state?->movesToAssignedOnAssignment() ?? false;
     }
 
     private function appendResolutionSnapshot(Incident $incident, int $userId): void
@@ -1772,9 +1772,9 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         ])->save();
     }
 
-    public function stateNameById(int $stateId): ?string
+    public function stateById(int $stateId): ?DomainIncidentState
     {
-        return State::query()->whereKey($stateId)->value('name');
+        return $this->incidentStateMapper->fromModel(State::query()->find($stateId));
     }
 
     public function hasActiveAssignment(int $incidentId, int $userId): bool
@@ -1827,11 +1827,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 throw IncidentException::stateChangeRequestAlreadyReviewed();
             }
 
-            if (strtoupper((string) $incident->state?->name) !== 'EN_PROGRESO') {
+            $domainIncident = $this->incidentMapper->fromModel($incident);
+            if (! $domainIncident->canRequestResolution()) {
                 throw IncidentException::stateChangeRequestInvalidSourceState();
             }
 
-            if (strtoupper((string) $request->requestedState?->name) !== 'RESUELTA') {
+            $requestedState = $this->incidentStateMapper->fromModel($request->requestedState);
+            if (! $requestedState?->is(IncidentStateType::Resolved)) {
                 throw IncidentException::stateChangeRequestInvalidTargetState();
             }
 
