@@ -9,6 +9,7 @@ import {
 } from '../core/auth-session.js?v=16'
 export { normalizePermissionCode } from '../core/auth-session.js?v=16'
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21'
+import { INCIDENT_STATES } from '../modules/incidents/domain/incident-states.js?v=1'
 
 /**
  * ============================================================
@@ -553,7 +554,8 @@ function renderBetterNavbarNotifications(count, notifications) {
     const iconClass = getNotificationIconClass(notification.type)
     const typeClass = getNotificationTypeClass(notification.type)
     const time = formatRelativeTime(notification.created_at || notification.createdAt)
-    const isClosed = String(notification.message || '').toUpperCase().includes('CERRADA')
+    const isClosed = notification.type === 'INCIDENT_CLOSED' ||
+      String(notification.message || '').toUpperCase().includes(INCIDENT_STATES.CLOSED)
     const incidentId = isClosed ? '' : (notification.incident_id ?? notification.incidentId ?? '')
 
     return `

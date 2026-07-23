@@ -110,6 +110,15 @@ final class IncidentDetailMapper
             priority: $incident->relationLoaded('priority') && $incident->priority
                 ? new PrioritySummaryData((int) $incident->priority->id, $incident->priority->name, (int) $incident->priority->level)
                 : null,
+            classificationStatus: (string) ($incident->classification_status ?? 'CLASSIFIED'),
+            classificationDetail: $incident->classification_detail,
+            classifiedBy: $incident->relationLoaded('classifiedBy') && $incident->classifiedBy
+                ? [
+                    'id' => (int) $incident->classifiedBy->id,
+                    'name' => trim($incident->classifiedBy->first_name.' '.$incident->classifiedBy->last_name),
+                ]
+                : null,
+            classifiedAt: $incident->classified_at?->toIso8601String(),
             territorialUnit: $incident->relationLoaded('territorialUnit') && $incident->territorialUnit
                 ? new TerritorialUnitSummaryData(
                     (int) $incident->territorialUnit->id,

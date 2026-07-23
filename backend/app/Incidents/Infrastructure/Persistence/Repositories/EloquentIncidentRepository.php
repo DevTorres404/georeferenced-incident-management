@@ -9,6 +9,7 @@ use App\Incidents\Application\DTOs\AssignmentData;
 use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\ClassifyIncidentInputData;
 use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
@@ -24,6 +25,7 @@ use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\IncidentState as DomainIncidentState;
 use App\Incidents\Domain\Entities\IncidentTransition;
+use App\Incidents\Domain\Enums\IncidentClassificationStatus;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
 use App\Incidents\Domain\States\IncidentStateBehaviorFactory;
@@ -43,9 +45,11 @@ use App\Incidents\Infrastructure\Persistence\Mappers\IncidentSummaryMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\IncidentTransitionMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\NotificationMapper;
 use App\Incidents\Infrastructure\Persistence\Mappers\StateChangeRequestMapper;
+use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentClassificationHistory;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentCycle;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
@@ -75,6 +79,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         'reporter.roles',
         'currentAssignee.roles',
         'assignments.user',
+        'classifiedBy',
     ];
 
     public function __construct(
@@ -255,6 +260,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
         }
 
         $territorialUnitId = $data->territorialUnitId;
+        $category = Category::query()->findOrFail($data->categoryId);
+        $requiresClassification = trim((string) $data->classificationDetail) !== ''
+            || (bool) $category->is_fallback
+            || ($data->subcategoryId === null && $category->subcategories()->active()->exists());
 
         if ($territorialUnitId === null && $data->latitude !== null && $data->longitude !== null) {
             $resolved = $this->resolveTerritorialUnitFromCoordinates($data->latitude, $data->longitude);
@@ -263,7 +272,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             }
         }
 
-        return DB::transaction(function () use ($data, $initialState, $userId, $territorialUnitId) {
+        return DB::transaction(function () use (
+            $data,
+            $initialState,
+            $userId,
+            $territorialUnitId,
+            $requiresClassification
+        ) {
             $incident = Incident::create([
                 'title' => $data->title,
                 'description' => $data->description,
@@ -280,6 +295,16 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'state_id' => $initialState->id,
                 'reported_by_id' => $userId,
             ]);
+
+            $incident->forceFill([
+                'classification_status' => $requiresClassification
+                    ? IncidentClassificationStatus::Pending->value
+                    : IncidentClassificationStatus::Classified->value,
+                'classification_detail' => $requiresClassification
+                    ? trim((string) $data->classificationDetail)
+                    : null,
+                'classified_at' => $requiresClassification ? null : now(),
+            ])->saveQuietly();
 
             $cycle = IncidentCycle::create([
                 'incident_id' => $incident->id,
@@ -394,9 +419,44 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             'cycles.openedBy',
             'cycles.resolvedBy',
             'cycles.closedBy',
+            'classifiedBy',
         ])->findOrFail($incidentId);
 
         return $this->incidentDetailMapper->fromModel($incident);
+    }
+
+    public function classify(
+        int $incidentId,
+        int $userId,
+        ClassifyIncidentInputData $data
+    ): IncidentDetailData {
+        DB::transaction(function () use ($incidentId, $userId, $data): void {
+            $incident = Incident::query()->lockForUpdate()->findOrFail($incidentId);
+
+            if ($incident->classification_status !== IncidentClassificationStatus::Pending->value) {
+                throw IncidentException::classificationAlreadyCompleted();
+            }
+
+            IncidentClassificationHistory::create([
+                'incident_id' => $incident->id,
+                'previous_category_id' => $incident->category_id,
+                'previous_subcategory_id' => $incident->subcategory_id,
+                'new_category_id' => $data->categoryId,
+                'new_subcategory_id' => $data->subcategoryId,
+                'changed_by' => $userId,
+                'reason' => trim($data->reason),
+            ]);
+
+            $incident->forceFill([
+                'category_id' => $data->categoryId,
+                'subcategory_id' => $data->subcategoryId,
+                'classification_status' => IncidentClassificationStatus::Classified->value,
+                'classified_by' => $userId,
+                'classified_at' => now(),
+            ])->save();
+        });
+
+        return $this->loadDetail($incidentId);
     }
 
     public function findTransition(int $fromStateId, int $toStateId): ?IncidentTransition
@@ -599,6 +659,10 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             }
 
             $domainIncident = $this->incidentMapper->fromModel($incident);
+            if ($domainIncident->requiresClassification()) {
+                throw IncidentException::classificationRequiredForAssignment();
+            }
+
             if ($domainIncident->isInState(IncidentStateType::Closed)) {
                 throw IncidentException::closedIncidentAssignmentNotAllowed();
             }

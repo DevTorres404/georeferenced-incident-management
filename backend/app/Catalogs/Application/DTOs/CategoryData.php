@@ -21,6 +21,7 @@ final class CategoryData implements JsonSerializable
         public readonly ?string $icon,
         public readonly ?string $color,
         public readonly bool $isActive,
+        public readonly bool $isFallback = false,
         public readonly array $subcategories = []
     ) {}
 
@@ -33,6 +34,7 @@ final class CategoryData implements JsonSerializable
             'icon' => $this->icon,
             'color' => $this->color,
             'is_active' => $this->isActive,
+            'is_fallback' => $this->isFallback,
             'subcategories' => $this->subcategories,
         ];
     }

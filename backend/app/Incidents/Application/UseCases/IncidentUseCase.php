@@ -7,6 +7,7 @@ use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\ClassifyIncidentInputData;
 use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
@@ -84,6 +85,14 @@ final class IncidentUseCase
 
             return $this->incidentRepository->loadDetail($incidentId);
         });
+    }
+
+    public function classify(
+        int $incidentId,
+        int $userId,
+        ClassifyIncidentInputData $data
+    ): IncidentDetailData {
+        return $this->incidentRepository->classify($incidentId, $userId, $data);
     }
 
     public function delete(int $incidentId): void

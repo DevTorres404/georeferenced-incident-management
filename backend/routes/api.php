@@ -104,6 +104,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::post('/incidents/{incident}/comments', [IncidentController::class, 'addComment']);
         Route::post('/incidents/{incident}/assignments', [IncidentController::class, 'assign'])
             ->middleware('permission:incidents.assign');
+        Route::patch('/incidents/{incident}/classification', [IncidentController::class, 'classify'])
+            ->middleware('permission:incidents.edit');
         Route::patch('/incidents/{incident}/state', [IncidentController::class, 'changeState'])
             ->middleware('permission:incidents.edit');
 

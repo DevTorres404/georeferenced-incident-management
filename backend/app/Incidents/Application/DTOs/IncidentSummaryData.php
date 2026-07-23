@@ -26,6 +26,7 @@ final class IncidentSummaryData implements JsonSerializable
         public readonly ?string $dueDate = null,
         public readonly array $assignments = [],
         public readonly bool $hasPendingStateRequest = false,
+        public readonly string $classificationStatus = 'CLASSIFIED',
     ) {}
 
     public function jsonSerialize(): array
@@ -51,6 +52,7 @@ final class IncidentSummaryData implements JsonSerializable
             'due_date' => $this->dueDate,
             'assignments' => $this->assignments,
             'has_pending_state_request' => $this->hasPendingStateRequest,
+            'classification_status' => $this->classificationStatus,
         ];
     }
 }

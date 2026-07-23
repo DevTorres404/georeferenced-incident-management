@@ -3,6 +3,7 @@
 namespace App\Incidents\Infrastructure\Persistence\Mappers;
 
 use App\Incidents\Domain\Entities\Incident;
+use App\Incidents\Domain\Enums\IncidentClassificationStatus;
 use App\Incidents\Infrastructure\Persistence\Models\Incident as IncidentModel;
 
 final class IncidentMapper
@@ -19,7 +20,10 @@ final class IncidentMapper
             reporterUserId: (int) $incident->reported_by_id,
             assigneeUserId: $incident->current_assigned_id ? (int) $incident->current_assigned_id : null,
             stateId: (int) $incident->state_id,
-            state: $this->stateMapper->fromModel($incident->state)
+            state: $this->stateMapper->fromModel($incident->state),
+            classificationStatus: IncidentClassificationStatus::tryFrom(
+                (string) $incident->classification_status
+            ) ?? IncidentClassificationStatus::Classified
         );
     }
 }

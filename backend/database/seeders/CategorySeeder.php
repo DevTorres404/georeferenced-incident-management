@@ -13,6 +13,12 @@ class CategorySeeder extends Seeder
 {
     public function run(): void
     {
+        $unusedFallback = Category::query()
+            ->where('is_fallback', true)
+            ->whereDoesntHave('incidents')
+            ->first();
+        $unusedFallback?->delete();
+
         $categories = [
             [
                 'name' => 'Vialidad',
@@ -107,5 +113,16 @@ class CategorySeeder extends Seeder
                 );
             }
         }
+
+        Category::updateOrCreate(
+            ['name' => 'Sin clasificar'],
+            [
+                'description' => 'Clasificación temporal para incidencias que no están cubiertas por el catálogo.',
+                'icon' => 'fa-circle-question',
+                'color' => '#6B7280',
+                'is_active' => true,
+                'is_fallback' => true,
+            ]
+        );
     }
 }

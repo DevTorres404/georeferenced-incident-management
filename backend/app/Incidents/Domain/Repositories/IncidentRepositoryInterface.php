@@ -7,6 +7,7 @@ use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\AssignmentOperatorOptionData;
 use App\Incidents\Application\DTOs\AttachmentData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\ClassifyIncidentInputData;
 use App\Incidents\Application\DTOs\CommentData;
 use App\Incidents\Application\DTOs\IncidentAssignmentBatchData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
@@ -53,6 +54,12 @@ interface IncidentRepositoryInterface
     public function findTransition(int $fromStateId, int $toStateId): ?IncidentTransition;
 
     public function update(int $incidentId, UpdateIncidentInputData $data): Incident;
+
+    public function classify(
+        int $incidentId,
+        int $userId,
+        ClassifyIncidentInputData $data
+    ): IncidentDetailData;
 
     public function delete(int $incidentId): void;
 

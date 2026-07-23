@@ -79,6 +79,7 @@ final class IncidentSummaryMapper
                     ->all()
                 : [],
             hasPendingStateRequest: $incident->pending_state_change_requests_exists ?? false,
+            classificationStatus: (string) ($incident->classification_status ?? 'CLASSIFIED'),
         );
     }
 }

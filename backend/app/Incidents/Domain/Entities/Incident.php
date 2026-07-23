@@ -2,6 +2,7 @@
 
 namespace App\Incidents\Domain\Entities;
 
+use App\Incidents\Domain\Enums\IncidentClassificationStatus;
 use App\Incidents\Domain\States\IncidentStateType;
 use JsonSerializable;
 
@@ -15,7 +16,8 @@ final class Incident implements JsonSerializable
         public readonly int $reporterUserId,
         public readonly ?int $assigneeUserId,
         public readonly int $stateId,
-        public readonly ?IncidentState $state
+        public readonly ?IncidentState $state,
+        public readonly IncidentClassificationStatus $classificationStatus = IncidentClassificationStatus::Classified
     ) {}
 
     public function canBeEdited(): bool
@@ -25,7 +27,13 @@ final class Incident implements JsonSerializable
 
     public function canBeAssigned(): bool
     {
-        return $this->state?->canBeAssigned() ?? false;
+        return $this->classificationStatus->allowsAssignment()
+            && ($this->state?->canBeAssigned() ?? false);
+    }
+
+    public function requiresClassification(): bool
+    {
+        return $this->classificationStatus === IncidentClassificationStatus::Pending;
     }
 
     public function canRequestResolution(): bool
@@ -62,6 +70,7 @@ final class Incident implements JsonSerializable
             'assignee_user_id' => $this->assigneeUserId,
             'state_id' => $this->stateId,
             'state' => $this->state,
+            'classification_status' => $this->classificationStatus->value,
         ];
     }
 }

@@ -1,4 +1,5 @@
 import { escapeHtml, hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16'
+import { INCIDENT_STATES } from '../../incidents/domain/incident-states.js?v=1'
 import { fetchTeamOperators } from '../application/team-service.js?v=4'
 
 const state = {
@@ -343,7 +344,7 @@ async function openPreviewModal(id) {
             if (inc.state && inc.state.is_final_state) {
               const closedDate = inc.updated_at ? inc.updated_at.slice(0, 16).replace('T', ' ') : ''
               const closedIdx = filteredHistory.length + 1
-              const stateName = inc.state.name ? inc.state.name.toUpperCase() : 'CERRADA'
+              const stateName = inc.state.name ? inc.state.name.toUpperCase() : INCIDENT_STATES.CLOSED
               cyclesHtml += `<span class="badge badge-success border mr-1 mb-1" title="Fecha de cierre: ${closedDate} \n* La incidencia ya no admite actualizaciones">${stateName} (DEFINITIVO)</span>`
             }
 

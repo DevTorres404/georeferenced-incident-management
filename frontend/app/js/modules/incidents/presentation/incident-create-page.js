@@ -18,6 +18,7 @@ const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png']
 const INCIDENT_CREATE_INITIAL_CENTER = [-78.55, -1.7]
 const INCIDENT_CREATE_INITIAL_ZOOM = 6.15
 const DRAFT_STORAGE_KEY = 'SGI_incident_draft'
+const OTHER_SUBCATEGORY_VALUE = '__OTHER__'
 
 let currentStepIndex = 0
 let catalogs = {}
@@ -68,6 +69,7 @@ const DRAFT_FIELDS = [
   'fDescripcion',
   'fTipo',
   'fSubtipo',
+  'fClassificationDetail',
   'fDireccion',
   'fReferencia',
   'fLatitud',
@@ -298,6 +300,7 @@ function bindEvents() {
   })
 
   $('#fTipo')?.addEventListener('change', populateSubcategories)
+  $('#fSubtipo')?.addEventListener('change', syncClassificationFallbackUi)
   $('#fTerritorialProvince')?.addEventListener('change', () => populateTerritorialLevel('province'))
   $('#fTerritorialCanton')?.addEventListener('change', () => populateTerritorialLevel('canton'))
   // Parroquia no tiene hijos que popular ahora que sector es manual
@@ -430,19 +433,58 @@ export function renderStep() {
 }
 
 export function populateCatalogs() {
-  fillSelect($('#fTipo'), catalogs.categories, 'Seleccione tipo')
+  const categories = [...(catalogs.categories || [])]
+    .sort((left, right) => Number(Boolean(left.is_fallback)) - Number(Boolean(right.is_fallback)))
+    .map(category => ({
+      ...category,
+      name: category.is_fallback ? 'No encuentro el tipo de incidencia' : category.name
+    }))
+
+  fillSelect($('#fTipo'), categories, 'Seleccione tipo')
   fillSelect($('#fSubtipo'), [], 'Primero seleccione tipo')
   setDisabled('#fSubtipo', true)
+  syncClassificationFallbackUi()
 }
 
 export function populateSubcategories() {
   const categoryId = $('#fTipo')?.value
   const category = (catalogs.categories || []).find(item => String(item.id) === String(categoryId))
-  const options = category?.subcategories || []
+  const isFallback = Boolean(category?.is_fallback)
+  const options = isFallback ?
+    [] :
+    [
+      ...(category?.subcategories || []),
+      ...(category ? [{ id: OTHER_SUBCATEGORY_VALUE, name: 'Otro problema de esta categoría' }] : [])
+    ]
 
-  fillSelect($('#fSubtipo'), options, 'Seleccione subtipo')
-  setDisabled('#fSubtipo', options.length === 0)
+  fillSelect($('#fSubtipo'), options, isFallback ? 'No aplica' : 'Seleccione subtipo')
+  setDisabled('#fSubtipo', isFallback || options.length === 0)
   clearFieldError('fSubtipo')
+  syncClassificationFallbackUi()
+}
+
+export function requiresClassificationReview() {
+  const categoryId = String($('#fTipo')?.value || '')
+  const category = (catalogs.categories || [])
+    .find(item => String(item.id) === categoryId)
+
+  return Boolean(category?.is_fallback) ||
+    $('#fSubtipo')?.value === OTHER_SUBCATEGORY_VALUE
+}
+
+export function syncClassificationFallbackUi() {
+  const pending = requiresClassificationReview()
+  $('#classificationPendingNotice')?.classList.toggle('d-none', !pending)
+  $('#classificationDetailGroup')?.classList.toggle('d-none', !pending)
+
+  const detail = $('#fClassificationDetail')
+  if (detail) {
+    detail.required = pending
+    if (!pending) {
+      detail.value = ''
+      clearFieldError('fClassificationDetail')
+    }
+  }
 }
 
 export async function populateTerritorialProvinces() {
@@ -743,11 +785,16 @@ export async function handleSubmit(event) {
     title: $('#fTitulo').value.trim(),
     description: $('#fDescripcion').value.trim(),
     category_id: Number($('#fTipo').value),
-    subcategory_id: Number($('#fSubtipo').value),
+    subcategory_id: $('#fSubtipo').value && $('#fSubtipo').value !== OTHER_SUBCATEGORY_VALUE ?
+      Number($('#fSubtipo').value) :
+      null,
     address_reference: buildAddressText(),
     latitude: Number($('#fLatitud').value),
     longitude: Number($('#fLongitud').value),
-    territorial_unit_id: getSelectedTerritorialUnitId()
+    territorial_unit_id: getSelectedTerritorialUnitId(),
+    classification_detail: requiresClassificationReview() ?
+      $('#fClassificationDetail')?.value.trim() :
+      null
   }
 
   showSpinner('spinnerRegistrar', 'btnRegistrar')
@@ -765,7 +812,10 @@ export async function handleSubmit(event) {
       evidenceFiles.map(item => uploadIncidentAttachment(incident.id, item.file))
     )
 
-    showSuccessAlert(response?.message || 'Incidencia registrada con éxito.')
+    const successMessage = requiresClassificationReview() ?
+      'Incidencia registrada. Un supervisor revisará su clasificación antes de asignarla.' :
+      (response?.message || 'Incidencia registrada con éxito.')
+    showSuccessAlert(successMessage)
     clearDraft()
     globalThis.setTimeout(() => {
       globalThis.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`
@@ -885,7 +935,24 @@ export function validateDetails() {
   const categoryId = String($('#fTipo')?.value || '').trim()
   const subcategorySelect = $('#fSubtipo')
   if (categoryId && subcategorySelect && subcategorySelect.options.length > 0) {
-    valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid
+    const category = (catalogs.categories || [])
+      .find(item => String(item.id) === categoryId)
+    if (!category?.is_fallback) {
+      valid = validateSelect('fSubtipo', 'Selecciona el subtipo de incidencia.') && valid
+    }
+  }
+
+  if (requiresClassificationReview()) {
+    valid = validateText(
+      'fClassificationDetail',
+      10,
+      'Describe el tipo de problema con al menos 10 caracteres.'
+    ) && valid
+    valid = validateTextMax(
+      'fClassificationDetail',
+      1000,
+      'La descripción de clasificación no debe superar 1000 caracteres.'
+    ) && valid
   }
 
   valid = validateText('fDescripcion', 20, 'Describe la incidencia con al menos 20 caracteres.') && valid
@@ -1029,6 +1096,12 @@ export function renderSummary() {
       ['Título', $('#fTitulo')?.value],
       ['Tipo', selectedText('fTipo')],
       ['Subtipo', selectedText('fSubtipo')],
+      ...(requiresClassificationReview() ?
+        [
+          ['Clasificación', 'Pendiente de revisión'],
+          ['Detalle para clasificación', $('#fClassificationDetail')?.value]
+        ] :
+        []),
       ['Correo de contacto', $('#fCorreo')?.value],
       ['Descripción', $('#fDescripcion')?.value]
     ])

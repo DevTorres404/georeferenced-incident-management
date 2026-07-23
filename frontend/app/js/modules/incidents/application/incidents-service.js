@@ -92,6 +92,17 @@ async function assignIncidentOperators(incidentId, payload) {
   })
 }
 
+async function classifyIncident(incidentId, payload) {
+  return request(`/incidents/${incidentId}/classification`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  })
+}
+
+async function listIncidentCategories() {
+  return request('/catalogs/categories')
+}
+
 async function listAssignmentOperators() {
   return request('/incidents/assignment-operators')
 }
@@ -146,11 +157,13 @@ const incidentsService = {
   deleteIncident,
   addIncidentComment,
   assignIncidentOperators,
+  classifyIncident,
   changeIncidentState,
   listStates,
   listStateTransitions,
   listAssignmentOperators,
   listPriorities,
+  listIncidentCategories,
   requestStateChange,
   approveStateChangeRequest,
   rejectStateChangeRequest,
@@ -165,6 +178,7 @@ export {
   addIncidentComment,
   approveStateChangeRequest,
   assignIncidentOperators,
+  classifyIncident,
   changeIncidentState,
   createIncident,
   deleteIncident,
@@ -174,6 +188,7 @@ export {
   listAssignmentOperators,
   listIncidents,
   listPriorities,
+  listIncidentCategories,
   listStates,
   listStateTransitions,
   rejectStateChangeRequest,

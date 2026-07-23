@@ -14,6 +14,12 @@ import {
 } from '../application/incidents-service.js?v=17'
 import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2'
 import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1'
+import {
+  INCIDENT_STATE_GROUPS,
+  INCIDENT_STATES,
+  isIncidentState,
+  isIncidentStateIn
+} from '../domain/incident-states.js?v=1'
 import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21'
 import {
   API_URL,
@@ -132,11 +138,18 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const isOperatorRole = isOperator()
   const isFinalState = Boolean(incident.state?.is_final_state)
   const isReadOnly = isFinalState ||
-                     normalizeCode(incident.state?.name) === 'RESUELTA' ||
-                     (isOperatorRole && normalizeCode(incident.state?.name) !== 'EN_PROGRESO')
+                     isIncidentState(incident.state?.name, INCIDENT_STATES.RESOLVED) ||
+                     (isOperatorRole && !isIncidentState(incident.state?.name, INCIDENT_STATES.IN_PROGRESS))
   const canChangeState = hasPermission('incidents.edit') && !isOperatorRole && !isFinalState
-  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION' && !isFinalState
-  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state) && !isFinalState
+  const canAssignPriority = canManagePriority() &&
+    isIncidentState(incident.state?.name, INCIDENT_STATES.UNDER_REVIEW) &&
+    !isFinalState
+  const classificationPending = incident.classification_status === 'PENDING'
+  const canClassify = classificationPending && canChangeState
+  const canAssign = hasPermission('incidents.assign') &&
+    isStrictlyInProgress(incident.state) &&
+    !isFinalState &&
+    !classificationPending
   const hasValidCoordinates = hasCoordinates(incident)
   const historyTooltip = renderRecentStateChangesTooltip(history)
 
@@ -174,7 +187,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               </small>
             </div>
           ` : ''}
-          ${!canChangeState && isOperatorRole && normalizeCode(incident.state?.name) === 'EN_PROGRESO' ? `<div id="operatorStateButtonContainer" class="flex-grow-1 flex-md-grow-0">${renderOperatorStateButton(incident)}</div>` : ''}
+          ${!canChangeState && isOperatorRole && isIncidentState(incident.state?.name, INCIDENT_STATES.IN_PROGRESS) ? `<div id="operatorStateButtonContainer" class="flex-grow-1 flex-md-grow-0">${renderOperatorStateButton(incident)}</div>` : ''}
           ${canAssign ? `<a href="assignment-management.html?incident_id=${incident.id}" class="btn btn-sm btn-outline-info flex-grow-1 flex-md-grow-0">
             <i class="fas fa-users mr-1"></i>Gestionar asignaciones
           </a>` : ''}
@@ -184,6 +197,23 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
         </div>
       </div>
     </div>
+
+    ${classificationPending ? `
+      <div class="alert alert-warning shadow-sm" id="classificationPendingAlert" role="alert">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="gap:12px;">
+          <div>
+            <h5 class="alert-heading mb-1"><i class="fas fa-tags mr-2"></i>Clasificación pendiente</h5>
+            <p class="mb-1">El catálogo no cubrió este reporte. Debe clasificarse antes de asignar operadores.</p>
+            <small><strong>Detalle del ciudadano:</strong> ${escapeHtml(incident.classification_detail || 'Sin detalle adicional.')}</small>
+          </div>
+          ${canClassify ? `
+            <button type="button" class="btn btn-dark flex-shrink-0" id="btnClassifyIncident">
+              <i class="fas fa-check mr-1"></i>Clasificar incidencia
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    ` : ''}
 
     ${canChangeState && pendingStateRequests.length > 0 ? renderPendingStateRequests(pendingStateRequests) : ''}
 
@@ -424,6 +454,10 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
     bindStateChangeControl(incident, transitions)
   }
 
+  if (canClassify) {
+    bindClassificationForm(incident, transitions, priorities, container)
+  }
+
   // Bind para operador: solicitar cambio de estado
   bindOperatorStateButton(incident)
 
@@ -431,6 +465,106 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   if (canChangeState && pendingStateRequests.length > 0) {
     bindReviewRequestButtons(incident)
   }
+}
+
+export function bindClassificationForm(incident, transitions, priorities, container) {
+  const openButton = document.getElementById('btnClassifyIncident')
+  const form = document.getElementById('formClasificarIncidencia')
+  const categorySelect = document.getElementById('classificationCategory')
+  const subcategorySelect = document.getElementById('classificationSubcategory')
+  const reasonInput = document.getElementById('classificationReason')
+  const detail = document.getElementById('classificationCitizenDetail')
+
+  if (!openButton || !form || !categorySelect || !subcategorySelect || !reasonInput) {
+    return
+  }
+
+  let categories = []
+
+  const populateSubcategories = () => {
+    const category = categories.find(item => String(item.id) === categorySelect.value)
+    const subcategories = category?.subcategories || []
+    fillClassificationSelect(
+      subcategorySelect,
+      subcategories,
+      subcategories.length ? 'Seleccione subcategoría' : 'No aplica'
+    )
+    subcategorySelect.disabled = subcategories.length === 0
+    subcategorySelect.required = subcategories.length > 0
+  }
+
+  openButton.addEventListener('click', async () => {
+    try {
+      const response = await globalThis.SGIGIncidentsService?.listIncidentCategories?.()
+      categories = (Array.isArray(response?.data) ? response.data : [])
+        .filter(category => !category.is_fallback)
+      fillClassificationSelect(categorySelect, categories, 'Seleccione categoría')
+      fillClassificationSelect(subcategorySelect, [], 'Primero seleccione categoría')
+      subcategorySelect.disabled = true
+      reasonInput.value = ''
+      if (detail) {
+        detail.textContent = incident.classification_detail || 'Sin detalle adicional.'
+      }
+
+      globalThis.$?.('#modalClasificarIncidencia')?.modal?.('show')
+    } catch (error) {
+      showGlobalAlert(error.message || 'No se pudo cargar el catálogo.', 'danger')
+    }
+  })
+
+  categorySelect.addEventListener('change', populateSubcategories)
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault()
+    const reason = reasonInput.value.trim()
+    if (!categorySelect.value || (subcategorySelect.required && !subcategorySelect.value) || reason.length < 10) {
+      form.classList.add('was-validated')
+      showGlobalAlert('Completa la clasificación y explica el motivo.', 'warning')
+      return
+    }
+
+    const submitButton = document.getElementById('btnConfirmClassification')
+    if (submitButton) {
+      submitButton.disabled = true
+    }
+
+    try {
+      const response = await globalThis.SGIGIncidentsService?.classifyIncident?.(incident.id, {
+        category_id: Number(categorySelect.value),
+        subcategory_id: subcategorySelect.value ? Number(subcategorySelect.value) : null,
+        reason
+      })
+      const updatedIncident = response?.data
+      if (!updatedIncident) {
+        throw new Error('El servidor no devolvió la incidencia actualizada.')
+      }
+
+      globalThis.$?.('#modalClasificarIncidencia')?.modal?.('hide')
+      showGlobalAlert(response?.message || 'Clasificación actualizada correctamente.', 'success')
+      renderIncidentDetail(container, updatedIncident, transitions, priorities)
+    } catch (error) {
+      showGlobalAlert(error.message || 'No se pudo actualizar la clasificación.', 'danger')
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false
+      }
+    }
+  })
+}
+
+function fillClassificationSelect(select, items, placeholder) {
+  select.replaceChildren()
+  const emptyOption = document.createElement('option')
+  emptyOption.value = ''
+  emptyOption.textContent = placeholder
+  select.appendChild(emptyOption)
+
+  items.forEach(item => {
+    const option = document.createElement('option')
+    option.value = String(item.id)
+    option.textContent = item.name
+    select.appendChild(option)
+  })
 }
 
 function renderIncidentMap(incident) {
@@ -580,7 +714,7 @@ export function renderStateSelector(incident, transitions) {
 
   const hasPriority = Boolean(incident.priority_id || incident.priority?.id)
   const currentStateName = formatCatalogLabel(incident.state?.name || '-')
-  const isEnRevision = normalizeCode(incident.state?.name) === 'EN_REVISION'
+  const isEnRevision = isIncidentState(incident.state?.name, INCIDENT_STATES.UNDER_REVIEW)
 
   if (isEnRevision && !hasPriority) {
     select.innerHTML = `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`
@@ -630,8 +764,8 @@ export function getAvailableStateTransitions(incident, transitions) {
     const isNewTarget = targetStateId !== Number(incident.state_id) && !seenTargets.has(targetStateId)
     const isAllowed = isTransitionAllowedForCurrentUser(transition)
 
-    // Los supervisores no pueden pasar la incidencia a RESUELTA de forma manual
-    if (isSupervisor && targetStateName === 'RESUELTA') {
+    // Los supervisores no pueden marcar la incidencia como resuelta de forma manual.
+    if (isSupervisor && isIncidentState(targetStateName, INCIDENT_STATES.RESOLVED)) {
       return false
     }
 
@@ -1073,7 +1207,7 @@ function bindStateChangeControl(incident, transitions) {
     directSelect.value = String(incident.state_id)
     const confirm = await Swal.fire({
       title: '¿Confirmar cambio?',
-      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(transition.target_state_name || '')}"?${normalizeCode(transition.target_state_name) === 'CERRADA' ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
+      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(transition.target_state_name || '')}"?${isIncidentState(transition.target_state_name, INCIDENT_STATES.CLOSED) ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
@@ -1110,7 +1244,7 @@ function bindStateChangeControl(incident, transitions) {
 
     const confirm = await Swal.fire({
       title: '¿Confirmar cambio?',
-      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(pendingTransition.target_state_name || '')}"?${normalizeCode(pendingTransition.target_state_name) === 'CERRADA' ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
+      text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(pendingTransition.target_state_name || '')}"?${isIncidentState(pendingTransition.target_state_name, INCIDENT_STATES.CLOSED) ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
@@ -1638,7 +1772,7 @@ function openRequestStateModal(incident, states) {
       return
     }
 
-    if (normalizeCode(s.name) === 'RESUELTA') {
+    if (isIncidentState(s.name, INCIDENT_STATES.RESOLVED)) {
       targetState = s
     }
   })
@@ -1696,7 +1830,7 @@ function updateOperatorStateButton(incident) {
     return
   }
 
-  if (normalizeCode(incident.state?.name) === 'EN_PROGRESO') {
+  if (isIncidentState(incident.state?.name, INCIDENT_STATES.IN_PROGRESS)) {
     container.innerHTML = renderOperatorStateButton(incident)
     bindOperatorStateButton(incident)
   } else {
@@ -1871,28 +2005,11 @@ function normalizeCode(value) {
 }
 
 function isStateInProgressOrBeyond(state) {
-  const name = normalizeCode(state?.name || '')
-  if (!name) {
-    return false
-  }
-
-  return ['EN_PROGRESO',
-    'IN_PROGRESS',
-    'ASIGNADA',
-    'ASSIGNED',
-    'RESUELTA',
-    'RESOLVED',
-    'CERRADA',
-    'CLOSED',
-    'RECHAZADA',
-    'REJECTED',
-    'CANCELADA',
-    'CANCELLED'].includes(name)
+  return isIncidentStateIn(state?.name, INCIDENT_STATE_GROUPS.IN_PROGRESS_OR_BEYOND)
 }
 
 function isStrictlyInProgress(state) {
-  const name = normalizeCode(state?.name || '')
-  return name === 'EN_PROGRESO' || name === 'IN_PROGRESS'
+  return isIncidentStateIn(state?.name, INCIDENT_STATE_GROUPS.IN_PROGRESS)
 }
 
 // ── Module-level event bindings (run once) ──

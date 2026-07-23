@@ -43,6 +43,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'resolved_by_supervisor_id',
     'resolution_snapshots',
     'current_cycle_id',
+    'classification_status',
+    'classification_detail',
+    'classified_by',
+    'classified_at',
 ])]
 class Incident extends Model
 {
@@ -61,6 +65,7 @@ class Incident extends Model
             'previous_resolution_date' => 'datetime',
             'rejected_at' => 'datetime',
             'resolution_snapshots' => 'array',
+            'classified_at' => 'datetime',
         ];
     }
 
@@ -101,6 +106,17 @@ class Incident extends Model
     public function subcategory(): BelongsTo
     {
         return $this->subcategoria();
+    }
+
+    public function classifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'classified_by');
+    }
+
+    public function classificationHistory(): HasMany
+    {
+        return $this->hasMany(IncidentClassificationHistory::class, 'incident_id')
+            ->orderBy('created_at', 'desc');
     }
 
     public function prioridad(): BelongsTo

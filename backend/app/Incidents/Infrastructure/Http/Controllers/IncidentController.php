@@ -6,6 +6,7 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Application\DTOs\AddCommentInputData;
 use App\Incidents\Application\DTOs\AssignIncidentOperatorsInputData;
 use App\Incidents\Application\DTOs\ChangeStateInputData;
+use App\Incidents\Application\DTOs\ClassifyIncidentInputData;
 use App\Incidents\Application\DTOs\IncidentDetailData;
 use App\Incidents\Application\DTOs\IncidentFiltersData;
 use App\Incidents\Application\DTOs\IncidentMapFiltersData;
@@ -16,6 +17,8 @@ use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Application\UseCases\IncidentCycleReadUseCase;
 use App\Incidents\Application\UseCases\IncidentUseCase;
 use App\Incidents\Domain\Exceptions\IncidentException;
+use App\Incidents\Infrastructure\Http\Requests\ClassifyIncidentRequest;
+use App\Incidents\Infrastructure\Http\Requests\StoreIncidentRequest;
 use App\Incidents\Infrastructure\Http\Requests\UploadIncidentAttachmentRequest;
 use App\Incidents\Infrastructure\Http\Resources\IncidentCycleResource;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
@@ -254,18 +257,14 @@ class IncidentController extends ApiController
      * @bodyParam longitude float Coordenada de longitud. Example: -78.5
      * @bodyParam resolution_date date Fecha estimada de resolución. Example: 2026-06-30
      */
-    public function store(Request $request): JsonResponse
+    public function store(StoreIncidentRequest $request): JsonResponse
     {
         $user = $request->user();
         if (! $this->can($user, 'incidents.create')) {
             return $this->forbid();
         }
 
-        $canSetPriority = $this->canManage($user);
-        $data = $request->validate(
-            $this->rules(allowPriority: $canSetPriority),
-            $this->validationMessages()
-        );
+        $data = $request->validated();
 
         $dto = new StoreIncidentInputData(
             title: $data['title'],
@@ -277,7 +276,8 @@ class IncidentController extends ApiController
             latitude: $data['latitude'] ?? null,
             longitude: $data['longitude'] ?? null,
             territorialUnitId: $data['territorial_unit_id'] ?? null,
-            resolutionDate: $data['resolution_date'] ?? null
+            resolutionDate: $data['resolution_date'] ?? null,
+            classificationDetail: $data['classification_detail'] ?? null
         );
 
         return response()->json([
@@ -308,6 +308,42 @@ class IncidentController extends ApiController
         );
 
         return response()->json([
+            'data' => $detail,
+        ]);
+    }
+
+    public function classify(
+        ClassifyIncidentRequest $request,
+        Incident $incident
+    ): JsonResponse {
+        $user = $request->user();
+        if (! $this->canViewIncident($user, $incident) || ! $this->can($user, 'incidents.edit')) {
+            return $this->forbid();
+        }
+
+        $data = $request->validated();
+
+        try {
+            $detail = $this->incidentUseCase->classify(
+                (int) $incident->id,
+                (int) $user->id,
+                new ClassifyIncidentInputData(
+                    categoryId: (int) $data['category_id'],
+                    subcategoryId: isset($data['subcategory_id'])
+                        ? (int) $data['subcategory_id']
+                        : null,
+                    reason: $data['reason']
+                )
+            );
+        } catch (IncidentException $exception) {
+            return response()->json(
+                ['message' => $exception->getMessage()],
+                $exception->getCode()
+            );
+        }
+
+        return response()->json([
+            'message' => 'Clasificación actualizada correctamente.',
             'data' => $detail,
         ]);
     }
@@ -937,6 +973,10 @@ class IncidentController extends ApiController
             category: $detail->category,
             subcategory: $detail->subcategory,
             priority: $detail->priority,
+            classificationStatus: $detail->classificationStatus,
+            classificationDetail: $detail->classificationDetail,
+            classifiedBy: $detail->classifiedBy,
+            classifiedAt: $detail->classifiedAt,
             territorialUnit: $detail->territorialUnit,
             reporter: $detail->reporter,
             assignedOperator: $detail->assignedOperator,

@@ -148,6 +148,10 @@ const WIZARD_DOM = `
     <div class="form-group">
       <select id="fSubtipo" disabled><option value="">Primero seleccione tipo</option></select>
     </div>
+    <div id="classificationPendingNotice" class="d-none"></div>
+    <div id="classificationDetailGroup" class="d-none">
+      <textarea id="fClassificationDetail"></textarea>
+    </div>
     <input id="fCorreo" />
     <div id="detailsStepHint"></div>
   </div>
@@ -184,6 +188,40 @@ describe('incident-create-page — wizard lifecycle', () => {
     vi.stubGlobal('renderLayout', vi.fn())
     vi.stubGlobal('crypto', { randomUUID: () => '00000000-0000-0000-0000-000000000001' })
     vi.stubGlobal('location', { href: '' })
+  })
+
+  it('offers a pending-classification path when the catalog does not cover the report', async () => {
+    getCatalogOverview.mockResolvedValue({
+      categories: [
+        {
+          id: 1,
+          name: 'Vialidad',
+          is_fallback: false,
+          subcategories: [{ id: 10, name: 'Bache' }]
+        },
+        {
+          id: 99,
+          name: 'Sin clasificar',
+          is_fallback: true,
+          subcategories: []
+        }
+      ]
+    })
+
+    const mod = await import('../app/js/modules/incidents/presentation/incident-create-page.js')
+    await mod.initCreateIncident()
+
+    const category = document.getElementById('fTipo')
+    category.value = '99'
+    mod.populateSubcategories()
+
+    expect(category.selectedOptions[0].textContent).toBe('No encuentro el tipo de incidencia')
+    expect(document.getElementById('fSubtipo').disabled).toBe(true)
+    expect(document.getElementById('classificationPendingNotice').classList.contains('d-none')).toBe(false)
+    expect(document.getElementById('fClassificationDetail').required).toBe(true)
+
+    document.getElementById('fClassificationDetail').value = 'Estructura suelta sobre la acera'
+    expect(mod.requiresClassificationReview()).toBe(true)
   })
 
   afterEach(() => {

@@ -7,6 +7,10 @@ import {
   listIncidents
 } from '../application/incidents-service.js?v=15'
 import {
+  INCIDENT_STATE_GROUPS,
+  isIncidentStateIn
+} from '../domain/incident-states.js?v=1'
+import {
   escapeHtml,
   formatCatalogLabel,
   formatShortDate,
@@ -287,7 +291,9 @@ export function renderTable(state) {
       '<span class="text-muted">Sin asignación</span>'
 
     const stateName = String(incident.state?.name || '').trim().toUpperCase()
-    const canAssignOperator = stateName === 'EN_PROGRESO' || stateName === 'IN_PROGRESS'
+    const classificationPending = incident.classification_status === 'PENDING'
+    const canAssignOperator = isIncidentStateIn(stateName, INCIDENT_STATE_GROUPS.IN_PROGRESS) &&
+      !classificationPending
 
     return `
       <tr>
@@ -295,6 +301,7 @@ export function renderTable(state) {
         <td data-label="Título">
           <div class="font-weight-bold text-dark">${escapeHtml(incident.title || 'Sin título')}</div>
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
+          ${classificationPending ? '<span class="badge badge-warning d-block mt-1" style="width:max-content;"><i class="fas fa-tags mr-1"></i>Clasificación pendiente</span>' : ''}
         </td>
         <td data-label="Prioridad"><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
         <td data-label="Estado"><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? '<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>' : ''}</td>
@@ -307,7 +314,7 @@ export function renderTable(state) {
             <a href="incident-detail.html?id=${incident.id}" class="btn btn-sm btn-outline-secondary" title="Ver detalle">
               <i class="fas fa-eye"></i><span class="sr-only">Ver detalle</span>
             </a>
-            <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : 'disabled title="La incidencia debe estar en progreso"'}>
+            <button type="button" class="btn btn-sm btn-primary" data-open-assignment="${incident.id}" ${canAssignOperator ? '' : `disabled title="${classificationPending ? 'Clasifica la incidencia antes de asignarla' : 'La incidencia debe estar en progreso'}"`}>
               <i class="fas fa-user-check mr-1"></i><span>${activeAssignments.length ? 'Reasignar' : 'Asignar'}</span>
             </button>
           </div>
@@ -358,10 +365,15 @@ async function openAssignmentModal(state, incidentId) {
 
       const missingPriority = !incident.priority_id && !incident.priority?.id
       const stateName = String(incident.state?.name || '').trim().toUpperCase()
-      const notInProgress = stateName !== 'EN_PROGRESO' && stateName !== 'IN_PROGRESS'
+      const notInProgress = !isIncidentStateIn(stateName, INCIDENT_STATE_GROUPS.IN_PROGRESS)
+      const classificationPending = incident.classification_status === 'PENDING'
 
-      if (missingPriority || notInProgress) {
+      if (missingPriority || notInProgress || classificationPending) {
         const parts = []
+        if (classificationPending) {
+          parts.push('clasificar la incidencia')
+        }
+
         if (missingPriority) {
           parts.push('asignar una prioridad')
         }

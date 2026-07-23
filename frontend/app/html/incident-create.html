@@ -213,6 +213,21 @@
                                                             <option value="">Primero seleccione tipo</option>
                                                         </select> </div>
                                                 </div>
+                                                <div id="classificationPendingNotice"
+                                                    class="alert alert-info d-none" role="status">
+                                                    <i class="fas fa-info-circle mr-2"></i>
+                                                    Puedes registrar la incidencia aunque no encuentres una opción exacta.
+                                                    Un supervisor revisará la clasificación antes de asignarla.
+                                                </div>
+                                                <div class="form-group d-none" id="classificationDetailGroup">
+                                                    <label for="fClassificationDetail">¿Cómo describirías el tipo de
+                                                        problema? <span class="text-danger">*</span></label>
+                                                    <textarea class="form-control" id="fClassificationDetail"
+                                                        name="classification_detail" rows="3" maxlength="1000"
+                                                        placeholder="Explica qué tipo de problema es y por qué las opciones disponibles no aplican."></textarea>
+                                                    <small class="form-text text-muted">Esta descripción ayudará al
+                                                        supervisor a elegir la categoría correcta.</small>
+                                                </div>
                                                 <div class="form-group"> <label for="fDescripcion">Descripción <span
                                                             class="text-danger">*</span></label> <textarea
                                                         class="form-control" id="fDescripcion" name="description"
@@ -266,8 +281,8 @@
             </div>
         </div>
         <footer class="main-footer text-sm">
-            <div class="float-right d-none d-sm-inline"> Versión 1.0.0</div> <strong>Sistema de Gestión de Incidencias
-                Georreferenciadas (SGI)</strong>
+            <div class="float-right d-none d-sm-inline">Versión 1.0.0</div>
+            <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
         </footer>
         <script src="/plugins/jquery/jquery.min.js"></script>
         <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -276,7 +291,7 @@
         <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"
             integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
         <script type="module" src="/js/layout/layout.js?v=46"></script>
-        <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=40"></script>
+        <script type="module" src="/js/modules/incidents/presentation/incident-create-page.js?v=41"></script>
     </div>
 </body>
 

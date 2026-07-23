@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * Ejemplos: Vialidad, Servicios Públicos, Seguridad, Medio Ambiente
  */
-#[Fillable(['name', 'description', 'icon', 'color', 'is_active'])]
+#[Fillable(['name', 'description', 'icon', 'color', 'is_active', 'is_fallback'])]
 class Category extends Model
 {
     use Auditable;
@@ -21,7 +21,10 @@ class Category extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return [
+            'is_active' => 'boolean',
+            'is_fallback' => 'boolean',
+        ];
     }
 
     public function subcategories(): HasMany

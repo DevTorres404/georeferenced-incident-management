@@ -19,6 +19,7 @@ use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAttachment;
+use App\Incidents\Infrastructure\Persistence\Models\IncidentClassificationHistory;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentComment;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentCycle;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentState;
@@ -145,6 +146,129 @@ class IncidentsTest extends TestCase
                     'assignments',
                 ],
             ]);
+    }
+
+    public function test_citizen_can_report_an_uncatalogued_incident_for_supervisor_review(): void
+    {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
+        $this->seedCoreData();
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-unclassified@incidencias.local');
+        $fallback = Category::where('is_fallback', true)->firstOrFail();
+
+        $payload = [
+            'title' => 'Problema que no aparece en el catálogo',
+            'description' => 'Existe un problema urbano que no coincide con las opciones disponibles.',
+            'category_id' => $fallback->id,
+            'territorial_unit_id' => $this->territorialUnitId(),
+        ];
+
+        $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('classification_detail');
+
+        $createResponse = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                ...$payload,
+                'classification_detail' => 'Se trata de una estructura metálica suelta sobre la acera.',
+            ])
+            ->assertCreated();
+        $incidentId = $createResponse->json('data.id');
+
+        $this->assertSame('PENDING', Incident::findOrFail($incidentId)->classification_status);
+        $createResponse->assertJsonPath('data.classification_status', 'PENDING');
+
+        $this->assertDatabaseHas('core.incidents', [
+            'id' => $incidentId,
+            'category_id' => $fallback->id,
+            'subcategory_id' => null,
+            'classification_status' => 'PENDING',
+            'classification_detail' => 'Se trata de una estructura metálica suelta sobre la acera.',
+        ]);
+
+        $this->actingAsUser($citizen['user'])
+            ->getJson("/api/incidents/{$incidentId}")
+            ->assertOk()
+            ->assertJsonPath('data.classification_status', 'PENDING')
+            ->assertJsonPath(
+                'data.classification_detail',
+                'Se trata de una estructura metálica suelta sobre la acera.'
+            );
+    }
+
+    public function test_incident_creation_rejects_a_subcategory_from_another_category(): void
+    {
+        $this->seedCoreData();
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-invalid-subcategory@incidencias.local');
+        $categories = Category::where('is_fallback', false)->take(2)->get();
+        $this->assertCount(2, $categories);
+        $foreignSubcategory = Subcategory::where('category_id', $categories[1]->id)->firstOrFail();
+
+        $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Clasificación inconsistente',
+                'description' => 'La subcategoría enviada no pertenece a la categoría principal.',
+                'category_id' => $categories[0]->id,
+                'subcategory_id' => $foreignSubcategory->id,
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('subcategory_id');
+    }
+
+    public function test_supervisor_classifies_pending_incident_before_assignment(): void
+    {
+        Bus::fake([NotifyIncidentCreatedJob::class]);
+        $this->seedCoreData();
+        $citizen = $this->authenticateAs('CIUDADANO', 'citizen-classification@incidencias.local');
+        $admin = $this->authenticateAs('ADMIN', 'admin-classification@incidencias.local');
+        $operator = $this->authenticateAs('OPERADOR', 'operator-classification@incidencias.local');
+        $fallback = Category::where('is_fallback', true)->firstOrFail();
+        $targetCategory = Category::where('is_fallback', false)->firstOrFail();
+        $targetSubcategory = Subcategory::where('category_id', $targetCategory->id)->firstOrFail();
+
+        $incidentId = $this->actingAsUser($citizen['user'])
+            ->postJson('/api/incidents', [
+                'title' => 'Reporte pendiente de clasificación',
+                'description' => 'Este reporte requiere que el supervisor determine el catálogo correcto.',
+                'category_id' => $fallback->id,
+                'classification_detail' => 'Parece un daño vial, pero no estaba seguro al registrar.',
+                'territorial_unit_id' => $this->territorialUnitId(),
+            ])
+            ->assertCreated()
+            ->json('data.id');
+
+        Incident::whereKey($incidentId)->update([
+            'priority_id' => Priority::firstOrFail()->id,
+            'state_id' => State::where('name', 'EN_PROGRESO')->firstOrFail()->id,
+        ]);
+
+        $this->actingAsUser($admin['user'])
+            ->postJson("/api/incidents/{$incidentId}/assignments", [
+                'user_id' => $operator['user']->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'La incidencia debe clasificarse antes de asignar operadores.');
+
+        $this->actingAsUser($admin['user'])
+            ->patchJson("/api/incidents/{$incidentId}/classification", [
+                'category_id' => $targetCategory->id,
+                'subcategory_id' => $targetSubcategory->id,
+                'reason' => 'La evidencia corresponde a la categoría y subcategoría seleccionadas.',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.classification_status', 'CLASSIFIED')
+            ->assertJsonPath('data.category.id', $targetCategory->id)
+            ->assertJsonPath('data.subcategory.id', $targetSubcategory->id);
+
+        $this->assertDatabaseHas('core.incident_classification_history', [
+            'incident_id' => $incidentId,
+            'previous_category_id' => $fallback->id,
+            'new_category_id' => $targetCategory->id,
+            'new_subcategory_id' => $targetSubcategory->id,
+            'changed_by' => $admin['user']->id,
+        ]);
+        $this->assertSame(1, IncidentClassificationHistory::where('incident_id', $incidentId)->count());
     }
 
     public function test_spatial_zone_resolution_notifies_supervisor_of_coordinate_zone_even_if_territory_differs(): void

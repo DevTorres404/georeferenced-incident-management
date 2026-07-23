@@ -110,4 +110,14 @@ class IncidentException extends Exception
     {
         return new self('Solo se pueden asignar operadores a incidencias en estado EN_PROGRESO.', 422);
     }
+
+    public static function classificationRequiredForAssignment(): self
+    {
+        return new self('La incidencia debe clasificarse antes de asignar operadores.', 422);
+    }
+
+    public static function classificationAlreadyCompleted(): self
+    {
+        return new self('La incidencia ya tiene una clasificación definitiva.', 422);
+    }
 }

@@ -1,5 +1,9 @@
 import { $, hide, showErrorAlert } from '../../../presentation/dom-utils.js?v=14'
 import { readUser, userHasPermission } from '../../../core/auth-session.js?v=16'
+import {
+  INCIDENT_STATE_ALIASES,
+  INCIDENT_STATES
+} from '../../incidents/domain/incident-states.js?v=1'
 
 import { getDashboardMetrics } from '../application/dashboard-service.js?v=14'
 import {
@@ -32,9 +36,9 @@ export const CATEGORY_PALETTE = [
 ]
 
 export const STATE_COLORS = {
-  PENDIENTE: '#94a3b8',
-  'EN PROCESO': CHART_COLORS.info,
-  RESUELTA: CHART_COLORS.success
+  [INCIDENT_STATES.PENDING]: '#94a3b8',
+  [INCIDENT_STATE_ALIASES.IN_PROCESS]: CHART_COLORS.info,
+  [INCIDENT_STATES.RESOLVED]: CHART_COLORS.success
 }
 const dashboardCharts = {}
 

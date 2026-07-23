@@ -302,6 +302,34 @@ describe('Integration — incident-detail-page', () => {
       expect(card.querySelectorAll('.pending-state-request-actions .btn')).toHaveLength(2)
     })
 
+    it('shows pending classification and hides assignment until a supervisor classifies it', async () => {
+      const service = await import('../app/js/modules/incidents/application/incidents-service.js')
+      service.getIncident.mockResolvedValue({
+        data: {
+          ...sampleIncident,
+          state: { id: 3, name: 'EN_PROGRESO' },
+          classification_status: 'PENDING',
+          classification_detail: 'El problema no coincidía con ninguna opción del catálogo.'
+        }
+      })
+      service.listStateTransitions.mockResolvedValue({ data: [] })
+      service.listPriorities.mockResolvedValue({ data: [] })
+      service.getStateChangeRequests.mockResolvedValue({ data: [] })
+      localStorage.setItem('user_data', JSON.stringify({
+        roles: [{ code: 'SUPERVISOR' }],
+        permissions: ['incidents.edit', 'incidents.assign']
+      }))
+
+      const { initIncidentDetailPage } = await import('../app/js/modules/incidents/presentation/incident-detail-page.js')
+      await initIncidentDetailPage()
+
+      const container = document.getElementById('contenidoDetalle')
+      expect(container.querySelector('#classificationPendingAlert')).not.toBeNull()
+      expect(container.textContent).toContain('El problema no coincidía')
+      expect(container.querySelector('#btnClassifyIncident')).not.toBeNull()
+      expect(container.innerHTML).not.toContain('assignment-management.html?incident_id=1')
+    })
+
     it.each([
       ['ADMIN', ['incidents.create'], true],
       ['CIUDADANO', [{ codigo: 'incidents.create' }], true],

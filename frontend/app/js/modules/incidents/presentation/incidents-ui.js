@@ -1,4 +1,9 @@
 import { hideMainLoader, showMainLoader } from '../../../layout/loader.js?v=20'
+import {
+  INCIDENT_STATE_ALIASES,
+  INCIDENT_STATES,
+  isIncidentState
+} from '../domain/incident-states.js?v=1'
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -24,15 +29,15 @@ function formatCatalogLabel(value) {
   }
 
   const exactMatches = {
-    EN_REVISION: 'En revisión',
-    EN_PROGRESO: 'En progreso',
-    EN_ATENCION: 'En atención',
-    NUEVA: 'Nueva',
-    PENDIENTE: 'Pendiente',
-    RESUELTA: 'Resuelta',
-    CERRADA: 'Cerrada',
-    RECHAZADA: 'Rechazada',
-    REABIERTA: 'Reabierta'
+    [INCIDENT_STATES.UNDER_REVIEW]: 'En revisión',
+    [INCIDENT_STATES.IN_PROGRESS]: 'En progreso',
+    [INCIDENT_STATES.IN_ATTENTION]: 'En atención',
+    [INCIDENT_STATES.NEW]: 'Nueva',
+    [INCIDENT_STATES.PENDING]: 'Pendiente',
+    [INCIDENT_STATES.RESOLVED]: 'Resuelta',
+    [INCIDENT_STATES.CLOSED]: 'Cerrada',
+    [INCIDENT_STATES.REJECTED]: 'Rechazada',
+    [INCIDENT_STATES.REOPENED]: 'Reabierta'
   }
 
   const normalizedCode = normalizeCatalogCode(value)
@@ -124,45 +129,44 @@ function getPriorityHexColor(priorityName) {
 function getStateBadgeClass(stateName) {
   const value = String(stateName || '').toUpperCase()
   const map = {
-    NUEVA: 'badge-pendiente',
-    PENDIENTE: 'badge-pendiente',
-    EN_REVISION: 'badge-proceso',
-    'EN PROCESO': 'badge-proceso',
-    EN_ATENCION: 'badge-proceso',
-    RESUELTA: 'badge-resuelta',
-    CERRADA: 'badge-resuelta'
+    [INCIDENT_STATES.NEW]: 'badge-pendiente',
+    [INCIDENT_STATES.PENDING]: 'badge-pendiente',
+    [INCIDENT_STATES.UNDER_REVIEW]: 'badge-proceso',
+    [INCIDENT_STATE_ALIASES.IN_PROCESS]: 'badge-proceso',
+    [INCIDENT_STATES.IN_ATTENTION]: 'badge-proceso',
+    [INCIDENT_STATES.RESOLVED]: 'badge-resuelta',
+    [INCIDENT_STATES.CLOSED]: 'badge-resuelta'
   }
 
   return map[value] || 'badge-secondary'
 }
 
 function getStateHexColor(stateName) {
-  const normalized = String(stateName || '').toUpperCase().replaceAll('_', ' ')
-  if (normalized === 'NUEVA' || normalized === 'PENDIENTE') {
+  if (isIncidentState(stateName, INCIDENT_STATES.NEW, INCIDENT_STATES.PENDING)) {
     return '#90A4AE'
   }
 
-  if (normalized === 'EN REVISION') {
+  if (isIncidentState(stateName, INCIDENT_STATES.UNDER_REVIEW)) {
     return '#2196F3'
   }
 
-  if (normalized === 'EN PROGRESO' || normalized === 'EN ATENCION') {
+  if (isIncidentState(stateName, INCIDENT_STATES.IN_PROGRESS, INCIDENT_STATES.IN_ATTENTION)) {
     return '#FFC107'
   }
 
-  if (normalized === 'RESUELTA') {
+  if (isIncidentState(stateName, INCIDENT_STATES.RESOLVED)) {
     return '#8BC34A'
   }
 
-  if (normalized === 'CERRADA') {
+  if (isIncidentState(stateName, INCIDENT_STATES.CLOSED)) {
     return '#4CAF50'
   }
 
-  if (normalized === 'RECHAZADA') {
+  if (isIncidentState(stateName, INCIDENT_STATES.REJECTED)) {
     return '#F44336'
   }
 
-  if (normalized === 'REABIERTA') {
+  if (isIncidentState(stateName, INCIDENT_STATES.REOPENED)) {
     return '#FF9800'
   }
 

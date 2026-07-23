@@ -26,6 +26,7 @@ final class CategoryMapper
             icon: $category->icon ?? null,
             color: $category->color ?? null,
             isActive: (bool) $category->is_active,
+            isFallback: (bool) ($category->is_fallback ?? false),
             subcategories: $subcategories
         );
     }

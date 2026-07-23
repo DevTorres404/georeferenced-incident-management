@@ -57,8 +57,8 @@
             </div>
         </div>
         <footer class="main-footer text-sm">
-            <div class="float-right d-none d-sm-inline"> Versión 1.0.0 </div> <strong>Sistema de Gestión de Incidencias
-                Georreferenciadas (SGI)</strong>
+            <div class="float-right d-none d-sm-inline">Versión 1.0.0</div>
+            <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
         </footer>
         <aside class="control-sidebar control-sidebar-dark"></aside>
     </div>
@@ -198,13 +198,52 @@
         </div>
       </div>
     </div>
+    <div class="modal fade" id="modalClasificarIncidencia" tabindex="-1" role="dialog"
+      aria-labelledby="modalClasificarIncidenciaLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <form id="formClasificarIncidencia" novalidate>
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title" id="modalClasificarIncidenciaLabel">
+                <i class="fas fa-tags mr-2"></i>Clasificar incidencia
+              </h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-light border" id="classificationCitizenDetail"></div>
+              <div class="form-group">
+                <label for="classificationCategory">Categoría definitiva</label>
+                <select id="classificationCategory" class="form-control" required></select>
+              </div>
+              <div class="form-group">
+                <label for="classificationSubcategory">Subcategoría definitiva</label>
+                <select id="classificationSubcategory" class="form-control" disabled required></select>
+              </div>
+              <div class="form-group mb-0">
+                <label for="classificationReason">Motivo de la clasificación</label>
+                <textarea id="classificationReason" class="form-control" rows="3" minlength="10"
+                  maxlength="1000" required></textarea>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light border" data-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning" id="btnConfirmClassification">
+                <i class="fas fa-check mr-1"></i>Guardar clasificación
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
     <script src="/plugins/jquery/jquery.min.js"></script>
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
     <script type="module" src="/js/layout/layout.js?v=46"></script>
-    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=61"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=62"></script>
 </body>
 
 </html>

@@ -343,6 +343,26 @@ describe('assignment-management-page.js — pure functions', () => {
       expect(document.getElementById('assignmentTableBody').innerHTML).toContain('Sin asignación')
     })
 
+    it('marks pending classification and disables assignment', async () => {
+      const { renderTable } = await import('../app/js/modules/incidents/presentation/assignment-management-page.js')
+      renderTable({
+        filteredIncidents: [{
+          id: 8,
+          code: 'INC-008',
+          title: 'Tipo no cubierto',
+          assignments: [],
+          classification_status: 'PENDING',
+          priority: { name: 'Alta' },
+          state: { name: 'EN_PROGRESO' }
+        }]
+      })
+
+      const body = document.getElementById('assignmentTableBody')
+      expect(body.innerHTML).toContain('Clasificación pendiente')
+      expect(body.querySelector('[data-open-assignment]').disabled).toBe(true)
+      expect(body.querySelector('[data-open-assignment]').title).toContain('Clasifica')
+    })
+
     it('does nothing when tbody is missing', async () => {
       document.body.innerHTML = ''
       const { renderTable } = await import('../app/js/modules/incidents/presentation/assignment-management-page.js')
