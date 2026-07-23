@@ -199,15 +199,15 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
     </div>
 
     ${classificationPending ? `
-      <div class="alert alert-warning shadow-sm" id="classificationPendingAlert" role="alert">
+      <div class="callout callout-warning shadow-sm bg-white" id="classificationPendingAlert">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="gap:12px;">
           <div>
-            <h5 class="alert-heading mb-1"><i class="fas fa-tags mr-2"></i>Clasificación pendiente</h5>
-            <p class="mb-1">El catálogo no cubrió este reporte. Debe clasificarse antes de asignar operadores.</p>
-            <small><strong>Detalle del ciudadano:</strong> ${escapeHtml(incident.classification_detail || 'Sin detalle adicional.')}</small>
+            <h5 class="text-warning mb-1" style="color: #d39e00 !important;"><i class="fas fa-exclamation-circle mr-2"></i>Clasificación pendiente</h5>
+            <p class="mb-1 text-muted">El catálogo no cubrió este reporte. Debe clasificarse antes de asignar operadores.</p>
+            <small class="text-dark"><strong style="color: #d39e00;">Detalle del ciudadano:</strong> ${escapeHtml(incident.classification_detail || 'Sin detalle adicional.')}</small>
           </div>
           ${canClassify ? `
-            <button type="button" class="btn btn-dark flex-shrink-0" id="btnClassifyIncident">
+            <button type="button" class="btn btn-warning flex-shrink-0 shadow-sm" id="btnClassifyIncident" style="color: #fff; font-weight: 600; background-color: #F59E0B; border-color: #F59E0B;">
               <i class="fas fa-check mr-1"></i>Clasificar incidencia
             </button>
           ` : ''}
