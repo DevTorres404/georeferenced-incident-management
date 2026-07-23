@@ -3,6 +3,7 @@
 namespace App\Operations\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 final class UserTerritory extends Model
 {
+    use Auditable;
+
     protected $table = 'auth.user_territories';
 
     protected function casts(): array

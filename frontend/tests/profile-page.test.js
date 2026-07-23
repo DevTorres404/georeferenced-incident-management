@@ -4,6 +4,11 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   requestBackend: vi.fn(),
 }));
 
+vi.mock('../app/js/shared/profile-photo.js', () => ({
+  hydrateOwnProfilePhoto: vi.fn(),
+  invalidateOwnProfilePhoto: vi.fn(),
+}));
+
 vi.mock('../app/js/shared/validators/validation-utils.js', () => ({
   handleBackendErrors: vi.fn(),
   clearValidationErrors: vi.fn(),
@@ -112,6 +117,19 @@ describe('profile-page.js — pure functions', () => {
     it('returns dash for null', async () => {
       const { formatDateTime } = await import('../app/js/modules/profile/presentation/profile-page.js');
       expect(formatDateTime(null)).toBe('-');
+    });
+  });
+
+  describe('validateProfilePhoto', () => {
+    it('accepts supported images up to 5 MB', async () => {
+      const { validateProfilePhoto } = await import('../app/js/modules/profile/presentation/profile-page.js');
+      expect(validateProfilePhoto({ type: 'image/webp', size: 1024 })).toBeNull();
+    });
+
+    it('rejects unsupported formats and oversized images', async () => {
+      const { validateProfilePhoto } = await import('../app/js/modules/profile/presentation/profile-page.js');
+      expect(validateProfilePhoto({ type: 'image/svg+xml', size: 1024 })).toContain('JPG');
+      expect(validateProfilePhoto({ type: 'image/jpeg', size: 5 * 1024 * 1024 + 1 })).toContain('5 MB');
     });
   });
 });

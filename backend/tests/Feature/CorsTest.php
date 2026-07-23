@@ -41,6 +41,24 @@ class CorsTest extends TestCase
             ->assertHeaderMissing('Access-Control-Allow-Origin');
     }
 
+    public function test_broadcasting_auth_preflight_allows_a_configured_origin(): void
+    {
+        config()->set('cors.allowed_origins', [
+            'https://frontend.example.com',
+        ]);
+
+        $response = $this->withHeaders([
+            'Origin' => 'https://frontend.example.com',
+            'Access-Control-Request-Method' => 'POST',
+            'Access-Control-Request-Headers' => 'Authorization, Content-Type',
+        ])->options('/broadcasting/auth');
+
+        $response->assertNoContent()
+            ->assertHeader('Access-Control-Allow-Origin', 'https://frontend.example.com')
+            ->assertHeader('Access-Control-Allow-Methods', 'POST')
+            ->assertHeaderMissing('Access-Control-Allow-Credentials');
+    }
+
     public function test_origin_configuration_is_normalized_and_deduplicated(): void
     {
         $config = $this->loadCorsConfig(

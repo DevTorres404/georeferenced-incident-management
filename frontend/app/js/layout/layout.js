@@ -1,6 +1,7 @@
 import { buildSidebarHtml } from './sidebar.js?v=24';
 import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=7';
-import { buildTopbarHtml } from './topbar.js?v=22';
+import { buildTopbarHtml } from './topbar.js?v=23';
+import { hydrateOwnProfilePhoto } from '../shared/profile-photo.js?v=1';
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../infrastructure/backend-client.js?v=21';
 import {
   clearSession as clearAuthSession,
@@ -703,6 +704,7 @@ async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI 
   const navEl = document.getElementById('mainNavbar');
   if (navEl) {
     navEl.innerHTML = navbarHtml;
+    void hydrateOwnProfilePhoto(user, navEl);
     if (globalThis.jQuery && typeof globalThis.jQuery.fn.PushMenu === 'function') {
       globalThis.jQuery('[data-widget="pushmenu"]').PushMenu();
     }

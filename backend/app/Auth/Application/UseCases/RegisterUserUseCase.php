@@ -57,7 +57,7 @@ final class RegisterUserUseCase
     private function sendVerificationEmailSafely(int $userId, string $email): array
     {
         try {
-            $this->notificationPort->sendVerificationEmail($userId);
+            $this->notificationPort->sendVerificationEmailImmediately($userId);
 
             return [
                 'sent' => true,

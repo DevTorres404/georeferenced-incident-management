@@ -369,8 +369,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'stateHistory.user',
                 'assignments.user',
                 'assignments.assignedBy',
-                'comments.user',
-                'attachments.user',
+                'comments.user.roles',
+                'attachments.user.roles',
             ];
         }
 
@@ -393,8 +393,8 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             'stateHistory.user',
             'assignments.user',
             'assignments.assignedBy',
-            'comments.user',
-            'attachments.user',
+            'comments.user.roles',
+            'attachments.user.roles',
             'cycles.openedBy',
             'cycles.resolvedBy',
             'cycles.closedBy',
@@ -511,7 +511,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'user_id' => $userId,
                 'comment' => $data->comment,
                 'is_internal' => $data->isInternal,
-            ])->load('user');
+            ])->load('user.roles');
 
             if (! $data->isInternal && (int) $incident->reported_by_id !== $userId) {
                 $this->createNotification(
@@ -561,7 +561,7 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
                 'mime_type' => $storedFileData->mimeType,
                 'file_size_bytes' => $storedFileData->sizeInBytes,
                 'file_hash' => $storedFileData->hash,
-            ])->load('user');
+            ])->load('user.roles');
 
             if ((int) $incident->reported_by_id !== $userId) {
                 $this->createNotification(

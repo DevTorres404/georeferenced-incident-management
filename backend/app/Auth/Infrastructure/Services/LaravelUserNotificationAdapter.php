@@ -9,9 +9,18 @@ use App\Auth\Infrastructure\Notifications\PasswordResetCompletedNotification;
 use App\Auth\Infrastructure\Notifications\VerifyEmailNotification;
 use App\Auth\Infrastructure\Notifications\WelcomeEmailNotification;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use Illuminate\Support\Facades\Notification;
 
 final class LaravelUserNotificationAdapter implements UserNotificationPort
 {
+    public function sendVerificationEmailImmediately(int $userId): void
+    {
+        Notification::sendNow(
+            User::findOrFail($userId),
+            new VerifyEmailNotification
+        );
+    }
+
     public function sendVerificationEmail(int $userId): void
     {
         User::findOrFail($userId)->notify(new VerifyEmailNotification);

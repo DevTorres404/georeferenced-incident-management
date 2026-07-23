@@ -3,11 +3,14 @@
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class StateChangeRequest extends Model
 {
+    use Auditable;
+
     public const UPDATED_AT = null;
 
     protected $table = 'state_change_requests';

@@ -542,6 +542,8 @@ describe('B. topbar.js — buildTopbarHtml', () => {
     expect(html).toContain('J');
     expect(html).toContain('juan@test.com');
     expect(html).toContain('Administrador');
+    expect(html.match(/data-profile-avatar/g)).toHaveLength(6);
+    expect(html).toContain('data-profile-avatar-image hidden');
   });
 
   it('shows notifications menu when showNotifications is true', async () => {

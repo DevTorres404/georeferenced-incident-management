@@ -100,7 +100,7 @@ describe('responsive layout contracts', () => {
       .filter((html) => html.includes('/css/app.css'));
 
     [...pagesWithAppCss, indexHtml]
-      .forEach((html) => expect(html).toMatch(/\/css\/app\.css\?v=(?:68|69)/));
+      .forEach((html) => expect(html).toContain('/css/app.css?v=70'));
     expect(dashboardHtml).toContain('/css/pages/dashboard.css');
     expect(incidentsHtml).toContain('/css/pages/incidents.css');
     expect(reportsHtml).toContain('/css/pages/reports.css');

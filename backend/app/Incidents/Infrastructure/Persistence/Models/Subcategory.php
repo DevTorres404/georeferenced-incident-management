@@ -2,6 +2,7 @@
 
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['category_id', 'name', 'description', 'is_active'])]
 class Subcategory extends Model
 {
+    use Auditable;
+
     protected $table = 'core.subcategories';
 
     protected function casts(): array

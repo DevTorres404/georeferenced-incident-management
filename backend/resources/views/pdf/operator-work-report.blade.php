@@ -2,391 +2,458 @@
 <html lang="es">
 <head>
     <meta charset="utf-8">
-    <title>Reporte de Trabajo Operativo - {{ $operator['first_name'] }} {{ $operator['last_name'] }}</title>
+    <title>Reporte operativo - {{ $operator['first_name'] }} {{ $operator['last_name'] }}</title>
     <style>
-        @page {
-            margin: 90px 35px 60px 35px;
+        @page { margin: 88px 36px 52px; }
+        * { box-sizing: border-box; }
+        body {
+            color: #25384a;
+            font-family: DejaVu Sans, sans-serif;
+            font-size: 8.5px;
+            line-height: 1.4;
+            margin: 0;
         }
-        body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            color: #333; 
-            font-size: 10px;
-            line-height: 1.5;
+        .page-header {
+            border-bottom: 2px solid #0b5fcc;
+            height: 60px;
+            left: 0;
+            position: fixed;
+            right: 0;
+            top: -72px;
         }
-        .header { 
-            position: fixed; 
-            top: -70px; 
-            left: 0; 
-            right: 0; 
-            height: 50px; 
-            border-bottom: 3px solid #1a5276; 
-        }
-        .header-logo {
+        .brand-logo {
             float: left;
-            font-size: 26px;
-            font-weight: 900;
-            color: #1a5276;
-            letter-spacing: -1px;
-            line-height: 40px;
+            height: 46px;
+            object-fit: contain;
+            width: 46px;
         }
-        .header-text {
+        .institution {
+            float: left;
+            padding-left: 12px;
+            padding-top: 4px;
+        }
+        .institution strong {
+            color: #082f5b;
+            display: block;
+            font-size: 9.2px;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+        }
+        .institution span { color: #4d6579; font-size: 7px; }
+        .institution .department {
+            color: #0b5fcc;
+            font-size: 6.4px;
+            font-weight: 700;
+            letter-spacing: .45px;
+            text-transform: uppercase;
+        }
+        .document-control {
+            border-left: 1px solid #b9c8d6;
+            color: #526b7f;
             float: right;
+            font-size: 6.8px;
+            line-height: 1.5;
+            padding: 2px 0 2px 11px;
             text-align: right;
         }
-        .header-title {
-            font-size: 15px;
-            font-weight: bold;
-            color: #2c3e50;
+        .document-control strong { color: #082f5b; letter-spacing: .35px; }
+        .page-footer {
+            border-top: 1px solid #c9d4dd;
+            bottom: -34px;
+            color: #718596;
+            font-size: 6.8px;
+            left: 0;
+            padding-top: 6px;
+            position: fixed;
+            right: 0;
+        }
+        .confidentiality {
+            color: #082f5b;
+            font-weight: 700;
+            letter-spacing: .35px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
         }
-        .header-subtitle {
-            font-size: 9px;
-            color: #7f8c8d;
+        .page-footer .right { float: right; }
+        .page-number::before { content: "Página " counter(page); }
+        .report-title {
+            background: #f3f7fb;
+            border-left: 5px solid #0b5fcc;
+            border-bottom: 1px solid #c6d4e0;
+            margin-bottom: 13px;
+            padding: 9px 12px 10px;
         }
-        .footer { 
-            position: fixed; 
-            bottom: -40px; 
-            left: 0; 
-            right: 0; 
-            height: 25px; 
-            border-top: 1px solid #e9ecef; 
-            font-size: 9px; 
-            color: #95a5a6; 
-            text-align: center; 
-            padding-top: 8px;
-        }
-        .page-number:before {
-            content: "Página " counter(page);
-        }
-        
-        /* Operator Info Card */
-        .operator-info {
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            padding: 12px 18px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            border-left: 4px solid #1a5276;
-        }
-        .operator-info table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .operator-info td {
-            padding: 4px 0;
-        }
-        .operator-info td.label {
-            color: #7f8c8d;
-            font-weight: bold;
+        .report-title .classification {
+            color: #5e7385;
+            font-size: 6.5px;
+            font-weight: 700;
+            letter-spacing: .8px;
             text-transform: uppercase;
-            font-size: 8px;
-            width: 15%;
-            letter-spacing: 0.5px;
         }
-        .operator-info td.value {
-            color: #2c3e50;
-            font-weight: bold;
-            font-size: 12px;
-            width: 35%;
+        .report-title h1 {
+            color: #082f5b;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            margin: 3px 0 2px;
+            text-transform: uppercase;
         }
-
-        /* Metrics */
-        .metrics-container {
-            width: 100%;
-            margin-bottom: 25px;
-            text-align: justify;
-        }
-        .metric-box { 
-            width: 18.5%; 
-            display: inline-block; 
-            border: 1px solid #e9ecef; 
-            padding: 12px 0; 
-            border-radius: 6px; 
-            text-align: center;
-            background-color: #ffffff;
-            vertical-align: top;
-        }
-        .metric-title { 
-            font-size: 8px; 
-            color: #7f8c8d; 
-            text-transform: uppercase; 
-            font-weight: bold;
-            margin-bottom: 4px;
-            letter-spacing: 0.5px;
-        }
-        .metric-value { 
-            font-size: 22px; 
-            font-weight: 800; 
-            color: #1a5276; 
-            line-height: 1;
-        }
-        .metric-unit {
-            font-size: 10px;
-            color: #95a5a6;
-            font-weight: normal;
-        }
-
-        /* Data Table */
+        .report-title p { color: #667b8e; font-size: 7.5px; margin: 0; }
         .section-title {
-            font-size: 12px;
-            color: #1a5276;
-            border-bottom: 2px solid #ecf0f1;
-            padding-bottom: 6px;
-            margin-bottom: 12px;
+            background: #082f5b;
+            border-left: 4px solid #10b9c8;
+            color: #fff;
+            font-size: 7.2px;
+            font-weight: 700;
+            letter-spacing: .55px;
+            margin: 0;
+            padding: 5px 7px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: bold;
         }
-        table.data-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 9px;
-        }
-        .data-table th, .data-table td { 
-            border-bottom: 1px solid #ecf0f1; 
-            padding: 8px 6px; 
-            text-align: left; 
-            vertical-align: top;
-        }
-        .data-table th { 
-            background-color: #f8f9fa; 
-            color: #2c3e50; 
-            font-size: 8.5px;
-            text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            border-top: 1px solid #ecf0f1;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .cycle-table {
-            width: 100%;
+        .operator-sheet,
+        .metrics-table,
+        .record-metadata,
+        .record-detail,
+        .history-table {
             border-collapse: collapse;
+            width: 100%;
         }
-        .cycle-table td {
-            border: none;
-            padding: 3px 0;
+        .operator-sheet { margin-bottom: 13px; }
+        .operator-sheet td {
+            border: 1px solid #cfd9e1;
+            padding: 6px 8px;
+            vertical-align: top;
+            width: 50%;
+        }
+        .document-meta {
+            border-collapse: collapse;
+            margin: -5px 0 13px;
+            width: 100%;
+        }
+        .document-meta td {
+            color: #526b7f;
+            font-size: 6.4px;
+            padding: 0 7px;
+            text-align: right;
+        }
+        .document-meta strong { color: #27455f; text-transform: uppercase; }
+        .field-label {
+            color: #667b8e;
+            display: block;
+            font-size: 6.2px;
+            font-weight: 700;
+            letter-spacing: .45px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+        .field-value { color: #25384a; font-size: 9px; font-weight: 700; }
+        .field-value.mono { font-family: DejaVu Sans Mono, monospace; }
+        .metrics-table { margin-bottom: 15px; }
+        .metrics-table th {
+            background: #e8f0f7;
+            border: 1px solid #c8d3dc;
+            color: #445a6d;
+            font-size: 6.2px;
+            font-weight: 700;
+            padding: 5px 3px;
+            text-transform: uppercase;
+            width: 20%;
+        }
+        .metrics-table td {
+            border: 1px solid #c8d3dc;
+            color: #173f5f;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 7px 3px 5px;
+            text-align: center;
+        }
+        .metrics-table td:first-child { border-bottom: 3px solid #10b9c8; }
+        .metrics-table td:nth-child(2) { border-bottom: 3px solid #0b5fcc; }
+        .metrics-table td:nth-child(3) { border-bottom: 3px solid #2f8a62; }
+        .metrics-table td:nth-child(4) { border-bottom: 3px solid #c68b24; }
+        .metrics-table td:nth-child(5) { border-bottom: 3px solid #7c5bb5; }
+        .metrics-table .unit {
+            color: #667b8e;
+            font-size: 6.8px;
+            font-weight: 400;
+        }
+        .register-heading {
+            border-bottom: 1px solid #173f5f;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+        }
+        .register-heading strong {
+            color: #173f5f;
+            font-size: 10px;
+            letter-spacing: .25px;
+            text-transform: uppercase;
+        }
+        .register-heading span { color: #667b8e; float: right; font-size: 7px; padding-top: 2px; }
+        .incident-record {
+            border: 1px solid #aebdca;
+            margin-bottom: 9px;
+            page-break-inside: avoid;
+        }
+        .record-metadata th {
+            background: #082f5b;
+            border-right: 1px solid #47667e;
+            color: #fff;
+            font-size: 6px;
+            font-weight: 700;
+            letter-spacing: .3px;
+            padding: 4px 6px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        .record-metadata td {
+            background: #f3f6f8;
+            border-bottom: 1px solid #cfd9e1;
+            border-right: 1px solid #cfd9e1;
+            color: #25384a;
+            font-size: 7.3px;
+            font-weight: 700;
+            padding: 5px 6px;
+        }
+        .record-metadata td:last-child,
+        .record-metadata th:last-child { border-right: 0; }
+        .record-ticket { color: #173f5f !important; font-family: DejaVu Sans Mono, monospace; }
+        .record-detail td { padding: 7px; vertical-align: top; }
+        .record-summary { border-right: 1px solid #d6dfe6; width: 42%; }
+        .record-title { color: #25384a; font-size: 8.5px; font-weight: 700; margin-bottom: 5px; }
+        .record-classification { color: #667b8e; font-size: 6.8px; line-height: 1.55; }
+        .record-classification strong { color: #445a6d; }
+        .history-cell { padding: 0 !important; width: 58%; }
+        .history-table th {
+            background: #e9eef2;
+            border-bottom: 1px solid #c8d3dc;
+            border-right: 1px solid #d5dee5;
+            color: #445a6d;
+            font-size: 5.7px;
+            padding: 4px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        .history-table td {
+            border-bottom: 1px solid #e0e6eb;
+            border-right: 1px solid #e0e6eb;
+            color: #3c5265;
+            font-size: 6.2px;
+            padding: 4px;
             vertical-align: top;
         }
-        .cycle-number {
-            width: 15px;
-        }
-        .cycle-badge {
-            background-color: #1a5276;
-            color: #ffffff;
+        .history-table tr:last-child td { border-bottom: 0; }
+        .history-table td:last-child,
+        .history-table th:last-child { border-right: 0; }
+        .history-sequence { font-weight: 700; text-align: center; width: 7%; }
+        .history-state { font-weight: 700; width: 22%; }
+        .history-priority { width: 15%; }
+        .history-date { width: 22%; }
+        .history-duration { font-weight: 700; width: 13%; }
+        .history-owner { width: 21%; }
+        .final-row td { color: #2f5d46; font-weight: 700; }
+        .no-history {
+            color: #718596;
+            font-style: italic;
+            padding: 12px !important;
             text-align: center;
-            font-size: 7.5px;
-            font-weight: bold;
-            border-radius: 3px;
-            padding: 2px 0;
-            width: 100%;
-            display: inline-block;
         }
-        .cycle-content {
-            padding-left: 6px;
-            border-left: 1px dashed #bdc3c7;
-        }
-
         .empty-state {
+            border: 1px solid #aebdca;
+            color: #667b8e;
+            padding: 22px;
             text-align: center;
-            padding: 30px;
-            background-color: #f8f9fa;
-            color: #7f8c8d;
-            border: 1px dashed #bdc3c7;
-            border-radius: 6px;
-            font-size: 11px;
         }
-        .ticket-id {
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: 10px;
-            color: #2980b9;
+        .methodology {
+            border-top: 1px solid #aebdca;
+            color: #5f7486;
+            font-size: 6.5px;
+            margin-top: 14px;
+            page-break-inside: avoid;
+            padding-top: 7px;
         }
+        .methodology strong { color: #354b5e; }
+        .methodology-title {
+            color: #173f5f;
+            font-size: 7px;
+            font-weight: 700;
+            letter-spacing: .4px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .approval-strip {
+            border-collapse: collapse;
+            margin-top: 14px;
+            page-break-inside: avoid;
+            width: 100%;
+        }
+        .approval-strip td {
+            border-top: 1px solid #aebdca;
+            color: #5f7486;
+            font-size: 6.2px;
+            padding-top: 6px;
+            width: 50%;
+        }
+        .approval-strip td:last-child { text-align: right; }
+        .approval-strip strong { color: #354b5e; text-transform: uppercase; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-logo">SGI</div>
-        <div class="header-text">
-            <div class="header-title">Reporte de Desempeño Operativo</div>
-            <div class="header-subtitle">Documento de uso institucional y confidencial</div>
+    <header class="page-header">
+        <img class="brand-logo" src="{{ public_path('img/SGI_LOGO.jpg') }}" alt="Logo SGI">
+        <div class="institution">
+            <strong>Sistema de Gestión de Incidencias Georreferenciadas</strong>
+            <span class="department">Dirección de operaciones y seguimiento territorial</span><br>
+            <span>Unidad de seguimiento y control operativo</span>
         </div>
-    </div>
+        <div class="document-control">
+            <strong>INFORME OPERATIVO INDIVIDUAL</strong><br>
+            Código: SGI-OPS-{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}<br>
+            Versión documental: 1.0
+        </div>
+    </header>
 
-    <div class="footer">
-        Sistema de Gestión de Incidencias (SGI) &nbsp;&bull;&nbsp; Generado: {{ now()->format('d/m/Y H:i') }} &nbsp;&bull;&nbsp; <span class="page-number"></span>
-    </div>
+    <footer class="page-footer">
+        <span class="confidentiality">Uso interno</span> · Documento institucional · Emitido {{ now()->format('d/m/Y H:i') }}
+        <span class="right"><span class="page-number"></span> · SGI</span>
+    </footer>
 
-    <div class="operator-info">
-        <table>
+    <section class="report-title">
+        <span class="classification">Informe de gestión operativa</span>
+        <h1>Reporte de desempeño del operador</h1>
+        <p>Consolidado de carga, resolución e intervenciones registradas en el sistema.</p>
+    </section>
+
+    <table class="document-meta">
+        <tr>
+            <td><strong>Fecha de corte:</strong> {{ now()->format('d/m/Y H:i') }}</td>
+            <td><strong>Clasificación:</strong> Uso interno</td>
+        </tr>
+    </table>
+
+    <h2 class="section-title">1. Identificación y alcance</h2>
+    <table class="operator-sheet">
+        <tr>
+            <td><span class="field-label">Operador</span><span class="field-value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</span></td>
+            <td><span class="field-label">Identificador interno</span><span class="field-value mono">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</span></td>
+        </tr>
+        <tr>
+            <td><span class="field-label">Correo institucional</span><span class="field-value">{{ $operator['email'] }}</span></td>
+            <td><span class="field-label">Alcance del documento</span><span class="field-value">{{ $report_scope_label ?? 'Últimas 50 intervenciones' }}</span></td>
+        </tr>
+    </table>
+
+    <h2 class="section-title">2. Resumen de indicadores</h2>
+    <table class="metrics-table">
+        <thead>
             <tr>
-                <td class="label">Operador:</td>
-                <td class="value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</td>
-                <td class="label">ID Sistema:</td>
-                <td class="value">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</td>
+                <th>Carga laboral</th>
+                <th>Casos asignados</th>
+                <th>Casos resueltos</th>
+                <th>Promedio de respuesta</th>
+                <th>Tasa de reapertura</th>
             </tr>
+        </thead>
+        <tbody>
             <tr>
-                <td class="label">Correo:</td>
-                <td class="value">{{ $operator['email'] }}</td>
-                <td class="label">Período:</td>
-                <td class="value">Histórico Completo</td>
+                <td>{{ $metrics['current_workload'] }} <span class="unit">pts</span></td>
+                <td>{{ $metrics['total_assigned'] }}</td>
+                <td>{{ $metrics['total_resolved'] }}</td>
+                <td>{{ number_format($metrics['avg_response_hours'], 2, ',', '.') }} <span class="unit">h</span></td>
+                <td>{{ number_format($metrics['reopen_rate'], 2, ',', '.') }} <span class="unit">%</span></td>
             </tr>
-        </table>
+        </tbody>
+    </table>
+
+    <div class="register-heading">
+        <strong>3. Registro de intervenciones</strong>
+        <span>{{ count($recent_incidents) }} registros incluidos</span>
     </div>
 
-    <div class="metrics-container">
-        <div class="metric-box" style="margin-right: 1%;">
-            <div class="metric-title">Carga Laboral</div>
-            <div class="metric-value">{{ $metrics['current_workload'] }}<span class="metric-unit">pts</span></div>
-        </div>
-        <div class="metric-box" style="margin-right: 1%;">
-            <div class="metric-title">Carga Histórica</div>
-            <div class="metric-value">{{ $metrics['total_assigned'] }}</div>
-        </div>
-        <div class="metric-box" style="margin-right: 1%;">
-            <div class="metric-title">Casos Resueltos</div>
-            <div class="metric-value">{{ $metrics['total_resolved'] }}</div>
-        </div>
-        <div class="metric-box" style="margin-right: 1%;">
-            <div class="metric-title">Prom. Respuesta</div>
-            <div class="metric-value">{{ $metrics['avg_response_hours'] }}<span class="metric-unit">h</span></div>
-        </div>
-        <div class="metric-box">
-            <div class="metric-title">Tasa Reapertura</div>
-            <div class="metric-value">{{ $metrics['reopen_rate'] }}<span class="metric-unit">%</span></div>
-        </div>
-    </div>
-
-    <h3 class="section-title">Registro de Intervenciones Operativas ({{ count($recent_incidents) }})</h3>
-    
-    @if(count($recent_incidents) === 0)
-        <div class="empty-state">
-            El operador no registra incidencias asignadas en el período actual.
-        </div>
-    @else
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th width="8%">Ticket</th>
-                    <th width="24%">Detalle del Caso</th>
-                    <th width="15%">Estado Actual</th>
-                    <th width="15%">Última Asignación</th>
-                    <th width="38%">Historial de Ciclos (Operador)</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($recent_incidents as $item)
+    @forelse($recent_incidents as $item)
+        @php
+            $incident = $item['incident'];
+            $filteredHistory = collect($item['history'] ?? [])->filter(function ($historyItem) {
+                $state = mb_strtoupper($historyItem['state_name'] ?? '');
+                return str_contains($state, 'PROGRESO') || str_contains($state, 'PROCESO');
+            })->values();
+        @endphp
+        <section class="incident-record">
+            <table class="record-metadata">
+                <thead>
+                    <tr><th>Ticket</th><th>Estado actual</th><th>Última asignación</th><th>Reaperturas</th></tr>
+                </thead>
+                <tbody>
                     <tr>
-                        <td><span class="ticket-id">#{{ str_pad($item['incident']['id'], 6, '0', STR_PAD_LEFT) }}</span></td>
-                        <td>
-                            <strong style="color: #2c3e50; display: block; margin-bottom: 3px; font-size: 10px;">{{ \Illuminate\Support\Str::limit($item['incident']['title'], 45) }}</strong>
-                            <span style="color: #7f8c8d; font-size: 8px; display: block;">Cat: {{ $item['incident']['category']['name'] ?? '-' }}</span>
-                            <span style="color: #7f8c8d; font-size: 8px; display: block;">Territorio: {{ $item['incident']['territorial_unit']['name'] ?? 'No especificada' }}</span>
-                        </td>
-                        <td>
-                            @php 
-                                $stateColor = $item['incident']['state']['color'] ?? '#95a5a6';
-                                $stateName = $item['incident']['state']['name'] ?? 'Desconocido';
-                            @endphp
-                            <span style="color: {{ $stateColor }}; font-weight: bold; font-size: 9px; padding: 2px 4px; border: 1px solid {{ $stateColor }}; border-radius: 3px; display: inline-block;">
-                                {{ mb_strtoupper($stateName) }}
-                            </span>
-                        </td>
-                        <td style="color: #555; font-size: 9px;">
-                            {{ \Carbon\Carbon::parse($item['latest_assignment_date'])->format('d/m/Y') }}<br>
-                            <span style="color: #95a5a6; font-size: 8px;">{{ \Carbon\Carbon::parse($item['latest_assignment_date'])->format('H:i') }} hrs</span>
-                        </td>
-                        <td>
-                            @php
-                                $filteredHistory = collect($item['history'] ?? [])->filter(function($h) {
-                                    $state = mb_strtoupper($h['state_name']);
-                                    return str_contains($state, 'PROGRESO') || str_contains($state, 'PROCESO');
-                                })->values()->all();
-                            @endphp
-                            
-                            @if(count($filteredHistory) > 0)
-                                <table class="cycle-table">
-                                @foreach($filteredHistory as $idx => $h)
+                        <td class="record-ticket">#{{ str_pad($incident['id'], 6, '0', STR_PAD_LEFT) }}</td>
+                        <td>{{ mb_strtoupper($incident['state']['name'] ?? 'Desconocido') }}</td>
+                        <td>{{ $item['latest_assignment_date'] ? \Carbon\Carbon::parse($item['latest_assignment_date'])->format('d/m/Y H:i') : 'Sin fecha' }}</td>
+                        <td>{{ $item['reopen_count'] ?? 0 }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table class="record-detail">
+                <tr>
+                    <td class="record-summary">
+                        <div class="record-title">{{ \Illuminate\Support\Str::limit($incident['title'], 95) }}</div>
+                        <div class="record-classification">
+                            <strong>Categoría:</strong> {{ $incident['category']['name'] ?? 'Sin categoría' }}<br>
+                            <strong>Territorio:</strong> {{ $incident['territorial_unit']['name'] ?? 'Sin territorio' }}
+                        </div>
+                    </td>
+                    <td class="history-cell">
+                        <table class="history-table">
+                            <thead>
+                                <tr><th>N.º</th><th>Estado</th><th>Prioridad</th><th>Inicio</th><th>Duración</th><th>Responsable</th></tr>
+                            </thead>
+                            <tbody>
+                                @forelse($filteredHistory as $historyItem)
                                     <tr>
-                                        <td class="cycle-number">
-                                            <div class="cycle-badge">{{ $idx + 1 }}</div>
-                                        </td>
-                                        <td class="cycle-content">
-                                            <strong style="font-size: 8.5px; color: #2c3e50;">{{ mb_strtoupper($h['state_name']) }}</strong>
-                                            <span style="font-size: 7px; color: #7f8c8d;"> - PRIORIDAD: {{ mb_strtoupper($h['priority_name']) }}</span>
-                                            
-                                            <div style="font-size: 7.5px; color: #555; margin-top: 3px;">
-                                                <span style="color: #7f8c8d;">Inició trabajo (Ingreso):</span> 
-                                                {{ $h['assignment_date'] ? \Carbon\Carbon::parse($h['assignment_date'])->format('d/m/Y H:i') : '-' }}
-                                            </div>
-                                            
-                                            @if(isset($h['duration_minutes'])) 
-                                            <div style="font-size: 7.5px; color: #555; margin-top: 1.5px;">
-                                                <span style="color: #7f8c8d;">Finalizó / Pasó a resuelta:</span> 
-                                                <strong>{{ $h['assignment_date'] ? \Carbon\Carbon::parse($h['assignment_date'])->addMinutes($h['duration_minutes'])->format('d/m/Y H:i') : '-' }}</strong>
-                                            </div>
-                                            <div style="font-size: 7.5px; color: #d35400; margin-top: 1.5px;">
-                                                <span>Tiempo de trabajo operativo:</span> 
-                                                <strong>{{ $h['duration_minutes'] }} min</strong>
-                                            </div>
+                                        <td class="history-sequence">{{ $loop->iteration }}</td>
+                                        <td class="history-state">{{ mb_strtoupper($historyItem['state_name']) }}</td>
+                                        <td class="history-priority">{{ mb_strtoupper($historyItem['priority_name'] ?? '-') }}</td>
+                                        <td class="history-date">{{ $historyItem['assignment_date'] ? \Carbon\Carbon::parse($historyItem['assignment_date'])->format('d/m/Y H:i') : '-' }}</td>
+                                        <td class="history-duration">
+                                            @if(isset($historyItem['duration_minutes']))
+                                                {{ sprintf('%d h %02d min', intdiv((int) $historyItem['duration_minutes'], 60), (int) $historyItem['duration_minutes'] % 60) }}
+                                            @else
+                                                -
                                             @endif
-                                            
-                                            <div style="font-size: 7.5px; color: #7f8c8d; margin-top: 1.5px;">
-                                                <span>Cambiado a este estado por:</span> 
-                                                <strong>{{ $h['assigned_by_name'] ?? 'Sistema Automático' }}</strong>
-                                            </div>
                                         </td>
+                                        <td class="history-owner">{{ $historyItem['assigned_by_name'] ?? 'Sistema' }}</td>
                                     </tr>
-                                @endforeach
-                                
-                                @if(isset($item['incident']['state']) && !empty($item['incident']['state']['is_final_state']))
-                                    <tr>
-                                        <td class="cycle-number">
-                                            <div class="cycle-badge" style="background-color: #27ae60;">{{ count($filteredHistory) + 1 }}</div>
-                                        </td>
-                                        <td class="cycle-content">
-                                            <strong style="font-size: 8.5px; color: #27ae60;">{{ mb_strtoupper($item['incident']['state']['name']) }} (ESTADO DEFINITIVO)</strong>
-                                            
-                                            <div style="font-size: 7.5px; color: #555; margin-top: 3px;">
-                                                <span style="color: #7f8c8d;">Fecha de cierre:</span> 
-                                                {{ $item['incident']['updated_at'] ? \Carbon\Carbon::parse($item['incident']['updated_at'])->format('d/m/Y H:i') : '-' }}
-                                            </div>
-                                            <div style="font-size: 7.5px; color: #e74c3c; margin-top: 1.5px;">
-                                                <span>* La incidencia ya no admite más actualizaciones de estado.</span>
-                                            </div>
-                                        </td>
+                                @empty
+                                    <tr><td colspan="6" class="no-history">Sin ciclos de atención directa registrados.</td></tr>
+                                @endforelse
+                                @if(!empty($incident['state']['is_final_state']))
+                                    <tr class="final-row">
+                                        <td class="history-sequence">{{ $filteredHistory->count() + 1 }}</td>
+                                        <td colspan="2">{{ mb_strtoupper($incident['state']['name']) }} · DEFINITIVO</td>
+                                        <td>{{ !empty($incident['updated_at']) ? \Carbon\Carbon::parse($incident['updated_at'])->format('d/m/Y H:i') : '-' }}</td>
+                                        <td>-</td><td>Cierre del caso</td>
                                     </tr>
                                 @endif
-                                
-                                </table>
-                            @else
-                                <span style="color: #95a5a6; font-style: italic;">Sin intervenciones directas registradas</span>
-                            @endif
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </section>
+    @empty
+        <div class="empty-state">El operador no registra intervenciones para el alcance seleccionado.</div>
+    @endforelse
 
-    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; page-break-inside: avoid;">
-        <h4 style="font-size: 11px; color: #1a5276; margin-top: 0; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #e9ecef; padding-bottom: 5px;">Glosario de Términos del Reporte</h4>
-        <table style="width: 100%; border: none; font-size: 8.5px; color: #555; line-height: 1.4;">
-            <tr>
-                <td style="width: 50%; vertical-align: top; padding-right: 15px;">
-                    <strong style="color: #2c3e50;">Carga Laboral:</strong> Puntos de esfuerzo actuales del operador basados en la complejidad de sus incidencias activas.<br><br>
-                    <strong style="color: #2c3e50;">Tiempo de trabajo operativo (Ciclos):</strong> Cantidad total de minutos que la incidencia permaneció exclusivamente en estado <b>En Progreso / En Proceso</b>. Representa el tiempo real de atención por parte del operador antes de resolverse.<br><br>
-                    <strong style="color: #2c3e50;">Cambiado a este estado por:</strong> Identifica al usuario que ejecutó la acción de mover la incidencia hacia ese estado particular.
-                </td>
-                <td style="width: 50%; vertical-align: top;">
-                    <strong style="color: #2c3e50;">Carga Histórica / Casos Resueltos:</strong> Total de tickets que pasaron por el operador y total de tickets que el operador cerró exitosamente.<br><br>
-                    <strong style="color: #2c3e50;">Prom. Respuesta:</strong> Tiempo promedio histórico que tarda el operador en resolver una incidencia desde el momento en que se le asigna.<br><br>
-                    <strong style="color: #2c3e50;">Tasa Reapertura:</strong> Porcentaje de incidencias que fueron dadas por resueltas pero tuvieron que ser reabiertas posteriormente (ej: por rechazo del supervisor).
-                </td>
-            </tr>
-        </table>
-    </div>
+    <section class="methodology">
+        <div class="methodology-title">Nota metodológica</div>
+        <strong>Carga laboral:</strong> puntos de esfuerzo de las incidencias activas.
+        <strong>Promedio de respuesta:</strong> tiempo histórico entre asignación y resolución.
+        <strong>Tasa de reapertura:</strong> proporción de casos resueltos que retornaron al flujo operativo.
+        Las duraciones de ciclo corresponden exclusivamente a períodos de atención en progreso y se expresan en horas y minutos.
+    </section>
+
+    <table class="approval-strip">
+        <tr>
+            <td><strong>Fuente:</strong> Sistema de Gestión de Incidencias Georreferenciadas</td>
+            <td><strong>Responsable:</strong> Dirección de Operaciones</td>
+        </tr>
+    </table>
 </body>
 </html>

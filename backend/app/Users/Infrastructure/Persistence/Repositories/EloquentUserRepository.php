@@ -2,6 +2,7 @@
 
 namespace App\Users\Infrastructure\Persistence\Repositories;
 
+use App\Audit\Infrastructure\Services\AuditRecorder;
 use App\Auth\Application\Ports\UserNotificationPort;
 use App\Auth\Domain\Entities\AuthUser;
 use App\Auth\Infrastructure\Persistence\Mappers\AuthUserMapper;
@@ -19,7 +20,8 @@ final class EloquentUserRepository implements UserRepositoryInterface
 {
     public function __construct(
         private AuthUserMapper $userMapper,
-        private UserNotificationPort $notificationPort
+        private UserNotificationPort $notificationPort,
+        private AuditRecorder $auditRecorder
     ) {}
 
     public function paginate(UserFiltersData $filters): PaginatedResult
@@ -114,12 +116,23 @@ final class EloquentUserRepository implements UserRepositoryInterface
     public function syncRoles(SyncUserRolesInputData $data): AuthUser
     {
         $user = User::findOrFail($data->userId);
+        $previousRoleCodes = $user->roles()->pluck('code')->sort()->values()->all();
         $roles = Role::whereIn('code', $data->roleCodes)->pluck('id')->all();
         $sync = collect($roles)
             ->mapWithKeys(fn ($id) => [$id => ['assigned_by' => $data->assignedBy, 'assigned_at' => now()]])
             ->all();
 
         $user->roles()->sync($sync);
+
+        $currentRoleCodes = $user->roles()->pluck('code')->sort()->values()->all();
+        $this->auditRecorder->recordChange(
+            User::class,
+            (int) $user->id,
+            ['roles' => $previousRoleCodes],
+            ['roles' => $currentRoleCodes],
+            $data->assignedBy,
+            $user->getTable()
+        );
 
         return $this->show($user->id);
     }

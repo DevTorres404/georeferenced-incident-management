@@ -8,6 +8,11 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   requestBackend: vi.fn(),
 }));
 
+vi.mock('../app/js/shared/profile-photo.js', () => ({
+  hydrateOwnProfilePhoto: vi.fn().mockResolvedValue(true),
+  invalidateOwnProfilePhoto: vi.fn(),
+}));
+
 vi.mock('../app/js/shared/validators/validation-utils.js', () => ({
   handleBackendErrors: vi.fn(),
   clearValidationErrors: vi.fn(),
@@ -19,6 +24,7 @@ vi.mock('../app/js/shared/validators/validation-utils.js', () => ({
 
 import { requestBackend } from '../app/js/infrastructure/backend-client.js';
 import { handleBackendErrors, clearValidationErrors } from '../app/js/shared/validators/validation-utils.js';
+import { hydrateOwnProfilePhoto, invalidateOwnProfilePhoto } from '../app/js/shared/profile-photo.js';
 
 // ────────────────────────────────────────────────────────────
 // DOM fixture – every id the source looks up
@@ -27,7 +33,12 @@ import { handleBackendErrors, clearValidationErrors } from '../app/js/shared/val
 const DOM_FIXTURE = `
 <div id="pageLoader" class="d-none" hidden></div>
 
-<div id="profileAvatar"></div>
+<div id="profileAvatar" data-profile-avatar>
+  <span data-profile-avatar-fallback></span>
+  <img data-profile-avatar-image hidden>
+</div>
+<input id="profilePhotoInput" type="file">
+<button id="btnChangeProfilePhoto" type="button">Cambiar foto</button>
 <div id="profileFullName"></div>
 <div id="profileEmail"></div>
 <div id="profileUsername"></div>
@@ -159,6 +170,8 @@ describe('profile-page — integration', () => {
     vi.mocked(requestBackend).mockReset();
     vi.mocked(handleBackendErrors).mockReset();
     vi.mocked(clearValidationErrors).mockReset();
+    vi.mocked(hydrateOwnProfilePhoto).mockClear();
+    vi.mocked(invalidateOwnProfilePhoto).mockClear();
   });
 
   afterEach(() => {
@@ -187,6 +200,8 @@ describe('profile-page — integration', () => {
       expect(mod.renderUserData).toBeTypeOf('function');
       expect(mod.renderSecurityData).toBeTypeOf('function');
       expect(mod.initEditProfile).toBeTypeOf('function');
+      expect(mod.initProfilePhotoUpload).toBeTypeOf('function');
+      expect(mod.validateProfilePhoto).toBeTypeOf('function');
       expect(mod.initChangePassword).toBeTypeOf('function');
       expect(mod.initProfilePage).toBeTypeOf('function');
     });
@@ -225,7 +240,7 @@ describe('profile-page — integration', () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData(BASE_USER);
 
-      expect(document.getElementById('profileAvatar').textContent).toBe('J');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('J');
       expect(document.getElementById('profileFullName').textContent).toBe('Juan Pérez');
       expect(document.getElementById('profileEmail').textContent).toBe('juan@test.com');
       expect(document.getElementById('profileUsername').textContent).toBe('juanperez');
@@ -245,13 +260,13 @@ describe('profile-page — integration', () => {
     it('shows first letter of first_name when nombre is absent', async () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData({ first_name: 'Ana', username: 'ana123', is_active: true });
-      expect(document.getElementById('profileAvatar').textContent).toBe('A');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('A');
     });
 
     it('falls back to "U" when no display name exists', async () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData({ username: '', is_active: true });
-      expect(document.getElementById('profileAvatar').textContent).toBe('U');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('U');
     });
 
     it('shows inactive status', async () => {
@@ -501,19 +516,67 @@ describe('profile-page — integration', () => {
     it('shows initial letter from nombre', async () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData({ nombre: 'Carlos', is_active: true });
-      expect(document.getElementById('profileAvatar').textContent).toBe('C');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('C');
     });
 
     it('shows initial from username when nombre is absent', async () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData({ username: 'carlos123', is_active: true });
-      expect(document.getElementById('profileAvatar').textContent).toBe('C');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('C');
     });
 
     it('shows "U" when no display name available', async () => {
       const { renderUserData } = await import('../app/js/modules/profile/presentation/profile-page.js');
       renderUserData({ username: '', is_active: true });
-      expect(document.getElementById('profileAvatar').textContent).toBe('U');
+      expect(document.querySelector('#profileAvatar [data-profile-avatar-fallback]').textContent).toBe('U');
+    });
+  });
+
+  describe('profile photo upload', () => {
+    it('uploads the selected image, refreshes the avatar, and persists the user', async () => {
+      const updatedUser = { ...BASE_USER, foto_perfil: 'profile-photos/users/1/avatar.jpg' };
+      vi.mocked(requestBackend).mockResolvedValue({ user: updatedUser });
+      const { initProfilePhotoUpload } = await import('../app/js/modules/profile/presentation/profile-page.js');
+      initProfilePhotoUpload(BASE_USER);
+
+      const input = document.getElementById('profilePhotoInput');
+      const file = new File(['avatar'], 'avatar.jpg', { type: 'image/jpeg' });
+      Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+      input.dispatchEvent(new Event('change'));
+
+      await vi.waitFor(() => {
+        expect(requestBackend).toHaveBeenCalledWith('/auth/profile/photo', {
+          method: 'POST',
+          body: expect.any(FormData),
+        });
+      });
+      await vi.waitFor(() => expect(invalidateOwnProfilePhoto).toHaveBeenCalled());
+
+      expect(JSON.parse(localStorage.getItem('user_data')).foto_perfil).toBe(updatedUser.foto_perfil);
+      expect(hydrateOwnProfilePhoto).toHaveBeenCalledWith(updatedUser);
+      expect(globalThis.renderLayout).toHaveBeenCalled();
+      await vi.waitFor(() => {
+        expect(globalThis.showGlobalAlert).toHaveBeenCalledWith(
+          'Foto de perfil actualizada correctamente.',
+          'success',
+        );
+      });
+    });
+
+    it('rejects unsupported files before calling the backend', async () => {
+      const { initProfilePhotoUpload } = await import('../app/js/modules/profile/presentation/profile-page.js');
+      initProfilePhotoUpload(BASE_USER);
+
+      const input = document.getElementById('profilePhotoInput');
+      const file = new File(['svg'], 'avatar.svg', { type: 'image/svg+xml' });
+      Object.defineProperty(input, 'files', { configurable: true, value: [file] });
+      input.dispatchEvent(new Event('change'));
+
+      expect(requestBackend).not.toHaveBeenCalled();
+      expect(globalThis.showGlobalAlert).toHaveBeenCalledWith(
+        'Selecciona una imagen JPG, PNG o WebP.',
+        'warning',
+      );
     });
   });
 

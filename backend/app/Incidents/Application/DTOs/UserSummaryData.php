@@ -10,7 +10,8 @@ final class UserSummaryData implements JsonSerializable
         public readonly int $id,
         public readonly string $firstName,
         public readonly string $lastName,
-        public readonly string $email
+        public readonly string $email,
+        public readonly ?string $roleName = null
     ) {}
 
     public function jsonSerialize(): array
@@ -20,6 +21,7 @@ final class UserSummaryData implements JsonSerializable
             'first_name' => $this->firstName,
             'last_name' => $this->lastName,
             'email' => $this->email,
+            'role_name' => $this->roleName,
         ];
     }
 }

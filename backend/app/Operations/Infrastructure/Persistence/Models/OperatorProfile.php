@@ -3,6 +3,7 @@
 namespace App\Operations\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 final class OperatorProfile extends Model
 {
+    use Auditable;
+
     protected $table = 'auth.operator_profiles';
 
     public const DEFAULT_INCIDENT_CAPACITY = 20;

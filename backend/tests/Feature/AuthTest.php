@@ -3,15 +3,18 @@
 namespace Tests\Feature;
 
 use App\Audit\Infrastructure\Persistence\Models\AuditLog;
+use App\Auth\Infrastructure\Jobs\DownloadGoogleProfilePhotoJob;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
 use App\Auth\Infrastructure\Notifications\PasswordChangedNotification;
 use App\Auth\Infrastructure\Notifications\PasswordResetCodeNotification;
 use App\Auth\Infrastructure\Notifications\PasswordResetCompletedNotification;
+use App\Auth\Infrastructure\Notifications\VerifyEmailNotification;
 use App\Auth\Infrastructure\Persistence\Models\PasswordResetToken;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Auth\Infrastructure\Persistence\Models\UserIdentity;
 use App\Shared\Infrastructure\Jobs\NotifyAdminsJob;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
@@ -66,7 +69,7 @@ class AuthTest extends TestCase
     public function test_user_can_register_with_email_and_password(): void
     {
         Bus::fake([NotifyAdminsJob::class]);
-        Notification::fake();
+        Notification::spy();
 
         $response = $this->postJson('/api/register', [
             'first_name' => 'Damian',
@@ -78,6 +81,7 @@ class AuthTest extends TestCase
         ]);
 
         $response->assertStatus(201)
+            ->assertJsonPath('verification_sent', true)
             ->assertJsonStructure([
                 'message',
                 'verification_sent',
@@ -92,6 +96,9 @@ class AuthTest extends TestCase
             'provider' => 'local',
             'provider_uid' => 'registro-local@incidencias.local',
         ]);
+        Notification::shouldHaveReceived('sendNow')
+            ->once()
+            ->withArgs(fn (User $notifiable, VerifyEmailNotification $notification): bool => $notifiable->is($user));
         Bus::assertDispatched(NotifyAdminsJob::class);
     }
 
@@ -322,6 +329,101 @@ class AuthTest extends TestCase
             ]);
 
         $this->assertSame('perfil.google', $user->fresh()->username);
+    }
+
+    public function test_authenticated_user_can_upload_and_read_profile_photo(): void
+    {
+        Storage::fake('rustfs');
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/auth/profile/photo', [
+                'photo' => UploadedFile::fake()->createWithContent(
+                    'avatar.png',
+                    base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', true)
+                ),
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Foto de perfil actualizada correctamente.')
+            ->assertJsonPath('user.foto_perfil', fn ($path) => str_starts_with(
+                (string) $path,
+                'profile-photos/users/'.$user->id.'/'
+            ));
+
+        $storagePath = (string) $user->fresh()->profile_photo;
+        Storage::disk('rustfs')->assertExists($storagePath);
+
+        $photoResponse = $this->withHeader('Authorization', 'Bearer '.$token)
+            ->get('/api/auth/profile/photo');
+
+        $photoResponse->assertOk()
+            ->assertHeader('Content-Type', 'image/png')
+            ->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertSame(Storage::disk('rustfs')->get($storagePath), $photoResponse->getContent());
+    }
+
+    public function test_uploading_new_profile_photo_deletes_previous_managed_photo(): void
+    {
+        Storage::fake('rustfs');
+        $oldPath = 'profile-photos/users/7/old-avatar.jpg';
+        Storage::disk('rustfs')->put($oldPath, 'old-avatar');
+        $user = User::factory()->create(['profile_photo' => $oldPath]);
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/auth/profile/photo', [
+                'photo' => UploadedFile::fake()->createWithContent(
+                    'new-avatar.png',
+                    base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', true)
+                ),
+            ])
+            ->assertOk();
+
+        Storage::disk('rustfs')->assertMissing($oldPath);
+        Storage::disk('rustfs')->assertExists((string) $user->fresh()->profile_photo);
+    }
+
+    public function test_profile_photo_upload_rejects_unsupported_files(): void
+    {
+        Storage::fake('rustfs');
+        $user = User::factory()->create();
+        $token = $user->createToken('test-token')->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer '.$token)
+            ->post('/api/auth/profile/photo', [
+                'photo' => UploadedFile::fake()->create('avatar.svg', 20, 'image/svg+xml'),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('photo');
+
+        $this->assertNull($user->fresh()->profile_photo);
+    }
+
+    public function test_google_photo_job_does_not_overwrite_user_uploaded_photo(): void
+    {
+        Storage::fake('rustfs');
+        Http::fake([
+            'https://lh3.googleusercontent.com/*' => Http::response('google-avatar', 200, [
+                'Content-Type' => 'image/jpeg',
+            ]),
+        ]);
+        $customPath = 'profile-photos/users/15/custom-avatar.jpg';
+        Storage::disk('rustfs')->put($customPath, 'custom-avatar');
+        $user = User::factory()->create(['profile_photo' => $customPath]);
+
+        app()->call([new DownloadGoogleProfilePhotoJob(
+            $user->id,
+            'https://lh3.googleusercontent.com/a-/avatar=s96-c',
+            'google-uid-custom-avatar'
+        ), 'handle']);
+
+        $this->assertSame($customPath, $user->fresh()->profile_photo);
+        Storage::disk('rustfs')->assertExists($customPath);
+        Storage::disk('rustfs')->assertMissing(
+            'profile-photos/google/'.hash('sha256', 'google-uid-custom-avatar').'.jpg'
+        );
     }
 
     public function test_user_cannot_login_with_incorrect_password(): void

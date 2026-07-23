@@ -39,6 +39,12 @@ interface UserRepositoryInterface
 
     public function updateProfilePhoto(int $userId, ?string $profilePhoto): AuthUser;
 
+    public function updateProfilePhotoIfCurrentValue(
+        int $userId,
+        ?string $expectedCurrentPhoto,
+        string $profilePhoto
+    ): ?AuthUser;
+
     public function updatePasswordHash(int $userId, string $passwordHash): void;
 
     public function updateLastAccess(int $userId, ?string $lastAccessAt = null): void;

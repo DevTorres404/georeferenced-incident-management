@@ -7,8 +7,8 @@ use App\Catalogs\Infrastructure\Http\Controllers\CatalogController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
 use App\Incidents\Infrastructure\Http\Controllers\DashboardController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
-use App\Incidents\Infrastructure\Http\Controllers\ReportController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
+use App\Incidents\Infrastructure\Http\Controllers\ReportController;
 use App\Operations\Infrastructure\Http\Controllers\OperationalStructureController;
 use App\Operations\Infrastructure\Http\Controllers\TeamController;
 use App\TerritorialUnits\Infrastructure\Http\Controllers\TerritorialUnitController;
@@ -46,6 +46,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         ->middleware('throttle:6,1');
     Route::post('/auth/profile', [AuthController::class, 'completeProfile']);
     Route::patch('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/auth/profile/photo', [AuthController::class, 'updateProfilePhoto'])
+        ->middleware('throttle:uploads');
+    Route::get('/auth/profile/photo', [AuthController::class, 'profilePhoto']);
     Route::match(['patch', 'post'], '/auth/password', [AuthController::class, 'changePassword']);
     Route::get('/navigation/menu', [AccessControlController::class, 'navigation']);
 
@@ -93,6 +96,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/incidents/kpi-counts', [IncidentController::class, 'kpiCounts']);
         Route::get('/incidents/reports/analytics', [ReportController::class, 'analytics'])
             ->middleware('permission:reportes.ver');
+        Route::get('/incidents/reports/analytics/pdf', [ReportController::class, 'pdf'])
+            ->middleware('permission:reportes.exportar');
         Route::apiResource('/incidents', IncidentController::class)
             ->parameters(['incidents' => 'incident'])
             ->except(['store']);

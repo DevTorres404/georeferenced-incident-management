@@ -320,7 +320,9 @@ class IncidentsTest extends TestCase
 
         $attachmentResponse->assertCreated()
             ->assertJsonPath('data.original_name', 'evidence.png')
-            ->assertJsonPath('data.mime_type', 'image/png');
+            ->assertJsonPath('data.mime_type', 'image/png')
+            ->assertJsonPath('data.user.id', $citizen->id)
+            ->assertJsonPath('data.user.role_name', 'Ciudadano');
 
         $path = $attachmentResponse->json('data.file_path');
         Storage::disk('public')->assertExists($path);
@@ -458,7 +460,8 @@ class IncidentsTest extends TestCase
                 'comment' => 'Ocurre desde anoche.',
                 'is_internal' => false,
             ])->assertCreated()
-            ->assertJsonPath('data.comment', 'Ocurre desde anoche.');
+            ->assertJsonPath('data.comment', 'Ocurre desde anoche.')
+            ->assertJsonPath('data.user.role_name', 'Ciudadano');
 
         Event::assertDispatched(
             CommentCreated::class,
@@ -498,6 +501,7 @@ class IncidentsTest extends TestCase
         $operatorDetail->assertOk()
             ->assertJsonPath('data.id', $incidentId)
             ->assertJsonPath('data.comments.0.comment', 'Ocurre desde anoche.')
+            ->assertJsonPath('data.comments.0.user.role_name', 'Ciudadano')
             ->assertJsonStructure([
                 'data' => [
                     'state',

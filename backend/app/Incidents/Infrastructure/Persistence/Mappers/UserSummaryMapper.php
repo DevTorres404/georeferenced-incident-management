@@ -13,7 +13,12 @@ final class UserSummaryMapper
             id: (int) $user->id,
             firstName: $user->first_name,
             lastName: $user->last_name,
-            email: $user->email
+            email: $user->email,
+            roleName: $user->relationLoaded('roles')
+                ? $user->roles
+                    ->where('is_active', true)
+                    ->first()?->name
+                : null
         );
     }
 }

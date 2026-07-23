@@ -29,12 +29,32 @@ final class DownloadGoogleProfilePhotoJob implements ShouldQueue
         UserRepositoryInterface $userRepository
     ): void {
         try {
+            $user = $userRepository->findById($this->userId);
+            if (! $user || ! $this->canReplaceWithGooglePhoto($user->profilePhoto)) {
+                return;
+            }
+
             $profilePhoto = $profilePhotoStorage->storeGoogleProfilePhoto($this->sourceUrl, $this->firebaseUid);
-            if ($profilePhoto !== null) {
-                $userRepository->updateProfilePhoto($this->userId, $profilePhoto);
+            $updated = $userRepository->updateProfilePhotoIfCurrentValue(
+                $this->userId,
+                $user->profilePhoto,
+                $profilePhoto
+            );
+
+            $latestPhoto = $userRepository->findById($this->userId)?->profilePhoto;
+            if (! $updated && $latestPhoto !== $profilePhoto) {
+                $profilePhotoStorage->delete($profilePhoto);
             }
         } catch (Throwable) {
             // Silently fail if we can't download the photo
         }
+    }
+
+    private function canReplaceWithGooglePhoto(?string $currentPhoto): bool
+    {
+        return $currentPhoto === null
+            || trim($currentPhoto) === ''
+            || filter_var($currentPhoto, FILTER_VALIDATE_URL) !== false
+            || str_starts_with($currentPhoto, 'profile-photos/google/');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class IncidentAttachment extends Model
 {
+    use Auditable;
+
     protected $table = 'core.incident_attachments';
 
     const UPDATED_AT = null;

@@ -244,8 +244,12 @@ final class TeamController extends ApiController
         if ($limit !== null && $limit <= 0) $limit = 50;
 
         $data = $useCase->generate($operatorId, $limit);
+        $viewData = $data->toArray();
+        $viewData['report_scope_label'] = $limit === null
+            ? 'Histórico completo'
+            : "Últimas {$limit} intervenciones";
 
-        $pdf = Pdf::loadView('pdf.operator-work-report', $data->toArray());
+        $pdf = Pdf::loadView('pdf.operator-work-report', $viewData);
         $pdf->setPaper('A4', 'portrait');
 
         return $pdf->download("reporte_operador_{$operatorId}.pdf");

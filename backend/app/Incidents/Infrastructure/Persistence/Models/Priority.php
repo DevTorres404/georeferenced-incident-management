@@ -2,6 +2,7 @@
 
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'level', 'color', 'sla_hours', 'weight', 'is_active'])]
 class Priority extends Model
 {
+    use Auditable;
+
     protected $table = 'core.priorities';
 
     protected function casts(): array

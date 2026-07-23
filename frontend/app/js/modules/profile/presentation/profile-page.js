@@ -1,9 +1,12 @@
 import { requestBackend } from '../../../infrastructure/backend-client.js?v=21';
 import { handleBackendErrors, clearValidationErrors } from '../../../shared/validators/validation-utils.js?v=1';
+import { hydrateOwnProfilePhoto, invalidateOwnProfilePhoto } from '../../../shared/profile-photo.js?v=1';
 
 document.addEventListener('DOMContentLoaded', initProfilePage);
 
 const AUTH_KEYS = { user: 'user_data' };
+const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+const PROFILE_PHOTO_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 let twoFactorQr = null;
 
 globalThis.addEventListener('pagehide', (event) => {
@@ -81,8 +84,10 @@ export function initProfilePage() {
   }
 
   renderUserData(user);
+  void hydrateOwnProfilePhoto(user);
   renderSecurityData(user);
   initEditProfile(user);
+  initProfilePhotoUpload(user);
   initChangePassword();
 
   const modal2fa = document.getElementById('modalSetup2fa');
@@ -117,7 +122,8 @@ export function renderUserData(user) {
   const initial = displayFirst ? displayFirst.charAt(0).toUpperCase() : 'U';
 
   const avatarEl = document.getElementById('profileAvatar');
-  if (avatarEl) avatarEl.textContent = initial;
+  const avatarFallback = avatarEl?.querySelector('[data-profile-avatar-fallback]') || avatarEl;
+  if (avatarFallback) avatarFallback.textContent = initial;
 
   const fullNameEl = document.getElementById('profileFullName');
   if (fullNameEl) fullNameEl.textContent = `${firstName} ${lastName}`.trim() || username || 'Usuario SGI';
@@ -139,6 +145,63 @@ export function renderUserData(user) {
 
   const lastLoginEl = document.getElementById('profileLastLogin');
   if (lastLoginEl) lastLoginEl.textContent = formatDateTime(user.last_login || user.lastLogin);
+}
+
+export function validateProfilePhoto(file) {
+  if (!file || !PROFILE_PHOTO_MIME_TYPES.has(file.type)) {
+    return 'Selecciona una imagen JPG, PNG o WebP.';
+  }
+  if (file.size <= 0 || file.size > PROFILE_PHOTO_MAX_BYTES) {
+    return 'La foto debe pesar como máximo 5 MB.';
+  }
+
+  return null;
+}
+
+export function initProfilePhotoUpload(user) {
+  const button = document.getElementById('btnChangeProfilePhoto');
+  const input = document.getElementById('profilePhotoInput');
+  if (!button || !input) return;
+
+  button.addEventListener('click', () => input.click());
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    const validationMessage = validateProfilePhoto(file);
+    if (validationMessage) {
+      input.value = '';
+      globalThis.showGlobalAlert?.(validationMessage, 'warning');
+      return;
+    }
+
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Subiendo...';
+
+    try {
+      const formData = new FormData();
+      formData.append('photo', file);
+      const response = await requestBackend('/auth/profile/photo', {
+        method: 'POST',
+        body: formData,
+      });
+      const updatedUser = response?.user || user;
+      localStorage.setItem(AUTH_KEYS.user, JSON.stringify(updatedUser));
+
+      invalidateOwnProfilePhoto();
+      renderUserData(updatedUser);
+      await hydrateOwnProfilePhoto(updatedUser);
+      if (typeof globalThis.renderLayout === 'function') {
+        await globalThis.renderLayout();
+      }
+      globalThis.showGlobalAlert?.('Foto de perfil actualizada correctamente.', 'success');
+    } catch (error) {
+      globalThis.showGlobalAlert?.(error?.message || 'No se pudo actualizar la foto de perfil.', 'danger');
+    } finally {
+      input.value = '';
+      button.disabled = false;
+      button.innerHTML = originalHtml;
+    }
+  });
 }
 
 export function initEditProfile(user) {

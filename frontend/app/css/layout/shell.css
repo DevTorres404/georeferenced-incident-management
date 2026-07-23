@@ -482,6 +482,15 @@ body.sidebar-mini.sidebar-collapse .main-sidebar:not(:hover) .nav-sidebar .nav-t
   background: linear-gradient(135deg, var(--sgi-primary), var(--sgi-primary-hover));
   color: #ffffff;
   font-weight: 700;
+  overflow: hidden;
+  position: relative;
+}
+
+.sgi-user-avatar-sm img,
+.sgi-user-avatar-lg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .sgi-user-avatar-sm {

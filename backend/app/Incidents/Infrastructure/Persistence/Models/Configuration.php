@@ -2,6 +2,7 @@
 
 namespace App\Incidents\Infrastructure\Persistence\Models;
 
+use App\Shared\Infrastructure\Persistence\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,7 +15,22 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['key', 'value', 'type', 'description'])]
 class Configuration extends Model
 {
+    use Auditable;
+
     protected $table = 'core.settings';
+
+    /**
+     * @return array<int, string>
+     */
+    public function auditExcludedAttributes(): array
+    {
+        $sensitiveKey = preg_match(
+            '/(?:password|secret|token|credential|api[_-]?key)/i',
+            (string) $this->key
+        ) === 1;
+
+        return $sensitiveKey ? ['value'] : [];
+    }
 
     public function getTypedValueAttribute(): mixed
     {

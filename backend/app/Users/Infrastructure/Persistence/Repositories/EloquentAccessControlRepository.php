@@ -2,6 +2,7 @@
 
 namespace App\Users\Infrastructure\Persistence\Repositories;
 
+use App\Audit\Infrastructure\Services\AuditRecorder;
 use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
@@ -11,6 +12,8 @@ use Illuminate\Support\Collection;
 
 final class EloquentAccessControlRepository implements AccessControlRepositoryInterface
 {
+    public function __construct(private AuditRecorder $auditRecorder) {}
+
     public function overview(): array
     {
         $roles = Role::activos()
@@ -50,9 +53,19 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
     public function syncRolePermissions(int $roleId, array $permissionCodes): array
     {
         $role = Role::findOrFail($roleId);
+        $previousPermissionCodes = $role->permissions()->pluck('code')->sort()->values()->all();
         $permissionIds = Permission::whereIn('code', $permissionCodes)->pluck('id')->all();
 
         $role->permissions()->sync($permissionIds);
+
+        $currentPermissionCodes = $role->permissions()->pluck('code')->sort()->values()->all();
+        $this->auditRecorder->recordChange(
+            Role::class,
+            (int) $role->id,
+            ['permissions' => $previousPermissionCodes],
+            ['permissions' => $currentPermissionCodes],
+            table: $role->getTable()
+        );
 
         return $this->mapRole($role->fresh('permissions'));
     }

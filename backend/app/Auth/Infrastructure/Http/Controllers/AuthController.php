@@ -15,6 +15,7 @@ use App\Auth\Application\DTOs\VerifyPasswordResetCodeInputData;
 use App\Auth\Application\UseCases\ChangeOwnPasswordUseCase;
 use App\Auth\Application\UseCases\CompleteProfileUseCase;
 use App\Auth\Application\UseCases\GetAuthenticatedUserUseCase;
+use App\Auth\Application\UseCases\GetOwnProfilePhotoUseCase;
 use App\Auth\Application\UseCases\GoogleRegistrationUseCase;
 use App\Auth\Application\UseCases\LoginUseCase;
 use App\Auth\Application\UseCases\LogoutUseCase;
@@ -22,16 +23,20 @@ use App\Auth\Application\UseCases\RegisterUserUseCase;
 use App\Auth\Application\UseCases\RequestPasswordResetCodeUseCase;
 use App\Auth\Application\UseCases\ResendVerificationEmailUseCase;
 use App\Auth\Application\UseCases\ResetPasswordWithCodeUseCase;
+use App\Auth\Application\UseCases\UpdateOwnProfilePhotoUseCase;
 use App\Auth\Application\UseCases\UpdateOwnProfileUseCase;
 use App\Auth\Application\UseCases\VerifyEmailUseCase;
 use App\Auth\Application\UseCases\VerifyPasswordResetCodeUseCase;
 use App\Auth\Domain\Exceptions\AuthException;
+use App\Auth\Infrastructure\Http\Requests\UpdateProfilePhotoRequest;
 use App\Auth\Infrastructure\Jobs\ProcessGoogleRegistration;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Infrastructure\Jobs\NotifyAdminsJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\Rule;
 
@@ -50,6 +55,8 @@ class AuthController extends Controller
         private ResendVerificationEmailUseCase $resendVerificationEmailUseCase,
         private CompleteProfileUseCase $completeProfileUseCase,
         private UpdateOwnProfileUseCase $updateOwnProfileUseCase,
+        private UpdateOwnProfilePhotoUseCase $updateOwnProfilePhotoUseCase,
+        private GetOwnProfilePhotoUseCase $getOwnProfilePhotoUseCase,
         private ChangeOwnPasswordUseCase $changeOwnPasswordUseCase,
         private RequestPasswordResetCodeUseCase $requestPasswordResetCodeUseCase,
         private VerifyPasswordResetCodeUseCase $verifyPasswordResetCodeUseCase,
@@ -532,6 +539,40 @@ class AuthController extends Controller
                 'message' => $e->getMessage(),
             ], $e->getCode());
         }
+    }
+
+    public function updateProfilePhoto(UpdateProfilePhotoRequest $request): JsonResponse
+    {
+        $photo = $request->photo();
+
+        return response()->json(
+            $this->updateOwnProfilePhotoUseCase->execute(
+                (int) $request->user()->id,
+                new UploadedFileData(
+                    originalName: $photo->getClientOriginalName(),
+                    mimeType: $photo->getMimeType() ?? 'application/octet-stream',
+                    sizeInBytes: $photo->getSize(),
+                    temporaryPath: $photo->getRealPath() ?: $photo->getPathname()
+                )
+            ),
+            200
+        );
+    }
+
+    public function profilePhoto(Request $request): Response|JsonResponse
+    {
+        $photo = $this->getOwnProfilePhotoUseCase->execute((int) $request->user()->id);
+        if (! $photo) {
+            return response()->json(['message' => 'El usuario no tiene foto de perfil.'], 404);
+        }
+
+        return response($photo->contents, 200, [
+            'Content-Type' => $photo->mimeType,
+            'Content-Disposition' => 'inline',
+            'Cache-Control' => 'private, max-age=300',
+            'ETag' => '"'.$photo->etag.'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**

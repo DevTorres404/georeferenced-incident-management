@@ -115,6 +115,32 @@ async function request(path, options = {}) {
   }
 }
 
+async function requestBlob(path, options = {}) {
+  const token = localStorage.getItem(globalThis.SGIGSession?.STORAGE_KEYS?.token || 'auth_token');
+  const headers = {
+    Accept: 'image/*',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+
+  if ((response.status === 401 || response.status === 419) && token) {
+    globalThis.dispatchEvent(new Event('sgi:unauthorized'));
+  }
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await response.json() : {};
+    throw new ApiError(extractErrorMessage(data, response.status), {
+      status: response.status,
+      errors: data?.errors || null,
+      data,
+    });
+  }
+
+  return response.blob();
+}
+
 function extractErrorMessage(data, fallback = 'La solicitud no pudo completarse.') {
   const errors = data && typeof data === 'object' ? data.errors : null;
   if (errors && typeof errors === 'object') {
@@ -147,6 +173,7 @@ const api = {
   API_URL,
   ApiError,
   request,
+  requestBlob,
   requestRaw,
   requestBackend,
   clearApiCache,
@@ -155,4 +182,4 @@ const api = {
 
 globalThis.SGIGApi = api;
 
-export { API_URL, ApiError, clearApiCache, extractErrorMessage, request, requestBackend, requestRaw };
+export { API_URL, ApiError, clearApiCache, extractErrorMessage, request, requestBackend, requestBlob, requestRaw };

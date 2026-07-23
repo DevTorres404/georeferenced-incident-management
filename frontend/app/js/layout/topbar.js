@@ -46,12 +46,18 @@ export function buildTopbarHtml(user) {
       ${notificationsMenu}
       <li class="nav-item dropdown user-menu">
         <a href="#" class="nav-link dropdown-toggle d-flex align-items-center sgi-user-toggle" data-toggle="dropdown" aria-label="Menu de usuario">
-          <span class="sgi-user-avatar-sm">${initial}</span>
+          <span class="sgi-user-avatar-sm" data-profile-avatar>
+            <span data-profile-avatar-fallback>${initial}</span>
+            <img data-profile-avatar-image hidden alt="Foto de perfil de ${firstName}">
+          </span>
           <span class="d-none d-md-inline ml-2 font-weight-semibold">${firstName}</span>
         </a>
         <div class="dropdown-menu dropdown-menu-right shadow border-0 rounded-lg sgi-user-dropdown">
           <div class="sgi-user-dropdown-header">
-            <span class="sgi-user-avatar-lg">${initial}</span>
+            <span class="sgi-user-avatar-lg" data-profile-avatar>
+              <span data-profile-avatar-fallback>${initial}</span>
+              <img data-profile-avatar-image hidden alt="Foto de perfil de ${fullName}">
+            </span>
             <div class="sgi-user-dropdown-meta">
               <h6 title="${fullName}">${fullName}</h6>
               <small title="${email}">${email}</small>

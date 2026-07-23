@@ -13,8 +13,8 @@
   <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="/dist/css/adminlte.min.css">
   <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
-  <link rel="stylesheet" href="/css/app.css?v=68">
-  <link rel="stylesheet" href="/css/pages/profile.css?v=1">
+  <link rel="stylesheet" href="/css/app.css?v=70">
+  <link rel="stylesheet" href="/css/pages/profile.css?v=2">
   <script src="/js/core/protected-page-guard.js?v=5"></script>
 </head>
 
@@ -59,7 +59,17 @@
             <div class="col-md-4">
               <div class="card shadow-sm border-0 rounded-3 mb-4 overflow-hidden">
                 <div class="profile-header-card">
-                  <div class="profile-avatar" id="profileAvatar">U</div>
+                  <div class="profile-avatar" id="profileAvatar" data-profile-avatar>
+                    <span data-profile-avatar-fallback>U</span>
+                    <img data-profile-avatar-image hidden alt="Foto de perfil del usuario">
+                  </div>
+                  <div class="profile-photo-actions">
+                    <input type="file" id="profilePhotoInput" class="d-none" accept="image/jpeg,image/png,image/webp">
+                    <button type="button" class="btn btn-sm profile-photo-button" id="btnChangeProfilePhoto">
+                      <i class="fas fa-camera mr-1"></i>Cambiar foto
+                    </button>
+                    <small>JPG, PNG o WebP · máximo 5 MB</small>
+                  </div>
                   <h4 class="profile-name" id="profileFullName">Cargando...</h4>
                   <p class="profile-email" id="profileEmail">cargando@ejemplo.com</p>
                   <span class="profile-status-badge active" id="profileStatus">Activo</span>
@@ -211,8 +221,8 @@
   <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
   <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <script src="/dist/js/adminlte.min.js"></script>
-  <script type="module" src="/js/layout/layout.js?v=45"></script>
-  <script type="module" src="/js/modules/profile/presentation/profile-page.js?v=18"></script>
+  <script type="module" src="/js/layout/layout.js?v=46"></script>
+  <script type="module" src="/js/modules/profile/presentation/profile-page.js?v=19"></script>
 </body>
 
 </html>

@@ -157,6 +157,24 @@ final class EloquentUserRepository implements UserRepositoryInterface
         return $this->userMapper->fromModel($user->fresh());
     }
 
+    public function updateProfilePhotoIfCurrentValue(
+        int $userId,
+        ?string $expectedCurrentPhoto,
+        string $profilePhoto
+    ): ?AuthUser {
+        $query = User::query()->whereKey($userId);
+
+        $expectedCurrentPhoto === null
+            ? $query->whereNull('profile_photo')
+            : $query->where('profile_photo', $expectedCurrentPhoto);
+
+        if ($query->update(['profile_photo' => $profilePhoto]) !== 1) {
+            return null;
+        }
+
+        return $this->findById($userId);
+    }
+
     public function updatePasswordHash(int $userId, string $passwordHash): void
     {
         User::findOrFail($userId)->forceFill([

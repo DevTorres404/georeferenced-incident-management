@@ -61,6 +61,10 @@ trait Auditable
             'two_factor_recovery_codes',
         ];
 
+        if (method_exists($model, 'auditExcludedAttributes')) {
+            $sensitive = [...$sensitive, ...$model->auditExcludedAttributes()];
+        }
+
         return Arr::except($values, array_unique([...$hidden, ...$sensitive]));
     }
 

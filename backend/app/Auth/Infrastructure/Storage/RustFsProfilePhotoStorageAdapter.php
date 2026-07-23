@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Auth\Infrastructure\Storage;
 
+use App\Auth\Application\DTOs\ProfilePhotoContentData;
 use App\Auth\Application\Ports\ProfilePhotoStoragePort;
+use App\Shared\Application\DTOs\UploadedFileData;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 final class RustFsProfilePhotoStorageAdapter implements ProfilePhotoStoragePort
@@ -55,6 +58,67 @@ final class RustFsProfilePhotoStorageAdapter implements ProfilePhotoStoragePort
         return $storagePath;
     }
 
+    public function storeUploadedProfilePhoto(int $userId, UploadedFileData $fileData): string
+    {
+        $extension = self::ALLOWED_MIME_TYPES[$fileData->mimeType] ?? null;
+        if ($extension === null || $fileData->sizeInBytes <= 0 || $fileData->sizeInBytes > self::MAX_FILE_SIZE_BYTES) {
+            throw new RuntimeException('La foto de perfil tiene un formato o tamano no permitido.');
+        }
+
+        $contents = file_get_contents($fileData->temporaryPath);
+        if ($contents === false || strlen($contents) !== $fileData->sizeInBytes) {
+            throw new RuntimeException('No se pudo leer la foto de perfil.');
+        }
+
+        $storagePath = sprintf(
+            'profile-photos/users/%d/%s.%s',
+            $userId,
+            Str::uuid()->toString(),
+            $extension
+        );
+
+        $stored = Storage::disk($this->profilePhotoDisk())->put($storagePath, $contents, [
+            'ContentType' => $fileData->mimeType,
+            'visibility' => 'private',
+        ]);
+
+        if (! $stored) {
+            throw new RuntimeException('No se pudo almacenar la foto de perfil en RustFS.');
+        }
+
+        return $storagePath;
+    }
+
+    public function read(string $storagePath): ?ProfilePhotoContentData
+    {
+        if (! $this->isManagedPath($storagePath)) {
+            return null;
+        }
+
+        $disk = Storage::disk($this->profilePhotoDisk());
+        if (! $disk->exists($storagePath)) {
+            return null;
+        }
+
+        $contents = $disk->get($storagePath);
+        $mimeType = $disk->mimeType($storagePath) ?: 'application/octet-stream';
+
+        return new ProfilePhotoContentData(
+            contents: $contents,
+            mimeType: $mimeType,
+            etag: hash('sha256', $contents)
+        );
+    }
+
+    public function delete(?string $storagePath): void
+    {
+        if ($storagePath === null || ! $this->isManagedPath($storagePath)) {
+            return;
+        }
+
+        Storage::disk($this->profilePhotoDisk())->delete($storagePath);
+    }
+
     private function assertAllowedGoogleUrl(string $sourceUrl): void
     {
         $parts = parse_url($sourceUrl);
@@ -88,5 +152,10 @@ final class RustFsProfilePhotoStorageAdapter implements ProfilePhotoStoragePort
     private function profilePhotoDisk(): string
     {
         return (string) config('filesystems.profile_photo_disk', 'rustfs');
+    }
+
+    private function isManagedPath(string $storagePath): bool
+    {
+        return str_starts_with($storagePath, 'profile-photos/');
     }
 }

@@ -339,6 +339,32 @@ describe('B. backend-client.js', () => {
     expect(result.data).toEqual({ parsed: 'data' });
   });
 
+  it('requestBlob fetches authenticated binary content', async () => {
+    localStorage.setItem('auth_token', 'photo-token');
+    const expectedBlob = new Blob(['avatar'], { type: 'image/jpeg' });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'content-type': 'image/jpeg' }),
+      blob: () => Promise.resolve(expectedBlob),
+    }));
+
+    const { requestBlob } = await import('../app/js/infrastructure/backend-client.js');
+    const result = await requestBlob('/auth/profile/photo', { cache: 'no-store' });
+
+    expect(result).toBe(expectedBlob);
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledWith(
+      expect.stringContaining('/auth/profile/photo'),
+      expect.objectContaining({
+        cache: 'no-store',
+        headers: expect.objectContaining({
+          Accept: 'image/*',
+          Authorization: 'Bearer photo-token',
+        }),
+      }),
+    );
+  });
+
   it('includes Content-Type application/json when body is present', async () => {
     localStorage.setItem('auth_token', 't');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
