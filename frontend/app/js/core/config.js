@@ -1,58 +1,58 @@
-'use strict';
+'use strict'
 
 const IS_LOCAL =
   globalThis.location.hostname === 'localhost' ||
-  globalThis.location.hostname === '127.0.0.1';
+  globalThis.location.hostname === '127.0.0.1'
 
 export const API_URL =
   globalThis.SGI_API_URL ||
-  (IS_LOCAL
-    ? 'http://127.0.0.1:8000/api'
-    : 'https://api.labtorres.me/api');
+  (IS_LOCAL ?
+    'http://127.0.0.1:8000/api' :
+    'https://api.labtorres.me/api')
 
-export const API_CACHE_TTL_MS = 30000;
+export const API_CACHE_TTL_MS = 30000
 
-export const APP_NAME = 'SGI';
+export const APP_NAME = 'SGI'
 
 export const REVERB_APP_KEY =
   globalThis.SGI_REVERB_APP_KEY ||
-  'local-gic-key';
+  'local-gic-key'
 
 export const REVERB_HOST =
   globalThis.SGI_REVERB_HOST ||
-  (IS_LOCAL ? '127.0.0.1' : 'api.labtorres.me');
+  (IS_LOCAL ? '127.0.0.1' : 'api.labtorres.me')
 
 export const REVERB_PORT =
-  Number(globalThis.SGI_REVERB_PORT || (IS_LOCAL ? 8080 : 443));
+  Number(globalThis.SGI_REVERB_PORT || (IS_LOCAL ? 8080 : 443))
 
 export const REVERB_SCHEME =
   globalThis.SGI_REVERB_SCHEME ||
-  (IS_LOCAL ? 'http' : 'https');
+  (IS_LOCAL ? 'http' : 'https')
 
 export const MAP_DEFAULT_CENTER =
-  globalThis.SGI_MAP_DEFAULT_CENTER || [-78.4678, -1.8312];
+  globalThis.SGI_MAP_DEFAULT_CENTER || [-78.4678, -1.8312]
 
 export const MAP_DEFAULT_ZOOM =
-  Number(globalThis.SGI_MAP_DEFAULT_ZOOM || 6);
+  Number(globalThis.SGI_MAP_DEFAULT_ZOOM || 6)
 
 export const MAP_STYLE_URL =
   globalThis.SGI_MAP_STYLE_URL ||
-  'https://tiles.openfreemap.org/styles/liberty';
+  'https://tiles.openfreemap.org/styles/liberty'
 
 export const MAP_ECUADOR_NAVIGATION_REGIONS =
   globalThis.SGI_MAP_ECUADOR_NAVIGATION_REGIONS || {
-    continental: [[-81.25, -5.1], [-75.0, 1.85]],
-    galapagos: [[-92.2, -1.75], [-89.1, 1.75]],
-  };
+    continental: [[-81.25, -5.1], [-75, 1.85]],
+    galapagos: [[-92.2, -1.75], [-89.1, 1.75]]
+  }
 
 export const MAP_ECUADOR_BOUNDS =
-  globalThis.SGI_MAP_ECUADOR_BOUNDS || [[-92.2, -5.25], [-75.0, 1.85]];
+  globalThis.SGI_MAP_ECUADOR_BOUNDS || [[-92.2, -5.25], [-75, 1.85]]
 
 export const MAP_BASE_STYLES =
   globalThis.SGI_MAP_BASE_STYLES || {
     streets: {
       label: 'Calles',
-      style: MAP_STYLE_URL,
+      style: MAP_STYLE_URL
     },
     satellite: {
       label: 'Satelital',
@@ -62,25 +62,25 @@ export const MAP_BASE_STYLES =
           'esri-world-imagery': {
             type: 'raster',
             tiles: [
-              'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+              'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
             ],
             tileSize: 256,
-            attribution: 'Tiles &copy; Esri',
-          },
+            attribution: 'Tiles &copy; Esri'
+          }
         },
         layers: [
           {
             id: 'esri-world-imagery',
             type: 'raster',
-            source: 'esri-world-imagery',
-          },
-        ],
-      },
-    },
-  };
+            source: 'esri-world-imagery'
+          }
+        ]
+      }
+    }
+  }
 
 export const REVERSE_GEOCODING_URL =
   globalThis.SGI_REVERSE_GEOCODING_URL ||
-  'https://nominatim.openstreetmap.org/reverse';
+  'https://nominatim.openstreetmap.org/reverse'
 
-globalThis.SGI_API_URL = API_URL;
+globalThis.SGI_API_URL = API_URL

@@ -1,15 +1,15 @@
-import { escapeHtml } from '../shared/sanitizer.js?v=20';
+import { escapeHtml } from '../shared/sanitizer.js?v=20'
 
 export function buildTopbarHtml(user) {
-  const firstName = escapeHtml(user.firstName || 'Usuario');
-  const fullName = escapeHtml(user.fullName || 'Usuario');
-  const initial = escapeHtml(user.initial || 'U');
-  const email = escapeHtml(user.email || '');
-  const role = escapeHtml(user.role || 'Sin rol asignado');
+  const firstName = escapeHtml(user.firstName || 'Usuario')
+  const fullName = escapeHtml(user.fullName || 'Usuario')
+  const initial = escapeHtml(user.initial || 'U')
+  const email = escapeHtml(user.email || '')
+  const role = escapeHtml(user.role || 'Sin rol asignado')
   const profileLink = user.showProfileLink === false ? '' : `
           <a href="profile.html" class="dropdown-item rounded px-3 py-2 text-dark">
             <i class="fas fa-user-circle mr-2 text-primary"></i> Mi perfil
-          </a>`;
+          </a>`
   const notificationsMenu = user.showNotifications === false ? '' : `
       <li class="nav-item dropdown" id="notificationsDropdown">
         <a class="nav-link sgi-notif-bell" data-toggle="dropdown" href="#" aria-label="Notificaciones">
@@ -29,7 +29,7 @@ export function buildTopbarHtml(user) {
             Ver todas las notificaciones <i class="fas fa-arrow-right ml-1"></i>
           </a>
         </div>
-      </li>`;
+      </li>`
 
   return `
     <ul class="navbar-nav">
@@ -72,5 +72,5 @@ export function buildTopbarHtml(user) {
         </div>
       </li>
     </ul>
-  `;
+  `
 }

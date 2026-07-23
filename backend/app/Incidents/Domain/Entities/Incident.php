@@ -2,6 +2,7 @@
 
 namespace App\Incidents\Domain\Entities;
 
+use App\Incidents\Domain\States\IncidentStateType;
 use JsonSerializable;
 
 final class Incident implements JsonSerializable
@@ -20,6 +21,21 @@ final class Incident implements JsonSerializable
     public function canBeEdited(): bool
     {
         return $this->state?->allowsEdition ?? false;
+    }
+
+    public function canBeAssigned(): bool
+    {
+        return $this->state?->canBeAssigned() ?? false;
+    }
+
+    public function canRequestResolution(): bool
+    {
+        return $this->state?->canRequestResolution() ?? false;
+    }
+
+    public function isInState(IncidentStateType $type): bool
+    {
+        return $this->state?->is($type) ?? false;
     }
 
     public function canChangeTo(IncidentTransition $transition, array $roleCodes, ?string $comment): bool

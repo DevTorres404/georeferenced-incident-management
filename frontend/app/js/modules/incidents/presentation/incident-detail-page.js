@@ -10,17 +10,17 @@ import {
   rejectStateChangeRequest,
   requestStateChange,
   updateIncident,
-  uploadIncidentAttachment,
-} from '../application/incidents-service.js?v=17';
-import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2';
-import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1';
-import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
+  uploadIncidentAttachment
+} from '../application/incidents-service.js?v=17'
+import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2'
+import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1'
+import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21'
 import {
   API_URL,
   MAP_BASE_STYLES,
-  MAP_ECUADOR_BOUNDS,
-} from '../../../core/config.js?v=21';
-import { hasPermission } from '../../../core/auth-session.js?v=16';
+  MAP_ECUADOR_BOUNDS
+} from '../../../core/config.js?v=21'
+import { hasPermission } from '../../../core/auth-session.js?v=16'
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -29,116 +29,116 @@ import {
   getPriorityBadgeClass,
   getPriorityHexColor,
   getStateHexColor,
-  showGlobalAlert,
-} from './incidents-ui.js?v=14';
+  showGlobalAlert
+} from './incidents-ui.js?v=14'
 
-document.addEventListener('DOMContentLoaded', initIncidentDetailPage);
+document.addEventListener('DOMContentLoaded', initIncidentDetailPage)
 
-let commentSubscription = null;
-let commentFallbackDelay = null;
-let commentFallbackTimer = null;
-let commentRefreshInFlight = false;
-let detailRealtimeSubscription = null;
-let cachedTransitions = [];
-let pendingStateRequests = [];
-let availableStates = [];
-let pendingStateRequest = null;
-let pendingReviewRequest = null;
-let canCreateIncident = false;
+let commentSubscription = null
+let commentFallbackDelay = null
+let commentFallbackTimer = null
+let commentRefreshInFlight = false
+let detailRealtimeSubscription = null
+let cachedTransitions = []
+let pendingStateRequests = []
+let availableStates = []
+let pendingStateRequest = null
+let pendingReviewRequest = null
+let canCreateIncident = false
 
 globalThis.addEventListener('pagehide', () => {
-  commentSubscription?.cleanup?.();
-  commentSubscription = null;
-  detailRealtimeSubscription?.cleanup?.();
-  detailRealtimeSubscription = null;
-  stopCommentFallback();
-});
+  commentSubscription?.cleanup?.()
+  commentSubscription = null
+  detailRealtimeSubscription?.cleanup?.()
+  detailRealtimeSubscription = null
+  stopCommentFallback()
+})
 
 export async function initIncidentDetailPage() {
-  canCreateIncident = false;
+  canCreateIncident = false
   if (typeof globalThis.renderLayout === 'function') {
-    await globalThis.renderLayout('incident-detail');
-    canCreateIncident = hasPermission('incidents.create');
+    await globalThis.renderLayout('incident-detail')
+    canCreateIncident = hasPermission('incidents.create')
   }
 
-  const incidentId = new URLSearchParams(globalThis.location.search).get('id');
-  const container = document.getElementById('contenidoDetalle');
+  const incidentId = new URLSearchParams(globalThis.location.search).get('id')
+  const container = document.getElementById('contenidoDetalle')
 
   if (!incidentId) {
-    renderError(container, 'No se especifico el identificador de incidencia.');
-    return;
+    renderError(container, 'No se especifico el identificador de incidencia.')
+    return
   }
 
   try {
-    const isOperatorRole = isOperator();
-    const canChangeState = hasPermission('incidents.edit') && !isOperatorRole;
-    const canAssignPriority = canManagePriority();
-    const isOperatorUser = isOperatorRole;
-    const shouldLoadRequests = canChangeState || isOperatorUser;
+    const isOperatorRole = isOperator()
+    const canChangeState = hasPermission('incidents.edit') && !isOperatorRole
+    const canAssignPriority = canManagePriority()
+    const isOperatorUser = isOperatorRole
+    const shouldLoadRequests = canChangeState || isOperatorUser
 
     const [incidentResponse, transitionsResponse, prioritiesResponse, statesResponse, requestsResponse] = await Promise.all([
       getIncident(incidentId),
       canChangeState ? listStateTransitions() : Promise.resolve({ data: [] }),
       canAssignPriority ? listPriorities() : Promise.resolve({ data: [] }),
       isOperatorUser ? listStates() : Promise.resolve({ data: [] }),
-      shouldLoadRequests ? getStateChangeRequests(incidentId) : Promise.resolve({ data: [] }),
-    ]);
-    const incident = incidentResponse?.data;
+      shouldLoadRequests ? getStateChangeRequests(incidentId) : Promise.resolve({ data: [] })
+    ])
+    const incident = incidentResponse?.data
 
     if (!incident) {
-      renderError(container, 'No se encontro la incidencia solicitada.');
-      return;
+      renderError(container, 'No se encontro la incidencia solicitada.')
+      return
     }
 
-    setText('breadcrumbId', incident.code || `#${incident.id}`);
+    setText('breadcrumbId', incident.code || `#${incident.id}`)
     setHtml(
       'pageTitle',
       `<i class="fas fa-file-alt text-primary mr-2"></i>Detalle - ${escapeHtml(incident.code || `#${incident.id}`)}`
-    );
+    )
 
     if (isOperatorUser) {
-      availableStates = Array.isArray(statesResponse?.data) ? statesResponse.data : [];
+      availableStates = Array.isArray(statesResponse?.data) ? statesResponse.data : []
     }
 
-    pendingStateRequests = Array.isArray(requestsResponse?.data)
-      ? requestsResponse.data.filter((r) => r.status === 'pending')
-      : [];
+    pendingStateRequests = Array.isArray(requestsResponse?.data) ?
+      requestsResponse.data.filter(r => r.status === 'pending') :
+      []
 
     renderIncidentDetail(
       container,
       incident,
       Array.isArray(transitionsResponse?.data) ? transitionsResponse.data : [],
       Array.isArray(prioritiesResponse?.data) ? prioritiesResponse.data : []
-    );
-    startRealtimeComments(incident);
-    startRealtimeDetail(incident);
+    )
+    startRealtimeComments(incident)
+    startRealtimeDetail(incident)
   } catch (error) {
-    renderError(container, error.message || 'No se pudo cargar el detalle de la incidencia.');
+    renderError(container, error.message || 'No se pudo cargar el detalle de la incidencia.')
   }
 }
 
 function renderIncidentDetail(container, incident, transitions, priorities) {
-  globalThis.currentIncidentData = incident;
-  globalThis.currentTransitions = transitions;
-  const stateName = formatCatalogLabel(incident.state?.name || '-');
-  const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin definir');
-  const categoryName = formatCatalogLabel(incident.category?.name || '-');
-  const subcategoryName = formatCatalogLabel(incident.subcategory?.name || '-');
-  const territoryName = territoryLabel(incident);
-  const addressText = incident.address || incident.address_reference || 'Ubicación registrada sin dirección textual.';
-  const comments = Array.isArray(incident.comments) ? incident.comments : [];
-  const history = Array.isArray(incident.history) ? incident.history : [];
-  const attachments = Array.isArray(incident.attachments) ? incident.attachments : [];
-  const isOperatorRole = isOperator();
-  const isFinalState = Boolean(incident.state?.is_final_state);
-  const isReadOnly = isFinalState || 
-                     normalizeCode(incident.state?.name) === 'RESUELTA' || 
-                     (isOperatorRole && normalizeCode(incident.state?.name) !== 'EN_PROGRESO');
-  const canChangeState = hasPermission('incidents.edit') && !isOperatorRole && !isFinalState;
-  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION' && !isFinalState;
-  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state) && !isFinalState;
-  const hasValidCoordinates = hasCoordinates(incident);
-  const historyTooltip = renderRecentStateChangesTooltip(history);
+  globalThis.currentIncidentData = incident
+  globalThis.currentTransitions = transitions
+  const stateName = formatCatalogLabel(incident.state?.name || '-')
+  const priorityName = formatCatalogLabel(incident.priority?.name || 'Sin definir')
+  const categoryName = formatCatalogLabel(incident.category?.name || '-')
+  const subcategoryName = formatCatalogLabel(incident.subcategory?.name || '-')
+  const territoryName = territoryLabel(incident)
+  const addressText = incident.address || incident.address_reference || 'Ubicación registrada sin dirección textual.'
+  const comments = Array.isArray(incident.comments) ? incident.comments : []
+  const history = Array.isArray(incident.history) ? incident.history : []
+  const attachments = Array.isArray(incident.attachments) ? incident.attachments : []
+  const isOperatorRole = isOperator()
+  const isFinalState = Boolean(incident.state?.is_final_state)
+  const isReadOnly = isFinalState ||
+                     normalizeCode(incident.state?.name) === 'RESUELTA' ||
+                     (isOperatorRole && normalizeCode(incident.state?.name) !== 'EN_PROGRESO')
+  const canChangeState = hasPermission('incidents.edit') && !isOperatorRole && !isFinalState
+  const canAssignPriority = canManagePriority() && normalizeCode(incident.state?.name) === 'EN_REVISION' && !isFinalState
+  const canAssign = hasPermission('incidents.assign') && isStrictlyInProgress(incident.state) && !isFinalState
+  const hasValidCoordinates = hasCoordinates(incident)
+  const historyTooltip = renderRecentStateChangesTooltip(history)
 
   container.innerHTML = `
     <div class="row mb-3">
@@ -360,7 +360,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
         <div class="card card-outline card-warning">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h3 class="card-title"><i class="fas fa-history mr-2"></i>Historial de Cambios</h3>
-            ${incident.cycles && incident.cycles.length > 0 && canManagePriority() ? `<button type="button" class="btn btn-xs btn-info shadow-sm" onclick="globalThis.openCyclesModal()"><i class="fas fa-retweet mr-1"></i>Ver ciclos</button>` : ''}
+            ${incident.cycles && incident.cycles.length > 0 && canManagePriority() ? '<button type="button" class="btn btn-xs btn-info shadow-sm" onclick="globalThis.openCyclesModal()"><i class="fas fa-retweet mr-1"></i>Ver ciclos</button>' : ''}
           </div>
           <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
             <div class="p-3" id="timelineHistorial">
@@ -405,35 +405,39 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
           </div>
         </div>
       </div>
-    </div>`;
+    </div>`
 
   if (canAssignPriority) {
-    hydratePriorityModal(incident, priorities);
+    hydratePriorityModal(incident, priorities)
   }
-  renderIncidentMap(incident);
-  bindCommentForm(incident);
-  bindAttachmentForm(incident);
-  bindAttachmentPreview();
+
+  renderIncidentMap(incident)
+  bindCommentForm(incident)
+  bindAttachmentForm(incident)
+  bindAttachmentPreview()
   if (canAssignPriority) {
-    bindPriorityForm(incident);
+    bindPriorityForm(incident)
   }
+
   if (canChangeState) {
-    cachedTransitions = transitions;
-    bindStateChangeControl(incident, transitions);
+    cachedTransitions = transitions
+    bindStateChangeControl(incident, transitions)
   }
 
   // Bind para operador: solicitar cambio de estado
-  bindOperatorStateButton(incident);
+  bindOperatorStateButton(incident)
 
   // Seccion de solicitudes pendientes para supervisor
   if (canChangeState && pendingStateRequests.length > 0) {
-    bindReviewRequestButtons(incident);
+    bindReviewRequestButtons(incident)
   }
 }
 
 function renderIncidentMap(incident) {
-  const mapContainer = document.getElementById('incidentDetailMap');
-  if (!mapContainer || !hasCoordinates(incident)) return;
+  const mapContainer = document.getElementById('incidentDetailMap')
+  if (!mapContainer || !hasCoordinates(incident)) {
+    return
+  }
 
   if (!globalThis.maplibregl) {
     mapContainer.innerHTML = `
@@ -441,15 +445,15 @@ function renderIncidentMap(incident) {
         <i class="fas fa-exclamation-triangle"></i>
         <strong>No se pudo cargar el visor del mapa</strong>
         <small>La ubicación queda registrada en sus coordenadas.</small>
-      </div>`;
-    return;
+      </div>`
+    return
   }
 
-  const latitude = Number(incident.latitude);
-  const longitude = Number(incident.longitude);
-  const center = [longitude, latitude];
+  const latitude = Number(incident.latitude)
+  const longitude = Number(incident.longitude)
+  const center = [longitude, latitude]
 
-  mapContainer.innerHTML = '';
+  mapContainer.innerHTML = ''
 
   const map = new globalThis.maplibregl.Map({
     container: mapContainer,
@@ -458,87 +462,89 @@ function renderIncidentMap(incident) {
     zoom: 15,
     minZoom: 5,
     maxZoom: 18,
-    maxBounds: MAP_ECUADOR_BOUNDS,
-  });
+    maxBounds: MAP_ECUADOR_BOUNDS
+  })
 
-  map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
-  map.addControl(new globalThis.maplibregl.FullscreenControl(), 'top-right');
+  map.addControl(new globalThis.maplibregl.NavigationControl({ visualizePitch: true }), 'top-right')
+  map.addControl(new globalThis.maplibregl.FullscreenControl(), 'top-right')
 
   const popupHtml = `
     <strong>${escapeHtml(incident.code || `#${incident.id}`)}</strong><br>
     <span>${escapeHtml(incident.title || 'Incidencia')}</span><br>
-    <small>${escapeHtml(territoryLabel(incident))}</small>`;
+    <small>${escapeHtml(territoryLabel(incident))}</small>`
 
   new globalThis.maplibregl.Marker({ color: '#0d6efd' })
     .setLngLat(center)
     .setPopup(new globalThis.maplibregl.Popup({ offset: 24 }).setHTML(popupHtml))
-    .addTo(map);
+    .addTo(map)
 
-  map.on('load', () => map.resize());
+  map.on('load', () => map.resize())
 }
 
 export function hasCoordinates(incident) {
-  const latitude = Number(incident?.latitude);
-  const longitude = Number(incident?.longitude);
+  const latitude = Number(incident?.latitude)
+  const longitude = Number(incident?.longitude)
 
-  return Number.isFinite(latitude)
-    && Number.isFinite(longitude)
-    && latitude >= -5.25
-    && latitude <= 1.85
-    && longitude >= -92.2
-    && longitude <= -75;
+  return Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -5.25 &&
+    latitude <= 1.85 &&
+    longitude >= -92.2 &&
+    longitude <= -75
 }
 
 export function territoryLabel(incident) {
-  const territorialUnit = incident?.territorial_unit || incident?.territorialUnit;
+  const territorialUnit = incident?.territorial_unit || incident?.territorialUnit
 
   return formatCatalogLabel(
-    territorialUnit?.full_path
-      || territorialUnit?.name
-      || incident?.address_reference
-|| incident?.address
-      || '-'
-  );
+    territorialUnit?.full_path ||
+      territorialUnit?.name ||
+      incident?.address_reference ||
+incident?.address ||
+      '-'
+  )
 }
 
 export function openCyclesModal() {
-  const incident = globalThis.currentIncidentData;
-  if (!incident || !incident.cycles) return;
+  const incident = globalThis.currentIncidentData
+  if (!incident || !incident.cycles) {
+    return
+  }
 
-  const body = document.getElementById('modalCiclosBody');
+  const body = document.getElementById('modalCiclosBody')
   if (body) {
     if (incident.cycles.length === 0) {
-      body.innerHTML = '<div class="p-4 text-center text-muted">No hay ciclos registrados</div>';
+      body.innerHTML = '<div class="p-4 text-center text-muted">No hay ciclos registrados</div>'
     } else {
-      body.innerHTML = '<div class="list-group list-group-flush">' + incident.cycles.map(cycle => {
-        const opened = cycle.opened_at ? formatDateTime(cycle.opened_at) : '-';
-        const resolved = cycle.resolved_at ? formatDateTime(cycle.resolved_at) : '-';
-        const closed = cycle.closed_at ? formatDateTime(cycle.closed_at) : '-';
-        const resolvedBy = cycle.resolved_by || 'Sistema / Sin registro';
-        const openedBy = cycle.opened_by || 'Sistema';
-        const closedBy = cycle.closed_by || 'Sistema';
-        
+      body.innerHTML = `<div class="list-group list-group-flush">${incident.cycles.map(cycle => {
+        const opened = cycle.opened_at ? formatDateTime(cycle.opened_at) : '-'
+        const resolved = cycle.resolved_at ? formatDateTime(cycle.resolved_at) : '-'
+        const closed = cycle.closed_at ? formatDateTime(cycle.closed_at) : '-'
+        const resolvedBy = cycle.resolved_by || 'Sistema / Sin registro'
+        const openedBy = cycle.opened_by || 'Sistema'
+        const closedBy = cycle.closed_by || 'Sistema'
+
         // El usuario solicitó que la "razón de cierre" priorice lo que se escribió al resolver la incidencia.
-        const mainReason = cycle.resolution_description || cycle.closure_reason;
-        const closureAdministrativeComment = cycle.closure_reason && cycle.closure_reason !== cycle.resolution_description ? cycle.closure_reason : null;
+        const mainReason = cycle.resolution_description || cycle.closure_reason
+        const closureAdministrativeComment = cycle.closure_reason && cycle.closure_reason !== cycle.resolution_description ? cycle.closure_reason : null
 
         // Compute operators assigned during this cycle
-        const cycleStartMs = cycle.opened_at ? new Date(cycle.opened_at).getTime() : 0;
-        const cycleEndMs = cycle.resolved_at ? new Date(cycle.resolved_at).getTime() : (cycle.closed_at ? new Date(cycle.closed_at).getTime() : Date.now());
+        const cycleStartMs = cycle.opened_at ? new Date(cycle.opened_at).getTime() : 0
+        const cycleEndMs = cycle.resolved_at ? new Date(cycle.resolved_at).getTime() : (cycle.closed_at ? new Date(cycle.closed_at).getTime() : Date.now())
 
         const cycleOperators = (incident.assignments || [])
           .filter(a => {
-            const aStartMs = a.assignment_date ? new Date(a.assignment_date).getTime() : 0;
-            const aEndMs = a.unassignment_date ? new Date(a.unassignment_date).getTime() : (a.resolved_at ? new Date(a.resolved_at).getTime() : Date.now());
-            return aStartMs <= cycleEndMs && aEndMs >= cycleStartMs;
+            const aStartMs = a.assignment_date ? new Date(a.assignment_date).getTime() : 0
+            const aEndMs = a.unassignment_date ? new Date(a.unassignment_date).getTime() : (a.resolved_at ? new Date(a.resolved_at).getTime() : Date.now())
+            return aStartMs <= cycleEndMs && aEndMs >= cycleStartMs
           })
           .map(a => `${a.user?.first_name || ''} ${a.user?.last_name || ''}`.trim() || a.user?.email)
-          .filter(Boolean);
-          
-        const uniqueOperators = [...new Set(cycleOperators)];
-        const operatorsHtml = uniqueOperators.length > 0
-          ? `<br><strong>Operadores a cargo:</strong> ${escapeHtml(uniqueOperators.join(', '))}`
-          : '<br><strong>Operadores a cargo:</strong> <span class="text-muted">Ninguno</span>';
+          .filter(Boolean)
+
+        const uniqueOperators = [...new Set(cycleOperators)]
+        const operatorsHtml = uniqueOperators.length > 0 ?
+          `<br><strong>Operadores a cargo:</strong> ${escapeHtml(uniqueOperators.join(', '))}` :
+          '<br><strong>Operadores a cargo:</strong> <span class="text-muted">Ninguno</span>'
 
         return `
           <div class="list-group-item">
@@ -556,471 +562,515 @@ export function openCyclesModal() {
             </p>
             ${cycle.closed_at ? `<small class="text-muted mb-0 mt-1 d-block"><i class="fas fa-lock mr-1"></i>Cierre definitivo: ${closed} por ${escapeHtml(closedBy)} ${closureAdministrativeComment ? `(<em>Nota admin: ${escapeHtml(closureAdministrativeComment)}</em>)` : ''}</small>` : ''}
           </div>
-        `;
-      }).join('') + '</div>';
+        `
+      }).join('')}</div>`
     }
   }
-  globalThis.jQuery?.('#modalCiclos').modal('show');
+
+  globalThis.jQuery?.('#modalCiclos').modal('show')
 }
-globalThis.openCyclesModal = openCyclesModal;
+
+globalThis.openCyclesModal = openCyclesModal
 
 export function renderStateSelector(incident, transitions) {
-  const select = document.getElementById('estadoDirecto');
-  if (!select) return;
+  const select = document.getElementById('estadoDirecto')
+  if (!select) {
+    return
+  }
 
-  const hasPriority = !!(incident.priority_id || incident.priority?.id);
-  const currentStateName = formatCatalogLabel(incident.state?.name || '-');
-  const isEnRevision = normalizeCode(incident.state?.name) === 'EN_REVISION';
+  const hasPriority = Boolean(incident.priority_id || incident.priority?.id)
+  const currentStateName = formatCatalogLabel(incident.state?.name || '-')
+  const isEnRevision = normalizeCode(incident.state?.name) === 'EN_REVISION'
 
   if (isEnRevision && !hasPriority) {
-    select.innerHTML = `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`;
-    select.disabled = true;
-    select.title = 'Debes asignar una prioridad antes de cambiar el estado';
+    select.innerHTML = `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`
+    select.disabled = true
+    select.title = 'Debes asignar una prioridad antes de cambiar el estado'
 
-    const hint = document.getElementById('statePriorityHint');
+    const hint = document.getElementById('statePriorityHint')
     if (hint) {
-      hint.classList.remove('d-none');
+      hint.classList.remove('d-none')
     }
-    return;
+
+    return
   }
 
-  const hint = document.getElementById('statePriorityHint');
+  const hint = document.getElementById('statePriorityHint')
   if (hint) {
-    hint.classList.add('d-none');
+    hint.classList.add('d-none')
   }
 
-  const availableTransitions = getAvailableStateTransitions(incident, transitions);
+  const availableTransitions = getAvailableStateTransitions(incident, transitions)
   select.innerHTML = [
     `<option value="${Number(incident.state_id)}">${escapeHtml(currentStateName)} (actual)</option>`,
-    ...availableTransitions.map((transition) => {
-      const commentNotice = transition.requires_comment ? ' — requiere comentario' : '';
-      return `<option value="${Number(transition.target_state_id)}">${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}${commentNotice}</option>`;
-    }),
-  ].join('');
-  select.value = String(incident.state_id);
-  select.disabled = availableTransitions.length === 0;
-  select.title = availableTransitions.length
-    ? 'Seleccione el nuevo estado'
-    : 'No hay transiciones disponibles para su rol';
+    ...availableTransitions.map(transition => {
+      const commentNotice = transition.requires_comment ? ' — requiere comentario' : ''
+      return `<option value="${Number(transition.target_state_id)}">${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}${commentNotice}</option>`
+    })
+  ].join('')
+  select.value = String(incident.state_id)
+  select.disabled = availableTransitions.length === 0
+  select.title = availableTransitions.length ?
+    'Seleccione el nuevo estado' :
+    'No hay transiciones disponibles para su rol'
 }
 
 export function getAvailableStateTransitions(incident, transitions) {
-  const seenTargets = new Set();
-  const user = readCurrentUser();
-  const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => normalizeCode(r)) : [];
-  const isAdmin = userRoles.includes('ADMIN');
-  const isSupervisor = userRoles.includes('SUPERVISOR') && !isAdmin;
+  const seenTargets = new Set()
+  const user = readCurrentUser()
+  const userRoles = Array.isArray(user?.roles) ? user.roles.map(r => normalizeCode(r)) : []
+  const isAdmin = userRoles.includes('ADMIN')
+  const isSupervisor = userRoles.includes('SUPERVISOR') && !isAdmin
 
-  return transitions.filter((transition) => {
-    const targetStateId = Number(transition.target_state_id);
-    const targetStateName = normalizeCode(transition.target_state_name || '');
-    const isActive = transition.is_active !== false && Number(transition.is_active) !== 0;
-    const isCurrentSource = Number(transition.source_state_id) === Number(incident.state_id);
-    const isNewTarget = targetStateId !== Number(incident.state_id) && !seenTargets.has(targetStateId);
-    const isAllowed = isTransitionAllowedForCurrentUser(transition);
+  return transitions.filter(transition => {
+    const targetStateId = Number(transition.target_state_id)
+    const targetStateName = normalizeCode(transition.target_state_name || '')
+    const isActive = transition.is_active !== false && Number(transition.is_active) !== 0
+    const isCurrentSource = Number(transition.source_state_id) === Number(incident.state_id)
+    const isNewTarget = targetStateId !== Number(incident.state_id) && !seenTargets.has(targetStateId)
+    const isAllowed = isTransitionAllowedForCurrentUser(transition)
 
     // Los supervisores no pueden pasar la incidencia a RESUELTA de forma manual
     if (isSupervisor && targetStateName === 'RESUELTA') {
-      return false;
+      return false
     }
 
-    if (!isActive || !isCurrentSource || !isNewTarget || !isAllowed) return false;
-    seenTargets.add(targetStateId);
-    return true;
-  });
+    if (!isActive || !isCurrentSource || !isNewTarget || !isAllowed) {
+      return false
+    }
+
+    seenTargets.add(targetStateId)
+    return true
+  })
 }
 
 export function isTransitionAllowedForCurrentUser(transition) {
-  const allowedRoles = Array.isArray(transition.allowed_roles)
-    ? transition.allowed_roles.map(normalizeCode).filter(Boolean)
-    : [];
-  if (!allowedRoles.length) return true;
+  const allowedRoles = Array.isArray(transition.allowed_roles) ?
+    transition.allowed_roles.map(normalizeCode).filter(Boolean) :
+    []
+  if (!allowedRoles.length) {
+    return true
+  }
 
-  const user = readCurrentUser();
-  const userRoles = Array.isArray(user?.roles)
-    ? user.roles.map(normalizeCode).filter(Boolean)
-    : [];
+  const user = readCurrentUser()
+  const userRoles = Array.isArray(user?.roles) ?
+    user.roles.map(normalizeCode).filter(Boolean) :
+    []
 
-  return userRoles.some((role) => allowedRoles.includes(role));
+  return userRoles.some(role => allowedRoles.includes(role))
 }
 
 function prepareStateCommentModal(transition) {
-  const select = document.getElementById('nuevoEstado');
-  const commentInput = document.getElementById('comentarioEstado');
-  if (!select || !commentInput) return;
+  const select = document.getElementById('nuevoEstado')
+  const commentInput = document.getElementById('comentarioEstado')
+  if (!select || !commentInput) {
+    return
+  }
 
   select.innerHTML = `
     <option value="${Number(transition.target_state_id)}">
       ${escapeHtml(formatCatalogLabel(transition.target_state_name || '-'))}
-    </option>`;
-  commentInput.value = '';
-  globalThis.jQuery?.('#modalEstado').modal('show');
-  globalThis.setTimeout(() => commentInput.focus(), 250);
+    </option>`
+  commentInput.value = ''
+  globalThis.jQuery?.('#modalEstado').modal('show')
+  globalThis.setTimeout(() => commentInput.focus(), 250)
 }
 
 function hydratePriorityModal(incident, priorities) {
-  const select = document.getElementById('nuevaPrioridad');
-  if (!select) return;
+  const select = document.getElementById('nuevaPrioridad')
+  if (!select) {
+    return
+  }
 
   const options = [
     '<option value="">Seleccione una prioridad...</option>',
-    ...priorities.map((priority) => `
+    ...priorities.map(priority => `
       <option value="${priority.id}" ${Number(priority.id) === Number(incident.priority_id) ? 'selected' : ''}>
         ${escapeHtml(formatCatalogLabel(priority.name))}
-      </option>`),
-  ];
+      </option>`)
+  ]
 
-  select.innerHTML = options.join('');
+  select.innerHTML = options.join('')
 }
 
 function bindCommentForm(incident) {
-  const button = document.getElementById('btnAgregarComentario');
-  const input = document.getElementById('nuevoComentario');
-  if (!button || !input) return;
+  const button = document.getElementById('btnAgregarComentario')
+  const input = document.getElementById('nuevoComentario')
+  if (!button || !input) {
+    return
+  }
 
   const submit = async () => {
-    const comment = input.value.trim();
+    const comment = input.value.trim()
     if (!comment) {
-      showGlobalAlert('Escriba un comentario antes de enviar.', 'warning');
-      return;
+      showGlobalAlert('Escriba un comentario antes de enviar.', 'warning')
+      return
     }
 
     try {
       const response = await addIncidentComment(incident.id, {
         comment,
-        is_internal: false,
-      });
+        is_internal: false
+      })
 
-      appendCommentIfMissing(incident, response?.data);
-      input.value = '';
-      showGlobalAlert('Comentario agregado correctamente.', 'success');
+      appendCommentIfMissing(incident, response?.data)
+      input.value = ''
+      showGlobalAlert('Comentario agregado correctamente.', 'success')
     } catch (error) {
-      showGlobalAlert(error.message || 'No se pudo registrar el comentario.', 'danger');
+      showGlobalAlert(error.message || 'No se pudo registrar el comentario.', 'danger')
     }
-  };
+  }
 
-  button.addEventListener('click', submit);
-  input.addEventListener('keydown', (event) => {
+  button.addEventListener('click', submit)
+  input.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
-      submit();
+      submit()
     }
-  });
+  })
 }
 
 function startRealtimeComments(incident) {
-  scheduleCommentFallback(incident);
+  scheduleCommentFallback(incident)
   subscribeToIncidentComments(
     incident.id,
     hasPermission('comments.internal'),
-    (comment) => appendCommentIfMissing(incident, comment),
-    (state) => {
+    comment => appendCommentIfMissing(incident, comment),
+    state => {
       if (state === 'subscribed') {
-        stopCommentFallback();
+        stopCommentFallback()
       } else {
-        scheduleCommentFallback(incident);
+        scheduleCommentFallback(incident)
       }
     }
-  ).then((subscription) => {
-    commentSubscription?.cleanup?.();
-    commentSubscription = subscription;
-  }).catch((error) => {
-    scheduleCommentFallback(incident);
-    console.warn('[SGI] Comentarios en tiempo real no disponibles; se activo la sincronizacion de respaldo.', error);
-  });
+  ).then(subscription => {
+    commentSubscription?.cleanup?.()
+    commentSubscription = subscription
+  }).catch(error => {
+    scheduleCommentFallback(incident)
+    console.warn('[SGI] Comentarios en tiempo real no disponibles; se activo la sincronizacion de respaldo.', error)
+  })
 }
 
 function startRealtimeDetail(incident) {
   subscribeToIncidentRealtime(
     incident.id,
     {
-      onStateChanged: async (payload) => {
+      onStateChanged: async payload => {
         if (payload?.new_state_id) {
           try {
-            const response = await getIncident(incident.id, { noCache: true });
-            const fresh = response?.data;
+            const response = await getIncident(incident.id, { noCache: true })
+            const fresh = response?.data
             if (fresh) {
-              Object.assign(incident, fresh);
-              updateStatePresentation(incident, cachedTransitions);
+              Object.assign(incident, fresh)
+              updateStatePresentation(incident, cachedTransitions)
               showGlobalAlert(
                 `Estado actualizado a ${formatCatalogLabel(fresh.state?.name || '-')}`,
-                'info',
-              );
+                'info'
+              )
             }
-          } catch (e) {
-            console.warn('[SGI] No se pudo refrescar detalle tras cambio de estado.', e);
+          } catch (error) {
+            console.warn('[SGI] No se pudo refrescar detalle tras cambio de estado.', error)
           }
         }
       },
-      onAssigned: async (payload) => {
+      onAssigned: async payload => {
         if (payload?.incident_id) {
           try {
-            const response = await getIncident(incident.id, { noCache: true });
-            const fresh = response?.data;
+            const response = await getIncident(incident.id, { noCache: true })
+            const fresh = response?.data
             if (fresh) {
-              Object.assign(incident, fresh);
+              Object.assign(incident, fresh)
               showGlobalAlert(
                 'La asignación de esta incidencia fue actualizada.',
-                'info',
-              );
+                'info'
+              )
             }
-          } catch (e) {
-            console.warn('[SGI] No se pudo refrescar detalle tras asignación.', e);
+          } catch (error) {
+            console.warn('[SGI] No se pudo refrescar detalle tras asignación.', error)
           }
         }
-      },
-    },
-  ).then((subscription) => {
-    detailRealtimeSubscription?.cleanup?.();
-    detailRealtimeSubscription = subscription;
-  }).catch((error) => {
-    console.warn('[SGI] Tiempo real de incidencia no disponible.', error);
-  });
+      }
+    }
+  ).then(subscription => {
+    detailRealtimeSubscription?.cleanup?.()
+    detailRealtimeSubscription = subscription
+  }).catch(error => {
+    console.warn('[SGI] Tiempo real de incidencia no disponible.', error)
+  })
 }
 
 function scheduleCommentFallback(incident) {
-  if (commentFallbackDelay || commentFallbackTimer) return;
+  if (commentFallbackDelay || commentFallbackTimer) {
+    return
+  }
 
   commentFallbackDelay = globalThis.setTimeout(() => {
-    commentFallbackDelay = null;
-    refreshIncidentComments(incident);
-    commentFallbackTimer = globalThis.setInterval(() => refreshIncidentComments(incident), 10000);
-  }, 5000);
+    commentFallbackDelay = null
+    refreshIncidentComments(incident)
+    commentFallbackTimer = globalThis.setInterval(() => refreshIncidentComments(incident), 10000)
+  }, 5000)
 }
 
 function stopCommentFallback() {
-  if (commentFallbackDelay) globalThis.clearTimeout(commentFallbackDelay);
-  if (commentFallbackTimer) globalThis.clearInterval(commentFallbackTimer);
-  commentFallbackDelay = null;
-  commentFallbackTimer = null;
+  if (commentFallbackDelay) {
+    globalThis.clearTimeout(commentFallbackDelay)
+  }
+
+  if (commentFallbackTimer) {
+    globalThis.clearInterval(commentFallbackTimer)
+  }
+
+  commentFallbackDelay = null
+  commentFallbackTimer = null
 }
 
 async function refreshIncidentComments(incident) {
-  if (commentRefreshInFlight || document.visibilityState === 'hidden') return;
-  commentRefreshInFlight = true;
+  if (commentRefreshInFlight || document.visibilityState === 'hidden') {
+    return
+  }
+
+  commentRefreshInFlight = true
 
   try {
-    const response = await getIncident(incident.id, { noCache: true });
-    const comments = Array.isArray(response?.data?.comments) ? response.data.comments : [];
-    comments.forEach((comment) => appendCommentIfMissing(incident, comment));
+    const response = await getIncident(incident.id, { noCache: true })
+    const comments = Array.isArray(response?.data?.comments) ? response.data.comments : []
+    comments.forEach(comment => appendCommentIfMissing(incident, comment))
   } catch (error) {
-    console.warn('[SGI] No se pudieron sincronizar los comentarios.', error);
+    console.warn('[SGI] No se pudieron sincronizar los comentarios.', error)
   } finally {
-    commentRefreshInFlight = false;
+    commentRefreshInFlight = false
   }
 }
 
 function appendCommentIfMissing(incident, comment) {
-  if (!comment?.id) return false;
+  if (!comment?.id) {
+    return false
+  }
 
-  const comments = Array.isArray(incident.comments) ? incident.comments : [];
-  if (comments.some((item) => Number(item.id) === Number(comment.id))) return false;
+  const comments = Array.isArray(incident.comments) ? incident.comments : []
+  if (comments.some(item => Number(item.id) === Number(comment.id))) {
+    return false
+  }
 
-  incident.comments = [...comments, comment];
-  const list = document.getElementById('listadoComentarios');
-  if (list) list.innerHTML = renderComments(incident.comments);
-  setText('commentsCount', incident.comments.length);
-  setText('commentsMetric', incident.comments.length);
+  incident.comments = [...comments, comment]
+  const list = document.getElementById('listadoComentarios')
+  if (list) {
+    list.innerHTML = renderComments(incident.comments)
+  }
 
-  return true;
+  setText('commentsCount', incident.comments.length)
+  setText('commentsMetric', incident.comments.length)
+
+  return true
 }
 
 function bindAttachmentForm(incident) {
-  const form = document.getElementById('attachmentUploadForm');
-  const input = document.getElementById('attachmentFile');
-  const label = document.getElementById('attachmentFileLabel');
-  const button = document.getElementById('btnUploadAttachment');
-  const errorElement = document.getElementById('attachmentFileError');
+  const form = document.getElementById('attachmentUploadForm')
+  const input = document.getElementById('attachmentFile')
+  const label = document.getElementById('attachmentFileLabel')
+  const button = document.getElementById('btnUploadAttachment')
+  const errorElement = document.getElementById('attachmentFileError')
 
-  if (!form || !input || !label || !button || !errorElement) return;
+  if (!form || !input || !label || !button || !errorElement) {
+    return
+  }
 
   const resetFieldError = () => {
-    input.classList.remove('is-invalid');
-    errorElement.textContent = '';
-    errorElement.classList.add('d-none');
-  };
+    input.classList.remove('is-invalid')
+    errorElement.textContent = ''
+    errorElement.classList.add('d-none')
+  }
 
   input.addEventListener('change', () => {
-    const fileName = input.files?.[0]?.name || 'Seleccione un archivo...';
-    label.textContent = fileName;
-    resetFieldError();
-  });
+    const fileName = input.files?.[0]?.name || 'Seleccione un archivo...'
+    label.textContent = fileName
+    resetFieldError()
+  })
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    resetFieldError();
+  form.addEventListener('submit', async event => {
+    event.preventDefault()
+    resetFieldError()
 
-    const file = input.files?.[0];
+    const file = input.files?.[0]
     if (!file) {
-      input.classList.add('is-invalid');
-      errorElement.textContent = 'Seleccione un archivo antes de enviarlo.';
-      errorElement.classList.remove('d-none');
-      return;
+      input.classList.add('is-invalid')
+      errorElement.textContent = 'Seleccione un archivo antes de enviarlo.'
+      errorElement.classList.remove('d-none')
+      return
     }
 
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Subiendo...';
+    button.disabled = true
+    button.innerHTML = '<span class="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>Subiendo...'
 
     try {
-      const response = await uploadIncidentAttachment(incident.id, file);
-      const attachmentData = response?.data;
+      const response = await uploadIncidentAttachment(incident.id, file)
+      const attachmentData = response?.data
 
-      incident.attachments = [attachmentData, ...(incident.attachments || [])];
-      document.getElementById('attachmentsList').innerHTML = renderAttachments(incident.attachments);
-      setText('attachmentsCount', incident.attachments.length);
-      setText('attachmentsMetric', incident.attachments.length);
-      bindAttachmentPreview();
+      incident.attachments = [attachmentData, ...(incident.attachments || [])]
+      document.getElementById('attachmentsList').innerHTML = renderAttachments(incident.attachments)
+      setText('attachmentsCount', incident.attachments.length)
+      setText('attachmentsMetric', incident.attachments.length)
+      bindAttachmentPreview()
 
-      form.reset();
-      label.textContent = 'Seleccione un archivo...';
-      showGlobalAlert('Archivo adjuntado correctamente.', 'success');
+      form.reset()
+      label.textContent = 'Seleccione un archivo...'
+      showGlobalAlert('Archivo adjuntado correctamente.', 'success')
     } catch (error) {
-      const validationMessage = error?.errors?.file?.[0];
+      const validationMessage = error?.errors?.file?.[0]
 
       if (validationMessage) {
-        input.classList.add('is-invalid');
-        errorElement.textContent = validationMessage;
-        errorElement.classList.remove('d-none');
+        input.classList.add('is-invalid')
+        errorElement.textContent = validationMessage
+        errorElement.classList.remove('d-none')
       }
 
-      showGlobalAlert(error.message || 'No se pudo cargar el archivo adjunto.', 'danger');
+      showGlobalAlert(error.message || 'No se pudo cargar el archivo adjunto.', 'danger')
     } finally {
-      button.disabled = false;
-      button.innerHTML = '<i class="fas fa-upload mr-1"></i>Adjuntar archivo';
+      button.disabled = false
+      button.innerHTML = '<i class="fas fa-upload mr-1"></i>Adjuntar archivo'
     }
-  });
+  })
 }
 
 function bindAttachmentPreview() {
-  const modalImage = document.getElementById('attachmentPreviewModalImage');
-  const modalFallback = document.getElementById('attachmentPreviewModalFallback');
-  const modalOpenLink = document.getElementById('attachmentPreviewModalOpen');
+  const modalImage = document.getElementById('attachmentPreviewModalImage')
+  const modalFallback = document.getElementById('attachmentPreviewModalFallback')
+  const modalOpenLink = document.getElementById('attachmentPreviewModalOpen')
 
-  if (!modalImage || !modalFallback || !modalOpenLink) return;
+  if (!modalImage || !modalFallback || !modalOpenLink) {
+    return
+  }
 
-  document.querySelectorAll('.attachment-preview-link').forEach((link) => {
-    link.addEventListener('click', (event) => {
-      event.preventDefault();
+  document.querySelectorAll('.attachment-preview-link').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault()
 
-      const imageUrl = link.getAttribute('href') || '';
-      const imageAlt = link.querySelector('img')?.getAttribute('alt') || 'Vista previa de evidencia';
+      const imageUrl = link.getAttribute('href') || ''
+      const imageAlt = link.querySelector('img')?.getAttribute('alt') || 'Vista previa de evidencia'
 
-      modalImage.src = imageUrl;
-      modalImage.alt = imageAlt;
-      modalOpenLink.href = imageUrl;
-      modalFallback.classList.add('d-none');
-      modalImage.classList.remove('d-none');
+      modalImage.src = imageUrl
+      modalImage.alt = imageAlt
+      modalOpenLink.href = imageUrl
+      modalFallback.classList.add('d-none')
+      modalImage.classList.remove('d-none')
 
-      modalImage.onload = () => {
-        modalFallback.classList.add('d-none');
-        modalImage.classList.remove('d-none');
-      };
+      modalImage.addEventListener('load', () => {
+        modalFallback.classList.add('d-none')
+        modalImage.classList.remove('d-none')
+      })
 
-      modalImage.onerror = () => {
-        modalImage.classList.add('d-none');
-        modalFallback.classList.remove('d-none');
-      };
+      modalImage.addEventListener('error', () => {
+        modalImage.classList.add('d-none')
+        modalFallback.classList.remove('d-none')
+      })
 
-      globalThis.jQuery?.('#modalAttachmentPreview').modal('show');
-    });
-  });
+      globalThis.jQuery?.('#modalAttachmentPreview').modal('show')
+    })
+  })
 }
 
 function bindPriorityForm(incident) {
-  const openButton = document.getElementById('btnAsignarPrioridad');
-  const saveButton = document.getElementById('btnGuardarPrioridad');
-  const select = document.getElementById('nuevaPrioridad');
+  const openButton = document.getElementById('btnAsignarPrioridad')
+  const saveButton = document.getElementById('btnGuardarPrioridad')
+  const select = document.getElementById('nuevaPrioridad')
 
-  if (!openButton || !saveButton || !select) return;
+  if (!openButton || !saveButton || !select) {
+    return
+  }
 
   openButton.addEventListener('click', () => {
-    globalThis.jQuery?.('#modalPrioridad').modal('show');
-  });
+    globalThis.jQuery?.('#modalPrioridad').modal('show')
+  })
 
   saveButton.addEventListener('click', async () => {
-    const nextPriorityId = Number(select.value);
+    const nextPriorityId = Number(select.value)
 
     if (!Number.isFinite(nextPriorityId) || nextPriorityId <= 0) {
-      showGlobalAlert('Seleccione una prioridad valida.', 'warning');
-      return;
+      showGlobalAlert('Seleccione una prioridad valida.', 'warning')
+      return
     }
 
-    saveButton.disabled = true;
+    saveButton.disabled = true
 
     try {
       const response = await updateIncident(incident.id, {
-        priority_id: nextPriorityId,
-      });
+        priority_id: nextPriorityId
+      })
 
-      const updated = response?.data || {};
-      const selectedLabel = select.options[select.selectedIndex]?.textContent?.trim() || 'Sin definir';
+      const updated = response?.data || {}
+      const selectedLabel = select.options[select.selectedIndex]?.textContent?.trim() || 'Sin definir'
 
-      incident.priority_id = updated.priority_id ?? nextPriorityId;
+      incident.priority_id = updated.priority_id ?? nextPriorityId
       incident.priority = updated.priority || {
         ...incident.priority,
         id: nextPriorityId,
-        name: selectedLabel,
-      };
-
-      const badge = document.getElementById('badgePrioridadDetalle');
-      if (badge) {
-        badge.textContent = formatCatalogLabel(incident.priority?.name || 'Sin definir');
-        badge.className = `badge ${getPriorityBadgeClass(incident.priority?.name || '')} px-2 py-1`;
+        name: selectedLabel
       }
 
-      renderStateSelector(incident, cachedTransitions);
-      updateOperatorStateButton(incident);
+      const badge = document.getElementById('badgePrioridadDetalle')
+      if (badge) {
+        badge.textContent = formatCatalogLabel(incident.priority?.name || 'Sin definir')
+        badge.className = `badge ${getPriorityBadgeClass(incident.priority?.name || '')} px-2 py-1`
+      }
 
-      globalThis.jQuery?.('#modalPrioridad').modal('hide');
-      showGlobalAlert('Prioridad actualizada correctamente.', 'success');
-      
+      renderStateSelector(incident, cachedTransitions)
+      updateOperatorStateButton(incident)
+
+      globalThis.jQuery?.('#modalPrioridad').modal('hide')
+      showGlobalAlert('Prioridad actualizada correctamente.', 'success')
+
       // En este tipo de arquitectura necesitamos recargar para que todos los botones y eventos
       // (como "Gestionar Asignaciones") se re-calculen y bindeen correctamente.
       setTimeout(() => {
-        globalThis.jQuery?.('.modal-backdrop').remove();
-        document.body.classList.remove('modal-open');
-        clearApiCache();
-        window.location.reload();
-      }, 400);
+        globalThis.jQuery?.('.modal-backdrop').remove()
+        document.body.classList.remove('modal-open')
+        clearApiCache()
+        window.location.reload()
+      }, 400)
     } catch (error) {
-      showGlobalAlert(error.message || 'No se pudo actualizar la prioridad.', 'danger');
+      showGlobalAlert(error.message || 'No se pudo actualizar la prioridad.', 'danger')
     } finally {
-      saveButton.disabled = false;
+      saveButton.disabled = false
     }
-  });
+  })
 }
 
 function bindStateChangeControl(incident, transitions) {
-  const directSelect = document.getElementById('estadoDirecto');
-  const saveButton = document.getElementById('btnGuardarEstado');
-  const commentInput = document.getElementById('comentarioEstado');
+  const directSelect = document.getElementById('estadoDirecto')
+  const saveButton = document.getElementById('btnGuardarEstado')
+  const commentInput = document.getElementById('comentarioEstado')
 
-  if (!directSelect || !saveButton || !commentInput) return;
+  if (!directSelect || !saveButton || !commentInput) {
+    return
+  }
 
-  let pendingTransition = null;
-  renderStateSelector(incident, transitions);
-  initializeStateHistoryTooltip(incident.history || []);
+  let pendingTransition = null
+  renderStateSelector(incident, transitions)
+  initializeStateHistoryTooltip(incident.history || [])
 
   directSelect.addEventListener('change', async () => {
-    const nextStateId = Number(directSelect.value);
-    if (nextStateId === Number(incident.state_id)) return;
+    const nextStateId = Number(directSelect.value)
+    if (nextStateId === Number(incident.state_id)) {
+      return
+    }
 
     const transition = getAvailableStateTransitions(incident, transitions)
-      .find((item) => Number(item.target_state_id) === nextStateId);
+      .find(item => Number(item.target_state_id) === nextStateId)
 
     if (!transition) {
-      renderStateSelector(incident, transitions);
-      showGlobalAlert('La transición seleccionada no está disponible.', 'warning');
-      return;
+      renderStateSelector(incident, transitions)
+      showGlobalAlert('La transición seleccionada no está disponible.', 'warning')
+      return
     }
 
     if (transition.requires_comment) {
-      pendingTransition = transition;
-      directSelect.value = String(incident.state_id);
-      prepareStateCommentModal(transition);
-      return;
+      pendingTransition = transition
+      directSelect.value = String(incident.state_id)
+      prepareStateCommentModal(transition)
+      return
     }
 
-    directSelect.value = String(incident.state_id);
+    directSelect.value = String(incident.state_id)
     const confirm = await Swal.fire({
       title: '¿Confirmar cambio?',
       text: `¿Está seguro que desea cambiar el estado a "${formatCatalogLabel(transition.target_state_name || '')}"?${normalizeCode(transition.target_state_name) === 'CERRADA' ? ' Esto cerrará la incidencia definitivamente.' : ''}`,
@@ -1028,34 +1078,34 @@ function bindStateChangeControl(incident, transitions) {
       showCancelButton: true,
       confirmButtonText: 'Sí, cambiar',
       cancelButtonText: 'Cancelar'
-    });
+    })
 
     if (!confirm.isConfirmed) {
-      return;
+      return
     }
 
-    directSelect.disabled = true;
+    directSelect.disabled = true
     try {
-      await executeStateTransition(incident, transition, '', transitions);
-      renderStateSelector(incident, transitions);
+      await executeStateTransition(incident, transition, '', transitions)
+      renderStateSelector(incident, transitions)
     } catch (error) {
-      renderStateSelector(incident, transitions);
-      showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
+      renderStateSelector(incident, transitions)
+      showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger')
     }
-  });
+  })
 
   saveButton.addEventListener('click', async () => {
-    const comment = commentInput.value.trim();
+    const comment = commentInput.value.trim()
 
     if (!pendingTransition) {
-      globalThis.jQuery?.('#modalEstado').modal('hide');
-      return;
+      globalThis.jQuery?.('#modalEstado').modal('hide')
+      return
     }
 
     if (!comment) {
-      showGlobalAlert('Ingrese el comentario obligatorio para continuar.', 'warning');
-      commentInput.focus();
-      return;
+      showGlobalAlert('Ingrese el comentario obligatorio para continuar.', 'warning')
+      commentInput.focus()
+      return
     }
 
     const confirm = await Swal.fire({
@@ -1066,48 +1116,50 @@ function bindStateChangeControl(incident, transitions) {
       confirmButtonText: 'Sí, cambiar',
       cancelButtonText: 'Cancelar',
       target: document.getElementById('modalEstado')
-    });
+    })
 
-    if (!confirm.isConfirmed) return;
-
-    saveButton.disabled = true;
-    try {
-      await executeStateTransition(incident, pendingTransition, comment, transitions);
-      pendingTransition = null;
-      globalThis.jQuery?.('#modalEstado').modal('hide');
-      commentInput.value = '';
-    } catch (error) {
-      showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger');
-    } finally {
-      saveButton.disabled = false;
+    if (!confirm.isConfirmed) {
+      return
     }
-  });
+
+    saveButton.disabled = true
+    try {
+      await executeStateTransition(incident, pendingTransition, comment, transitions)
+      pendingTransition = null
+      globalThis.jQuery?.('#modalEstado').modal('hide')
+      commentInput.value = ''
+    } catch (error) {
+      showGlobalAlert(error.message || 'No se pudo cambiar el estado.', 'danger')
+    } finally {
+      saveButton.disabled = false
+    }
+  })
 
   globalThis.jQuery?.('#modalEstado').on('hidden.bs.modal', () => {
-    pendingTransition = null;
-    commentInput.value = '';
-    renderStateSelector(incident, transitions);
-  });
+    pendingTransition = null
+    commentInput.value = ''
+    renderStateSelector(incident, transitions)
+  })
 }
 
 async function executeStateTransition(incident, transition, comment, transitions) {
-  const previousStateId = Number(incident.state_id);
-  const previousStateName = incident.state?.name || null;
-  const nextStateId = Number(transition.target_state_id);
+  const previousStateId = Number(incident.state_id)
+  const previousStateName = incident.state?.name || null
+  const nextStateId = Number(transition.target_state_id)
   const response = await changeIncidentState(incident.id, {
     state_id: nextStateId,
-    comment: comment || undefined,
-  });
+    comment: comment || undefined
+  })
 
-  const updated = response?.data || {};
-  incident.state_id = updated.state_id ?? nextStateId;
+  const updated = response?.data || {}
+  incident.state_id = updated.state_id ?? nextStateId
   incident.state = updated.state || {
     id: nextStateId,
-    name: transition.target_state_name || '-',
-  };
+    name: transition.target_state_name || '-'
+  }
 
-  const currentUser = readCurrentUser();
-  const newStateColor = incident.state?.color || getStateHexColor(incident.state?.name);
+  const currentUser = readCurrentUser()
+  const newStateColor = incident.state?.color || getStateHexColor(incident.state?.name)
   incident.history = [
     {
       id: Date.now(),
@@ -1121,108 +1173,114 @@ async function executeStateTransition(incident, transition, comment, transitions
       created_at: new Date().toISOString(),
       user: currentUser ? {
         first_name: currentUser.first_name || currentUser.firstName || '',
-        last_name: currentUser.last_name || currentUser.lastName || '',
-      } : null,
+        last_name: currentUser.last_name || currentUser.lastName || ''
+      } : null
     },
-    ...(incident.history || []),
-  ];
+    ...(incident.history || [])
+  ]
 
-  updateStatePresentation(incident, transitions);
-  showStateChangeConfirmation(incident.state?.name);
-  
+  updateStatePresentation(incident, transitions)
+  showStateChangeConfirmation(incident.state?.name)
+
   setTimeout(() => {
-    globalThis.jQuery?.('.modal-backdrop').remove();
-    document.body.classList.remove('modal-open');
-    clearApiCache();
-    window.location.reload();
-  }, 400);
+    globalThis.jQuery?.('.modal-backdrop').remove()
+    document.body.classList.remove('modal-open')
+    clearApiCache()
+    window.location.reload()
+  }, 400)
 }
 
 function updateStatePresentation(incident, transitions) {
-  const stateName = formatCatalogLabel(incident.state?.name || '-');
-  const headerBadge = document.getElementById('badgeEstadoDetalle');
-  const summaryBadge = document.getElementById('badgeEstadoResumen');
-  const timeline = document.getElementById('timelineHistorial');
+  const stateName = formatCatalogLabel(incident.state?.name || '-')
+  const headerBadge = document.getElementById('badgeEstadoDetalle')
+  const summaryBadge = document.getElementById('badgeEstadoResumen')
+  const timeline = document.getElementById('timelineHistorial')
 
   if (headerBadge) {
-    headerBadge.textContent = stateName;
-    headerBadge.className = 'badge estado-badge-grande';
-    headerBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name);
-    headerBadge.style.color = '#fff';
-  }
-  if (summaryBadge) {
-    summaryBadge.textContent = stateName;
-    summaryBadge.className = 'badge px-2 py-1';
-    summaryBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name);
-    summaryBadge.style.color = '#fff';
-  }
-  if (timeline) {
-    timeline.innerHTML = renderHistory(incident.history);
+    headerBadge.textContent = stateName
+    headerBadge.className = 'badge estado-badge-grande'
+    headerBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name)
+    headerBadge.style.color = '#fff'
   }
 
-  const containerResolutionDate = document.getElementById('containerResolutionDate');
-  const labelResolutionDate = document.getElementById('labelResolutionDate');
-  const containerRejectionDate = document.getElementById('containerRejectionDate');
-  const labelRejectionDate = document.getElementById('labelRejectionDate');
-  const reopenDatesContainer = document.getElementById('reopenDatesContainer');
+  if (summaryBadge) {
+    summaryBadge.textContent = stateName
+    summaryBadge.className = 'badge px-2 py-1'
+    summaryBadge.style.backgroundColor = incident.state?.color || getStateHexColor(incident.state?.name)
+    summaryBadge.style.color = '#fff'
+  }
+
+  if (timeline) {
+    timeline.innerHTML = renderHistory(incident.history)
+  }
+
+  const containerResolutionDate = document.getElementById('containerResolutionDate')
+  const labelResolutionDate = document.getElementById('labelResolutionDate')
+  const containerRejectionDate = document.getElementById('containerRejectionDate')
+  const labelRejectionDate = document.getElementById('labelRejectionDate')
+  const reopenDatesContainer = document.getElementById('reopenDatesContainer')
 
   if (containerResolutionDate) {
-    containerResolutionDate.className = incident.rejected_at ? 'd-none' : '';
+    containerResolutionDate.className = incident.rejected_at ? 'd-none' : ''
   }
+
   if (labelResolutionDate) {
-    labelResolutionDate.textContent = formatShortDate(incident.resolution_date);
+    labelResolutionDate.textContent = formatShortDate(incident.resolution_date)
   }
 
   if (containerRejectionDate) {
-    containerRejectionDate.className = incident.rejected_at ? '' : 'd-none';
+    containerRejectionDate.className = incident.rejected_at ? '' : 'd-none'
   }
+
   if (labelRejectionDate) {
-    labelRejectionDate.textContent = formatShortDate(incident.rejected_at);
+    labelRejectionDate.textContent = formatShortDate(incident.rejected_at)
   }
 
   if (reopenDatesContainer) {
-    let reopenHtml = '';
+    let reopenHtml = ''
     if (incident.reopened_at) {
       reopenHtml += `
         <p class="detalle-label text-warning mt-2">Fecha de reapertura</p>
         <p><i class="fas fa-redo mr-1 text-warning"></i>${escapeHtml(formatShortDate(incident.reopened_at))}</p>
-      `;
+      `
     }
+
     if (incident.previous_resolution_date) {
       reopenHtml += `
         <p class="detalle-label text-secondary mt-2">Resolución anterior</p>
         <p><i class="fas fa-history mr-1 text-secondary"></i>${escapeHtml(formatShortDate(incident.previous_resolution_date))}</p>
-      `;
+      `
     }
-    reopenDatesContainer.innerHTML = reopenHtml;
+
+    reopenDatesContainer.innerHTML = reopenHtml
   }
 
-  setText('historyMetric', incident.history.length);
-  renderStateSelector(incident, transitions);
-  initializeStateHistoryTooltip(incident.history);
+  setText('historyMetric', incident.history.length)
+  renderStateSelector(incident, transitions)
+  initializeStateHistoryTooltip(incident.history)
 }
 
 function showStateChangeConfirmation(stateName) {
-  const message = `Estado actualizado a ${formatCatalogLabel(stateName || '-')}.`;
+  const message = `Estado actualizado a ${formatCatalogLabel(stateName || '-')}.`
   if (typeof globalThis.showGlobalAlert === 'function') {
-    globalThis.showGlobalAlert(message, 'success', 'Estado actualizado', 2000);
-    return;
+    globalThis.showGlobalAlert(message, 'success', 'Estado actualizado', 2000)
+    return
   }
 
-  showGlobalAlert(message, 'success');
+  showGlobalAlert(message, 'success')
 }
 
 export function renderComments(comments) {
   if (!comments.length) {
-    return '<p class="text-muted text-center py-3"><i class="fas fa-comment-slash mr-2"></i>Sin comentarios aún.</p>';
+    return '<p class="text-muted text-center py-3"><i class="fas fa-comment-slash mr-2"></i>Sin comentarios aún.</p>'
   }
 
-  return comments.map((comment) => {
-    const author = comment.user
-      ? [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ')
-      : 'Usuario';
-    const role = resolveUserRoleLabel(comment.user);
-    const authorWithRole = role ? `${author} (${role})` : author;
+  return comments.map(comment => {
+    const author = comment.user ?
+      [comment.user.first_name, comment.user.last_name].filter(Boolean).join(' ') :
+      'Usuario'
+    const role = resolveUserRoleLabel(comment.user)
+    const authorWithRole = role ? `${author} (${role})` : author
 
     return `
       <div class="d-flex mb-3 incident-comment" style="gap:12px;">
@@ -1234,8 +1292,8 @@ export function renderComments(comments) {
           <small class="text-muted ml-2">${escapeHtml(formatDateTime(comment.created_at))}</small>
           <p class="mb-0 mt-1">${escapeHtml(comment.comment || '')}</p>
         </div>
-      </div>`;
-  }).join('');
+      </div>`
+  }).join('')
 }
 
 export function renderAttachments(attachments) {
@@ -1245,35 +1303,35 @@ export function renderAttachments(attachments) {
         <i class="fas fa-folder-open fa-2x mb-3 d-block text-success"></i>
         <strong class="d-block mb-1">No hay evidencias adjuntas todavia.</strong>
         <span>Cuando un ciudadano u operador cargue archivos, apareceran aqui.</span>
-      </div>`;
+      </div>`
   }
 
   return `
     <div class="attachment-grid">
       ${attachments.map(renderAttachmentCard).join('')}
-    </div>`;
+    </div>`
 }
 
 function renderAttachmentCard(attachment) {
-  const fileName = attachment?.original_name || 'Archivo adjunto';
-  const mimeType = String(attachment?.mime_type || '').toLowerCase();
-  const author = attachment?.user
-    ? [attachment.user.first_name, attachment.user.last_name].filter(Boolean).join(' ')
-    : 'Usuario del sistema';
-  const role = resolveUserRoleLabel(attachment?.user);
-  const authorWithRole = role ? `${author} (${role})` : author;
-  const resolvedUrl = resolveAttachmentUrl(attachment);
-  const isImage = mimeType.startsWith('image/');
-  const fileIconClass = attachmentIconClass(mimeType, fileName);
-  const preview = isImage && resolvedUrl
-    ? `
+  const fileName = attachment?.original_name || 'Archivo adjunto'
+  const mimeType = String(attachment?.mime_type || '').toLowerCase()
+  const author = attachment?.user ?
+    [attachment.user.first_name, attachment.user.last_name].filter(Boolean).join(' ') :
+    'Usuario del sistema'
+  const role = resolveUserRoleLabel(attachment?.user)
+  const authorWithRole = role ? `${author} (${role})` : author
+  const resolvedUrl = resolveAttachmentUrl(attachment)
+  const isImage = mimeType.startsWith('image/')
+  const fileIconClass = attachmentIconClass(mimeType, fileName)
+  const preview = isImage && resolvedUrl ?
+    `
       <a href="${escapeHtml(resolvedUrl)}" target="_blank" rel="noopener noreferrer" class="attachment-preview-link" title="Ver evidencia">
         <img src="${escapeHtml(resolvedUrl)}" alt="${escapeHtml(fileName)}" class="attachment-preview-image">
-      </a>`
-    : `
+      </a>` :
+    `
       <div class="attachment-preview-placeholder">
         <i class="${escapeHtml(fileIconClass)}"></i>
-      </div>`;
+      </div>`
 
   return `
     <article class="attachment-card">
@@ -1291,45 +1349,47 @@ function renderAttachmentCard(attachment) {
         </div>
         <div class="attachment-footer">
           <span class="text-muted small">${escapeHtml(formatFileSize(attachment?.file_size_bytes))}</span>
-          ${resolvedUrl
-            ? `<a href="${escapeHtml(resolvedUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success">
+          ${resolvedUrl ?
+    `<a href="${escapeHtml(resolvedUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success">
                 <i class="fas fa-external-link-alt mr-1"></i>Abrir
-              </a>`
-            : `<span class="text-warning small">
+              </a>` :
+    `<span class="text-warning small">
                 <i class="fas fa-exclamation-triangle mr-1"></i>URL no disponible
               </span>`}
         </div>
       </div>
-    </article>`;
+    </article>`
 }
 
 function resolveUserRoleLabel(user) {
-  if (!user) return '';
+  if (!user) {
+    return ''
+  }
 
-  const roles = Array.isArray(user.roles) ? user.roles : [];
-  const role = roles.find((item) => item && (typeof item === 'string' || item.name || item.code));
-  const value = typeof role === 'string'
-    ? role
-    : role?.name || role?.code || user.role_name || user.role;
+  const roles = Array.isArray(user.roles) ? user.roles : []
+  const role = roles.find(item => item && (typeof item === 'string' || item.name || item.code))
+  const value = typeof role === 'string' ?
+    role :
+    role?.name || role?.code || user.role_name || user.role
 
-  return value ? formatCatalogLabel(value) : '';
+  return value ? formatCatalogLabel(value) : ''
 }
 
 export function renderHistory(history) {
   if (!history.length) {
-    return '<p class="text-muted text-center py-4 mb-0"><i class="fas fa-stream mr-2"></i>Sin historial disponible.</p>';
+    return '<p class="text-muted text-center py-4 mb-0"><i class="fas fa-stream mr-2"></i>Sin historial disponible.</p>'
   }
 
-  return history.map((entry) => {
-    const stateName = formatCatalogLabel(entry.new_state_name || '-');
-    const stateColor = entry.new_state_color || getStateHexColor(stateName);
-    const author = entry.user
-      ? [entry.user.first_name, entry.user.last_name].filter(Boolean).join(' ')
-      : 'Sistema';
+  return history.map(entry => {
+    const stateName = formatCatalogLabel(entry.new_state_name || '-')
+    const stateColor = entry.new_state_color || getStateHexColor(stateName)
+    const author = entry.user ?
+      [entry.user.first_name, entry.user.last_name].filter(Boolean).join(' ') :
+      'Sistema'
 
-    const action = entry.comment
-      ? `Cambio de estado: ${stateName}. ${entry.comment}`
-      : `Cambio de estado: ${stateName}`;
+    const action = entry.comment ?
+      `Cambio de estado: ${stateName}. ${entry.comment}` :
+      `Cambio de estado: ${stateName}`
 
     return `
       <div class="timeline-item-custom" style="border-left-color: ${stateColor}">
@@ -1338,50 +1398,55 @@ export function renderHistory(history) {
         <br>
         <small><i class="fas fa-user mr-1 text-muted"></i>${escapeHtml(author)}</small>
         <span class="badge float-right" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(stateName)}</span>
-      </div>`;
-  }).join('');
+      </div>`
+  }).join('')
 }
 
 function renderRecentStateChangesTooltip(history) {
-  const changes = recentStateChangeLines(history);
+  const changes = recentStateChangeLines(history)
   if (!changes.length) {
-    return '<strong>Últimos 3 cambios</strong><br>Sin cambios registrados';
+    return '<strong>Últimos 3 cambios</strong><br>Sin cambios registrados'
   }
 
-  return `<strong>Últimos 3 cambios</strong><br>${changes.map((change) => escapeHtml(change)).join('<br>')}`;
+  return `<strong>Últimos 3 cambios</strong><br>${changes.map(change => escapeHtml(change)).join('<br>')}`
 }
 
 function recentStateChangeLines(history) {
-  if (!Array.isArray(history)) return [];
+  if (!Array.isArray(history)) {
+    return []
+  }
 
-  return history.slice(0, 3).map((entry) => {
-    const previousState = formatCatalogLabel(entry.previous_state_name || 'Inicio');
-    const newState = formatCatalogLabel(entry.new_state_name || '-');
-    return `${previousState} → ${newState} · ${formatDateTime(entry.created_at)}`;
-  });
+  return history.slice(0, 3).map(entry => {
+    const previousState = formatCatalogLabel(entry.previous_state_name || 'Inicio')
+    const newState = formatCatalogLabel(entry.new_state_name || '-')
+    return `${previousState} → ${newState} · ${formatDateTime(entry.created_at)}`
+  })
 }
 
 function initializeStateHistoryTooltip(history) {
-  const target = document.getElementById('stateHistoryTooltip');
-  if (!target) return;
+  const target = document.getElementById('stateHistoryTooltip')
+  if (!target) {
+    return
+  }
 
-  const changes = recentStateChangeLines(history);
-  const htmlContent = renderRecentStateChangesTooltip(history);
-  const tooltip = globalThis.jQuery?.(target);
+  const changes = recentStateChangeLines(history)
+  const htmlContent = renderRecentStateChangesTooltip(history)
+  const tooltip = globalThis.jQuery?.(target)
 
   if (tooltip?.tooltip) {
     if (tooltip.data('bs.tooltip')) {
-      tooltip.tooltip('dispose');
+      tooltip.tooltip('dispose')
     }
-    target.setAttribute('title', htmlContent);
-    tooltip.tooltip({ html: true, container: 'body', placement: 'bottom' });
-    return;
+
+    target.setAttribute('title', htmlContent)
+    tooltip.tooltip({ html: true, container: 'body', placement: 'bottom' })
+    return
   }
 
   target.setAttribute('title', [
     'Últimos 3 cambios',
-    ...(changes.length ? changes : ['Sin cambios registrados']),
-  ].join('\n'));
+    ...(changes.length ? changes : ['Sin cambios registrados'])
+  ].join('\n'))
 }
 
 function renderError(container, message) {
@@ -1389,159 +1454,216 @@ function renderError(container, message) {
     <div class="alert alert-danger">
       <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
       <a href="incidents.html" class="btn btn-sm btn-outline-danger ml-3">Volver</a>
-    </div>`;
+    </div>`
 }
 
 export function calculateDays(value) {
-  const start = new Date(value || '');
-  if (Number.isNaN(start.getTime())) return 0;
-  return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
+  const start = new Date(value || '')
+  if (Number.isNaN(start.getTime())) {
+    return 0
+  }
+
+  return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000))
 }
 
 function setText(id, value) {
-  const element = document.getElementById(id);
+  const element = document.getElementById(id)
   if (element) {
-    element.textContent = String(value);
+    element.textContent = String(value)
   }
 }
 
 function setHtml(id, value) {
-  const element = document.getElementById(id);
+  const element = document.getElementById(id)
   if (element) {
-    element.innerHTML = value;
+    element.innerHTML = value
   }
 }
 
 function resolveAttachmentUrl(attachment) {
-  const directUrl = String(attachment?.file_url || '').trim();
+  const directUrl = String(attachment?.file_url || '').trim()
   if (directUrl) {
-    return directUrl;
+    return directUrl
   }
 
-  const rawPath = String(attachment?.file_path || '').trim();
-  if (!rawPath) return '';
+  const rawPath = String(attachment?.file_path || '').trim()
+  if (!rawPath) {
+    return ''
+  }
 
   if (/^https?:\/\//i.test(rawPath)) {
-    return rawPath;
+    return rawPath
   }
 
-  let normalizedPath = rawPath;
+  let normalizedPath = rawPath
   while (normalizedPath.startsWith('/')) {
-    normalizedPath = normalizedPath.slice(1);
+    normalizedPath = normalizedPath.slice(1)
   }
 
   let configuredBaseUrl = String(
-    globalThis.SGI_ATTACHMENTS_BASE_URL
-      || globalThis.SGI_STORAGE_BASE_URL
-      || deriveStorageBaseUrl()
-  ).trim();
+    globalThis.SGI_ATTACHMENTS_BASE_URL ||
+      globalThis.SGI_STORAGE_BASE_URL ||
+      deriveStorageBaseUrl()
+  ).trim()
 
   if (!configuredBaseUrl) {
-    return '';
+    return ''
   }
 
   while (configuredBaseUrl.endsWith('/')) {
-    configuredBaseUrl = configuredBaseUrl.slice(0, -1);
+    configuredBaseUrl = configuredBaseUrl.slice(0, -1)
   }
-  return `${configuredBaseUrl}/${normalizedPath}`;
+
+  return `${configuredBaseUrl}/${normalizedPath}`
 }
 
 function deriveStorageBaseUrl() {
-  if (typeof API_URL !== 'string' || !API_URL) return '';
+  if (typeof API_URL !== 'string' || !API_URL) {
+    return ''
+  }
 
-  let normalizedApiUrl = API_URL;
+  let normalizedApiUrl = API_URL
   while (normalizedApiUrl.endsWith('/')) {
-    normalizedApiUrl = normalizedApiUrl.slice(0, -1);
-  }
-  
-  if (normalizedApiUrl.endsWith('/api')) {
-    return `${normalizedApiUrl.slice(0, -4)}/storage`;
+    normalizedApiUrl = normalizedApiUrl.slice(0, -1)
   }
 
-  return `${globalThis.location.origin}/storage`;
+  if (normalizedApiUrl.endsWith('/api')) {
+    return `${normalizedApiUrl.slice(0, -4)}/storage`
+  }
+
+  return `${globalThis.location.origin}/storage`
 }
 
 function attachmentIconClass(mimeType, fileName) {
-  if (mimeType.startsWith('image/')) return 'far fa-file-image';
-  if (mimeType === 'application/pdf') return 'far fa-file-pdf';
-  if (mimeType.includes('word') || /\.docx?$/i.test(fileName)) return 'far fa-file-word';
-  if (mimeType.startsWith('video/')) return 'far fa-file-video';
-  if (mimeType.includes('zip') || /\.zip$/i.test(fileName)) return 'far fa-file-archive';
-  return 'far fa-file-alt';
+  if (mimeType.startsWith('image/')) {
+    return 'far fa-file-image'
+  }
+
+  if (mimeType === 'application/pdf') {
+    return 'far fa-file-pdf'
+  }
+
+  if (mimeType.includes('word') || /\.docx?$/i.test(fileName)) {
+    return 'far fa-file-word'
+  }
+
+  if (mimeType.startsWith('video/')) {
+    return 'far fa-file-video'
+  }
+
+  if (mimeType.includes('zip') || /\.zip$/i.test(fileName)) {
+    return 'far fa-file-archive'
+  }
+
+  return 'far fa-file-alt'
 }
 
 function formatAttachmentTypeLabel(mimeType, fileName) {
-  if (mimeType.startsWith('image/')) return 'Imagen';
-  if (mimeType === 'application/pdf') return 'PDF';
-  if (mimeType.includes('word') || /\.docx?$/i.test(fileName)) return 'Word';
-  if (mimeType.startsWith('video/')) return 'Video';
-  if (mimeType.includes('zip') || /\.zip$/i.test(fileName)) return 'ZIP';
-  return 'Archivo';
+  if (mimeType.startsWith('image/')) {
+    return 'Imagen'
+  }
+
+  if (mimeType === 'application/pdf') {
+    return 'PDF'
+  }
+
+  if (mimeType.includes('word') || /\.docx?$/i.test(fileName)) {
+    return 'Word'
+  }
+
+  if (mimeType.startsWith('video/')) {
+    return 'Video'
+  }
+
+  if (mimeType.includes('zip') || /\.zip$/i.test(fileName)) {
+    return 'ZIP'
+  }
+
+  return 'Archivo'
 }
 
 export function formatFileSize(value) {
-  const bytes = Number(value);
-  if (!Number.isFinite(bytes) || bytes < 0) return 'Tamano no disponible';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const bytes = Number(value)
+  if (!Number.isFinite(bytes) || bytes < 0) {
+    return 'Tamano no disponible'
+  }
+
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 function canManagePriority() {
-  const user = readCurrentUser();
+  const user = readCurrentUser()
 
-  if (!user || !Array.isArray(user.roles)) return false;
+  if (!user || !Array.isArray(user.roles)) {
+    return false
+  }
 
-  return user.roles.some((role) => {
-    const code = normalizeCode(role);
-    return code === 'ADMIN' || code === 'SUPERVISOR';
-  });
+  return user.roles.some(role => {
+    const code = normalizeCode(role)
+    return code === 'ADMIN' || code === 'SUPERVISOR'
+  })
 }
 
 function isOperator() {
-  const user = readCurrentUser();
-  if (!user || !Array.isArray(user.roles)) return false;
-  return user.roles.some((role) => {
-    const code = normalizeCode(role);
-    return code === 'OPERADOR';
-  });
+  const user = readCurrentUser()
+  if (!user || !Array.isArray(user.roles)) {
+    return false
+  }
+
+  return user.roles.some(role => {
+    const code = normalizeCode(role)
+    return code === 'OPERADOR'
+  })
 }
 
 function openRequestStateModal(incident, states) {
-  const motivo = document.getElementById('solicitudMotivo');
-  if (!motivo) return;
-
-  const currentStateId = Number(incident.state_id);
-  
-  let targetState = null;
-  (Array.isArray(states) ? states : []).forEach((s) => {
-    if (Number(s.id) === currentStateId) return;
-    if (normalizeCode(s.name) === 'RESUELTA') {
-      targetState = s;
-    }
-  });
-
-  if (!targetState) {
-    showGlobalAlert('No se pudo encontrar el estado de resolución habilitado.', 'warning');
-    return;
+  const motivo = document.getElementById('solicitudMotivo')
+  if (!motivo) {
+    return
   }
 
-  motivo.value = '';
-  pendingStateRequest = { incident, targetStateId: targetState.id };
+  const currentStateId = Number(incident.state_id)
 
-  globalThis.jQuery?.('#modalSolicitarEstado').modal('show');
+  let targetState = null;
+  (Array.isArray(states) ? states : []).forEach(s => {
+    if (Number(s.id) === currentStateId) {
+      return
+    }
+
+    if (normalizeCode(s.name) === 'RESUELTA') {
+      targetState = s
+    }
+  })
+
+  if (!targetState) {
+    showGlobalAlert('No se pudo encontrar el estado de resolución habilitado.', 'warning')
+    return
+  }
+
+  motivo.value = ''
+  pendingStateRequest = { incident, targetStateId: targetState.id }
+
+  globalThis.jQuery?.('#modalSolicitarEstado').modal('show')
 }
 
 function renderOperatorStateButton(incident) {
-  const hasPriority = !!(incident.priority_id || incident.priority?.id);
-  const pendingRequest = pendingStateRequests.find(r => r.status === 'pending');
+  const hasPriority = Boolean(incident.priority_id || incident.priority?.id)
+  const pendingRequest = pendingStateRequests.find(r => r.status === 'pending')
 
   if (pendingRequest) {
     return `
       <button class="btn btn-sm btn-outline-warning disabled" style="cursor: not-allowed;" title="Ya hay una solicitud pendiente">
         <i class="fas fa-hourglass-half mr-1"></i>Solicitud de estado pendiente
       </button>
-    `;
+    `
   }
 
   if (!hasPriority) {
@@ -1551,48 +1673,50 @@ function renderOperatorStateButton(incident) {
           <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
         </button>
       </div>
-    `;
+    `
   }
 
   return `
     <button class="btn btn-sm btn-outline-warning" id="btnSolicitarCambioEstado">
       <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
     </button>
-  `;
+  `
 }
 
 function bindOperatorStateButton(incident) {
-  const requestBtn = document.getElementById('btnSolicitarCambioEstado');
+  const requestBtn = document.getElementById('btnSolicitarCambioEstado')
   if (requestBtn) {
-    requestBtn.addEventListener('click', () => openRequestStateModal(incident, availableStates));
+    requestBtn.addEventListener('click', () => openRequestStateModal(incident, availableStates))
   }
 }
 
 function updateOperatorStateButton(incident) {
-  const container = document.getElementById('operatorStateButtonContainer');
-  if (!container) return;
+  const container = document.getElementById('operatorStateButtonContainer')
+  if (!container) {
+    return
+  }
 
   if (normalizeCode(incident.state?.name) === 'EN_PROGRESO') {
-    container.innerHTML = renderOperatorStateButton(incident);
-    bindOperatorStateButton(incident);
+    container.innerHTML = renderOperatorStateButton(incident)
+    bindOperatorStateButton(incident)
   } else {
-    container.remove();
+    container.remove()
   }
 }
 
 function removePendingRequestRow(requestId) {
-  const row = document.getElementById(`row-solicitud-${requestId}`);
+  const row = document.getElementById(`row-solicitud-${requestId}`)
   if (row) {
-    row.remove();
+    row.remove()
   }
-  
+
   // If no more requests, remove the whole panel
   if (pendingStateRequests.length === 0) {
-    const tableContainer = document.querySelector('.pending-state-requests-table-wrap');
+    const tableContainer = document.querySelector('.pending-state-requests-table-wrap')
     if (tableContainer) {
-      const card = tableContainer.closest('.card');
+      const card = tableContainer.closest('.card')
       if (card) {
-        card.remove();
+        card.remove()
       }
     }
   }
@@ -1620,11 +1744,11 @@ function renderPendingStateRequests(requests) {
               </tr>
             </thead>
             <tbody>
-              ${requests.map((r) => {
-                const requesterName = r.requestedByUserName || r.requested_by_user_name || 'Usuario';
-                const stateName = r.requestedStateName || r.requested_state_name || '-';
-                const stateColor = r.requestedStateColor || r.requested_state_color || getStateHexColor(stateName);
-                return `
+              ${requests.map(r => {
+    const requesterName = r.requestedByUserName || r.requested_by_user_name || 'Usuario'
+    const stateName = r.requestedStateName || r.requested_state_name || '-'
+    const stateColor = r.requestedStateColor || r.requested_state_color || getStateHexColor(stateName)
+    return `
                   <tr>
                     <td data-label="Solicitante">${escapeHtml(requesterName)}</td>
                     <td data-label="Estado solicitado"><span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></td>
@@ -1640,78 +1764,86 @@ function renderPendingStateRequests(requests) {
                         </button>
                       </div>
                     </td>
-                  </tr>`;
-              }).join('')}
+                  </tr>`
+  }).join('')}
             </tbody>
           </table>
         </div>
       </div>
-    </div>`;
+    </div>`
 }
 
 function bindReviewRequestButtons(incident) {
-  document.querySelectorAll('[data-action="approve-request"]').forEach((btn) => {
+  document.querySelectorAll('[data-action="approve-request"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const requestId = Number(btn.dataset.requestId);
-      const request = pendingStateRequests.find((r) => Number(r.id) === requestId);
-      if (request) openApproveModal(incident, request);
-    });
-  });
+      const requestId = Number(btn.dataset.requestId)
+      const request = pendingStateRequests.find(r => Number(r.id) === requestId)
+      if (request) {
+        openApproveModal(incident, request)
+      }
+    })
+  })
 
-  document.querySelectorAll('[data-action="reject-request"]').forEach((btn) => {
+  document.querySelectorAll('[data-action="reject-request"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const requestId = Number(btn.dataset.requestId);
-      const request = pendingStateRequests.find((r) => Number(r.id) === requestId);
-      if (request) openRejectModal(incident, request);
-    });
-  });
+      const requestId = Number(btn.dataset.requestId)
+      const request = pendingStateRequests.find(r => Number(r.id) === requestId)
+      if (request) {
+        openRejectModal(incident, request)
+      }
+    })
+  })
 }
 
 function openApproveModal(incident, request) {
-  const header = document.getElementById('modalRevisarHeader');
-  const title = document.getElementById('modalRevisarTitulo');
-  const summary = document.getElementById('modalRevisarResumen');
-  const approveBtn = document.getElementById('btnConfirmarAprobar');
-  const rejectBtn = document.getElementById('btnConfirmarRechazar');
-  const commentInput = document.getElementById('modalRevisarComentario');
-  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) return;
+  const header = document.getElementById('modalRevisarHeader')
+  const title = document.getElementById('modalRevisarTitulo')
+  const summary = document.getElementById('modalRevisarResumen')
+  const approveBtn = document.getElementById('btnConfirmarAprobar')
+  const rejectBtn = document.getElementById('btnConfirmarRechazar')
+  const commentInput = document.getElementById('modalRevisarComentario')
+  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) {
+    return
+  }
 
-  header.className = 'modal-header bg-success text-white';
-  title.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar solicitud de cambio';
-  summary.innerHTML = renderReviewSummary(request);
-  commentInput.value = '';
-  commentInput.classList.remove('is-invalid');
-  approveBtn.classList.remove('d-none');
-  rejectBtn.classList.add('d-none');
+  header.className = 'modal-header bg-success text-white'
+  title.innerHTML = '<i class="fas fa-check mr-2"></i>Aprobar solicitud de cambio'
+  summary.innerHTML = renderReviewSummary(request)
+  commentInput.value = ''
+  commentInput.classList.remove('is-invalid')
+  approveBtn.classList.remove('d-none')
+  rejectBtn.classList.add('d-none')
 
-  pendingReviewRequest = { incident, request, action: 'approve' };
-  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show');
+  pendingReviewRequest = { incident, request, action: 'approve' }
+  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show')
 }
 
 function openRejectModal(incident, request) {
-  const header = document.getElementById('modalRevisarHeader');
-  const title = document.getElementById('modalRevisarTitulo');
-  const summary = document.getElementById('modalRevisarResumen');
-  const approveBtn = document.getElementById('btnConfirmarAprobar');
-  const rejectBtn = document.getElementById('btnConfirmarRechazar');
-  const commentInput = document.getElementById('modalRevisarComentario');
-  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) return;
+  const header = document.getElementById('modalRevisarHeader')
+  const title = document.getElementById('modalRevisarTitulo')
+  const summary = document.getElementById('modalRevisarResumen')
+  const approveBtn = document.getElementById('btnConfirmarAprobar')
+  const rejectBtn = document.getElementById('btnConfirmarRechazar')
+  const commentInput = document.getElementById('modalRevisarComentario')
+  if (!title || !summary || !approveBtn || !rejectBtn || !commentInput) {
+    return
+  }
 
-  header.className = 'modal-header bg-danger text-white';
-  title.innerHTML = '<i class="fas fa-times mr-2"></i>Rechazar solicitud de cambio';
-  summary.innerHTML = renderReviewSummary(request);
-  commentInput.value = '';
-  approveBtn.classList.add('d-none');
-  rejectBtn.classList.remove('d-none');
+  header.className = 'modal-header bg-danger text-white'
+  title.innerHTML = '<i class="fas fa-times mr-2"></i>Rechazar solicitud de cambio'
+  summary.innerHTML = renderReviewSummary(request)
+  commentInput.value = ''
+  approveBtn.classList.add('d-none')
+  rejectBtn.classList.remove('d-none')
 
-  pendingReviewRequest = { incident, request, action: 'reject' };
-  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show');
+  pendingReviewRequest = { incident, request, action: 'reject' }
+  globalThis.jQuery?.('#modalRevisarSolicitud').modal('show')
 }
 
 function renderReviewSummary(request) {
-  const requesterName = request.requestedByUserName || request.requested_by_user_name || 'Usuario';
-  const stateName = request.requestedStateName || request.requested_state_name || '-';
-  const stateColor = request.requestedStateColor || request.requested_state_color || getStateHexColor(stateName);
+  const requesterName = request.requestedByUserName || request.requested_by_user_name || 'Usuario'
+  const stateName = request.requestedStateName || request.requested_state_name || '-'
+  const stateColor = request.requestedStateColor || request.requested_state_color || getStateHexColor(stateName)
 
   return `
     <div class="small">
@@ -1719,154 +1851,196 @@ function renderReviewSummary(request) {
       <p><strong>Estado solicitado:</strong> <span class="badge" style="background-color: ${stateColor}; color: #fff;">${escapeHtml(formatCatalogLabel(stateName))}</span></p>
       <p><strong>Razon:</strong><br>${escapeHtml(request.reason || 'Sin especificar')}</p>
       <p><strong>Fecha:</strong> ${escapeHtml(formatDateTime(request.created_at || request.createdAt))}</p>
-    </div>`;
+    </div>`
 }
 
 function readCurrentUser() {
   try {
-    return JSON.parse(localStorage.getItem('user_data') || 'null');
+    return JSON.parse(localStorage.getItem('user_data') || 'null')
   } catch {
-    return null;
+    return null
   }
 }
 
 function normalizeCode(value) {
-  if (typeof value === 'string') return value.trim().toUpperCase();
-  return String(value?.code || value?.codigo || value?.name || value?.nombre || '').trim().toUpperCase();
+  if (typeof value === 'string') {
+    return value.trim().toUpperCase()
+  }
+
+  return String(value?.code || value?.codigo || value?.name || value?.nombre || '').trim().toUpperCase()
 }
 
 function isStateInProgressOrBeyond(state) {
-  const name = normalizeCode(state?.name || '');
-  if (!name) return false;
-  return ['EN_PROGRESO', 'IN_PROGRESS', 'ASIGNADA', 'ASSIGNED', 'RESUELTA', 'RESOLVED',
-    'CERRADA', 'CLOSED', 'RECHAZADA', 'REJECTED', 'CANCELADA', 'CANCELLED'].includes(name);
+  const name = normalizeCode(state?.name || '')
+  if (!name) {
+    return false
+  }
+
+  return ['EN_PROGRESO',
+    'IN_PROGRESS',
+    'ASIGNADA',
+    'ASSIGNED',
+    'RESUELTA',
+    'RESOLVED',
+    'CERRADA',
+    'CLOSED',
+    'RECHAZADA',
+    'REJECTED',
+    'CANCELADA',
+    'CANCELLED'].includes(name)
 }
 
 function isStrictlyInProgress(state) {
-  const name = normalizeCode(state?.name || '');
-  return name === 'EN_PROGRESO' || name === 'IN_PROGRESS';
+  const name = normalizeCode(state?.name || '')
+  return name === 'EN_PROGRESO' || name === 'IN_PROGRESS'
 }
 
 // ── Module-level event bindings (run once) ──
 
 // Bind enviar solicitud button
 document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', async () => {
-  if (!pendingStateRequest || !pendingStateRequest.targetStateId) return;
-  const { incident, targetStateId } = pendingStateRequest;
-  const stateId = targetStateId;
-  const reason = document.getElementById('solicitudMotivo')?.value.trim();
-  if (!reason) {
-    showGlobalAlert('Ingrese el motivo de la solicitud.', 'warning');
-    return;
+  if (!pendingStateRequest || !pendingStateRequest.targetStateId) {
+    return
   }
 
-  const btn = document.getElementById('btnEnviarSolicitudEstado');
-  if (btn) btn.disabled = true;
+  const { incident, targetStateId } = pendingStateRequest
+  const stateId = targetStateId
+  const reason = document.getElementById('solicitudMotivo')?.value.trim()
+  if (!reason) {
+    showGlobalAlert('Ingrese el motivo de la solicitud.', 'warning')
+    return
+  }
+
+  const btn = document.getElementById('btnEnviarSolicitudEstado')
+  if (btn) {
+    btn.disabled = true
+  }
 
   try {
-    const result = await requestStateChange(incident.id, { state_id: stateId, reason });
-    globalThis.jQuery?.('#modalSolicitarEstado').modal('hide');
-    showGlobalAlert('Solicitud enviada correctamente. El supervisor será notificado.', 'success');
-    pendingStateRequest = null;
+    const result = await requestStateChange(incident.id, { state_id: stateId, reason })
+    globalThis.jQuery?.('#modalSolicitarEstado').modal('hide')
+    showGlobalAlert('Solicitud enviada correctamente. El supervisor será notificado.', 'success')
+    pendingStateRequest = null
 
     // Update operator button to show pending state
     if (result?.data) {
-      pendingStateRequests = [result.data, ...pendingStateRequests];
+      pendingStateRequests = [result.data, ...pendingStateRequests]
     } else {
-      pendingStateRequests = [{ status: 'pending', requested_state_id: stateId }];
+      pendingStateRequests = [{ status: 'pending', requested_state_id: stateId }]
     }
-    updateOperatorStateButton(incident);
+
+    updateOperatorStateButton(incident)
   } catch (error) {
-    showGlobalAlert(error.message || 'No se pudo enviar la solicitud.', 'danger');
+    showGlobalAlert(error.message || 'No se pudo enviar la solicitud.', 'danger')
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false
+    }
   }
-});
+})
 
 // Bind aprobar button in review modal
 document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async () => {
-  if (!pendingReviewRequest || pendingReviewRequest.action !== 'approve') return;
-  const { incident, request } = pendingReviewRequest;
-  const commentEl = document.getElementById('modalRevisarComentario');
-  const comment = commentEl?.value.trim() || '';
+  if (!pendingReviewRequest || pendingReviewRequest.action !== 'approve') {
+    return
+  }
+
+  const { incident, request } = pendingReviewRequest
+  const commentEl = document.getElementById('modalRevisarComentario')
+  const comment = commentEl?.value.trim() || ''
 
   if (!comment) {
-    commentEl?.classList.add('is-invalid');
-    commentEl?.focus();
-    return;
+    commentEl?.classList.add('is-invalid')
+    commentEl?.focus()
+    return
   }
-  commentEl?.classList.remove('is-invalid');
 
-  const btn = document.getElementById('btnConfirmarAprobar');
-  if (btn) btn.disabled = true;
+  commentEl?.classList.remove('is-invalid')
+
+  const btn = document.getElementById('btnConfirmarAprobar')
+  if (btn) {
+    btn.disabled = true
+  }
 
   try {
-    await approveStateChangeRequest(incident.id, request.id, { comment: comment || undefined });
-    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
-    showGlobalAlert('Solicitud aprobada correctamente. El estado se ha actualizado.', 'success');
-    pendingReviewRequest = null;
+    await approveStateChangeRequest(incident.id, request.id, { comment: comment || undefined })
+    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide')
+    showGlobalAlert('Solicitud aprobada correctamente. El estado se ha actualizado.', 'success')
+    pendingReviewRequest = null
 
     setTimeout(() => {
-      globalThis.jQuery?.('.modal-backdrop').remove();
-      document.body.classList.remove('modal-open');
-      clearApiCache();
-      window.location.reload();
-    }, 400);
+      globalThis.jQuery?.('.modal-backdrop').remove()
+      document.body.classList.remove('modal-open')
+      clearApiCache()
+      window.location.reload()
+    }, 400)
   } catch (error) {
-    showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger');
+    showGlobalAlert(error.message || 'No se pudo aprobar la solicitud.', 'danger')
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false
+    }
   }
-});
+})
 
 // Bind rechazar button in review modal
 document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async () => {
-  if (!pendingReviewRequest || pendingReviewRequest.action !== 'reject') return;
-  const { incident, request } = pendingReviewRequest;
-  const commentEl = document.getElementById('modalRevisarComentario');
-  const comment = commentEl?.value.trim() || '';
+  if (!pendingReviewRequest || pendingReviewRequest.action !== 'reject') {
+    return
+  }
+
+  const { incident, request } = pendingReviewRequest
+  const commentEl = document.getElementById('modalRevisarComentario')
+  const comment = commentEl?.value.trim() || ''
 
   if (!comment) {
-    commentEl?.classList.add('is-invalid');
-    commentEl?.focus();
-    return;
+    commentEl?.classList.add('is-invalid')
+    commentEl?.focus()
+    return
   }
-  commentEl?.classList.remove('is-invalid');
 
-  const btn = document.getElementById('btnConfirmarRechazar');
-  if (btn) btn.disabled = true;
+  commentEl?.classList.remove('is-invalid')
+
+  const btn = document.getElementById('btnConfirmarRechazar')
+  if (btn) {
+    btn.disabled = true
+  }
 
   try {
-    await rejectStateChangeRequest(incident.id, request.id, { comment: comment || undefined });
-    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide');
-    showGlobalAlert('Solicitud rechazada correctamente.', 'info');
-    pendingReviewRequest = null;
+    await rejectStateChangeRequest(incident.id, request.id, { comment: comment || undefined })
+    globalThis.jQuery?.('#modalRevisarSolicitud').modal('hide')
+    showGlobalAlert('Solicitud rechazada correctamente.', 'info')
+    pendingReviewRequest = null
 
     setTimeout(() => {
-      globalThis.jQuery?.('.modal-backdrop').remove();
-      document.body.classList.remove('modal-open');
-      clearApiCache();
-      window.location.reload();
-    }, 400);
+      globalThis.jQuery?.('.modal-backdrop').remove()
+      document.body.classList.remove('modal-open')
+      clearApiCache()
+      window.location.reload()
+    }, 400)
   } catch (error) {
-    showGlobalAlert(error.message || 'No se pudo rechazar la solicitud.', 'danger');
+    showGlobalAlert(error.message || 'No se pudo rechazar la solicitud.', 'danger')
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false
+    }
   }
-});
+})
 
 function renderActiveOperators(assignments, incident) {
-  let targetAssignments = assignments.filter(a => a.active);
-  
+  let targetAssignments = assignments.filter(a => a.active)
+
   if (targetAssignments.length === 0 && incident?.cycles?.length > 0) {
-    const latestCycle = incident.cycles[incident.cycles.length - 1];
-    targetAssignments = assignments.filter(a => Number(a.incident_cycle_id) === Number(latestCycle.id));
+    const latestCycle = incident.cycles[incident.cycles.length - 1]
+    targetAssignments = assignments.filter(a => Number(a.incident_cycle_id) === Number(latestCycle.id))
   }
-  
-  if (targetAssignments.length === 0) return '';
-  
+
+  if (targetAssignments.length === 0) {
+    return ''
+  }
+
   const operatorCards = targetAssignments.map(a => {
-    const name = (a.user?.first_name || '') + ' ' + (a.user?.last_name || '');
+    const name = `${a.user?.first_name || ''} ${a.user?.last_name || ''}`
     return `
       <div class="d-flex align-items-center mb-2">
         <div class="mr-3 text-info">
@@ -1877,8 +2051,8 @@ function renderActiveOperators(assignments, incident) {
           <div class="text-muted small">Asignado el ${formatShortDate(a.assignment_date)}</div>
         </div>
       </div>
-    `;
-  }).join('');
+    `
+  }).join('')
 
   return `
     <hr>
@@ -1886,5 +2060,5 @@ function renderActiveOperators(assignments, incident) {
     <div class="mt-2 bg-light rounded p-3 border">
       ${operatorCards}
     </div>
-  `;
+  `
 }

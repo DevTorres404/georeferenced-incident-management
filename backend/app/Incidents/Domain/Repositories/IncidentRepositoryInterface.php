@@ -21,6 +21,7 @@ use App\Incidents\Application\DTOs\StateChangeRequestData;
 use App\Incidents\Application\DTOs\StoreIncidentInputData;
 use App\Incidents\Application\DTOs\UpdateIncidentInputData;
 use App\Incidents\Domain\Entities\Incident;
+use App\Incidents\Domain\Entities\IncidentState;
 use App\Incidents\Domain\Entities\IncidentTransition;
 use App\Shared\Application\DTOs\StoredFileData;
 use App\Shared\Application\Results\PaginatedResult;
@@ -78,7 +79,7 @@ interface IncidentRepositoryInterface
 
     public function findPendingStateChangeRequest(int $incidentId): ?StateChangeRequestData;
 
-    public function stateNameById(int $stateId): ?string;
+    public function stateById(int $stateId): ?IncidentState;
 
     public function hasActiveAssignment(int $incidentId, int $userId): bool;
 

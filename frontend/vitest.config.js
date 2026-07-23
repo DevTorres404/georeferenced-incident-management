@@ -1,5 +1,5 @@
-import { defineConfig } from 'vitest/config';
-import path from 'node:path';
+import { defineConfig } from 'vitest/config'
+import path from 'node:path'
 
 export default defineConfig({
   test: {
@@ -12,30 +12,34 @@ export default defineConfig({
       exclude: [
         '**/node_modules/**',
         '**/dist/**',
-        '**/*.min.js',
+        '**/*.min.js'
       ],
-      reportsDirectory: 'coverage',
+      reportsDirectory: 'coverage'
     },
     server: {
       deps: {
-        inline: [/\.js\?v=\d+$/],
-      },
-    },
+        inline: [/\.js\?v=\d+$/]
+      }
+    }
   },
   plugins: [
     {
       name: 'resolve-v-cache-buster',
       enforce: 'pre',
       resolveId(source, importer) {
-        if (!importer) return null;
-        const match = source.match(/^(\..*?)\.js\?v=\d+$/);
-        if (match) {
-          const cleanPath = match[1] + '.js';
-          const resolved = path.resolve(path.dirname(importer), cleanPath);
-          return { id: resolved };
+        if (!importer) {
+          return null
         }
-        return null;
-      },
-    },
-  ],
-});
+
+        const match = source.match(/^(\..*?)\.js\?v=\d+$/)
+        if (match) {
+          const cleanPath = `${match[1]}.js`
+          const resolved = path.resolve(path.dirname(importer), cleanPath)
+          return { id: resolved }
+        }
+
+        return null
+      }
+    }
+  ]
+})

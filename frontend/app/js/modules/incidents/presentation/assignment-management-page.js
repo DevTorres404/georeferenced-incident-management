@@ -1,11 +1,11 @@
-import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21';
-import { userHasPermission } from '../../../core/auth-session.js?v=16';
+import { clearApiCache } from '../../../infrastructure/backend-client.js?v=21'
+import { userHasPermission } from '../../../core/auth-session.js?v=16'
 import {
   assignIncidentOperators,
   getIncident,
   listAssignmentOperators,
-  listIncidents,
-} from '../application/incidents-service.js?v=15';
+  listIncidents
+} from '../application/incidents-service.js?v=15'
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -14,14 +14,14 @@ import {
   getStateHexColor,
   hidePageLoading,
   showGlobalAlert,
-  showPageLoading,
-} from './incidents-ui.js?v=17';
+  showPageLoading
+} from './incidents-ui.js?v=17'
 
-document.addEventListener('DOMContentLoaded', initAssignmentManagementPage);
+document.addEventListener('DOMContentLoaded', initAssignmentManagementPage)
 
 export async function initAssignmentManagementPage() {
   if (typeof globalThis.renderLayout === 'function') {
-    globalThis.renderLayout('assignment-management');
+    globalThis.renderLayout('assignment-management')
   }
 
   const state = {
@@ -29,219 +29,240 @@ export async function initAssignmentManagementPage() {
     incidents: [],
     filteredIncidents: [],
     operators: [],
-    selectedIncident: null,
-  };
-  configureAssignmentBackLink(state.currentUser);
+    selectedIncident: null
+  }
+  configureAssignmentBackLink(state.currentUser)
 
-  bindStaticEvents(state);
+  bindStaticEvents(state)
 
-  showPageLoading('Cargando asignaciones', 'Preparando incidencias y operadores...');
+  showPageLoading('Cargando asignaciones', 'Preparando incidencias y operadores...')
 
   try {
     const [incidentsResponse, operatorsResponse] = await Promise.all([
       listIncidents({ per_page: 100 }),
-      listAssignmentOperators(),
-    ]);
+      listAssignmentOperators()
+    ])
 
-    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
-    state.filteredIncidents = [...state.incidents];
-    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
+    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : []
+    state.filteredIncidents = [...state.incidents]
+    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : []
 
-    populateFilters(state);
-    renderKpis(state.filteredIncidents, state.operators);
-    renderTable(state);
+    populateFilters(state)
+    renderKpis(state.filteredIncidents, state.operators)
+    renderTable(state)
 
-    const urlParams = new URLSearchParams(globalThis.location.search);
-    const preselectId = urlParams.get('incident_id');
+    const urlParams = new URLSearchParams(globalThis.location.search)
+    const preselectId = urlParams.get('incident_id')
     if (preselectId) {
-      setTimeout(() => openAssignmentModal(state, Number(preselectId)), 100);
+      setTimeout(() => openAssignmentModal(state, Number(preselectId)), 100)
     }
   } catch (error) {
-    renderError(error?.message || 'No se pudo cargar la gestión de asignaciones.');
+    renderError(error?.message || 'No se pudo cargar la gestión de asignaciones.')
   } finally {
-    hidePageLoading();
+    hidePageLoading()
   }
 
   // Refrescar incidencias y operadores cuando llega una notificación de cambio de estado/asignación
   globalThis.addEventListener('sgi:notification-created', () => {
-    if (document.visibilityState === 'hidden') return;
-    clearApiCache();
+    if (document.visibilityState === 'hidden') {
+      return
+    }
+
+    clearApiCache()
     Promise.all([
       listIncidents({ per_page: 100 }),
-      listAssignmentOperators(),
+      listAssignmentOperators()
     ]).then(([incidentsResponse, operatorsResponse]) => {
-      state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
-      state.filteredIncidents = [...state.incidents];
-      state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
-      populateFilters(state);
-      renderKpis(state.filteredIncidents, state.operators);
-      renderTable(state);
-    }).catch(() => { /* silencioso — no interrumpir al usuario */ });
-  });
+      state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : []
+      state.filteredIncidents = [...state.incidents]
+      state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : []
+      populateFilters(state)
+      renderKpis(state.filteredIncidents, state.operators)
+      renderTable(state)
+    }).catch(() => { /* silencioso — no interrumpir al usuario */ })
+  })
 }
 
 function bindStaticEvents(state) {
-  ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach((id) => {
-    document.getElementById(id)?.addEventListener('input', () => applyFilters(state));
-    document.getElementById(id)?.addEventListener('change', () => applyFilters(state));
-  });
+  ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', () => applyFilters(state))
+    document.getElementById(id)?.addEventListener('change', () => applyFilters(state))
+  })
 
   document.getElementById('btnResetFilters')?.addEventListener('click', () => {
-    ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach((id) => {
-      const field = document.getElementById(id);
+    ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach(id => {
+      const field = document.getElementById(id)
       if (field) {
-        field.value = '';
+        field.value = ''
       }
-    });
-    applyFilters(state);
-  });
+    })
+    applyFilters(state)
+  })
 
-  document.getElementById('assignmentTableBody')?.addEventListener('click', async (event) => {
-    const assignmentButton = event.target.closest('[data-open-assignment]');
+  document.getElementById('assignmentTableBody')?.addEventListener('click', async event => {
+    const assignmentButton = event.target.closest('[data-open-assignment]')
     if (assignmentButton) {
-      await openAssignmentModal(state, Number(assignmentButton.dataset.openAssignment));
-      return;
+      await openAssignmentModal(state, Number(assignmentButton.dataset.openAssignment))
     }
-  });
+  })
 
   document.getElementById('btnSaveAssignment')?.addEventListener('click', async () => {
-    await submitAssignment(state);
-  });
+    await submitAssignment(state)
+  })
 
-  document.getElementById('primaryOperatorSelect')?.addEventListener('change', (e) => {
-    updateSupportOperatorsList(state, e.target.value);
-  });
+  document.getElementById('primaryOperatorSelect')?.addEventListener('change', e => {
+    updateSupportOperatorsList(state, e.target.value)
+  })
 }
 
 function populateFilters(state) {
-  fillSelect('filterPriority', uniqueValues(state.incidents.map((incident) => incident.priority?.name)));
-  fillSelect('filterState', uniqueValues(state.incidents.map((incident) => incident.state?.name)));
-  fillSelect('filterCategory', uniqueValues(state.incidents.map((incident) => incident.category?.name)));
-  fillTerritorySelect(state);
-  fillOperatorSelect(state.operators);
+  fillSelect('filterPriority', uniqueValues(state.incidents.map(incident => incident.priority?.name)))
+  fillSelect('filterState', uniqueValues(state.incidents.map(incident => incident.state?.name)))
+  fillSelect('filterCategory', uniqueValues(state.incidents.map(incident => incident.category?.name)))
+  fillTerritorySelect(state)
+  fillOperatorSelect(state.operators)
 }
 
 function fillTerritorySelect(state) {
-  const zoneNames = uniqueValues(state.incidents.map((incident) => incident.zone_name || ''));
-  const select = document.getElementById('filterTerritory');
-  const isSupervisorView = userHasRole(state.currentUser, 'SUPERVISOR') && !userHasRole(state.currentUser, 'ADMIN');
+  const zoneNames = uniqueValues(state.incidents.map(incident => incident.zone_name || ''))
+  const select = document.getElementById('filterTerritory')
+  const isSupervisorView = userHasRole(state.currentUser, 'SUPERVISOR') && !userHasRole(state.currentUser, 'ADMIN')
 
-  if (!select) return;
-
-  if (isSupervisorView) {
-    const onlyZone = zoneNames[0] || '';
-    select.innerHTML = onlyZone
-      ? `<option value="${escapeHtml(onlyZone)}">${escapeHtml(onlyZone)}</option>`
-      : '<option value="">Sin zona</option>';
-    select.value = onlyZone;
-    select.disabled = true;
-
-    const filterGroup = document.getElementById('territoryFilterGroup');
-    if (filterGroup) filterGroup.style.display = 'none';
-
-    showZoneBanner(onlyZone);
-    updateSubtitleForSupervisor(onlyZone);
-    return;
+  if (!select) {
+    return
   }
 
-  select.disabled = false;
-  fillSelect('filterTerritory', zoneNames);
+  if (isSupervisorView) {
+    const onlyZone = zoneNames[0] || ''
+    select.innerHTML = onlyZone ?
+      `<option value="${escapeHtml(onlyZone)}">${escapeHtml(onlyZone)}</option>` :
+      '<option value="">Sin zona</option>'
+    select.value = onlyZone
+    select.disabled = true
+
+    const filterGroup = document.getElementById('territoryFilterGroup')
+    if (filterGroup) {
+      filterGroup.style.display = 'none'
+    }
+
+    showZoneBanner(onlyZone)
+    updateSubtitleForSupervisor(onlyZone)
+    return
+  }
+
+  select.disabled = false
+  fillSelect('filterTerritory', zoneNames)
 }
 
 function showZoneBanner(zoneName) {
-  const wrapper = document.getElementById('zoneBannerWrapper');
-  const nameEl = document.getElementById('zoneBannerName');
-  if (!wrapper || !nameEl) return;
+  const wrapper = document.getElementById('zoneBannerWrapper')
+  const nameEl = document.getElementById('zoneBannerName')
+  if (!wrapper || !nameEl) {
+    return
+  }
 
   if (zoneName) {
-    nameEl.textContent = zoneName;
-    wrapper.style.display = '';
+    nameEl.textContent = zoneName
+    wrapper.style.display = ''
   }
 }
 
 function updateSubtitleForSupervisor(zoneName) {
-  const subtitle = document.getElementById('assignmentSubtitle');
-  if (!subtitle) return;
+  const subtitle = document.getElementById('assignmentSubtitle')
+  if (!subtitle) {
+    return
+  }
 
-  subtitle.textContent = zoneName
-    ? `Gestionando incidencias de la zona ${zoneName}. Distribuye entre responsables principales y apoyos.`
-    : 'Supervisa y distribuye incidencias entre responsables principales y apoyos.';
+  subtitle.textContent = zoneName ?
+    `Gestionando incidencias de la zona ${zoneName}. Distribuye entre responsables principales y apoyos.` :
+    'Supervisa y distribuye incidencias entre responsables principales y apoyos.'
 }
 
 export function fillSelect(id, values) {
-  const select = document.getElementById(id);
-  if (!select) return;
+  const select = document.getElementById(id)
+  if (!select) {
+    return
+  }
 
-  const firstOption = select.querySelector('option')?.outerHTML || '<option value="">Todos</option>';
-  select.innerHTML = `${firstOption}${values.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')}`;
+  const firstOption = select.querySelector('option')?.outerHTML || '<option value="">Todos</option>'
+  select.innerHTML = `${firstOption}${values.map(value => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join('')}`
 }
 
 function fillOperatorSelect(operators) {
-  const select = document.getElementById('filterOperator');
-  if (!select) return;
+  const select = document.getElementById('filterOperator')
+  if (!select) {
+    return
+  }
 
-  select.innerHTML = '<option value="">Todos</option>' + operators.map((operator) => (
+  select.innerHTML = `<option value="">Todos</option>${operators.map(operator => (
     `<option value="${operator.user_id}">${escapeHtml(operator.full_name || operator.email || 'Operador')}</option>`
-  )).join('');
+  )).join('')}`
 }
 
 export function applyFilters(state) {
-  const search = String(document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
-  const priority = String(document.getElementById('filterPriority')?.value || '').trim().toLowerCase();
-  const incidentState = String(document.getElementById('filterState')?.value || '').trim().toLowerCase();
-  const category = String(document.getElementById('filterCategory')?.value || '').trim().toLowerCase();
-  const territory = String(document.getElementById('filterTerritory')?.value || '').trim().toLowerCase();
-  const operatorId = String(document.getElementById('filterOperator')?.value || '').trim();
+  const search = String(document.getElementById('filterSearch')?.value || '').trim().toLowerCase()
+  const priority = String(document.getElementById('filterPriority')?.value || '').trim().toLowerCase()
+  const incidentState = String(document.getElementById('filterState')?.value || '').trim().toLowerCase()
+  const category = String(document.getElementById('filterCategory')?.value || '').trim().toLowerCase()
+  const territory = String(document.getElementById('filterTerritory')?.value || '').trim().toLowerCase()
+  const operatorId = String(document.getElementById('filterOperator')?.value || '').trim()
 
-  state.filteredIncidents = state.incidents.filter((incident) => {
-    const matchesSearch = !search || `${incident.code || ''} ${incident.title || ''}`.toLowerCase().includes(search);
-    const matchesPriority = !priority || String(incident.priority?.name || '').toLowerCase() === priority;
-    const matchesState = !incidentState || String(incident.state?.name || '').toLowerCase() === incidentState;
-    const matchesCategory = !category || String(incident.category?.name || '').toLowerCase() === category;
-    const incidentZone = String(incident.zone_name || '').trim().toLowerCase();
-    const matchesTerritory = !territory || incidentZone === territory;
-    const matchesOperator = !operatorId || (Array.isArray(incident.assignments) && incident.assignments.some((assignment) => String(assignment.user_id) === operatorId));
+  state.filteredIncidents = state.incidents.filter(incident => {
+    const matchesSearch = !search || `${incident.code || ''} ${incident.title || ''}`.toLowerCase().includes(search)
+    const matchesPriority = !priority || String(incident.priority?.name || '').toLowerCase() === priority
+    const matchesState = !incidentState || String(incident.state?.name || '').toLowerCase() === incidentState
+    const matchesCategory = !category || String(incident.category?.name || '').toLowerCase() === category
+    const incidentZone = String(incident.zone_name || '').trim().toLowerCase()
+    const matchesTerritory = !territory || incidentZone === territory
+    const matchesOperator = !operatorId || (Array.isArray(incident.assignments) && incident.assignments.some(assignment => String(assignment.user_id) === operatorId))
 
-    return matchesSearch && matchesPriority && matchesState && matchesCategory && matchesTerritory && matchesOperator;
-  });
+    return matchesSearch && matchesPriority && matchesState && matchesCategory && matchesTerritory && matchesOperator
+  })
 
-  renderKpis(state.filteredIncidents, state.operators);
-  renderTable(state);
+  renderKpis(state.filteredIncidents, state.operators)
+  renderTable(state)
 }
 
 export function renderKpis(incidents, operators) {
-  const target = document.getElementById('assignmentKpis');
-  if (!target) return;
+  const target = document.getElementById('assignmentKpis')
+  if (!target) {
+    return
+  }
 
-  const overdueCount = incidents.filter((incident) => {
-    if (!incident.due_date) return false;
-    return new Date(incident.due_date).getTime() < Date.now() && !isResolvedState(incident.state?.name);
-  }).length;
+  const overdueCount = incidents.filter(incident => {
+    if (!incident.due_date) {
+      return false
+    }
+
+    return new Date(incident.due_date).getTime() < Date.now() && !isResolvedState(incident.state?.name)
+  }).length
 
   const kpis = [
-    { label: 'Sin asignar', value: incidents.filter((incident) => !incident.assignee_user_id).length },
-    { label: 'Criticas', value: incidents.filter((incident) => includesNormalized(incident.priority?.name, 'critica')).length },
-    { label: 'Altas', value: incidents.filter((incident) => includesNormalized(incident.priority?.name, 'alta')).length },
+    { label: 'Sin asignar', value: incidents.filter(incident => !incident.assignee_user_id).length },
+    { label: 'Criticas', value: incidents.filter(incident => includesNormalized(incident.priority?.name, 'critica')).length },
+    { label: 'Altas', value: incidents.filter(incident => includesNormalized(incident.priority?.name, 'alta')).length },
     { label: 'Vencidas', value: overdueCount },
-    { label: 'Operadores disponibles', value: operators.filter((operator) => operator.available).length },
-  ];
+    { label: 'Operadores disponibles', value: operators.filter(operator => operator.available).length }
+  ]
 
-  target.innerHTML = kpis.map((item) => `
+  target.innerHTML = kpis.map(item => `
     <article class="assignment-kpi">
       <span class="assignment-kpi-label">${escapeHtml(item.label)}</span>
       <strong>${escapeHtml(item.value)}</strong>
     </article>
-  `).join('');
+  `).join('')
 }
 
 export function renderTable(state) {
-  const $table = globalThis.$('#assignmentTable');
+  const $table = globalThis.$('#assignmentTable')
   if (globalThis.$.fn.DataTable.isDataTable($table)) {
-    $table.DataTable().clear().destroy();
+    $table.DataTable().clear().destroy()
   }
 
-  const tbody = document.getElementById('assignmentTableBody');
-  if (!tbody) return;
+  const tbody = document.getElementById('assignmentTableBody')
+  if (!tbody) {
+    return
+  }
 
   if (!state.filteredIncidents.length) {
     tbody.innerHTML = `
@@ -249,24 +270,24 @@ export function renderTable(state) {
         <td colspan="9" class="text-center text-muted py-4 assignment-empty-state">
           <i class="fas fa-inbox d-block mb-2"></i>No hay incidencias disponibles para esta vista.
         </td>
-      </tr>`;
-    return;
+      </tr>`
+    return
   }
 
-  tbody.innerHTML = state.filteredIncidents.map((incident) => {
-    const activeAssignments = Array.isArray(incident.assignments) ? incident.assignments : [];
-    const assignmentChips = activeAssignments.length
-      ? activeAssignments.map((assignment) => {
-          const roleClass = assignment.assignment_role === 'support' ? 'assignment-chip assignment-chip-support' : 'assignment-chip';
-          const roleLabel = assignment.assignment_role === 'support' ? 'Apoyo' : 'Principal';
-          const resolvedIcon = assignment.resolved_at ? ' <i class="fas fa-check-double text-success ml-1" title="Resolvió la incidencia"></i>' : '';
-          const name = assignment.full_name || (assignment.user ? `${assignment.user.first_name} ${assignment.user.last_name}`.trim() : null) || `#${assignment.user_id}`;
-          return `<span class="${roleClass}">${escapeHtml(name)} · ${roleLabel}${resolvedIcon}</span>`;
-        }).join('')
-      : '<span class="text-muted">Sin asignación</span>';
+  tbody.innerHTML = state.filteredIncidents.map(incident => {
+    const activeAssignments = Array.isArray(incident.assignments) ? incident.assignments : []
+    const assignmentChips = activeAssignments.length ?
+      activeAssignments.map(assignment => {
+        const roleClass = assignment.assignment_role === 'support' ? 'assignment-chip assignment-chip-support' : 'assignment-chip'
+        const roleLabel = assignment.assignment_role === 'support' ? 'Apoyo' : 'Principal'
+        const resolvedIcon = assignment.resolved_at ? ' <i class="fas fa-check-double text-success ml-1" title="Resolvió la incidencia"></i>' : ''
+        const name = assignment.full_name || (assignment.user ? `${assignment.user.first_name} ${assignment.user.last_name}`.trim() : null) || `#${assignment.user_id}`
+        return `<span class="${roleClass}">${escapeHtml(name)} · ${roleLabel}${resolvedIcon}</span>`
+      }).join('') :
+      '<span class="text-muted">Sin asignación</span>'
 
-    const stateName = String(incident.state?.name || '').trim().toUpperCase();
-    const canAssignOperator = stateName === 'EN_PROGRESO' || stateName === 'IN_PROGRESS';
+    const stateName = String(incident.state?.name || '').trim().toUpperCase()
+    const canAssignOperator = stateName === 'EN_PROGRESO' || stateName === 'IN_PROGRESS'
 
     return `
       <tr>
@@ -276,7 +297,7 @@ export function renderTable(state) {
           <small class="text-muted">${escapeHtml(formatCatalogLabel(incident.category?.name || '-'))}</small>
         </td>
         <td data-label="Prioridad"><span class="badge" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.priority?.name || '-'))}</span></td>
-        <td data-label="Estado"><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? `<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}</td>
+        <td data-label="Estado"><span class="badge" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name)}; color: #fff;">${escapeHtml(formatCatalogLabel(incident.state?.name || '-'))}</span>${incident.has_pending_state_request ? '<span class="badge badge-warning shadow-sm ml-1" style="background-color: #ffc107; color: #000;" title="Solicitud de cambio de estado pendiente"><i class="fas fa-clock mr-1"></i>En revisión</span>' : ''}</td>
         <td data-label="Zona">${escapeHtml(incident.zone_name || 'Sin zona')}</td>
         <td data-label="Territorio">${escapeHtml(incident.territorial_unit?.full_path || incident.territorial_unit?.name || '-')}</td>
         <td data-label="Fecha">${escapeHtml(formatShortDate(incident.created_at))}</td>
@@ -291,8 +312,8 @@ export function renderTable(state) {
             </button>
           </div>
         </td>
-      </tr>`;
-  }).join('');
+      </tr>`
+  }).join('')
 
   $table.DataTable({
     responsive: false,
@@ -314,111 +335,135 @@ export function renderTable(state) {
         sFirst: 'Primero',
         sLast: 'Último',
         sNext: 'Siguiente',
-        sPrevious: 'Anterior',
-      },
+        sPrevious: 'Anterior'
+      }
     },
     order: []
-  });
+  })
 }
 
 async function openAssignmentModal(state, incidentId) {
-  showPageLoading('Cargando incidencia', 'Preparando operadores para la asignación...');
+  showPageLoading('Cargando incidencia', 'Preparando operadores para la asignación...')
 
   try {
-    const response = await getIncident(incidentId);
-    state.selectedIncident = response?.data || null;
-    const incident = state.selectedIncident;
+    const response = await getIncident(incidentId)
+    state.selectedIncident = response?.data || null
+    const incident = state.selectedIncident
 
     // Validar que la incidencia tenga prioridad y estado antes de asignar operador
     if (incident) {
-      const workflowWarning = document.getElementById('assignmentWorkflowWarning');
-      const saveButton = document.getElementById('btnSaveAssignment');
-      const primarySelect = document.getElementById('primaryOperatorSelect');
+      const workflowWarning = document.getElementById('assignmentWorkflowWarning')
+      const saveButton = document.getElementById('btnSaveAssignment')
+      const primarySelect = document.getElementById('primaryOperatorSelect')
 
-      const missingPriority = !incident.priority_id && !incident.priority?.id;
-      const stateName = String(incident.state?.name || '').trim().toUpperCase();
-      const notInProgress = stateName !== 'EN_PROGRESO' && stateName !== 'IN_PROGRESS';
+      const missingPriority = !incident.priority_id && !incident.priority?.id
+      const stateName = String(incident.state?.name || '').trim().toUpperCase()
+      const notInProgress = stateName !== 'EN_PROGRESO' && stateName !== 'IN_PROGRESS'
 
       if (missingPriority || notInProgress) {
-        const parts = [];
-        if (missingPriority) parts.push('asignar una prioridad');
-        if (notInProgress) parts.push('cambiar el estado a "En progreso"');
-        const message = `Esta incidencia aún no cumple los requisitos: debes ${parts.join(' y ')}. <a href="incident-detail.html?id=${incident.id}" class="alert-link">Ve al detalle</a> para completarlo antes de asignar un operador.`;
+        const parts = []
+        if (missingPriority) {
+          parts.push('asignar una prioridad')
+        }
+
+        if (notInProgress) {
+          parts.push('cambiar el estado a "En progreso"')
+        }
+
+        const message = `Esta incidencia aún no cumple los requisitos: debes ${parts.join(' y ')}. <a href="incident-detail.html?id=${incident.id}" class="alert-link">Ve al detalle</a> para completarlo antes de asignar un operador.`
 
         if (workflowWarning) {
-          workflowWarning.innerHTML = message;
-          workflowWarning.classList.remove('d-none');
+          workflowWarning.innerHTML = message
+          workflowWarning.classList.remove('d-none')
         }
-        if (saveButton) saveButton.disabled = true;
-        if (primarySelect) primarySelect.disabled = true;
+
+        if (saveButton) {
+          saveButton.disabled = true
+        }
+
+        if (primarySelect) {
+          primarySelect.disabled = true
+        }
       } else {
-        if (workflowWarning) workflowWarning.classList.add('d-none');
-        if (saveButton) saveButton.disabled = false;
-        if (primarySelect) primarySelect.disabled = false;
+        if (workflowWarning) {
+          workflowWarning.classList.add('d-none')
+        }
+
+        if (saveButton) {
+          saveButton.disabled = false
+        }
+
+        if (primarySelect) {
+          primarySelect.disabled = false
+        }
       }
     }
 
-    renderAssignmentModal(state);
-    globalThis.jQuery?.('#assignmentModal').modal('show');
+    renderAssignmentModal(state)
+    globalThis.jQuery?.('#assignmentModal').modal('show')
   } catch (error) {
-    showGlobalAlert(error?.message || 'No se pudo cargar el detalle de la incidencia.', 'danger');
+    showGlobalAlert(error?.message || 'No se pudo cargar el detalle de la incidencia.', 'danger')
   } finally {
-    hidePageLoading();
+    hidePageLoading()
   }
 }
 
 function renderAssignmentModal(state) {
-  const incident = state.selectedIncident;
-  if (!incident) return;
+  const incident = state.selectedIncident
+  if (!incident) {
+    return
+  }
 
-  const activeAssignments = (incident.assignments || []).filter((assignment) => assignment.active !== false);
-  const currentPrimaryId = activeAssignments.find((assignment) => assignment.assignment_role === 'primary')?.user_id || incident.assignee_user_id || '';
-  const currentSupportIds = new Set(activeAssignments.filter((assignment) => assignment.assignment_role === 'support').map((assignment) => String(assignment.user_id)));
+  const activeAssignments = (incident.assignments || []).filter(assignment => assignment.active !== false)
+  const currentPrimaryId = activeAssignments.find(assignment => assignment.assignment_role === 'primary')?.user_id || incident.assignee_user_id || ''
+  const currentSupportIds = new Set(activeAssignments.filter(assignment => assignment.assignment_role === 'support').map(assignment => String(assignment.user_id)))
 
-  const summary = document.getElementById('assignmentModalSummary');
+  const summary = document.getElementById('assignmentModalSummary')
   if (summary) {
-    const priorityLabel = formatCatalogLabel(incident.priority?.name || 'Sin definir');
-    const stateLabel = formatCatalogLabel(incident.state?.name || 'Sin definir');
+    const priorityLabel = formatCatalogLabel(incident.priority?.name || 'Sin definir')
+    const stateLabel = formatCatalogLabel(incident.state?.name || 'Sin definir')
     summary.innerHTML = `
       <div class="font-weight-bold mb-1">${escapeHtml(incident.code || `#${incident.id}`)} · ${escapeHtml(incident.title || 'Incidencia')}</div>
       <div class="text-muted small mb-1">${escapeHtml(incident.zone_name || incident.territorial_unit?.full_path || 'Sin territorio')}</div>
       <div class="d-flex gap-2 mt-1">
         <span class="badge px-2 py-1" style="background-color: ${incident.priority?.color || getPriorityHexColor(incident.priority?.name || '')}; color: #fff;">${escapeHtml(priorityLabel)}</span>
         <span class="badge px-2 py-1" style="background-color: ${incident.state?.color || getStateHexColor(incident.state?.name || '')}; color: #fff;">${escapeHtml(stateLabel)}</span>
-        ${incident.has_pending_state_request ? `<span class="badge badge-warning px-2 py-1" style="background-color: #ffc107; color: #000;"><i class="fas fa-clock mr-1"></i>En revisión</span>` : ''}
+        ${incident.has_pending_state_request ? '<span class="badge badge-warning px-2 py-1" style="background-color: #ffc107; color: #000;"><i class="fas fa-clock mr-1"></i>En revisión</span>' : ''}
       </div>
-    `;
+    `
   }
 
-  const primarySelect = document.getElementById('primaryOperatorSelect');
+  const primarySelect = document.getElementById('primaryOperatorSelect')
   if (primarySelect) {
-    const defaultOption = `<option value="" ${!currentPrimaryId ? 'selected' : ''}>Seleccione un operador principal...</option>`;
-    const options = state.operators.map((operator) => {
-      const disabled = !operator.available && String(operator.user_id) !== String(currentPrimaryId) ? 'disabled' : '';
-      const selected = String(operator.user_id) === String(currentPrimaryId) ? 'selected' : '';
-      return `<option value="${operator.user_id}" ${selected} ${disabled}>${escapeHtml(buildOperatorOptionLabel(operator))}</option>`;
-    }).join('');
-    primarySelect.innerHTML = defaultOption + options;
+    const defaultOption = `<option value="" ${!currentPrimaryId ? 'selected' : ''}>Seleccione un operador principal...</option>`
+    const options = state.operators.map(operator => {
+      const disabled = !operator.available && String(operator.user_id) !== String(currentPrimaryId) ? 'disabled' : ''
+      const selected = String(operator.user_id) === String(currentPrimaryId) ? 'selected' : ''
+      return `<option value="${operator.user_id}" ${selected} ${disabled}>${escapeHtml(buildOperatorOptionLabel(operator))}</option>`
+    }).join('')
+    primarySelect.innerHTML = defaultOption + options
   }
 
-  updateSupportOperatorsList(state, currentPrimaryId);
+  updateSupportOperatorsList(state, currentPrimaryId)
 }
 
 function updateSupportOperatorsList(state, currentPrimaryId) {
-  const supportList = document.getElementById('supportOperatorsList');
-  if (!supportList) return;
+  const supportList = document.getElementById('supportOperatorsList')
+  if (!supportList) {
+    return
+  }
 
-  const incident = state.selectedIncident;
-  const activeAssignments = (incident?.assignments || []).filter((a) => a.active !== false);
-  const currentSupportIds = new Set(activeAssignments.filter((a) => a.assignment_role === 'support').map((a) => String(a.user_id)));
+  const incident = state.selectedIncident
+  const activeAssignments = (incident?.assignments || []).filter(a => a.active !== false)
+  const currentSupportIds = new Set(activeAssignments.filter(a => a.assignment_role === 'support').map(a => String(a.user_id)))
 
-  const currentPrimaryIdNum = Number(currentPrimaryId);
+  const currentPrimaryIdNum = Number(currentPrimaryId)
   supportList.innerHTML = state.operators
-    .filter((operator) => Number(operator.user_id) !== currentPrimaryIdNum)
-    .map((operator) => {
-      const checked = currentSupportIds.has(String(operator.user_id)) ? 'checked' : '';
-      const disabled = !operator.available && !checked ? 'disabled' : '';
-      const disabledClass = disabled ? 'disabled' : '';
+    .filter(operator => Number(operator.user_id) !== currentPrimaryIdNum)
+    .map(operator => {
+      const checked = currentSupportIds.has(String(operator.user_id)) ? 'checked' : ''
+      const disabled = !operator.available && !checked ? 'disabled' : ''
+      const disabledClass = disabled ? 'disabled' : ''
       return `
         <label class="support-operator-item ${disabledClass}">
           <input type="checkbox" value="${operator.user_id}" ${checked} ${disabled}>
@@ -426,116 +471,126 @@ function updateSupportOperatorsList(state, currentPrimaryId) {
             <span class="support-operator-name">${escapeHtml(operator.full_name || operator.email || `Operador #${operator.user_id}`)}</span>
             <span class="support-operator-caption">${escapeHtml(buildOperatorCapacityLabel(operator))}</span>
           </span>
-        </label>`;
-    }).join('');
+        </label>`
+    }).join('')
 }
 
 export async function submitAssignment(state) {
-  if (!state.selectedIncident) return;
-
-  const primaryUserId = Number(document.getElementById('primaryOperatorSelect')?.value || 0);
-  if (!primaryUserId) {
-    showGlobalAlert('Debes seleccionar un operador principal.', 'warning');
-    return;
+  if (!state.selectedIncident) {
+    return
   }
 
-  const supportUserIds = Array.from(document.querySelectorAll('#supportOperatorsList input[type="checkbox"]:checked'))
-    .map((checkbox) => Number(checkbox.value))
-    .filter((userId) => userId && userId !== primaryUserId);
+  const primaryUserId = Number(document.getElementById('primaryOperatorSelect')?.value || 0)
+  if (!primaryUserId) {
+    showGlobalAlert('Debes seleccionar un operador principal.', 'warning')
+    return
+  }
 
-  showPageLoading('Guardando asignación', 'Aplicando responsables principales y apoyos...');
+  const supportUserIds = [...document.querySelectorAll('#supportOperatorsList input[type="checkbox"]:checked')]
+    .map(checkbox => Number(checkbox.value))
+    .filter(userId => userId && userId !== primaryUserId)
+
+  showPageLoading('Guardando asignación', 'Aplicando responsables principales y apoyos...')
 
   try {
     await assignIncidentOperators(state.selectedIncident.id, {
       primary_user_id: primaryUserId,
-      support_user_ids: supportUserIds,
-    });
+      support_user_ids: supportUserIds
+    })
 
-    globalThis.jQuery?.('#assignmentModal').modal('hide');
+    globalThis.jQuery?.('#assignmentModal').modal('hide')
 
     // Recargar incidencias y operadores desde el backend (sin caché)
-    clearApiCache();
+    clearApiCache()
     const [incidentsResponse, operatorsResponse] = await Promise.all([
       listIncidents({ per_page: 100 }),
-      listAssignmentOperators(),
-    ]);
-    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : [];
-    state.filteredIncidents = [...state.incidents];
-    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : [];
-    populateFilters(state);
-    renderKpis(state.filteredIncidents, state.operators);
-    renderTable(state);
+      listAssignmentOperators()
+    ])
+    state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : []
+    state.filteredIncidents = [...state.incidents]
+    state.operators = Array.isArray(operatorsResponse?.data) ? operatorsResponse.data : []
+    populateFilters(state)
+    renderKpis(state.filteredIncidents, state.operators)
+    renderTable(state)
 
     // Disparar evento global para que otras partes de la app también se enteren
     globalThis.dispatchEvent(new CustomEvent('sgi:notification-created', {
-      detail: { type: 'INCIDENT_ASSIGNED' },
-    }));
+      detail: { type: 'INCIDENT_ASSIGNED' }
+    }))
 
-    showGlobalAlert('Asignación actualizada correctamente.', 'success');
+    showGlobalAlert('Asignación actualizada correctamente.', 'success')
   } catch (error) {
-    showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger');
+    showGlobalAlert(error?.message || 'No se pudo guardar la asignación.', 'danger')
   } finally {
-    hidePageLoading();
+    hidePageLoading()
   }
 }
 
 export function renderError(message) {
-  const tbody = document.getElementById('assignmentTableBody');
-  if (!tbody) return;
+  const tbody = document.getElementById('assignmentTableBody')
+  if (!tbody) {
+    return
+  }
 
   tbody.innerHTML = `
     <tr>
       <td colspan="9" class="text-center text-danger py-4 assignment-empty-state">
         <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
       </td>
-    </tr>`;
+    </tr>`
 }
 
 export function uniqueValues(values) {
-  return Array.from(new Set(values.filter(Boolean).map((value) => String(value).trim()))).sort((a, b) => a.localeCompare(b));
+  return [...new Set(values.filter(Boolean).map(value => String(value).trim()))].sort((a, b) => a.localeCompare(b))
 }
 
 export function readSessionUser() {
   try {
-    const raw = globalThis.localStorage?.getItem('user_data');
-    return raw ? JSON.parse(raw) : null;
+    const raw = globalThis.localStorage?.getItem('user_data')
+    return raw ? JSON.parse(raw) : null
   } catch {
-    return null;
+    return null
   }
 }
 
 export function configureAssignmentBackLink(user) {
-  const link = document.getElementById('assignmentBackLink');
-  const label = document.getElementById('assignmentBackLinkLabel');
-  if (!link) return;
+  const link = document.getElementById('assignmentBackLink')
+  const label = document.getElementById('assignmentBackLinkLabel')
+  if (!link) {
+    return
+  }
 
-  const canListIncidents = userHasPermission(user, 'incidents.list');
-  link.href = canListIncidents ? 'incidents.html' : 'dashboard.html';
-  if (label) label.textContent = canListIncidents ? 'Volver al listado' : 'Volver al panel';
+  const canListIncidents = userHasPermission(user, 'incidents.list')
+  link.href = canListIncidents ? 'incidents.html' : 'dashboard.html'
+  if (label) {
+    label.textContent = canListIncidents ? 'Volver al listado' : 'Volver al panel'
+  }
 }
 
 export function userHasRole(user, roleCode) {
-  if (!user || !Array.isArray(user.roles)) return false;
+  if (!user || !Array.isArray(user.roles)) {
+    return false
+  }
 
-  return user.roles.some((role) => {
-    const code = typeof role === 'string' ? role : (role?.code || role?.codigo || '');
-    return String(code).toUpperCase() === roleCode;
-  });
+  return user.roles.some(role => {
+    const code = typeof role === 'string' ? role : (role?.code || role?.codigo || '')
+    return String(code).toUpperCase() === roleCode
+  })
 }
 
 export function includesNormalized(value, expected) {
-  return String(value || '').toLowerCase().includes(expected);
+  return String(value || '').toLowerCase().includes(expected)
 }
 
 export function isResolvedState(value) {
-  const normalized = String(value || '').toLowerCase();
-  return normalized.includes('resuelta') || normalized.includes('cerrada') || normalized.includes('cancelada') || normalized.includes('rechazada');
+  const normalized = String(value || '').toLowerCase()
+  return normalized.includes('resuelta') || normalized.includes('cerrada') || normalized.includes('cancelada') || normalized.includes('rechazada')
 }
 
 export function buildOperatorOptionLabel(operator) {
-  return `${operator.full_name || operator.email || `Operador #${operator.user_id}`} · ${buildOperatorCapacityLabel(operator)}`;
+  return `${operator.full_name || operator.email || `Operador #${operator.user_id}`} · ${buildOperatorCapacityLabel(operator)}`
 }
 
 export function buildOperatorCapacityLabel(operator) {
-  return `${operator.active_incidents}/${operator.max_active_incidents} activas · ${operator.workload_points}/${operator.max_workload_points} pts`;
+  return `${operator.active_incidents}/${operator.max_active_incidents} activas · ${operator.workload_points}/${operator.max_workload_points} pts`
 }

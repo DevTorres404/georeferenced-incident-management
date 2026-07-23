@@ -1,4 +1,4 @@
-'use strict';
+'use strict'
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -6,11 +6,11 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
-    .replaceAll('\'', '&#39;');
+    .replaceAll('\'', '&#39;')
 }
 
 function escapeAttribute(value) {
-  return escapeHtml(value).replaceAll('"', '&quot;');
+  return escapeHtml(value).replaceAll('"', '&quot;')
 }
 
-export { escapeAttribute, escapeHtml };
+export { escapeAttribute, escapeHtml }

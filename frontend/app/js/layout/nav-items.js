@@ -1,6 +1,6 @@
 const ROLES = {
-  ADMIN: 'ADMIN',
-};
+  ADMIN: 'ADMIN'
+}
 
 const NAV_ITEMS = [
   {
@@ -14,30 +14,30 @@ const NAV_ITEMS = [
         label: 'Panel principal',
         icon: 'fa-tachometer-alt',
         route: 'dashboard.html',
-        permission: 'dashboard.view',
+        permission: 'dashboard.view'
       },
       {
         id: 'my-team',
         label: 'Mi equipo',
         icon: 'fa-users',
         route: 'my-team.html',
-        permission: 'operations.view_team',
+        permission: 'operations.view_team'
       },
       {
         id: 'reports',
         label: 'Reportes y estadísticas',
         icon: 'fa-chart-bar',
         route: 'reports.html',
-        permission: 'reportes.ver',
+        permission: 'reportes.ver'
       },
       {
         id: 'notifications',
         label: 'Notificaciones',
         icon: 'fa-bell',
         route: 'notifications.html',
-        permission: 'notifications.view',
-      },
-    ],
+        permission: 'notifications.view'
+      }
+    ]
   },
   {
     id: 'incident-hub',
@@ -50,30 +50,30 @@ const NAV_ITEMS = [
         label: 'Listado general',
         icon: 'fa-list-alt',
         route: 'incidents.html',
-        permission: 'incidents.list',
+        permission: 'incidents.list'
       },
       {
         id: 'assignment-management',
         label: 'Gestión de asignaciones',
         icon: 'fa-tasks',
         route: 'assignment-management.html',
-        permission: 'incidents.assign',
+        permission: 'incidents.assign'
       },
       {
         id: 'incident-map',
         label: 'Mapa de incidencias',
         icon: 'fa-map-marked-alt',
         route: 'incident-map.html',
-        permission: 'incidents.map',
+        permission: 'incidents.map'
       },
       {
         id: 'incident-create',
         label: 'Nueva incidencia',
         icon: 'fa-plus-circle',
         route: 'incident-create.html',
-        permission: 'incidents.create',
-      },
-    ],
+        permission: 'incidents.create'
+      }
+    ]
   },
   {
     id: 'territorial-ops',
@@ -86,9 +86,9 @@ const NAV_ITEMS = [
         label: 'Operación nacional',
         icon: 'fa-draw-polygon',
         route: 'operational-structure.html',
-        permission: 'operations.view',
-      },
-    ],
+        permission: 'operations.view'
+      }
+    ]
   },
   {
     id: 'admin-tools',
@@ -101,25 +101,25 @@ const NAV_ITEMS = [
         label: 'Roles y permisos',
         icon: 'fa-user-shield',
         route: 'role-permissions.html',
-        permission: 'users.manage_roles',
+        permission: 'users.manage_roles'
       },
       {
         id: 'user-roles',
         label: 'Usuarios y roles',
         icon: 'fa-user-tag',
         route: 'user-roles.html',
-        permission: 'users.manage_roles',
+        permission: 'users.manage_roles'
       },
       {
         id: 'audit-logs',
         label: 'Auditoría',
         icon: 'fa-clipboard-list',
         route: 'audit-logs.html',
-        permission: 'audit.view',
-      },
-    ],
-  },
-];
+        permission: 'audit.view'
+      }
+    ]
+  }
+]
 
 const PAGE_ACCESS = {
   about: { permission: 'about.view' },
@@ -137,7 +137,7 @@ const PAGE_ACCESS = {
   'user-roles': { permission: 'users.manage_roles' },
   reports: { permission: 'reportes.ver' },
   'audit-logs': { permission: 'audit.view' },
-  'territorial-units': { permission: 'operations.view' },
-};
+  'territorial-units': { permission: 'operations.view' }
+}
 
-export { NAV_ITEMS, PAGE_ACCESS, ROLES };
+export { NAV_ITEMS, PAGE_ACCESS, ROLES }

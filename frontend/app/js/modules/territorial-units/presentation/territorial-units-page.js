@@ -1,16 +1,16 @@
-document.addEventListener('DOMContentLoaded', initTerritorialUnitsPage);
+document.addEventListener('DOMContentLoaded', initTerritorialUnitsPage)
 
 function initTerritorialUnitsPage() {
-  globalThis.renderLayout?.('territorial-units');
+  globalThis.renderLayout?.('territorial-units')
 
-  const target = 'operational-structure.html';
-  document.querySelectorAll('[data-go-operational-structure="true"]').forEach((actionButton) => {
+  const target = 'operational-structure.html'
+  document.querySelectorAll('[data-go-operational-structure="true"]').forEach(actionButton => {
     actionButton.addEventListener('click', () => {
-      globalThis.location.href = target;
-    });
-  });
+      globalThis.location.href = target
+    })
+  })
 
   globalThis.setTimeout(() => {
-    globalThis.location.href = target;
-  }, 1200);
+    globalThis.location.href = target
+  }, 1200)
 }

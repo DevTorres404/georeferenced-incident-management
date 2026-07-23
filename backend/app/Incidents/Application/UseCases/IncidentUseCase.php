@@ -24,6 +24,7 @@ use App\Incidents\Application\Ports\IncidentStateChangeNotifierPort;
 use App\Incidents\Domain\Entities\Incident;
 use App\Incidents\Domain\Exceptions\IncidentException;
 use App\Incidents\Domain\Repositories\IncidentRepositoryInterface;
+use App\Incidents\Domain\States\IncidentStateType;
 use App\Shared\Application\DTOs\UploadedFileData;
 use App\Shared\Application\Ports\FileStoragePort;
 use App\Shared\Application\Ports\TransactionManagerPort;
@@ -140,8 +141,8 @@ final class IncidentUseCase
                 throw IncidentException::transitionForbidden();
             }
 
-            $targetStateName = $this->incidentRepository->stateNameById($data->stateId);
-            if (strtoupper((string) $targetStateName) === 'REABIERTA' && ! $canReopen) {
+            $targetState = $this->incidentRepository->stateById($data->stateId);
+            if ($targetState?->is(IncidentStateType::Reopened) && ! $canReopen) {
                 throw IncidentException::transitionForbidden();
             }
 
@@ -181,12 +182,12 @@ final class IncidentUseCase
 
         return $this->transactionManager->run(function () use ($incidentId, $userId, $data): StateChangeRequestData {
             $incident = $this->incidentRepository->loadForUpdate($incidentId);
-            if (strtoupper((string) $incident->state?->name) !== 'EN_PROGRESO') {
+            if (! $incident->canRequestResolution()) {
                 throw IncidentException::stateChangeRequestInvalidSourceState();
             }
 
-            $requestedStateName = $this->incidentRepository->stateNameById($data->stateId);
-            if (strtoupper((string) $requestedStateName) !== 'RESUELTA') {
+            $requestedState = $this->incidentRepository->stateById($data->stateId);
+            if (! $requestedState?->is(IncidentStateType::Resolved)) {
                 throw IncidentException::stateChangeRequestInvalidTargetState();
             }
 

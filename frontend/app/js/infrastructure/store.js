@@ -3,24 +3,24 @@
  * Cumple con skill_front.md
  */
 
-let state = {};
-const listeners = new Set();
+let state = {}
+const listeners = new Set()
 
 export function getState() {
-  return { ...state };
+  return { ...state }
 }
 
 export function setState(partialState) {
-  state = { ...state, ...partialState };
-  listeners.forEach((listener) => listener(state));
+  state = { ...state, ...partialState }
+  listeners.forEach(listener => listener(state))
 }
 
 export function subscribe(listener) {
-  listeners.add(listener);
+  listeners.add(listener)
   // Llamar al oyente con el estado actual al suscribirse
-  listener(state);
+  listener(state)
 }
 
 export function unsubscribe(listener) {
-  listeners.delete(listener);
+  listeners.delete(listener)
 }

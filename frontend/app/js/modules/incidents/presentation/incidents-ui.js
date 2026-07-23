@@ -1,4 +1,4 @@
-import { hideMainLoader, showMainLoader } from '../../../layout/loader.js?v=20';
+import { hideMainLoader, showMainLoader } from '../../../layout/loader.js?v=20'
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -6,7 +6,7 @@ function escapeHtml(value) {
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
-    .replaceAll('\'', '&#39;');
+    .replaceAll('\'', '&#39;')
 }
 
 function normalizeCatalogCode(value) {
@@ -15,90 +15,114 @@ function normalizeCatalogCode(value) {
     .replace(/[\u0300-\u036F]/g, '')
     .trim()
     .replace(/[\s_]+/g, '_')
-    .toUpperCase();
+    .toUpperCase()
 }
 
 function formatCatalogLabel(value) {
-  if (!value) return '-';
+  if (!value) {
+    return '-'
+  }
 
   const exactMatches = {
-    'EN_REVISION': 'En revisión',
-    'EN_PROGRESO': 'En progreso',
-    'EN_ATENCION': 'En atención',
-    'NUEVA': 'Nueva',
-    'PENDIENTE': 'Pendiente',
-    'RESUELTA': 'Resuelta',
-    'CERRADA': 'Cerrada',
-    'RECHAZADA': 'Rechazada',
-    'REABIERTA': 'Reabierta',
-  };
-
-  const normalizedCode = normalizeCatalogCode(value);
-  if (exactMatches[normalizedCode]) {
-    return exactMatches[normalizedCode];
+    EN_REVISION: 'En revisión',
+    EN_PROGRESO: 'En progreso',
+    EN_ATENCION: 'En atención',
+    NUEVA: 'Nueva',
+    PENDIENTE: 'Pendiente',
+    RESUELTA: 'Resuelta',
+    CERRADA: 'Cerrada',
+    RECHAZADA: 'Rechazada',
+    REABIERTA: 'Reabierta'
   }
 
-  const normalized = String(value).replace(/[\s_]+/g, ' ').trim();
+  const normalizedCode = normalizeCatalogCode(value)
+  if (exactMatches[normalizedCode]) {
+    return exactMatches[normalizedCode]
+  }
 
-  if (/^[A-Z0-9\s]+$/.test(normalized)) {
+  const normalized = String(value).replace(/[\s_]+/g, ' ').trim()
+
+  if (/^[\d\sA-Z]+$/.test(normalized)) {
     return normalized
       .toLowerCase()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+      .replace(/\b\w/g, char => char.toUpperCase())
   }
 
-  return normalized;
+  return normalized
 }
 
 function formatShortDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
 
   return date.toLocaleDateString('es-EC', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
-  });
+    year: 'numeric'
+  })
 }
 
 function formatDateTime(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
 
   return date.toLocaleString('es-EC', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
-  });
+    minute: '2-digit'
+  })
 }
 
 function getPriorityBadgeClass(priorityName) {
-  const value = String(priorityName || '').toUpperCase();
+  const value = String(priorityName || '').toUpperCase()
   const map = {
     CRITICA: 'badge-critica',
     CRÍTICA: 'badge-critica',
     ALTA: 'badge-alta',
     MEDIA: 'badge-media',
-    BAJA: 'badge-baja',
-  };
+    BAJA: 'badge-baja'
+  }
 
-  return map[value] || 'badge-secondary';
+  return map[value] || 'badge-secondary'
 }
 
 function getPriorityHexColor(priorityName) {
-  const value = String(priorityName || '').toUpperCase();
-  if (value.includes('CRIT') || value.includes('CRÍT')) return '#dc3545';
-  if (value.includes('ALTA')) return '#fd7e14';
-  if (value.includes('MEDIA')) return '#0dcaf0';
-  if (value.includes('BAJA')) return '#198754';
-  return '#6c757d';
+  const value = String(priorityName || '').toUpperCase()
+  if (value.includes('CRIT') || value.includes('CRÍT')) {
+    return '#dc3545'
+  }
+
+  if (value.includes('ALTA')) {
+    return '#fd7e14'
+  }
+
+  if (value.includes('MEDIA')) {
+    return '#0dcaf0'
+  }
+
+  if (value.includes('BAJA')) {
+    return '#198754'
+  }
+
+  return '#6c757d'
 }
 
 function getStateBadgeClass(stateName) {
-  const value = String(stateName || '').toUpperCase();
+  const value = String(stateName || '').toUpperCase()
   const map = {
     NUEVA: 'badge-pendiente',
     PENDIENTE: 'badge-pendiente',
@@ -106,60 +130,83 @@ function getStateBadgeClass(stateName) {
     'EN PROCESO': 'badge-proceso',
     EN_ATENCION: 'badge-proceso',
     RESUELTA: 'badge-resuelta',
-    CERRADA: 'badge-resuelta',
-  };
+    CERRADA: 'badge-resuelta'
+  }
 
-  return map[value] || 'badge-secondary';
+  return map[value] || 'badge-secondary'
 }
 
 function getStateHexColor(stateName) {
-  const normalized = String(stateName || '').toUpperCase().replaceAll('_', ' ');
-  if (normalized === 'NUEVA' || normalized === 'PENDIENTE') return '#90A4AE';
-  if (normalized === 'EN REVISION') return '#2196F3';
-  if (normalized === 'EN PROGRESO' || normalized === 'EN ATENCION') return '#FFC107';
-  if (normalized === 'RESUELTA') return '#8BC34A';
-  if (normalized === 'CERRADA') return '#4CAF50';
-  if (normalized === 'RECHAZADA') return '#F44336';
-  if (normalized === 'REABIERTA') return '#FF9800';
-  return '#6c757d';
+  const normalized = String(stateName || '').toUpperCase().replaceAll('_', ' ')
+  if (normalized === 'NUEVA' || normalized === 'PENDIENTE') {
+    return '#90A4AE'
+  }
+
+  if (normalized === 'EN REVISION') {
+    return '#2196F3'
+  }
+
+  if (normalized === 'EN PROGRESO' || normalized === 'EN ATENCION') {
+    return '#FFC107'
+  }
+
+  if (normalized === 'RESUELTA') {
+    return '#8BC34A'
+  }
+
+  if (normalized === 'CERRADA') {
+    return '#4CAF50'
+  }
+
+  if (normalized === 'RECHAZADA') {
+    return '#F44336'
+  }
+
+  if (normalized === 'REABIERTA') {
+    return '#FF9800'
+  }
+
+  return '#6c757d'
 }
 
 function countByState(incidents, names) {
-  const expected = new Set(names.map(normalizeCatalogCode));
-  return incidents.filter((incident) => expected.has(normalizeCatalogCode(incident.state?.name))).length;
+  const expected = new Set(names.map(normalizeCatalogCode))
+  return incidents.filter(incident => expected.has(normalizeCatalogCode(incident.state?.name))).length
 }
 
 function showGlobalAlert(message, type = 'success') {
-  const target = document.getElementById('alertaGlobal');
-  if (!target) return;
+  const target = document.getElementById('alertaGlobal')
+  if (!target) {
+    return
+  }
 
   const icons = {
     success: 'check-circle',
     danger: 'times-circle',
     warning: 'exclamation-triangle',
-    info: 'info-circle',
-  };
+    info: 'info-circle'
+  }
 
-  target.className = `alert alert-${type} alert-dismissible fade show`;
+  target.className = `alert alert-${type} alert-dismissible fade show`
   target.innerHTML = `
     <i class="fas fa-${icons[type] || 'info-circle'} mr-2"></i>
     ${escapeHtml(message)}
     <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
       <span aria-hidden="true">&times;</span>
-    </button>`;
-  target.style.display = 'block';
+    </button>`
+  target.style.display = 'block'
 
   globalThis.setTimeout(() => {
-    target.style.display = 'none';
-  }, 5000);
+    target.style.display = 'none'
+  }, 5000)
 }
 
 function showPageLoading(title, message) {
-  showMainLoader();
+  showMainLoader()
 }
 
 function hidePageLoading() {
-  hideMainLoader();
+  hideMainLoader()
 }
 
 export {
@@ -175,5 +222,5 @@ export {
   normalizeCatalogCode,
   showGlobalAlert,
   showPageLoading,
-  hidePageLoading,
-};
+  hidePageLoading
+}
