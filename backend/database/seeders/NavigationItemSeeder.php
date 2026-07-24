@@ -66,6 +66,16 @@ class NavigationItemSeeder extends Seeder
                     ['code' => 'audit-logs', 'label' => 'Auditoria', 'icon' => 'fa-clipboard-list', 'route' => 'audit-logs.html', 'permission_code' => 'audit.view', 'sort_order' => 30],
                 ],
             ],
+            [
+                'code' => 'system-info',
+                'label' => 'Informacion del sistema',
+                'icon' => 'fa-info-circle',
+                'permission_code' => 'about.view',
+                'sort_order' => 99,
+                'children' => [
+                    ['code' => 'about', 'label' => 'Acerca del SGI', 'icon' => 'fa-question-circle', 'route' => 'about.html', 'permission_code' => 'about.view', 'sort_order' => 10],
+                ],
+            ],
         ];
 
         $activeCodes = [];
