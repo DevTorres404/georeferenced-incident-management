@@ -349,7 +349,49 @@ function openSubcategoryModal(sub = null) {
   globalThis.jQuery?.('#modalSubcategoria').modal('show')
 }
 
+const PRESET_ICONS = [
+  'fa-tags', 'fa-lightbulb', 'fa-road', 'fa-water', 'fa-fire', 'fa-shield-alt',
+  'fa-exclamation-triangle', 'fa-wrench', 'fa-building', 'fa-tree', 'fa-bus',
+  'fa-car-crash', 'fa-bolt', 'fa-trash-alt', 'fa-hospital', 'fa-broadcast-tower',
+  'fa-traffic-light', 'fa-hard-hat', 'fa-plug', 'fa-first-aid', 'fa-biohazard',
+  'fa-tools', 'fa-paw', 'fa-cloud-showers-heavy', 'fa-bullhorn', 'fa-cog'
+]
+
+function setupIconPicker() {
+  const grid = document.getElementById('iconPickerGrid')
+  const panel = document.getElementById('iconPickerPanel')
+  const toggleBtn = document.getElementById('btnToggleIconPicker')
+  const catIcono = document.getElementById('catIcono')
+  const previewIcon = document.getElementById('previewCatIcon')
+
+  if (!grid || !panel || !toggleBtn || !catIcono) {
+    return
+  }
+
+  grid.innerHTML = PRESET_ICONS.map(icon => `
+    <button type="button" class="btn btn-sm btn-outline-secondary p-1 btn-select-icon" data-icon="${icon}" title="${icon}" style="width: 32px; height: 32px;">
+      <i class="fas ${icon}"></i>
+    </button>
+  `).join('')
+
+  toggleBtn.addEventListener('click', () => {
+    panel.classList.toggle('d-none')
+  })
+
+  grid.querySelectorAll('.btn-select-icon').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const icon = btn.dataset.icon
+      catIcono.value = icon
+      if (previewIcon) {
+        previewIcon.className = `fas ${icon}`
+      }
+      panel.classList.add('d-none')
+    })
+  })
+}
+
 function initEventHandlers() {
+  setupIconPicker()
   document.getElementById('btnNuevaCategoria')?.addEventListener('click', () => openCategoryModal())
   document.getElementById('btnNuevoSubtipo')?.addEventListener('click', () => openSubcategoryModal())
   document.getElementById('filtroCatPadre')?.addEventListener('change', () => renderSubcategoriesTable())
