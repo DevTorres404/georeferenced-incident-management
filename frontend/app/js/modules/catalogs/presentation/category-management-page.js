@@ -283,6 +283,51 @@ function bindSubcategoryActions() {
   })
 }
 
+const PALETTE_COLORS = [
+  '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6f42c1',
+  '#fd7e14', '#e83e8c', '#20c997', '#6c757d', '#1e293b', '#0284c7'
+]
+
+function checkColorIsUsed(colorHex, excludeCatId = null) {
+  if (!colorHex) return false
+  const target = colorHex.toLowerCase()
+  return categoriesData.some(c => {
+    if (excludeCatId && String(c.id) === String(excludeCatId)) return false
+    return c.color && c.color.toLowerCase() === target
+  })
+}
+
+function getUniqueColor(excludeCatId = null) {
+  const available = PALETTE_COLORS.find(hex => !checkColorIsUsed(hex, excludeCatId))
+  if (available) return available
+
+  // Si todos los presets están ocupados, generar uno aleatorio que no se repita
+  for (let i = 0; i < 50; i++) {
+    const randomHex = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
+    if (!checkColorIsUsed(randomHex, excludeCatId)) return randomHex
+  }
+  return '#007bff'
+}
+
+function updateColorValidation() {
+  const catId = document.getElementById('catId')?.value
+  const colorHex = document.getElementById('catColor')?.value.trim()
+  const catColorWarning = document.getElementById('catColorWarning')
+  const catColorInput = document.getElementById('catColor')
+
+  if (!colorHex) return true
+
+  const isUsed = checkColorIsUsed(colorHex, catId)
+  if (isUsed) {
+    catColorWarning?.classList.remove('d-none')
+    catColorInput?.classList.add('is-invalid')
+  } else {
+    catColorWarning?.classList.add('d-none')
+    catColorInput?.classList.remove('is-invalid')
+  }
+  return !isUsed
+}
+
 function openCategoryModal(cat = null) {
   const modalLabel = document.getElementById('modalCategoriaLabel')
   const catId = document.getElementById('catId')
@@ -305,17 +350,19 @@ function openCategoryModal(cat = null) {
     if (catIsActive) catIsActive.checked = Boolean(cat.is_active)
     if (previewIcon) previewIcon.className = `fas ${cat.icon || 'fa-tags'}`
   } else {
+    const initialColor = getUniqueColor()
     if (modalLabel) modalLabel.querySelector('span').textContent = 'Nueva Categoría'
     if (catId) catId.value = ''
     if (catNombre) catNombre.value = ''
     if (catDescripcion) catDescripcion.value = ''
     if (catIcono) catIcono.value = 'fa-tags'
-    if (catColor) catColor.value = '#007bff'
-    if (catColorPicker) catColorPicker.value = '#007bff'
+    if (catColor) catColor.value = initialColor
+    if (catColorPicker) catColorPicker.value = initialColor
     if (catIsActive) catIsActive.checked = true
     if (previewIcon) previewIcon.className = 'fas fa-tags'
   }
 
+  updateColorValidation()
   globalThis.jQuery?.('#modalCategoria').modal('show')
 }
 
@@ -408,11 +455,13 @@ function initEventHandlers() {
   const catColorPicker = document.getElementById('catColorPicker')
   catColorPicker?.addEventListener('input', () => {
     if (catColor) catColor.value = catColorPicker.value
+    updateColorValidation()
   })
   catColor?.addEventListener('input', () => {
     if (catColorPicker && /^#[0-9A-Fa-f]{6}$/.test(catColor.value)) {
       catColorPicker.value = catColor.value
     }
+    updateColorValidation()
   })
 
   // Submit Form Categoría
@@ -428,6 +477,11 @@ function initEventHandlers() {
 
     if (!name) {
       showGlobalAlert('El nombre de la categoría es obligatorio.', 'warning')
+      return
+    }
+
+    if (!updateColorValidation()) {
+      showGlobalAlert('El color elegido ya está asignado a otra categoría. Por favor seleccione un color único.', 'warning')
       return
     }
 

@@ -33,6 +33,7 @@ describe('category-management-page.js', () => {
           <input type="text" id="catIcono" value="fa-tags">
           <input type="text" id="catColor" value="#007bff">
           <input type="color" id="catColorPicker" value="#007bff">
+          <small id="catColorWarning" class="d-none"></small>
           <input type="checkbox" id="catIsActive" checked>
           <i id="previewCatIcon"></i>
           <button type="submit" id="btnGuardarCategoria">Guardar</button>
