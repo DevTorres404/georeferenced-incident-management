@@ -90,6 +90,8 @@ interface IncidentRepositoryInterface
 
     public function hasActiveAssignment(int $incidentId, int $userId): bool;
 
+    public function hasAttachments(int $incidentId): bool;
+
     public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData;
 
     public function approveStateChangeRequest(int $incidentId, int $requestId, int $reviewerUserId, ?string $comment): void;

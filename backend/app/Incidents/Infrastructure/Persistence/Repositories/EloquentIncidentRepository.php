@@ -1862,6 +1862,13 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             ->exists();
     }
 
+    public function hasAttachments(int $incidentId): bool
+    {
+        return IncidentAttachment::query()
+            ->where('incident_id', $incidentId)
+            ->exists();
+    }
+
     public function createStateChangeRequest(int $incidentId, int $userId, RequestStateChangeInputData $data): StateChangeRequestData
     {
         return DB::transaction(function () use ($incidentId, $userId, $data): StateChangeRequestData {

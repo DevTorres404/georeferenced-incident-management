@@ -204,6 +204,10 @@ final class IncidentUseCase
                 throw IncidentException::stateChangeRequestRequiresActiveAssignment();
             }
 
+            if (! $this->incidentRepository->hasAttachments($incidentId)) {
+                throw IncidentException::stateChangeRequestRequiresAttachment();
+            }
+
             if ($this->incidentRepository->findPendingStateChangeRequest($incidentId) !== null) {
                 throw IncidentException::stateChangeRequestPending();
             }
