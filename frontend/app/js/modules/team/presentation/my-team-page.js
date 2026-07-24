@@ -369,7 +369,7 @@ async function openPreviewModal(id) {
         let dateStr = '-'
         if (item.latest_assignment_date) {
           const d = new Date(item.latest_assignment_date)
-          if (!isNaN(d.getTime())) {
+          if (!Number.isNaN(d.getTime())) {
             const day = String(d.getDate()).padStart(2, '0')
             const mon = String(d.getMonth() + 1).padStart(2, '0')
             const yr = d.getFullYear()
