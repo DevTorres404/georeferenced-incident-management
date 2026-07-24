@@ -234,7 +234,7 @@ function updatePagination(totalItems) {
     pageInfo.textContent = `Pagina ${currentPage} de ${totalPages}`
   }
 
-  const buttons = pagination ? pagination.querySelectorAll('[data-page]') : []
+
   const existingNums = pagination ? pagination.querySelectorAll('.notif-page-num') : []
   existingNums.forEach(el => el.remove())
 

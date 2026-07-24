@@ -178,7 +178,7 @@ function initializeMapsIfNeeded() {
 }
 
 function ensureMainMapLayers() {
-  if (!state.map || !state.map.isStyleLoaded()) {
+  if (!state.map?.isStyleLoaded()) {
     return
   }
 
@@ -657,7 +657,7 @@ export function openZoneManagersModal(zoneId) {
   const supervisorName = fullName(zone.supervisor) || 'Sin supervisor asignado'
   const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignación'
   const provinceNames = (zone.provinces_covered || []).map(province => province.name).filter(Boolean)
-  const provinceSummary = buildProvinceSummary(provinceNames)
+
 
   subtitle.textContent = `${zone.zone?.name || 'Zona'} · ${provinceNames.join(', ') || 'Sin provincias asociadas'}`
   target.innerHTML = `

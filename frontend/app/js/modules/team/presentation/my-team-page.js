@@ -341,9 +341,9 @@ async function openPreviewModal(id) {
               cyclesHtml += `<span class="badge badge-light border mr-1 mb-1" title="Inició: ${dateStr}${endStr}${dur}${by}">#${idx + 1} ${h.state_name} - ${h.priority_name}${durationLabel ? ` · ${durationLabel}` : ''}</span>`
             })
 
-            if (inc.state && inc.state.is_final_state) {
+            if (inc.state?.is_final_state) {
               const closedDate = inc.updated_at ? inc.updated_at.slice(0, 16).replace('T', ' ') : ''
-              const closedIdx = filteredHistory.length + 1
+
               const stateName = inc.state.name ? inc.state.name.toUpperCase() : INCIDENT_STATES.CLOSED
               cyclesHtml += `<span class="badge badge-success border mr-1 mb-1" title="Fecha de cierre: ${closedDate} \n* La incidencia ya no admite actualizaciones">${stateName} (DEFINITIVO)</span>`
             }

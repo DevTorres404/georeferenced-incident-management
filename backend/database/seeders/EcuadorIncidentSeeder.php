@@ -121,8 +121,8 @@ class EcuadorIncidentSeeder extends Seeder
             $lng = $city['base_lng'] + (random_int(-50, 50) / 1000);
             
             $createdAt = Carbon::now()->subDays(random_int(0, 30))->subHours(random_int(0, 24));
-            $resolvedAt = in_array($state->name, ['RESUELTA', 'CERRADA']) 
-                ? (clone $createdAt)->addHours(random_int(2, 72)) 
+            $resolvedAt = in_array($state->name, ['RESUELTA', 'CERRADA'])
+                ? (clone $createdAt)->addHours(random_int(2, 72))
                 : null;
             $rejectedAt = $state->name === 'RECHAZADA'
                 ? (clone $createdAt)->addHours(random_int(1, 24))

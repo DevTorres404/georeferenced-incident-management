@@ -1128,7 +1128,7 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
       }
     }[scope]
 
-    if (!map || !map.button) {
+    if (!map?.button) {
       return
     }
 

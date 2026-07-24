@@ -437,7 +437,7 @@ function renderAssignmentModal(state) {
 
   const activeAssignments = (incident.assignments || []).filter(assignment => assignment.active !== false)
   const currentPrimaryId = activeAssignments.find(assignment => assignment.assignment_role === 'primary')?.user_id || incident.assignee_user_id || ''
-  const currentSupportIds = new Set(activeAssignments.filter(assignment => assignment.assignment_role === 'support').map(assignment => String(assignment.user_id)))
+
 
   const summary = document.getElementById('assignmentModalSummary')
   if (summary) {

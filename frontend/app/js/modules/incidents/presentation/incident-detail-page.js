@@ -641,7 +641,7 @@ incident?.address ||
 
 export function openCyclesModal() {
   const incident = globalThis.currentIncidentData
-  if (!incident || !incident.cycles) {
+  if (!incident?.cycles) {
     return
   }
 
@@ -2016,7 +2016,7 @@ function isStrictlyInProgress(state) {
 
 // Bind enviar solicitud button
 document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', async () => {
-  if (!pendingStateRequest || !pendingStateRequest.targetStateId) {
+  if (!pendingStateRequest?.targetStateId) {
     return
   }
 
@@ -2058,7 +2058,7 @@ document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', a
 
 // Bind aprobar button in review modal
 document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async () => {
-  if (!pendingReviewRequest || pendingReviewRequest.action !== 'approve') {
+  if (!pendingReviewRequest || pendingReviewRequest?.action !== 'approve') {
     return
   }
 
@@ -2102,7 +2102,7 @@ document.getElementById('btnConfirmarAprobar')?.addEventListener('click', async 
 
 // Bind rechazar button in review modal
 document.getElementById('btnConfirmarRechazar')?.addEventListener('click', async () => {
-  if (!pendingReviewRequest || pendingReviewRequest.action !== 'reject') {
+  if (!pendingReviewRequest || pendingReviewRequest?.action !== 'reject') {
     return
   }
 

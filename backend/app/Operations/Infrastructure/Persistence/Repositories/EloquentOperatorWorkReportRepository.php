@@ -124,7 +124,7 @@ final class EloquentOperatorWorkReportRepository implements OperatorWorkReportRe
                 $snap = $a->cycle?->snapshot;
                 $priorityName = $snap['incident']['priority']['name'] ?? $inc->priority?->name ?? '-';
                 
-                // La asignación representa la fase operativa ("En Progreso"). 
+                // La asignación representa la fase operativa ("En Progreso").
                 // El estado del snapshot es el estado final al cerrar el ciclo (ej: Resuelta), lo cual confunde.
                 $stateName = 'En Progreso';
                 $finalState = $snap['incident']['status']['name'] ?? $inc->state?->name ?? '-';
@@ -134,8 +134,8 @@ final class EloquentOperatorWorkReportRepository implements OperatorWorkReportRe
                     $stateNameLower = strtolower($inc->state?->name ?? '');
                     $isFinished = $inc->state?->is_final_state || str_contains($stateNameLower, 'resuelt') || str_contains($stateNameLower, 'cerrad');
                     
-                    $endDate = $isFinished 
-                        ? ($inc->resolution_date ?? $inc->updated_at ?? \Carbon\Carbon::now()) 
+                    $endDate = $isFinished
+                        ? ($inc->resolution_date ?? $inc->updated_at ?? \Carbon\Carbon::now())
                         : \Carbon\Carbon::now();
                 }
 

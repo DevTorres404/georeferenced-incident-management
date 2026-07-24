@@ -169,9 +169,8 @@
                                                     type="file" class="d-none" id="fEvidence"
                                                     accept="image/jpeg,image/png" multiple
                                                     aria-label="Seleccionar archivos de evidencia">
-                                                <div class="evidence-dropzone" id="evidenceDropzone" role="button"
-                                                    tabindex="0"
-                                                    onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                                                <button type="button" class="evidence-dropzone" id="evidenceDropzone"
+                                                    tabindex="0">
                                                     <div class="evidence-folder" aria-hidden="true">
                                                         <div class="evidence-folder-top"></div>
                                                         <div class="evidence-folder-bottom"></div>
@@ -180,7 +179,7 @@
                                                         clic para seleccionar</span> <small>Formatos: JPG, PNG. Maximo
                                                         10 MB por
                                                         foto.</small>
-                                                </div>
+                                                </button>
                                                 <div id="evidenceFeedback" class="invalid-feedback d-block"></div>
                                                 <div class="evidence-toolbar"> <strong>Fotos cargadas (<span
                                                             id="evidenceCount">0</span>)</strong> <button type="button"
@@ -268,7 +267,7 @@
                                                     type="button" class="btn btn-primary" id="btnNextStep"> Continuar <i
                                                         class="fas fa-arrow-right ml-1"></i> </button> <button
                                                     type="submit" class="btn btn-success d-none" id="btnRegistrar">
-                                                    <span id="spinnerRegistrar" class="spinner-border spinner-border-sm d-none mr-2" role="status" aria-hidden="true"></span>
+                                                    <output id="spinnerRegistrar" class="spinner-border spinner-border-sm d-none mr-2" aria-hidden="true"></output>
                                                     Registrar
                                                 </button> </div>
                                         </aside>

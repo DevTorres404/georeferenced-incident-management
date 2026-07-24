@@ -376,7 +376,7 @@ function renderMonthlyChart(trend) {
     return
   }
 
-  if (!trend.months || !trend.months.length) {
+  if (!trend.months?.length) {
     renderEmptyCanvas(canvas, 'Sin incidencias para graficar en el periodo')
     return
   }
@@ -442,7 +442,7 @@ function renderResolutionRateChart(trend) {
     return
   }
 
-  if (!trend.months || !trend.months.length) {
+  if (!trend.months?.length) {
     renderEmptyCanvas(canvas, 'Sin tasa de resolución para el filtro actual')
     return
   }
@@ -636,7 +636,7 @@ function renderSummary(analytics) {
     return
   }
 
-  if (!analytics.summaryRows || !analytics.summaryRows.length) {
+  if (!analytics.summaryRows?.length) {
     tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Sin datos para mostrar.</td></tr>'
   } else {
     tbody.innerHTML = analytics.summaryRows.map(row => `

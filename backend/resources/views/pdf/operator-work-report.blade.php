@@ -118,22 +118,25 @@
             width: 100%;
         }
         .operator-sheet { margin-bottom: 13px; }
-        .operator-sheet td {
+        .operator-sheet td, .operator-sheet th {
             border: 1px solid #cfd9e1;
             padding: 6px 8px;
             vertical-align: top;
             width: 50%;
+            text-align: left;
+            font-weight: normal;
         }
         .document-meta {
             border-collapse: collapse;
             margin: -5px 0 13px;
             width: 100%;
         }
-        .document-meta td {
+        .document-meta td, .document-meta th {
             color: #526b7f;
             font-size: 6.4px;
             padding: 0 7px;
             text-align: right;
+            font-weight: normal;
         }
         .document-meta strong { color: #27455f; text-transform: uppercase; }
         .field-label {
@@ -326,20 +329,20 @@
 
     <table class="document-meta">
         <tr>
-            <td><strong>Fecha de corte:</strong> {{ now()->format('d/m/Y H:i') }}</td>
-            <td><strong>Clasificación:</strong> Uso interno</td>
+            <th><strong>Fecha de corte:</strong> {{ now()->format('d/m/Y H:i') }}</th>
+            <th><strong>Clasificación:</strong> Uso interno</th>
         </tr>
     </table>
 
     <h2 class="section-title">1. Identificación y alcance</h2>
     <table class="operator-sheet">
         <tr>
-            <td><span class="field-label">Operador</span><span class="field-value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</span></td>
-            <td><span class="field-label">Identificador interno</span><span class="field-value mono">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</span></td>
+            <th><span class="field-label">Operador</span><span class="field-value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</span></th>
+            <th><span class="field-label">Identificador interno</span><span class="field-value mono">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</span></th>
         </tr>
         <tr>
-            <td><span class="field-label">Correo institucional</span><span class="field-value">{{ $operator['email'] }}</span></td>
-            <td><span class="field-label">Alcance del documento</span><span class="field-value">{{ $report_scope_label ?? 'Últimas 50 intervenciones' }}</span></td>
+            <th><span class="field-label">Correo institucional</span><span class="field-value">{{ $operator['email'] }}</span></th>
+            <th><span class="field-label">Alcance del documento</span><span class="field-value">{{ $report_scope_label ?? 'Últimas 50 intervenciones' }}</span></th>
         </tr>
     </table>
 
