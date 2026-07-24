@@ -435,15 +435,13 @@ fue deshabilitado por requerimiento del flujo operativo).
 
 \subsection{Archivo SQL de entrega}
 
-El archivo SQL debe acompañar la entrega académica como archivo independiente,
-de modo que la estructura y los datos necesarios puedan reconstruirse sin
-depender únicamente de las migraciones del framework.
+El archivo SQL acompaña la entrega académica y se encuentra disponible directamente en la raíz del repositorio (\texttt{backup.sql}), de modo que la estructura y los datos necesarios puedan reconstruirse sin depender únicamente de las migraciones del framework.
 
 \begin{center}
-\textbf{Archivo requerido:} \texttt{backup.sql}
+\textbf{Archivo incluido en el repositorio:} \texttt{backup.sql}
 \end{center}
 
-Puede generarse desde el servidor de base de datos mediante:
+También puede regenerarse desde el servidor de base de datos mediante:
 
 \begin{verbatim}
 pg_dump -U user_im -d incident_management_system \
