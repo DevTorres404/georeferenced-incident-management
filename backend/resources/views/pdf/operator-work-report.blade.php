@@ -216,7 +216,7 @@
         .record-metadata td:last-child,
         .record-metadata th:last-child { border-right: 0; }
         .record-ticket { color: #173f5f !important; font-family: DejaVu Sans Mono, monospace; }
-        .record-detail td { padding: 7px; vertical-align: top; }
+        .record-detail td, .record-detail th { padding: 7px; vertical-align: top; text-align: left; font-weight: normal; }
         .record-summary { border-right: 1px solid #d6dfe6; width: 42%; }
         .record-title { color: #25384a; font-size: 8.5px; font-weight: 700; margin-bottom: 5px; }
         .record-classification { color: #667b8e; font-size: 6.8px; line-height: 1.55; }
@@ -285,14 +285,16 @@
             page-break-inside: avoid;
             width: 100%;
         }
-        .approval-strip td {
+        .approval-strip td, .approval-strip th {
             border-top: 1px solid #aebdca;
             color: #5f7486;
             font-size: 6.2px;
             padding-top: 6px;
             width: 50%;
+            text-align: left;
+            font-weight: normal;
         }
-        .approval-strip td:last-child { text-align: right; }
+        .approval-strip td:last-child, .approval-strip th:last-child { text-align: right; }
         .approval-strip strong { color: #354b5e; text-transform: uppercase; }
     </style>
 </head>
@@ -392,13 +394,13 @@
             </table>
             <table class="record-detail">
                 <tr>
-                    <td class="record-summary">
+                    <th class="record-summary">
                         <div class="record-title">{{ \Illuminate\Support\Str::limit($incident['title'], 95) }}</div>
                         <div class="record-classification">
                             <strong>Categoría:</strong> {{ $incident['category']['name'] ?? 'Sin categoría' }}<br>
                             <strong>Territorio:</strong> {{ $incident['territorial_unit']['name'] ?? 'Sin territorio' }}
                         </div>
-                    </td>
+                    </th>
                     <td class="history-cell">
                         <table class="history-table">
                             <thead>
@@ -451,8 +453,8 @@
 
     <table class="approval-strip">
         <tr>
-            <td><strong>Fuente:</strong> Sistema de Gestión de Incidencias Georreferenciadas</td>
-            <td><strong>Responsable:</strong> Dirección de Operaciones</td>
+            <th><strong>Fuente:</strong> Sistema de Gestión de Incidencias Georreferenciadas</th>
+            <th><strong>Responsable:</strong> Dirección de Operaciones</th>
         </tr>
     </table>
 </body>

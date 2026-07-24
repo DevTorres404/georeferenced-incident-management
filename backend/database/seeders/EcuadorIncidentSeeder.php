@@ -64,14 +64,17 @@ class EcuadorIncidentSeeder extends Seeder
 
         $this->command->info("Creando 1000 incidencias en Ecuador...");
         
+        $territorialUnits = DB::table('core.territorial_units')->where('type', 'canton')->pluck('id');
+        if ($territorialUnits->isEmpty()) {
+            $territorialUnits = collect([1]); // Fallback if no units
+        }
+
         // Cities to distribute the incidents
         $cities = [
-            // Guayaquil (Guayas)
-            ['id' => 482, 'base_lat' => -2.1962, 'base_lng' => -79.8862, 'weight' => 50],
-            // Cuenca (Sierra Sur)
-            ['id' => 11, 'base_lat' => -2.9001, 'base_lng' => -79.0059, 'weight' => 25],
-            // Machala (Costa Sur)
-            ['id' => 331, 'base_lat' => -3.2581, 'base_lng' => -79.9554, 'weight' => 25],
+            ['id' => $territorialUnits->random(), 'base_lat' => -2.1962, 'base_lng' => -79.8862, 'weight' => 50],
+            ['id' => $territorialUnits->random(), 'base_lat' => -2.9001, 'base_lng' => -79.0059, 'weight' => 25],
+            ['id' => $territorialUnits->random(), 'base_lat' => -3.2581, 'base_lng' => -79.9553, 'weight' => 15],
+            ['id' => $territorialUnits->random(), 'base_lat' => -1.0545, 'base_lng' => -80.4544, 'weight' => 10],
         ];
 
         // Cache for operational zones

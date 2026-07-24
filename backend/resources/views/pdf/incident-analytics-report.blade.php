@@ -25,7 +25,7 @@
         .section-title { margin: 0; padding: 5px 7px; border-left: 4px solid #10b9c8; background: #082f5b; color: #fff; font-size: 7px; letter-spacing: .5px; text-transform: uppercase; }
         table { width: 100%; border-collapse: collapse; }
         .filters { margin-bottom: 11px; }
-        .filters td { width: 25%; padding: 5px 7px; border: 1px solid #ced9e2; vertical-align: top; }
+        .filters td, .filters th { width: 25%; padding: 5px 7px; border: 1px solid #ced9e2; vertical-align: top; text-align: left; font-weight: normal; }
         .label { display: block; margin-bottom: 2px; color: #687f91; font-size: 5.8px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; }
         .value { color: #263c50; font-size: 7.5px; font-weight: 700; }
         .kpis { margin-bottom: 12px; table-layout: fixed; }
@@ -35,9 +35,9 @@
         .executive-note { margin-bottom: 12px; padding: 7px 9px; border: 1px solid #bed6e8; background: #f2f8fc; color: #405b70; }
         .executive-note strong { color: #0b5fcc; }
         .two-column { margin-bottom: 12px; table-layout: fixed; }
-        .two-column > tbody > tr > td { width: 50%; padding: 0; vertical-align: top; }
-        .two-column > tbody > tr > td:first-child { padding-right: 5px; }
-        .two-column > tbody > tr > td:last-child { padding-left: 5px; }
+        .two-column > tbody > tr > td, .two-column > tbody > tr > th, .two-column > tr > th { width: 50%; padding: 0; vertical-align: top; text-align: left; font-weight: normal; }
+        .two-column > tbody > tr > td:first-child, .two-column > tbody > tr > th:first-child, .two-column > tr > th:first-child { padding-right: 5px; }
+        .two-column > tbody > tr > td:last-child, .two-column > tbody > tr > th:last-child, .two-column > tr > th:last-child { padding-left: 5px; }
         .data-table th { padding: 4px 5px; border: 1px solid #c9d5df; background: #e8f0f7; color: #465f73; font-size: 5.7px; text-align: left; text-transform: uppercase; }
         .data-table td { padding: 4px 5px; border: 1px solid #d5dfe6; color: #344e62; font-size: 6.5px; vertical-align: middle; }
         .data-table .number { font-weight: 700; text-align: right; }
@@ -93,10 +93,10 @@
     <h2 class="section-title">1. Alcance del análisis</h2>
     <table class="filters">
         <tr>
-            <td><span class="label">Fecha inicial</span><span class="value">{{ !empty($filters['start_date']) ? \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') : 'Sin restricción' }}</span></td>
-            <td><span class="label">Fecha final</span><span class="value">{{ !empty($filters['end_date']) ? \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') : 'Fecha de emisión' }}</span></td>
-            <td><span class="label">Categoría</span><span class="value">{{ $filters['category'] ?? 'Todas' }}</span></td>
-            <td><span class="label">Estado</span><span class="value">{{ $filters['state'] ?? 'Todos' }}</span></td>
+            <th><span class="label">Fecha inicial</span><span class="value">{{ !empty($filters['start_date']) ? \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') : 'Sin restricción' }}</span></th>
+            <th><span class="label">Fecha final</span><span class="value">{{ !empty($filters['end_date']) ? \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') : 'Fecha de emisión' }}</span></th>
+            <th><span class="label">Categoría</span><span class="value">{{ $filters['category'] ?? 'Todas' }}</span></th>
+            <th><span class="label">Estado</span><span class="value">{{ $filters['state'] ?? 'Todos' }}</span></th>
         </tr>
     </table>
 
@@ -128,7 +128,7 @@
     <h2 class="section-title">3. Distribución operativa</h2>
     <table class="two-column">
         <tr>
-            <td>
+            <th>
                 <table class="data-table">
                     <thead><tr><th colspan="3">Por prioridad</th></tr></thead>
                     <tbody>
@@ -139,8 +139,8 @@
                     @endforelse
                     </tbody>
                 </table>
-            </td>
-            <td>
+            </th>
+            <th>
                 <table class="data-table">
                     <thead><tr><th colspan="3">Principales territorios</th></tr></thead>
                     <tbody>
@@ -151,7 +151,7 @@
                     @endforelse
                     </tbody>
                 </table>
-            </td>
+            </th>
         </tr>
     </table>
 
