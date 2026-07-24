@@ -1045,7 +1045,6 @@ function bindAttachmentForm(incident) {
       setText('attachmentsCount', incident.attachments.length)
       setText('attachmentsMetric', incident.attachments.length)
       bindAttachmentPreview()
-      updateOperatorStateButton(incident)
 
       form.reset()
       label.textContent = 'Seleccione un archivo...'
@@ -1765,16 +1764,10 @@ function openRequestStateModal(incident, states) {
     return
   }
 
-  const attachments = Array.isArray(incident.attachments) ? incident.attachments : []
-  if (attachments.length === 0) {
-    showGlobalAlert('Debes adjuntar al menos una evidencia antes de solicitar el cambio de estado.', 'warning')
-    return
-  }
+  const currentStateId = Number(incident.state_id)
 
-  let targetState = null
-  const currentStateId = incident.state_id || incident.state?.id
-
-  ;(Array.isArray(states) ? states : []).forEach(s => {
+  let targetState = null;
+  (Array.isArray(states) ? states : []).forEach(s => {
     if (Number(s.id) === currentStateId) {
       return
     }
@@ -1798,7 +1791,6 @@ function openRequestStateModal(incident, states) {
 function renderOperatorStateButton(incident) {
   const hasPriority = Boolean(incident.priority_id || incident.priority?.id)
   const pendingRequest = pendingStateRequests.find(r => r.status === 'pending')
-  const hasAttachments = Array.isArray(incident.attachments) && incident.attachments.length > 0
 
   if (pendingRequest) {
     return `
@@ -1811,16 +1803,6 @@ function renderOperatorStateButton(incident) {
   if (!hasPriority) {
     return `
       <div class="d-inline-block" tabindex="0" data-toggle="tooltip" title="Debes asignar una prioridad antes de solicitar un cambio de estado">
-        <button class="btn btn-sm btn-outline-warning" disabled style="pointer-events: none;">
-          <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
-        </button>
-      </div>
-    `
-  }
-
-  if (!hasAttachments) {
-    return `
-      <div class="d-inline-block" tabindex="0" data-toggle="tooltip" title="Debes adjuntar al menos una evidencia antes de solicitar la resolución">
         <button class="btn btn-sm btn-outline-warning" disabled style="pointer-events: none;">
           <i class="fas fa-paper-plane mr-1"></i>Solicitar resolución
         </button>
