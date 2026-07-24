@@ -63,6 +63,7 @@ class NavigationItemSeeder extends Seeder
                 'children' => [
                     ['code' => 'role-permissions', 'label' => 'Roles y permisos', 'icon' => 'fa-user-shield', 'route' => 'role-permissions.html', 'permission_code' => 'users.manage_roles', 'sort_order' => 10],
                     ['code' => 'user-roles', 'label' => 'Usuarios y roles', 'icon' => 'fa-user-tag', 'route' => 'user-roles.html', 'permission_code' => 'users.manage_roles', 'sort_order' => 20],
+                    ['code' => 'category-management', 'label' => 'Categorias y subtipos', 'icon' => 'fa-tags', 'route' => 'category-management.html', 'permission_code' => 'catalogs.manage', 'sort_order' => 25],
                     ['code' => 'audit-logs', 'label' => 'Auditoria', 'icon' => 'fa-clipboard-list', 'route' => 'audit-logs.html', 'permission_code' => 'audit.view', 'sort_order' => 30],
                 ],
             ],

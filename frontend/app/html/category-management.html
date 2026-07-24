@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Categorías y Subtipos | Sistema de Incidencias</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+    <!-- Google Font -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
+    <!-- OverlayScrollbars -->
+    <link rel="stylesheet" href="/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+    <!-- AdminLTE -->
+    <link rel="stylesheet" href="/dist/css/adminlte.min.css">
+    <!-- Estilos propios del sistema -->
+    <link rel="stylesheet" href="/css/app.css?v=70">
+    <script src="/js/core/protected-page-guard.js?v=5"></script>
+</head>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+        <!-- Navbar inyectada por layout.js -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light" id="mainNavbar"></nav>
+
+        <!-- Sidebar inyectada por layout.js -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <a href="dashboard.html" class="brand-link bg-transparent border-0 d-flex align-items-center"
+                style="padding: 10px 15px;">
+                <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="brand-image"
+                    style="opacity: .9; border-radius: 4px; object-fit: contain; width: 35px; height: 35px; background-color: white;">
+                <span class="brand-text font-weight-bold ml-2 text-white" style="letter-spacing: 1px;">SGI</span>
+            </a>
+            <div id="mainSidebar"></div>
+        </aside>
+
+        <!-- Contenido Principal -->
+        <div class="content-wrapper">
+            <!-- Pantalla de carga nativa -->
+            <div id="pageLoader" class="spinner-overlay" role="status" aria-live="polite">
+                <div class="loader-orbit" aria-hidden="true">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+            </div>
+            <script>
+                window.setTimeout(function () {
+                    var loader = document.getElementById('pageLoader');
+                    if (!loader) return;
+                    loader.setAttribute('hidden', '');
+                    loader.classList.add('d-none');
+                    loader.setAttribute('aria-hidden', 'true');
+                    loader.style.display = 'none';
+                }, 4000);
+            </script>
+
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">
+                                <i class="fas fa-tags text-primary mr-2"></i>Categorías y subtipos
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="container-fluid">
+                    <div id="alertaGlobal" class="alert d-none" role="alert"></div>
+
+                    <!-- Pestañas de gestión -->
+                    <div class="card card-primary card-outline card-tabs shadow-sm border-0">
+                        <div class="card-header p-0 pt-1 border-bottom-0">
+                            <ul class="nav nav-tabs" id="catalogTabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active font-weight-bold" id="tabCategoriesLink" data-toggle="pill" href="#tabCategories" role="tab" aria-controls="tabCategories" aria-selected="true">
+                                        <i class="fas fa-folder mr-1"></i>Categorías Principales
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link font-weight-bold" id="tabSubcategoriesLink" data-toggle="pill" href="#tabSubcategories" role="tab" aria-controls="tabSubcategories" aria-selected="false">
+                                        <i class="fas fa-sitemap mr-1"></i>Subtipos / Subcategorías
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="catalogTabsContent">
+                                <!-- TAB 1: CATEGORÍAS -->
+                                <div class="tab-pane fade show active" id="tabCategories" role="tabpanel" aria-labelledby="tabCategoriesLink">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <h3 class="card-title font-weight-bold text-dark h5 mb-1">Catálogo de Categorías</h3>
+                                            <p class="text-muted small mb-0">Gestión de áreas o tipos principales de incidencias registradas en el sistema.</p>
+                                        </div>
+                                        <button type="button" class="btn btn-primary btn-sm" id="btnNuevaCategoria">
+                                            <i class="fas fa-plus mr-1"></i>Nueva categoría
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped border-0" id="tablaCategorias">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th scope="col" style="width: 70px;">Icono</th>
+                                                    <th scope="col">Nombre</th>
+                                                    <th scope="col">Descripción</th>
+                                                    <th scope="col" style="width: 110px;" class="text-center">Color</th>
+                                                    <th scope="col" style="width: 110px;" class="text-center">Subtipos</th>
+                                                    <th scope="col" style="width: 100px;" class="text-center">Estado</th>
+                                                    <th scope="col" style="width: 130px;" class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bodyCategorias">
+                                                <tr>
+                                                    <td colspan="7" class="text-center py-4 text-muted">Cargando categorías...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 2: SUBCATEGORÍAS -->
+                                <div class="tab-pane fade" id="tabSubcategories" role="tabpanel" aria-labelledby="tabSubcategoriesLink">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                                        <div class="mb-2 mb-md-0">
+                                            <h3 class="card-title font-weight-bold text-dark h5 mb-1">Subtipos de Incidencia</h3>
+                                            <p class="text-muted small mb-0">Clasificación específica vinculada a una categoría principal.</p>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <select class="form-control form-control-sm mr-2" id="filtroCatPadre" style="min-width: 200px;">
+                                                <option value="">Todas las categorías</option>
+                                            </select>
+                                            <button type="button" class="btn btn-primary btn-sm text-nowrap" id="btnNuevoSubtipo">
+                                                <i class="fas fa-plus mr-1"></i>Nuevo subtipo
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped border-0" id="tablaSubcategorias">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th scope="col">Categoría Padre</th>
+                                                    <th scope="col">Subtipo / Subcategoría</th>
+                                                    <th scope="col">Descripción</th>
+                                                    <th scope="col" style="width: 100px;" class="text-center">Estado</th>
+                                                    <th scope="col" style="width: 130px;" class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bodySubcategorias">
+                                                <tr>
+                                                    <td colspan="5" class="text-center py-4 text-muted">Cargando subtipos...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL NUEVA/EDITAR CATEGORÍA -->
+        <div class="modal fade" id="modalCategoria" tabindex="-1" role="dialog" aria-labelledby="modalCategoriaLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title font-weight-bold" id="modalCategoriaLabel">
+                            <i class="fas fa-folder mr-2"></i><span>Categoría</span>
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <form id="formCategoria">
+                        <input type="hidden" id="catId" value="">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="catNombre">Nombre de la Categoría <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="catNombre" required maxlength="100" placeholder="Ej. Alumbrado Público">
+                            </div>
+                            <div class="form-group">
+                                <label for="catDescripcion">Descripción</label>
+                                <textarea class="form-control" id="catDescripcion" rows="2" maxlength="255" placeholder="Descripción opcional del alcance de esta categoría..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="catIcono">Icono (FontAwesome)</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-tags" id="previewCatIcon"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control" id="catIcono" placeholder="fa-lightbulb" value="fa-tags">
+                                    </div>
+                                    <small class="form-text text-muted">Nombre de clase FA (ej: fa-road, fa-water, fa-bolt)</small>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="catColor">Color representativo</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <input type="color" class="form-control form-control-color border-0 p-1" id="catColorPicker" value="#007bff" style="width: 40px; height: 38px;">
+                                        </div>
+                                        <input type="text" class="form-control" id="catColor" placeholder="#007bff" value="#007bff" maxlength="7">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-0">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="catIsActive" checked>
+                                    <label class="custom-control-label" for="catIsActive">Categoría activa</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm" id="btnGuardarCategoria">
+                                <i class="fas fa-save mr-1"></i>Guardar categoría
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL NUEVO/EDITAR SUBTIPO -->
+        <div class="modal fade" id="modalSubcategoria" tabindex="-1" role="dialog" aria-labelledby="modalSubcategoriaLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title font-weight-bold" id="modalSubcategoriaLabel">
+                            <i class="fas fa-sitemap mr-2"></i><span>Subtipo de Incidencia</span>
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <form id="formSubcategoria">
+                        <input type="hidden" id="subCatId" value="">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="subCatParentId">Categoría Padre <span class="text-danger">*</span></label>
+                                <select class="form-control" id="subCatParentId" required>
+                                    <option value="">Seleccione una categoría</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="subCatNombre">Nombre del Subtipo <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="subCatNombre" required maxlength="100" placeholder="Ej. Lámpara quemada">
+                            </div>
+                            <div class="form-group">
+                                <label for="subCatDescripcion">Descripción</label>
+                                <textarea class="form-control" id="subCatDescripcion" rows="2" maxlength="255" placeholder="Descripción breve del subtipo..."></textarea>
+                            </div>
+                            <div class="form-group mb-0">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="subCatIsActive" checked>
+                                    <label class="custom-control-label" for="subCatIsActive">Subtipo activo</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm" id="btnGuardarSubcategoria">
+                                <i class="fas fa-save mr-1"></i>Guardar subtipo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="main-footer text-sm">
+            <div class="float-right d-none d-sm-inline">Versión 1.0.0</div>
+            <strong>Sistema de Gestión de Incidencias Georreferenciadas (SGI)</strong>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/plugins/jquery/jquery.min.js"></script>
+    <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+    <script src="/dist/js/adminlte.min.js"></script>
+    <script type="module" src="/js/layout/layout.js?v=46"></script>
+    <script type="module" src="/js/modules/catalogs/presentation/category-management-page.js?v=1"></script>
+</body>
+
+</html>
