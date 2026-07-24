@@ -1,0 +1,725 @@
+% ==========================================================
+% DOCUMENTO TÉCNICO - PROYECTO INTEGRADOR
+% Universidad Estatal Península de Santa Elena
+% Sistema Web de Gestión de Incidencias Georreferenciadas
+% ==========================================================
+
+\documentclass[12pt,a4paper]{article}
+
+% ==========================================================
+% PAQUETES
+% ==========================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[top=2.25cm,bottom=2.25cm,left=2.25cm,right=2.25cm]{geometry}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage[most]{tcolorbox}
+\usepackage{pdflscape}
+
+% ==========================================================
+% COLORES Y ESTILO
+% ==========================================================
+\definecolor{primarygray}{HTML}{4A4A4A}
+\definecolor{secondarygray}{HTML}{E8E8E8}
+\definecolor{softgray}{HTML}{F3F6F8}
+\definecolor{textgray}{HTML}{2B2B2B}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primarygray,
+    urlcolor=primarygray,
+    citecolor=primarygray
+}
+
+\titleformat{\section}
+{\color{primarygray}\Large\bfseries}
+{\thesection.}
+{0.55em}
+{}
+[\titlerule]
+
+\titleformat{\subsection}
+{\color{primarygray}\large\bfseries}
+{\thesubsection.}
+{0.45em}
+{}
+
+\pagestyle{fancy}
+\setlength{\headheight}{14pt}
+\fancyhf{}
+\lhead{\small Documento Técnico -- Proyecto Integrador}
+\rhead{\small Sistema SGI}
+\cfoot{\small Página \thepage\ de \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\renewcommand{\arraystretch}{1.12}
+\setlength{\tabcolsep}{4.2pt}
+\setlist[itemize]{leftmargin=*, itemsep=1pt, topsep=2pt}
+\setlist[enumerate]{leftmargin=*, itemsep=1pt, topsep=2pt}
+\setlength{\parskip}{4pt}
+\sloppy
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
+
+% ==========================================================
+% COMANDO PARA EVIDENCIAS INDIVIDUALES
+% ==========================================================
+\newcommand{\evidencia}[4]{
+\clearpage
+\begin{figure}[H]
+    \centering
+    \IfFileExists{#1}{
+        \includegraphics[width=#2\textwidth,height=#3\textheight,keepaspectratio]{#1}
+    }{
+        \begin{tcolorbox}[
+            colback=secondarygray,
+            colframe=primarygray,
+            boxrule=0.8pt,
+            width=0.90\textwidth,
+            height=5cm,
+            halign=center,
+            valign=center
+        ]
+            \textit{[Insertar archivo: \texttt{#1}]}
+        \end{tcolorbox}
+    }
+    \caption{#4}
+\end{figure}
+}
+
+% ==========================================================
+% COMANDO PARA IMÁGENES CON RESPALDO
+% ==========================================================
+\newcommand{\captura}[3]{
+\begin{figure}[H]
+    \centering
+    \IfFileExists{#1}{
+        \includegraphics[width=#2\textwidth,keepaspectratio]{#1}
+    }{
+        \begin{tcolorbox}[
+            colback=secondarygray,
+            colframe=primarygray,
+            boxrule=0.8pt,
+            width=#2\textwidth,
+            height=3.6cm,
+            halign=center,
+            valign=center
+        ]
+            \textit{[Insertar archivo: \texttt{#1}]}
+        \end{tcolorbox}
+    }
+    \caption{#3}
+\end{figure}
+}
+
+
+% ==========================================================
+% DOS FIGURAS INDEPENDIENTES EN UNA MISMA PÁGINA
+% ==========================================================
+\newcommand{\dosporevidencia}[6]{
+\clearpage
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=#2\textwidth,height=0.34\textheight,keepaspectratio]{#1}
+    \caption{#3}
+\end{figure}
+
+\vspace{0.15cm}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=#5\textwidth,height=0.34\textheight,keepaspectratio]{#4}
+    \caption{#6}
+\end{figure}
+}
+
+\begin{document}
+
+% ==========================================================
+% PORTADA -- CONSERVADA COMO FUE ENTREGADA
+% ==========================================================
+\begin{titlepage}
+\centering
+\vspace*{0.4cm}
+
+\IfFileExists{upse.jpg}{
+    \includegraphics[width=4.8cm]{upse.jpg}\\[0.45cm]
+}{
+    {\Large \textbf{UPSE}}\\[0.45cm]
+}
+
+{\Large \textbf{\textcolor{primarygray}{UNIVERSIDAD ESTATAL PENÍNSULA DE SANTA ELENA}}}\\[0.25cm]
+{\large \textbf{Facultad de Sistemas y Telecomunicaciones}}\\
+{\large \textbf{Carrera de Software}}\\
+{\large Sexto Semestre}\\[0.85cm]
+
+{\LARGE \textbf{\textcolor{primarygray}{DOCUMENTO TÉCNICO DEL PROYECTO INTEGRADOR}}}\\[0.5cm]
+
+{\large \textbf{Sistema Web de Gestión de Incidencias Georreferenciadas}}\\
+{\large \textbf{(SGI)}}\\[0.8cm]
+
+
+
+\vfill
+
+{\textbf{Integrantes}}\\[0.2cm]
+Damián Jesús Torres Cadena\\
+Melanie Adriana Tomalá Merejildo\\
+Jean Pierre Cedeño Andrade\\[0.6cm]
+
+{\textbf{Docente:}}\\[0.2cm]
+Ing. Evelyn Del Pezo Izaguirre\\[0.35cm]
+
+
+
+{\textbf{Repositorio}}\\
+\url{https://github.com/DevTorres404/georeferenced-incident-management.git}\\[0.35cm]
+
+{\textbf{Sistema en producción}}\\
+\url{https://app.labtorres.me/}\\[0.55cm]
+
+{\textbf{Período Académico}}\\
+2026--1\\[0.15cm]
+{\textbf{Fecha}}\\
+Julio de 2026
+
+\end{titlepage}
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% ==========================================================
+% ÍNDICE GENERAL
+% ==========================================================
+\tableofcontents
+\clearpage
+
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+% ==========================================================
+% INFORMACIÓN ACADÉMICA COMPLEMENTARIA
+% ==========================================================
+\section*{Información académica e integración del proyecto}
+\addcontentsline{toc}{section}{Información académica e integración del proyecto}
+
+El proyecto integrador articula los resultados de aprendizaje de las asignaturas
+\textbf{Tecnologías y Desarrollo Web}, \textbf{Calidad de Software},
+\textbf{Administración de Data Center} y \textbf{Base de Datos I y II}. La solución
+presentada integra frontend, backend, persistencia relacional y geoespacial,
+despliegue mediante contenedores y evidencias de validación y calidad.
+
+El trabajo se desarrolló de forma colaborativa, manteniendo la integración entre
+la interfaz, los servicios de negocio, la base de datos y la infraestructura. Las
+secciones siguientes describen la implementación realizada, las decisiones
+adoptadas, la forma de ejecución y las evidencias obtenidas.
+
+% ==========================================================
+% 1. DESCRIPCIÓN DE LA IMPLEMENTACIÓN
+% ==========================================================
+\section{Descripción de la implementación}
+
+El \textbf{Sistema Web de Gestión de Incidencias Georreferenciadas (SGI)} se desarrolló como una aplicación web completa para registrar, consultar, asignar y dar seguimiento a incidencias asociadas a una ubicación geográfica. La solución integra un frontend web, una API REST, persistencia relacional con capacidades geoespaciales y un entorno de producción basado en contenedores.
+
+En el backend se utilizó una organización por dominios con capas de \textbf{Dominio, Aplicación e Infraestructura}, siguiendo principios de Arquitectura Hexagonal y DDD. Esta separación mantiene reglas como estados, clasificación, asignaciones, permisos y reaperturas fuera de los detalles de HTTP y persistencia. El frontend se organizó mediante módulos JavaScript ES6 y centraliza el consumo de la API en un cliente HTTP común.
+
+Las decisiones de implementación más relevantes fueron:
+\begin{itemize}
+    \item \textbf{Frontend y backend desacoplados:} la interfaz se publica de forma independiente y consume la API mediante HTTP/JSON.
+    \item \textbf{Trazabilidad:} se conserva historial de estados, asignaciones, clasificación, comentarios y ciclos de resolución.
+    \item \textbf{Georreferenciación:} las incidencias almacenan latitud, longitud y geometría \texttt{Point} mediante PostGIS.
+    \item \textbf{Procesamiento asíncrono y tiempo real:} Redis soporta caché, sesiones y colas; Laravel Reverb distribuye eventos mediante WebSockets.
+    \item \textbf{Evidencias digitales:} los adjuntos se almacenan mediante RustFS, compatible con la API S3.
+\end{itemize}
+
+% ==========================================================
+% 2. ARQUITECTURA Y TECNOLOGÍAS
+% ==========================================================
+\section{Arquitectura del sistema y tecnologías utilizadas}
+
+La solución utiliza una arquitectura \textbf{cliente--servidor desacoplada con despliegue híbrido}. El frontend está publicado en \textbf{Vercel}; el backend y sus servicios de infraestructura se ejecutan en un \textbf{servidor local de producción/homelab} administrado por el equipo mediante Docker.
+
+\subsection{Tecnologías principales}
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{softgray}{white}
+\begin{tabularx}{\textwidth}{@{}p{0.27\textwidth} X@{}}
+\toprule
+\textbf{Componente} & \textbf{Tecnología utilizada} \\
+\midrule
+Frontend & HTML5, CSS3, Bootstrap 4.5.3, AdminLTE 3.1.0-rc y JavaScript ES6 modular \\
+Mapas & MapLibre GL JS 5.24.0 con OpenFreeMap \\
+Backend & PHP 8.3+ y Laravel 13.8+ \\
+Autenticación & Laravel Sanctum 4.3+, Bearer Tokens, verificación de correo, Google Auth y 2FA \\
+Tiempo real & Laravel Reverb 1.10+ y WebSockets \\
+Base de datos & PostgreSQL 16 con PostGIS 3.4 \\
+Caché, sesiones y colas & Redis 7 \\
+Almacenamiento & RustFS compatible con S3 \\
+Servidor web & Nginx 1.27 Alpine \\
+Contenedores & Docker y Docker Compose \\
+Pruebas y calidad & PHPUnit 12, Vitest 3, k6 y SonarQube \\
+\bottomrule
+\end{tabularx}
+\caption{Stack tecnológico correspondiente a la versión documentada.}
+\end{table}
+
+\subsection{Esquema general de arquitectura}
+
+El usuario accede al frontend desde Vercel. La interfaz envía solicitudes HTTPS hacia Nginx en el servidor local de producción, que funciona como proxy reverso para la API Laravel. La aplicación utiliza PostgreSQL/PostGIS para persistencia, Redis para caché, sesiones y colas, RustFS para adjuntos y Reverb para comunicación en tiempo real.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth,keepaspectratio]{grafico.png}
+    \caption{Arquitectura general del Sistema Web de Gestión de Incidencias Georreferenciadas.}
+    \label{fig:arquitectura-general}
+\end{figure}
+
+% ==========================================================
+% 3. FUNCIONALIDADES
+% ==========================================================
+\section{Funcionalidades implementadas}
+
+La versión entregada implementa el ciclo operativo completo de una incidencia:
+\begin{itemize}
+    \item \textbf{Autenticación y acceso:} registro, inicio de sesión, verificación de correo, recuperación de contraseña, Google Auth, 2FA, roles y permisos granulares.
+    \item \textbf{Gestión de incidencias:} creación, consulta, edición y eliminación lógica; adjuntos y comentarios con autor y fecha.
+    \item \textbf{Clasificación y prioridad:} categorías, subcategorías, prioridades configurables y SLA.
+    \item \textbf{Ubicación:} provincias, cantones y parroquias, además de coordenadas y representación geoespacial en PostGIS.
+    \item \textbf{Estados y trazabilidad:} transiciones configurables, solicitudes de cambio, aprobación/rechazo, historial, línea de tiempo y ciclos de reapertura.
+    \item \textbf{Asignaciones:} operadores responsables y de apoyo, perfiles operativos, territorios y relación supervisor--operador.
+    \item \textbf{Notificaciones:} listado, contador de no leídas, marcar individualmente o todas como leídas y eventos en tiempo real.
+    \item \textbf{Consultas y reportes:} DataTables, mapa, KPI, dashboard, analítica, filtros, reportes y exportación PDF.
+    \item \textbf{Auditoría:} consulta de registros de actividad e intentos de autenticación.
+\end{itemize}
+
+\textbf{Limitaciones actuales:} el catálogo territorial está especializado para Ecuador y no modela el país como nivel independiente. El despliegue productivo utiliza múltiples servicios Docker, pero no configura réplicas del backend para escalamiento horizontal.
+
+
+% ==========================================================
+% 4. BASE DE DATOS
+% ==========================================================
+\section{Base de datos}
+
+La persistencia se implementó en \textbf{PostgreSQL 16 con PostGIS}. El diseño
+relacional utiliza claves primarias y foráneas, restricciones de integridad,
+índices y componentes SQL para mantener la consistencia de la información.
+Para organizar las responsabilidades, el modelo se distribuye principalmente
+en los esquemas \texttt{core} y \texttt{auth}.
+
+El esquema \texttt{core} concentra las entidades relacionadas con incidencias,
+clasificación, estados, asignaciones, comentarios, adjuntos, notificaciones,
+ciclos y unidades territoriales. El esquema \texttt{auth} concentra usuarios,
+roles, permisos, sesiones, perfiles operativos e identidades. Ambos esquemas
+forman parte de la misma base de datos y se relacionan durante la ejecución.
+
+\subsection{Modelo lógico}
+
+El modelo lógico representa las entidades principales y sus relaciones sin
+depender de tipos físicos específicos de PostgreSQL. Las entidades centrales son
+\texttt{Usuario} e \texttt{Incidente}: un usuario puede reportar, clasificar,
+comentar o atender incidencias según sus roles y permisos; cada incidencia se
+relaciona con categoría, subcategoría, prioridad, estado, unidad territorial,
+asignaciones, comentarios, adjuntos, notificaciones e históricos.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.97\textwidth,keepaspectratio]{modelo_logico.png}
+    \caption{Modelo lógico general del Sistema Web de Gestión de Incidencias Georreferenciadas.}
+    \label{fig:modelo-logico}
+\end{figure}
+
+\subsection{Modelo físico del esquema \texttt{core}}
+
+El modelo físico del esquema \texttt{core} muestra la implementación real de
+las tablas, columnas y relaciones utilizadas para el ciclo de vida de las
+incidencias. Entre las tablas principales se encuentran
+\texttt{incidents}, \texttt{states}, \texttt{state\_transitions},
+\texttt{incident\_states}, \texttt{incident\_assignments},
+\texttt{incident\_comments}, \texttt{incident\_attachments},
+\texttt{categories}, \texttt{subcategories}, \texttt{priorities},
+\texttt{territorial\_units}, \texttt{incident\_cycles},
+\texttt{notifications}, \texttt{incident\_classification\_history} y
+\texttt{settings}.
+
+\clearpage
+\begin{landscape}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\linewidth,height=0.82\textheight,keepaspectratio]{modelo_core.png}
+    \caption{Modelo físico de la base de datos correspondiente al esquema \texttt{core}.}
+    \label{fig:modelo-core}
+\end{figure}
+\end{landscape}
+\clearpage
+
+\subsection{Modelo físico del esquema \texttt{auth}}
+
+El esquema \texttt{auth} contiene la implementación física de las entidades de
+identidad, autenticación, autorización y estructura operativa. Incluye
+\texttt{users}, \texttt{roles}, \texttt{permissions}, \texttt{role\_user},
+\texttt{permission\_role}, \texttt{operator\_profiles},
+\texttt{supervisor\_profiles}, \texttt{supervisor\_operator\_assignments},
+\texttt{user\_territories}, \texttt{sessions}, \texttt{user\_identities},
+\texttt{navigation\_items}, \texttt{password\_reset\_tokens} y
+\texttt{personal\_access\_tokens}.
+
+\clearpage
+\begin{landscape}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\linewidth,height=0.82\textheight,keepaspectratio]{modelo_auth.png}
+    \caption{Modelo físico de la base de datos correspondiente al esquema \texttt{auth}.}
+    \label{fig:modelo-auth}
+\end{figure}
+\end{landscape}
+\clearpage
+
+\subsection{Relación entre los esquemas \texttt{core} y \texttt{auth}}
+
+Aunque los esquemas se encuentran separados lógicamente, ambos colaboran
+durante la ejecución. \texttt{auth} proporciona identidad, roles, permisos,
+perfiles y territorios; \texttt{core} utiliza dichas referencias para registrar
+quién reporta, clasifica, comenta, atiende o cambia el estado de una incidencia.
+
+\begin{center}
+\begin{tcolorbox}[
+    colback=softgray,
+    colframe=primarygray,
+    width=0.90\textwidth,
+    boxrule=0.7pt
+]
+\centering
+\textbf{PostgreSQL 16 + PostGIS}\\[0.35cm]
+\texttt{auth} $\longrightarrow$ \textbf{Usuarios, roles, permisos y estructura operativa}\\[0.20cm]
+$\updownarrow$\\[0.20cm]
+\texttt{core} $\longrightarrow$ \textbf{Incidencias, estados, asignaciones y seguimiento}
+\end{tcolorbox}
+\end{center}
+
+\subsection{Normalización, integridad y programación SQL}
+
+El diseño aplica normalización mediante entidades independientes para estados,
+prioridades, categorías, subcategorías, usuarios, roles, permisos y unidades
+territoriales, evitando duplicación innecesaria de datos. La integridad se
+refuerza mediante claves primarias, claves foráneas, restricciones
+\texttt{CHECK}, índices convencionales, índices parciales e índices espaciales.
+
+PostGIS se utiliza para almacenar la ubicación geográfica mediante
+\texttt{GEOMETRY(Point,4326)}. Además, la base de datos incorpora funciones y
+triggers para automatizar operaciones, como la sincronización de latitud y
+longitud con la geometría espacial (el cálculo automático de fecha límite por SLA
+fue deshabilitado por requerimiento del flujo operativo).
+
+\subsection{Archivo SQL de entrega}
+
+El archivo SQL debe acompañar la entrega académica como archivo independiente,
+de modo que la estructura y los datos necesarios puedan reconstruirse sin
+depender únicamente de las migraciones del framework.
+
+\begin{center}
+\textbf{Archivo requerido:} \texttt{backup.sql}
+\end{center}
+
+Puede generarse desde el servidor de base de datos mediante:
+
+\begin{verbatim}
+pg_dump -U user_im -d incident_management_system \
+  --format=plain --no-owner --no-privileges > backup.sql
+\end{verbatim}
+
+% ==========================================================
+% 5. CREDENCIALES
+% ==========================================================
+\section{Credenciales de acceso}
+
+Los \textit{seeders} de demostración incluyen los siguientes usuarios, todos con contraseña \texttt{password}:
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{softgray}{white}
+\begin{tabularx}{\textwidth}{@{}l X l@{}}
+\toprule
+\textbf{Rol} & \textbf{Correo} & \textbf{Contraseña} \\
+\midrule
+Administrador & admin@incidents.local & password \\
+Supervisor & supervisor@incidents.local & password \\
+Operador & operador1@incidents.local & password \\
+Ciudadano & ciudadano1@incidents.local & password \\
+\bottomrule
+\end{tabularx}
+\caption{Credenciales de demostración cargadas mediante seeders.}
+\end{table}
+
+\textbf{Nota:} estas credenciales son únicamente para pruebas y demostración académica.
+
+% ==========================================================
+% 6. EJECUCIÓN
+% ==========================================================
+\section{Instrucciones de ejecución}
+
+\textbf{Requisitos:} Git, Docker Desktop/Engine con Docker Compose, PHP 8.3+ y Composer.
+
+\begin{enumerate}
+    \item \textbf{Clonar el repositorio:}
+\begin{verbatim}
+git clone https://github.com/DevTorres404/georeferenced-incident-management.git
+cd georeferenced-incident-management
+\end{verbatim}
+
+    \item \textbf{Levantar servicios de apoyo del backend:}
+\begin{verbatim}
+cd backend
+docker compose -f docker-compose.yml up -d
+\end{verbatim}
+    Este entorno inicia PostgreSQL/PostGIS, Redis, RustFS y Mailpit.
+
+    \item \textbf{Configurar Laravel:}
+\begin{verbatim}
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
+\end{verbatim}
+
+    \item \textbf{Iniciar backend y servicios de ejecución:}
+\begin{verbatim}
+php artisan serve
+php artisan queue:listen
+php artisan reverb:start
+\end{verbatim}
+
+    \item \textbf{Levantar el frontend local con Nginx:}
+\begin{verbatim}
+cd ../frontend
+docker compose up -d
+\end{verbatim}
+    El frontend queda disponible normalmente en \url{http://localhost:5500} y la API local en \url{http://127.0.0.1:8000}.
+\end{enumerate}
+
+
+
+% ==========================================================
+% 7. DESPLIEGUE
+% ==========================================================
+\section{Despliegue}
+
+El sistema utiliza un \textbf{despliegue híbrido}. El frontend se encuentra
+publicado en \textbf{Vercel}, mientras que el backend y sus servicios de
+infraestructura se ejecutan en un \textbf{servidor local de producción/homelab}
+administrado por el equipo.
+
+El entorno productivo del backend utiliza el archivo
+\texttt{docker-compose.prod.yml}. En él se definen los servicios
+\texttt{app}, \texttt{migrate}, \texttt{nginx}, \texttt{queue},
+\texttt{scheduler}, \texttt{reverb}, \texttt{pgsql}, \texttt{redis},
+\texttt{rustfs} y \texttt{rustfs-init}. PostgreSQL/PostGIS y Redis disponen de
+\textit{healthchecks}; los datos de PostgreSQL, Redis, almacenamiento y
+directorios de la aplicación se conservan mediante volúmenes Docker.
+
+Nginx funciona como punto de entrada HTTP del backend. PostgreSQL, Redis y
+RustFS permanecen dentro de la red \textit{bridge} de Docker y no requieren
+exposición directa al usuario final. Los trabajadores de cola procesan tareas
+asíncronas, el scheduler ejecuta tareas programadas y Reverb mantiene la
+comunicación WebSocket.
+
+\textbf{URL funcional del sistema:}
+\begin{center}
+\url{https://app.labtorres.me/}
+\end{center}
+
+\clearpage
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth,height=0.34\textheight,keepaspectratio]{vercel_prod.png}
+    \caption{Frontend del sistema desplegado y disponible en Vercel.}
+    \label{fig:vercel-prod}
+\end{figure}
+
+\vspace{0.15cm}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.96\textwidth,height=0.34\textheight,keepaspectratio]{docker_prod.png}
+    \caption{Servicios Docker del backend ejecutándose en el servidor local de producción.}
+    \label{fig:docker-prod}
+\end{figure}
+
+
+
+% ==========================================================
+% 8. EVIDENCIAS Y CALIDAD
+% ==========================================================
+\section{Evidencias de implementación y calidad del sistema}
+
+Esta sección reúne las evidencias solicitadas para demostrar funcionamiento,
+validación, testing, rendimiento y análisis de calidad. Las capturas se mantienen
+como figuras independientes, pero se organizan de dos por página cuando su
+resolución permite una lectura adecuada.
+
+\subsection{Capturas funcionales del sistema}
+
+Las evidencias funcionales cubren la pantalla principal, el registro y gestión
+de incidencias, la consulta georreferenciada y el módulo de analítica.
+
+\dosporevidencia
+{dashboard.png}{0.91}{Dashboard principal con indicadores y visualización de información.}
+{registro.png}{0.91}{Formulario de registro de una incidencia con selección geográfica.}
+
+\dosporevidencia
+{detalle.png}{0.91}{Detalle de incidencia con seguimiento, estado, asignaciones e historial.}
+{mapa.png}{0.94}{Mapa y consulta de incidencias georreferenciadas mediante MapLibre GL JS.}
+
+\clearpage
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.93\textwidth,height=0.62\textheight,keepaspectratio]{reportes.png}
+    \caption{Vista de analítica, filtros, métricas y reportes del sistema.}
+\end{figure}
+
+\subsection{Validaciones y manejo de errores}
+
+La validación se aplica en diferentes niveles:
+
+\begin{itemize}
+    \item \textbf{Frontend:} validación de datos antes del envío, estados de
+    carga y mensajes de error orientados al usuario.
+    \item \textbf{Backend:} reglas de validación de Laravel, autenticación,
+    autorización basada en permisos y manejo de operaciones no permitidas.
+    \item \textbf{Dominio:} reglas para transiciones de estado, clasificación,
+    asignaciones, resolución y reapertura.
+    \item \textbf{Base de datos:} claves foráneas, restricciones, índices,
+    funciones y triggers que refuerzan la integridad.
+\end{itemize}
+
+\subsection{Casos de prueba y pruebas automatizadas}
+
+La versión documentada incluye pruebas automatizadas tanto en backend como en
+frontend. La evidencia de PHPUnit muestra \textbf{220 pruebas superadas},
+\textbf{1.357 aserciones} y \textbf{0 fallos}. La ejecución registrada tuvo una
+duración de \textbf{501,41 s}.
+
+La evidencia de Vitest corresponde al comando
+\texttt{npm run test:js:coverage}. Se observan \textbf{51 archivos de prueba
+superados}, \textbf{1.275 tests superados} y \textbf{4 omitidos}, para un total
+de 1.279 tests registrados.
+
+\dosporevidencia
+{phpunit.png}{0.96}{Resultado de la suite PHPUnit del backend: 220 pruebas superadas y 1.357 aserciones.}
+{vitest.png}{0.96}{Resultado de las pruebas del frontend con Vitest: 51 archivos superados y 1.275 tests aprobados.}
+
+\subsection{Prueba de carga o estrés}
+
+El repositorio incluye escenarios k6 para salud del servicio, autenticación,
+mapa y flujo completo: \texttt{e1-health.js}, \texttt{e2-login.js},
+\texttt{e3-map.js} y \texttt{e4-full-flow.js}.
+
+La evidencia incluida corresponde al escenario \texttt{e1-health.js}. La
+ejecución alcanzó hasta \textbf{50 VUs}, realizó \textbf{3.447 solicitudes HTTP}
+y \textbf{6.894 checks}. Se obtuvo \textbf{100\% de checks exitosos},
+\textbf{0\% de solicitudes fallidas}, un tiempo promedio de
+\textbf{163,13 ms}, \textbf{p95 de 197,47 ms} y un máximo de
+\textbf{311,2 ms}. Los umbrales configurados para tasa de error y p95 fueron
+superados satisfactoriamente.
+
+\subsection{Uso de herramientas de calidad y métricas}
+
+Se utilizó \textbf{SonarQube} como herramienta de análisis de calidad. En la
+captura final se observan los siguientes indicadores:
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{softgray}{white}
+\begin{tabularx}{\textwidth}{@{}p{0.38\textwidth} X@{}}
+\toprule
+\textbf{Indicador} & \textbf{Resultado observado} \\
+\midrule
+Security & 0 incidencias abiertas, calificación A \\
+Reliability & 6 incidencias abiertas, calificación C \\
+Maintainability & 352 incidencias abiertas, calificación A \\
+Coverage & 74,4\% sobre aproximadamente 23k líneas a cubrir \\
+Duplications & 1,3\% sobre aproximadamente 59k líneas \\
+Security Hotspots & 0, calificación A \\
+Accepted issues & 0 \\
+\bottomrule
+\end{tabularx}
+\caption{Métricas observadas en el análisis final de SonarQube.}
+\end{table}
+
+\dosporevidencia
+{k6.png}{0.96}{Resultado de la prueba de carga k6 del escenario de salud del servicio.}
+{sonarqube.png}{0.96}{Panel de métricas de calidad del proyecto en SonarQube.}
+
+\subsection{Síntesis de evidencias de calidad}
+
+Las pruebas funcionales y automatizadas verifican los módulos principales; k6
+proporciona evidencia de comportamiento bajo carga; SonarQube aporta métricas
+de cobertura, duplicación, seguridad, fiabilidad y mantenibilidad. Las
+dificultades técnicas detectadas durante el desarrollo y las soluciones
+aplicadas se documentan en la Sección 9.
+
+
+% ==========================================================
+% 9. DIFICULTADES Y SOLUCIONES
+% ==========================================================
+\section{Dificultades encontradas y soluciones}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}p{0.30\textwidth} X@{}}
+\toprule
+\textbf{Dificultad} & \textbf{Solución aplicada} \\
+\midrule
+Consistencia entre coordenadas y geometría espacial & PostGIS y un trigger mantienen sincronizados latitud/longitud y la geometría \texttt{Point}. \\
+Trazabilidad de cambios de estado & Se separó el estado actual del historial y se añadieron transiciones, solicitudes y ciclos de reapertura. \\
+Acoplamiento entre pantallas y API & El consumo HTTP se centralizó en un cliente de API y el frontend se organizó en módulos. \\
+Procesamiento asíncrono & Redis, workers de cola y Reverb permiten ejecutar tareas y notificaciones sin bloquear las peticiones principales. \\
+Reproducibilidad del entorno & Docker Compose separa servicios, redes, volúmenes y configuración mediante variables de entorno. \\
+\bottomrule
+\end{tabularx}
+\caption{Principales dificultades técnicas y soluciones aplicadas.}
+\end{table}
+
+% ==========================================================
+% 10. CONCLUSIONES
+% ==========================================================
+\section{Conclusiones}
+
+El proyecto integró Desarrollo Web, Base de Datos, Calidad de Software y Administración de Data Center en una solución funcional. La separación entre frontend y backend permitió desplegar cada componente de manera independiente, mientras PostgreSQL/PostGIS proporcionó persistencia relacional y geoespacial.
+
+El historial de estados, asignaciones, comentarios, notificaciones, clasificación y ciclos de resolución permite mantener la trazabilidad del ciclo de vida de una incidencia. Los roles y permisos controlan el acceso a las operaciones y la estructura territorial permite relacionar el trabajo operativo con la ubicación de los reportes.
+
+En calidad se evidenciaron pruebas automatizadas de backend y frontend, pruebas de carga con k6 y análisis con SonarQube. En infraestructura, Docker Compose permitió desplegar de manera reproducible la API, Nginx, PostgreSQL/PostGIS, Redis, Reverb, workers, scheduler y almacenamiento S3 compatible.
+
+Como resultado, el SGI supera el alcance de un CRUD básico e integra seguimiento, georreferenciación, trazabilidad, seguridad, métricas, reportes y despliegue productivo. Como mejoras futuras quedan el escalamiento horizontal del backend y la generalización del catálogo territorial para soportar múltiples países.
+
+
+% ==========================================================
+
+
+\end{document}
