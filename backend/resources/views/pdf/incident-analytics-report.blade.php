@@ -93,16 +93,16 @@
     <h2 class="section-title">1. Alcance del análisis</h2>
     <table class="filters">
         <tr>
-            <th><span class="label">Fecha inicial</span><span class="value">{{ !empty($filters['start_date']) ? \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') : 'Sin restricción' }}</span></th>
-            <th><span class="label">Fecha final</span><span class="value">{{ !empty($filters['end_date']) ? \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') : 'Fecha de emisión' }}</span></th>
-            <th><span class="label">Categoría</span><span class="value">{{ $filters['category'] ?? 'Todas' }}</span></th>
-            <th><span class="label">Estado</span><span class="value">{{ $filters['state'] ?? 'Todos' }}</span></th>
+            <th scope="col"><span class="label">Fecha inicial</span><span class="value">{{ !empty($filters['start_date']) ? \Carbon\Carbon::parse($filters['start_date'])->format('d/m/Y') : 'Sin restricción' }}</span></th>
+            <th scope="col"><span class="label">Fecha final</span><span class="value">{{ !empty($filters['end_date']) ? \Carbon\Carbon::parse($filters['end_date'])->format('d/m/Y') : 'Fecha de emisión' }}</span></th>
+            <th scope="col"><span class="label">Categoría</span><span class="value">{{ $filters['category'] ?? 'Todas' }}</span></th>
+            <th scope="col"><span class="label">Estado</span><span class="value">{{ $filters['state'] ?? 'Todos' }}</span></th>
         </tr>
     </table>
 
     <h2 class="section-title">2. Indicadores ejecutivos</h2>
     <table class="kpis">
-        <thead><tr><th>Total analizado</th><th>Activas</th><th>Resueltas</th><th>Tasa de resolución</th><th>Tiempo promedio</th><th>Vencidas</th></tr></thead>
+        <thead><tr><th scope="col">Total analizado</th><th scope="col">Activas</th><th scope="col">Resueltas</th><th scope="col">Tasa de resolución</th><th scope="col">Tiempo promedio</th><th scope="col">Vencidas</th></tr></thead>
         <tbody><tr>
             <td>{{ $total }}</td>
             <td>{{ $active }}</td>
@@ -128,9 +128,9 @@
     <h2 class="section-title">3. Distribución operativa</h2>
     <table class="two-column">
         <tr>
-            <th>
+            <th scope="col">
                 <table class="data-table">
-                    <thead><tr><th colspan="3">Por prioridad</th></tr></thead>
+                    <thead><tr><th scope="col" colspan="3">Por prioridad</th></tr></thead>
                     <tbody>
                     @forelse($priorityCounts as $label => $count)
                         <tr><td>{{ $label }}</td><td class="number">{{ $count }}</td><td><div class="bar-track"><div class="bar-fill" style="width: {{ round(((int) $count / $maxPriority) * 100) }}%"></div></div></td></tr>
@@ -140,9 +140,9 @@
                     </tbody>
                 </table>
             </th>
-            <th>
+            <th scope="col">
                 <table class="data-table">
-                    <thead><tr><th colspan="3">Principales territorios</th></tr></thead>
+                    <thead><tr><th scope="col" colspan="3">Principales territorios</th></tr></thead>
                     <tbody>
                     @forelse(($analytics['topCities'] ?? []) as $territory)
                         <tr><td>{{ $territory['city'] }}</td><td class="number">{{ $territory['count'] }}</td><td class="number">{{ $territory['pct'] }}%</td></tr>
@@ -157,7 +157,7 @@
 
     <h2 class="section-title">4. Tendencia mensual</h2>
     <table class="data-table" style="margin-bottom: 12px;">
-        <thead><tr><th>Mes</th><th>Registradas</th><th>Resueltas</th><th>Activas</th></tr></thead>
+        <thead><tr><th scope="col">Mes</th><th scope="col">Registradas</th><th scope="col">Resueltas</th><th scope="col">Activas</th></tr></thead>
         <tbody>
         @forelse($months as $index => $month)
             <tr><td>{{ $month }}</td><td class="number">{{ $analytics['monthlyTrend']['registered'][$index] ?? 0 }}</td><td class="number">{{ $analytics['monthlyTrend']['resolved'][$index] ?? 0 }}</td><td class="number">{{ $analytics['monthlyTrend']['pending'][$index] ?? 0 }}</td></tr>
@@ -169,7 +169,7 @@
 
     <h2 class="section-title">5. Resumen por categoría</h2>
     <table class="summary-table">
-        <thead><tr><th>Categoría</th><th>Total</th><th>Activas</th><th>Resueltas</th><th>Tasa</th></tr></thead>
+        <thead><tr><th scope="col">Categoría</th><th scope="col">Total</th><th scope="col">Activas</th><th scope="col">Resueltas</th><th scope="col">Tasa</th></tr></thead>
         <tbody>
         @forelse(($analytics['summaryRows'] ?? []) as $row)
             <tr><td>{{ $row['category'] }}</td><td>{{ $row['total'] }}</td><td>{{ $row['pending'] }}</td><td>{{ $row['resolved'] }}</td><td>{{ $row['resolution_rate'] }}%</td></tr>

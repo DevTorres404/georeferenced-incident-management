@@ -329,20 +329,20 @@
 
     <table class="document-meta">
         <tr>
-            <th><strong>Fecha de corte:</strong> {{ now()->format('d/m/Y H:i') }}</th>
-            <th><strong>Clasificación:</strong> Uso interno</th>
+            <th scope="col"><strong>Fecha de corte:</strong> {{ now()->format('d/m/Y H:i') }}</th>
+            <th scope="col"><strong>Clasificación:</strong> Uso interno</th>
         </tr>
     </table>
 
     <h2 class="section-title">1. Identificación y alcance</h2>
     <table class="operator-sheet">
         <tr>
-            <th><span class="field-label">Operador</span><span class="field-value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</span></th>
-            <th><span class="field-label">Identificador interno</span><span class="field-value mono">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</span></th>
+            <th scope="col"><span class="field-label">Operador</span><span class="field-value">{{ $operator['first_name'] }} {{ $operator['last_name'] }}</span></th>
+            <th scope="col"><span class="field-label">Identificador interno</span><span class="field-value mono">#{{ str_pad($operator['id'], 5, '0', STR_PAD_LEFT) }}</span></th>
         </tr>
         <tr>
-            <th><span class="field-label">Correo institucional</span><span class="field-value">{{ $operator['email'] }}</span></th>
-            <th><span class="field-label">Alcance del documento</span><span class="field-value">{{ $report_scope_label ?? 'Últimas 50 intervenciones' }}</span></th>
+            <th scope="col"><span class="field-label">Correo institucional</span><span class="field-value">{{ $operator['email'] }}</span></th>
+            <th scope="col"><span class="field-label">Alcance del documento</span><span class="field-value">{{ $report_scope_label ?? 'Últimas 50 intervenciones' }}</span></th>
         </tr>
     </table>
 
@@ -350,11 +350,11 @@
     <table class="metrics-table">
         <thead>
             <tr>
-                <th>Carga laboral</th>
-                <th>Casos asignados</th>
-                <th>Casos resueltos</th>
-                <th>Promedio de respuesta</th>
-                <th>Tasa de reapertura</th>
+                <th scope="col">Carga laboral</th>
+                <th scope="col">Casos asignados</th>
+                <th scope="col">Casos resueltos</th>
+                <th scope="col">Promedio de respuesta</th>
+                <th scope="col">Tasa de reapertura</th>
             </tr>
         </thead>
         <tbody>
@@ -384,7 +384,7 @@
         <section class="incident-record">
             <table class="record-metadata">
                 <thead>
-                    <tr><th>Ticket</th><th>Estado actual</th><th>Última asignación</th><th>Reaperturas</th></tr>
+                    <tr><th scope="col">Ticket</th><th scope="col">Estado actual</th><th scope="col">Última asignación</th><th scope="col">Reaperturas</th></tr>
                 </thead>
                 <tbody>
                     <tr>
@@ -397,7 +397,7 @@
             </table>
             <table class="record-detail">
                 <tr>
-                    <th class="record-summary">
+                    <th scope="col" class="record-summary">
                         <div class="record-title">{{ \Illuminate\Support\Str::limit($incident['title'], 95) }}</div>
                         <div class="record-classification">
                             <strong>Categoría:</strong> {{ $incident['category']['name'] ?? 'Sin categoría' }}<br>
@@ -407,7 +407,7 @@
                     <td class="history-cell">
                         <table class="history-table">
                             <thead>
-                                <tr><th>N.º</th><th>Estado</th><th>Prioridad</th><th>Inicio</th><th>Duración</th><th>Responsable</th></tr>
+                                <tr><th scope="col">N.º</th><th scope="col">Estado</th><th scope="col">Prioridad</th><th scope="col">Inicio</th><th scope="col">Duración</th><th scope="col">Responsable</th></tr>
                             </thead>
                             <tbody>
                                 @forelse($filteredHistory as $historyItem)
@@ -456,8 +456,8 @@
 
     <table class="approval-strip">
         <tr>
-            <th><strong>Fuente:</strong> Sistema de Gestión de Incidencias Georreferenciadas</th>
-            <th><strong>Responsable:</strong> Dirección de Operaciones</th>
+            <th scope="col"><strong>Fuente:</strong> Sistema de Gestión de Incidencias Georreferenciadas</th>
+            <th scope="col"><strong>Responsable:</strong> Dirección de Operaciones</th>
         </tr>
     </table>
 </body>
