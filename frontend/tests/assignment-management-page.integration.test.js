@@ -335,7 +335,7 @@ describe('assignment-management-page.js — integration', () => {
 
       // After submit it re-fetches incidents
       const reloadCall = backendClient.request.mock.calls.find(
-        c => c[0] === '/incidents?per_page=100'
+        c => c[0] === '/incidents?per_page=10000'
       )
       expect(reloadCall).toBeTruthy()
     })

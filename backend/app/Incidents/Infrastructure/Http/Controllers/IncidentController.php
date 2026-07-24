@@ -85,7 +85,7 @@ class IncidentController extends ApiController
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'radio_km' => ['nullable', 'numeric', 'min:0.1', 'max:200'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:500'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:10000'],
         ]);
 
         $filtersDto = new IncidentFiltersData(
@@ -218,6 +218,7 @@ class IncidentController extends ApiController
             'min_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'max_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'is_assigned' => ['nullable', 'boolean'],
         ]);
 
         $mapFilters = new IncidentMapFiltersData(
@@ -226,6 +227,7 @@ class IncidentController extends ApiController
             categoryId: $filters['category_id'] ?? null,
             mine: $filters['mine'] ?? null,
             assignedToMe: $filters['assigned_to_me'] ?? null,
+            isAssigned: $filters['is_assigned'] ?? null,
             search: $filters['search'] ?? null,
             minLatitude: $filters['min_latitude'] ?? null,
             maxLatitude: $filters['max_latitude'] ?? null,

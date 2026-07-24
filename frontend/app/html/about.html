@@ -36,247 +36,85 @@
                             <h1 class="m-0"> <i class="fas fa-info-circle text-primary mr-2"></i>Acerca del Sistema
                             </h1>
                         </div>
-                        <div class="col-sm-6 d-none d-sm-block"> <!-- Breadcrumbs removidos --> </div>
+                        <div class="col-sm-6 text-right">
+                            <a href="incident-create.html" id="btnCreateIncident" hidden class="btn btn-primary shadow-sm"> 
+                                <i class="fas fa-plus mr-1" aria-hidden="true"></i>Reportar Incidencia 
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="content">
-                <div class="container-fluid"> <!-- ===== HERO ===== -->
-                    <div class="hero-about">
-                        <h2> <i class="fas fa-map-marked-alt mr-3"></i>SGI </h2>
-                        <h4 class="font-weight-light mb-3">Sistema Web de Gestión de Incidencias Georreferenciadas</h4>
-                        <p> Plataforma académica para el registro, seguimiento y resolución de incidencias ciudadanas
-                            con soporte de georreferenciación. Desarrollada íntegramente con tecnologías frontend
-                            modernas sobre la plantilla AdminLTE 3. </p>
-                        <div class="mt-4 d-flex flex-wrap" style="gap:10px;"> <span class="badge badge-light px-3 py-2"
-                                style="font-size:0.85rem;"> <i class="fas fa-code-branch mr-1"></i>Versión 1.0.0 </span>
-                            <span class="badge badge-light px-3 py-2" style="font-size:0.85rem;"> <i
-                                    class="fas fa-graduation-cap mr-1"></i>Proyecto Académico </span> <span
-                                class="badge badge-light px-3 py-2" style="font-size:0.85rem;"> <i
-                                    class="fas fa-calendar mr-1"></i>2026 </span>
+            <main class="content" id="main-content" role="main" aria-label="Contenido principal">
+                <div class="container-fluid">
+                    <section class="hero-about d-flex flex-column flex-md-row align-items-center justify-content-between" aria-label="Banner de presentación del sistema">
+                        <div class="hero-about-content flex-grow-1">
+                            <h2 class="mb-2">SGI</h2>
+                            <h3 class="font-weight-light mb-3 text-white-50">Sistema de Gestión de Incidencias Georreferenciadas</h3>
+                            <p class="lead mb-4">Plataforma integral para el reporte, seguimiento y resolución de incidencias en la vía pública, facilitando la colaboración entre ciudadanos y los equipos operativos del municipio.</p>
+                            <div class="d-flex flex-wrap" style="gap:10px;">
+                                <span class="badge px-3 py-2 hero-badge" aria-label="Versión actual del sistema"> <i class="fas fa-code-branch mr-1" aria-hidden="true"></i>Versión 1.0.0 </span>
+                            </div>
                         </div>
-                    </div> <!-- ===== FILA 1: Descripción + Tecnologías ===== -->
-                    <div class="row"> <!-- Descripción del sistema: ancho completo ahora que no hay Stack -->
+                        <div class="hero-about-visual mt-4 mt-md-0 ml-md-5 d-none d-sm-flex align-items-center justify-content-center" aria-hidden="true">
+                            <div class="hero-logo-wrapper">
+                                <img src="/img/SGI_LOGO.png" alt="Logotipo oficial del SGI" class="hero-main-logo">
+                                <div class="hero-glow"></div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="row" aria-labelledby="objetivo-sistema-titulo">
                         <div class="col-12">
                             <div class="card shadow-sm border-0 rounded-3 h-100 mb-4">
-                                <div class="card-header">
-                                    <h3 class="card-title"> <i class="fas fa-bullseye mr-2"></i>Objetivo del Sistema
-                                    </h3>
-                                </div>
+                                <header class="card-header">
+                                    <h2 class="card-title h3" id="objetivo-sistema-titulo"> <i class="fas fa-bullseye mr-2" aria-hidden="true"></i>Objetivo del Sistema </h2>
+                                </header>
                                 <div class="card-body">
-                                    <p> El <strong>SGI</strong> tiene como objetivo principal proporcionar a ciudadanos
-                                        y administradores municipales una herramienta eficiente para: </p>
-                                    <!-- Características principales -->
-                                    <div class="feature-item">
-                                        <div class="feature-icon" style="background:#007bff;"> <i
-                                                class="fas fa-map-pin"></i> </div>
-                                        <div>
-                                            <div class="feature-title">Georreferenciación de Incidencias</div>
-                                            <p class="feature-desc"> Registro de coordenadas (latitud/longitud) para
-                                                localizar con precisión cada incidencia en el mapa geográfico. </p>
+                                    <p> El <strong>SGI</strong> busca modernizar la atención ciudadana mediante: </p>
+                                    <div class="row" role="list" aria-label="Características principales">
+                                        <div class="col-md-6 mb-3" role="listitem">
+                                            <div class="feature-item h-100">
+                                                <div class="feature-icon" style="background:#007bff;" aria-hidden="true"> <i class="fas fa-map-pin"></i> </div>
+                                                <div>
+                                                    <h3 class="feature-title">Georreferenciación Exacta</h3>
+                                                    <p class="feature-desc"> Reportes precisos en el mapa interactivo para agilizar la respuesta operativa. </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="feature-item">
-                                        <div class="feature-icon" style="background:#28a745;"> <i
-                                                class="fas fa-tasks"></i> </div>
-                                        <div>
-                                            <div class="feature-title">Gestión Integral de Incidencias</div>
-                                            <p class="feature-desc"> Seguimiento completo del ciclo de vida: registro,
-                                                asignación, seguimiento en tiempo real y cierre con historial de
-                                                cambios. </p>
+                                        <div class="col-md-6 mb-3" role="listitem">
+                                            <div class="feature-item h-100">
+                                                <div class="feature-icon" style="background:#28a745;" aria-hidden="true"> <i class="fas fa-tasks"></i> </div>
+                                                <div>
+                                                    <h3 class="feature-title">Transparencia Total</h3>
+                                                    <p class="feature-desc"> Los ciudadanos pueden realizar el seguimiento en tiempo real del estado de su reporte. </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="feature-item">
-                                        <div class="feature-icon" style="background:#17a2b8;"> <i
-                                                class="fas fa-chart-line"></i> </div>
-                                        <div>
-                                            <div class="feature-title">Reportes y Estadísticas</div>
-                                            <p class="feature-desc"> Métricas de gestión con gráficos interactivos:
-                                                tipos, prioridades, estados, tasas de resolución y tendencias mensuales.
-                                            </p>
+                                        <div class="col-md-6 mb-3" role="listitem">
+                                            <div class="feature-item h-100">
+                                                <div class="feature-icon" style="background:#17a2b8;" aria-hidden="true"> <i class="fas fa-chart-line"></i> </div>
+                                                <div>
+                                                    <h3 class="feature-title">Análisis de Datos</h3>
+                                                    <p class="feature-desc"> Información estadística para la toma de decisiones y mejora de los servicios. </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="feature-item">
-                                        <div class="feature-icon" style="background:#fd7e14;"> <i
-                                                class="fas fa-shield-alt"></i> </div>
-                                        <div>
-                                            <div class="feature-title">Validaciones Robustas</div>
-                                            <p class="feature-desc"> Validación de formularios completa: campos
-                                                obligatorios, longitud mínima, formato de email, rangos numéricos
-                                                (lat/lon) y listas de selección. </p>
+                                        <div class="col-md-6 mb-3" role="listitem">
+                                            <div class="feature-item h-100">
+                                                <div class="feature-icon" style="background:#fd7e14;" aria-hidden="true"> <i class="fas fa-users"></i> </div>
+                                                <div>
+                                                    <h3 class="feature-title">Participación Ciudadana</h3>
+                                                    <p class="feature-desc"> Una comunidad activa colaborando para un mejor entorno. </p>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="feature-item">
-                                        <div class="feature-icon" style="background:#6f42c1;"> <i
-                                                class="fas fa-mobile-alt"></i> </div>
-                                        <div>
-                                            <div class="feature-title">Diseño Responsivo</div>
-                                            <p class="feature-desc"> Interfaz adaptada a dispositivos móviles, tablets y
-                                                escritorio gracias a Bootstrap 4 y AdminLTE 3. </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> <!-- ===== FILA 2: Módulos + Versiones ===== -->
-                        <div class="row"> <!-- Módulos del sistema -->
-                            <div class="col-lg-5">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h3 class="card-title"> <i class="fas fa-sitemap mr-2"></i>Módulos del Sistema
-                                        </h3>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                        <table class="table table-sm mb-0">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>Módulo</th>
-                                                    <th class="text-center">Estado</th>
-                                                    <th>Descripción</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr>
-                                                    <td><i class="fas fa-tachometer-alt mr-2 text-primary"></i><strong>Panel
-                                                            principal</strong></td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">KPIs, gráficos, últimas incidencias
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i
-                                                            class="fas fa-list-alt mr-2 text-info"></i><strong>Gestión</strong>
-                                                    </td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">DataTable, filtros, modales</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i class="fas fa-plus-circle mr-2 text-success"></i><strong>Nueva
-                                                            Incidencia</strong></td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">Form multi-paso + validaciones</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i
-                                                            class="fas fa-file-alt mr-2 text-warning"></i><strong>Detalle</strong>
-                                                    </td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">Timeline, comentarios, estado</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i
-                                                            class="fas fa-chart-bar mr-2 text-danger"></i><strong>Reportes</strong>
-                                                    </td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">4 gráficos + rankings + tabla</td>
-                                                </tr>
-                                                <tr>
-                                                    <td><i class="fas fa-map mr-2 text-secondary"></i><strong>Mapa
-                                                            Interactivo</strong></td>
-                                                    <td class="text-center"><span
-                                                            class="badge badge-resuelta">Completo</span></td>
-                                                    <td class="text-muted small">Mapa interactivo con MapLibre GL JS</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> <!-- Historial de versiones -->
-                            <div class="col-lg-4">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h3 class="card-title"> <i class="fas fa-history mr-2"></i>Historial de
-                                            Versiones </h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="version-item latest"> <strong>v1.0.0</strong> <span
-                                                class="badge bg-success text-white version-badge">Actual</span>
-                                            <div class="text-muted small mt-1">Junio 2026</div>
-                                            <ul class="text-muted small mt-1 mb-0">
-                                                <li>6 módulos completos</li>
-                                                <li>Mapa interactivo con MapLibre GL JS</li>
-                                                <li>Validaciones completas</li>
-                                                <li>4 gráficos Chart.js</li>
-                                            </ul>
-                                        </div>
-                                        <div class="version-item"> <strong>v0.2.0</strong>
-                                            <div class="text-muted small mt-1">Mayo 2026</div>
-                                            <ul class="text-muted small mt-1 mb-0">
-                                                <li>Panel principal inicial</li>
-                                                <li>Gestión básica</li>
-                                            </ul>
-                                        </div>
-                                        <div class="version-item"> <strong>v0.1.0</strong>
-                                            <div class="text-muted small mt-1">Abril 2026</div>
-                                            <ul class="text-muted small mt-1 mb-0">
-                                                <li>Estructura base</li>
-                                                <li>Layout AdminLTE</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> <!-- Equipo -->
-                            <div class="col-lg-3">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h3 class="card-title"> <i class="fas fa-users mr-2"></i>Equipo de Desarrollo
-                                        </h3>
-                                    </div>
-                                    <div class="card-body text-center">
-                                        <div class="mb-4">
-                                            <div class="team-avatar"
-                                                style="background:linear-gradient(135deg,#007bff,#00c6ff);"> AD </div>
-                                            <div class="font-weight-bold">Admin SGI</div> <small
-                                                class="text-muted">Desarrollador Frontend</small>
-                                            <div class="mt-2"> <span class="badge badge-primary">HTML/CSS</span> <span
-                                                    class="badge badge-warning">JS</span> <span
-                                                    class="badge badge-info">Bootstrap</span> </div>
-                                        </div>
-                                        <hr>
-                                        <div class="text-left">
-                                            <p class="text-muted small mb-2"> <i
-                                                    class="fas fa-university mr-2 text-primary"></i>
-                                                <strong>Institución:</strong> Universidad Académica
-                                            </p>
-                                            <p class="text-muted small mb-2"> <i
-                                                    class="fas fa-book mr-2 text-success"></i> <strong>Curso:</strong>
-                                                Desarrollo Web Frontend </p>
-                                            <p class="text-muted small mb-0"> <i
-                                                    class="fas fa-calendar mr-2 text-warning"></i>
-                                                <strong>Ciclo:</strong> 2026-I
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div> <!-- ===== FILA 3: Licencia y contacto ===== -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card bg-gradient-dark text-white">
-                                    <div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between"
-                                        style="gap:16px;">
-                                        <div> <i class="fas fa-shield-alt mr-2"></i> <strong>Proyecto Académico — Sin
-                                                fines comerciales</strong> <span class="ml-3 text-white-50 small">
-                                                Desarrollado sobre AdminLTE 3 (MIT License) · Bootstrap 4 · Chart.js ·
-                                                jQuery </span> </div>
-                                        <div class="d-flex" style="gap:10px;"> <a href="dashboard.html"
-                                                class="btn btn-sm btn-outline-light"> <i class="fas fa-home mr-1"></i>Ir
-                                                al Panel principal </a> <a href="incident-create.html" id="btnCreateIncident"
-                                                hidden
-                                                class="btn btn-sm btn-light"> <i class="fas fa-plus mr-1"></i>Nueva
-                                                Incidencia </a> </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div><!-- /.container-fluid -->
-                </div><!-- /.content -->
+                    </section>
+                </div>
+            </main><!-- /.content -->
             </div><!-- /.content-wrapper -->
             <footer class="main-footer text-sm">
             <div class="float-right d-none d-sm-inline">Versión 1.0.0</div>

@@ -57,19 +57,27 @@
                                             type="search" class="form-control" id="mapSearch"
                                             placeholder="Código, título o dirección"> </div>
                                 </div>
-                                <div class="col-lg-2 col-md-6">
+                                <div class="col-lg-2 col-md-4">
                                     <div class="form-group mb-lg-0"> <label for="mapState">Estado</label> <select
                                             class="form-control" id="mapState"></select> </div>
                                 </div>
-                                <div class="col-lg-2 col-md-6">
+                                <div class="col-lg-2 col-md-4">
                                     <div class="form-group mb-lg-0"> <label for="mapPriority">Prioridad</label> <select
                                             class="form-control" id="mapPriority"></select> </div>
                                 </div>
-                                <div class="col-lg-2 col-md-6">
+                                <div class="col-lg-2 col-md-4">
                                     <div class="form-group mb-lg-0"> <label for="mapCategory">Categoría</label> <select
                                             class="form-control" id="mapCategory"></select> </div>
                                 </div>
-                                <div class="col-lg-3"> <span class="d-block font-weight-bold pb-2">Alcance</span>
+                                <div class="col-lg-2 col-md-4">
+                                    <div class="form-group mb-lg-0"> <label for="mapAssignmentStatus">Asignación</label> <select
+                                            class="form-control" id="mapAssignmentStatus">
+                                            <option value="">Todas</option>
+                                            <option value="assigned">Con operador</option>
+                                            <option value="unassigned">Sin operador</option>
+                                        </select> </div>
+                                </div>
+                                <div class="col-lg-2 col-md-4"> <span class="d-block font-weight-bold pb-2">Alcance</span>
                                     <div class="d-flex flex-wrap align-items-center">
                                         <div class="custom-control custom-checkbox mr-3" id="mapMineScope"> <input type="checkbox"
                                                 class="custom-control-input" id="mapMine"> <label
@@ -122,8 +130,7 @@
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
     <script type="module" src="/js/layout/layout.js?v=46"></script>
-    <script type="module" src="/js/modules/map/presentation/incident-map-page.js?v=5"></script>
+    <script type="module" src="/js/modules/map/presentation/incident-map-page.js?v=10"></script>
 </body>
 
 </html>
-

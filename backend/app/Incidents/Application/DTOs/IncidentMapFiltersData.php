@@ -10,6 +10,7 @@ final class IncidentMapFiltersData
         public readonly ?int $categoryId = null,
         public readonly ?bool $mine = null,
         public readonly ?bool $assignedToMe = null,
+        public readonly ?bool $isAssigned = null,
         public readonly ?string $search = null,
         public readonly ?float $minLatitude = null,
         public readonly ?float $maxLatitude = null,

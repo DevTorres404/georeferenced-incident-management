@@ -43,7 +43,7 @@ export async function initAssignmentManagementPage() {
 
   try {
     const [incidentsResponse, operatorsResponse] = await Promise.all([
-      listIncidents({ per_page: 100 }),
+      listIncidents({ per_page: 10000 }),
       listAssignmentOperators()
     ])
 
@@ -74,7 +74,7 @@ export async function initAssignmentManagementPage() {
 
     clearApiCache()
     Promise.all([
-      listIncidents({ per_page: 100 }),
+      listIncidents({ per_page: 10000 }),
       listAssignmentOperators()
     ]).then(([incidentsResponse, operatorsResponse]) => {
       state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : []
@@ -88,13 +88,13 @@ export async function initAssignmentManagementPage() {
 }
 
 function bindStaticEvents(state) {
-  ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach(id => {
+  ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator', 'filterAssignmentStatus'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => applyFilters(state))
     document.getElementById(id)?.addEventListener('change', () => applyFilters(state))
   })
 
   document.getElementById('btnResetFilters')?.addEventListener('click', () => {
-    ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator'].forEach(id => {
+    ['filterSearch', 'filterPriority', 'filterState', 'filterCategory', 'filterTerritory', 'filterOperator', 'filterAssignmentStatus'].forEach(id => {
       const field = document.getElementById(id)
       if (field) {
         field.value = ''
@@ -210,6 +210,7 @@ export function applyFilters(state) {
   const category = String(document.getElementById('filterCategory')?.value || '').trim().toLowerCase()
   const territory = String(document.getElementById('filterTerritory')?.value || '').trim().toLowerCase()
   const operatorId = String(document.getElementById('filterOperator')?.value || '').trim()
+  const assignmentStatus = String(document.getElementById('filterAssignmentStatus')?.value || '').trim()
 
   state.filteredIncidents = state.incidents.filter(incident => {
     const matchesSearch = !search || `${incident.code || ''} ${incident.title || ''}`.toLowerCase().includes(search)
@@ -218,9 +219,17 @@ export function applyFilters(state) {
     const matchesCategory = !category || String(incident.category?.name || '').toLowerCase() === category
     const incidentZone = String(incident.zone_name || '').trim().toLowerCase()
     const matchesTerritory = !territory || incidentZone === territory
-    const matchesOperator = !operatorId || (Array.isArray(incident.assignments) && incident.assignments.some(assignment => String(assignment.user_id) === operatorId))
+    
+    const activeAssignments = Array.isArray(incident.assignments) ? incident.assignments : []
+    const hasAssignee = activeAssignments.length > 0
+    
+    const matchesOperator = !operatorId || activeAssignments.some(assignment => String(assignment.user_id) === operatorId)
+    
+    const matchesAssignmentStatus = !assignmentStatus || 
+      (assignmentStatus === 'assigned' && hasAssignee) || 
+      (assignmentStatus === 'unassigned' && !hasAssignee)
 
-    return matchesSearch && matchesPriority && matchesState && matchesCategory && matchesTerritory && matchesOperator
+    return matchesSearch && matchesPriority && matchesState && matchesCategory && matchesTerritory && matchesOperator && matchesAssignmentStatus
   })
 
   renderKpis(state.filteredIncidents, state.operators)
@@ -515,7 +524,7 @@ export async function submitAssignment(state) {
     // Recargar incidencias y operadores desde el backend (sin caché)
     clearApiCache()
     const [incidentsResponse, operatorsResponse] = await Promise.all([
-      listIncidents({ per_page: 100 }),
+      listIncidents({ per_page: 10000 }),
       listAssignmentOperators()
     ])
     state.incidents = Array.isArray(incidentsResponse?.data) ? incidentsResponse.data : []

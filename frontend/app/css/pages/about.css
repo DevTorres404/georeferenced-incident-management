@@ -1,63 +1,127 @@
 /* Hero banner */
 .hero-about {
-  background: linear-gradient(135deg, var(--color-sidebar-bg, #071827) 0%, var(--color-sidebar-bg-soft, #0f2740) 60%, var(--sgi-primary-hover) 100%);
-  border-radius: 12px;
-  padding: 48px 40px;
+  background: linear-gradient(135deg, var(--color-sidebar-bg, #071827) 0%, var(--color-sidebar-bg-soft, #0f2740) 50%, var(--sgi-primary, #007bff) 100%);
+  border-radius: 16px;
+  padding: 50px 50px;
   color: #fff;
-  margin-bottom: 28px;
+  margin-bottom: 30px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
+/* Abstract map pattern overlay */
 .hero-about::before {
-  content: '\f5a0';
-  font-family: 'Font Awesome 5 Free', sans-serif;
-  font-weight: 900;
+  content: '';
   position: absolute;
-  right: 40px; top: 50%; transform: translateY(-50%);
-  font-size: 10rem;
-  opacity: 0.08;
-  color: #fff;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
 }
-.hero-about h2 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
-.hero-about p  { font-size: 1.05rem; opacity: 0.85; max-width: 600px; }
+.hero-about-content {
+  position: relative;
+  z-index: 2;
+  max-width: 650px;
+}
+.hero-about-content h2 { font-size: 3.5rem; font-weight: 800; letter-spacing: -1px; }
+.hero-about-content h4 { font-size: 1.2rem; }
+.hero-about-content p { font-size: 1.1rem; opacity: 0.9; line-height: 1.6; }
 
-/* Feature list */
+.hero-badge {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+}
+
+.hero-about-visual {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+.hero-logo-wrapper {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  perspective: 1000px;
+}
+.hero-main-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 20%;
+  padding: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 3;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: rotateY(-15deg) rotateX(10deg);
+}
+.hero-about:hover .hero-main-logo {
+  transform: rotateY(0deg) rotateX(0deg) scale(1.05);
+}
+.hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 160px;
+  height: 160px;
+  background: var(--sgi-primary-hover, #0056b3);
+  filter: blur(40px);
+  opacity: 0.6;
+  z-index: 1;
+  border-radius: 50%;
+  transition: all 0.6s ease;
+}
+.hero-about:hover .hero-glow {
+  opacity: 0.9;
+  filter: blur(50px);
+  width: 180px;
+  height: 180px;
+}
+
+/* Feature cards */
 .feature-item {
   display: flex; gap: 16px; align-items: flex-start;
-  padding: 14px 0; border-bottom: 1px solid var(--sgi-border);
+  padding: 24px 20px; 
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.3s ease;
+  height: 100%;
 }
-.feature-item:last-child { border-bottom: none; }
+.feature-item:hover {
+  background: #fff;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+  border-color: rgba(0,0,0,0.08);
+}
 .feature-icon {
-  width: 42px; height: 42px; border-radius: 10px;
+  width: 52px; height: 52px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 1.1rem; color: #fff;
+  flex-shrink: 0; font-size: 1.3rem; color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
 }
-.feature-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 3px; color: var(--sgi-text); }
-.feature-desc  { font-size: 0.83rem; color: var(--sgi-text-muted); margin: 0; }
+.feature-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; color: var(--sgi-text, #333); transition: color 0.3s ease; }
+.feature-desc  { font-size: 0.9rem; color: var(--sgi-text-muted, #666); margin: 0; line-height: 1.5; transition: color 0.3s ease; }
 
-/* Team card */
-.team-avatar {
-  width: 70px; height: 70px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.8rem; font-weight: 700; color: #fff;
-  margin: 0 auto 12px;
+/* Dark Mode Support */
+body.dark-mode .feature-item {
+  background: #343a40;
+  border-color: rgba(255,255,255,0.05);
 }
-/* Timeline de versiones */
-.version-item {
-  border-left: 3px solid var(--sgi-primary);
-  padding: 4px 0 12px 20px;
-  position: relative;
-  margin-bottom: 4px;
+body.dark-mode .feature-item:hover {
+  background: #3a4248;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,0.1);
 }
-.version-item::before {
-  content: '';
-  width: 12px; height: 12px;
-  background: var(--sgi-primary); border-radius: 50%;
-  position: absolute; left: -7px; top: 6px;
+body.dark-mode .feature-title {
+  color: #f8f9fa;
 }
-.version-item.latest { border-left-color: var(--color-baja, #28a745); }
-.version-item.latest::before { background: var(--color-baja, #28a745); }
-.version-badge {
-  font-size: 0.75rem; padding: 2px 8px;
-  border-radius: 20px; margin-left: 8px;
+body.dark-mode .feature-desc {
+  color: #adb5bd;
 }

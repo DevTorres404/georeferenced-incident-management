@@ -202,6 +202,18 @@ final class EloquentIncidentRepository implements IncidentRepositoryInterface //
             });
         }
 
+        if ($filters->isAssigned !== null) {
+            if ($filters->isAssigned) {
+                $query->whereHas('assignments', function ($assignmentQuery) {
+                    $assignmentQuery->where('active', true);
+                });
+            } else {
+                $query->whereDoesntHave('assignments', function ($assignmentQuery) {
+                    $assignmentQuery->where('active', true);
+                });
+            }
+        }
+
         if (! empty($filters->search)) {
             $search = $filters->search;
             $query->where(function ($searchQuery) use ($search) {

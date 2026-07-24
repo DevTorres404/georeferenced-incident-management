@@ -48,7 +48,7 @@ function bindEvents() {
   })
 
   document.getElementById('btnClearMapFilters')?.addEventListener('click', async () => {
-    ['mapSearch', 'mapState', 'mapPriority', 'mapCategory'].forEach(id => {
+    ['mapSearch', 'mapState', 'mapPriority', 'mapCategory', 'mapAssignmentStatus'].forEach(id => {
       const element = document.getElementById(id)
       if (element) {
         element.value = ''
@@ -187,6 +187,11 @@ async function loadMapPoints() {
 }
 
 function buildFilters() {
+  const assignmentStatus = document.getElementById('mapAssignmentStatus')?.value
+  let is_assigned = ''
+  if (assignmentStatus === 'assigned') is_assigned = 1
+  if (assignmentStatus === 'unassigned') is_assigned = 0
+
   return {
     search: document.getElementById('mapSearch')?.value.trim(),
     state_id: document.getElementById('mapState')?.value,
@@ -194,6 +199,7 @@ function buildFilters() {
     category_id: document.getElementById('mapCategory')?.value,
     mine: document.getElementById('mapMine')?.checked ? 1 : '',
     assigned_to_me: document.getElementById('mapAssignedToMe')?.checked ? 1 : '',
+    is_assigned: is_assigned,
     limit: 500
   }
 }
