@@ -111,6 +111,13 @@ const NAV_ITEMS = [
         permission: 'users.manage_roles'
       },
       {
+        id: 'category-management',
+        label: 'Categorías y subtipos',
+        icon: 'fa-tags',
+        route: 'category-management.html',
+        permission: 'catalogs.manage'
+      },
+      {
         id: 'audit-logs',
         label: 'Auditoría',
         icon: 'fa-clipboard-list',
@@ -135,6 +142,7 @@ const PAGE_ACCESS = {
   'my-team': { permission: 'operations.view_team' },
   'role-permissions': { permission: 'users.manage_roles' },
   'user-roles': { permission: 'users.manage_roles' },
+  'category-management': { permission: 'catalogs.manage' },
   reports: { permission: 'reportes.ver' },
   'audit-logs': { permission: 'audit.view' },
   'territorial-units': { permission: 'operations.view' }
