@@ -81,11 +81,6 @@ class IncidentException extends Exception
         return new self('Debes tener una asignacion activa en la incidencia para solicitar su resolucion.', 403);
     }
 
-    public static function stateChangeRequestRequiresAttachment(): self
-    {
-        return new self('Debes subir al menos una evidencia fotográfica o documental antes de solicitar el cambio de estado.', 422);
-    }
-
     public static function stateChangeRequestNotFound(): self
     {
         return new self('La solicitud de cambio de estado no existe.', 404);

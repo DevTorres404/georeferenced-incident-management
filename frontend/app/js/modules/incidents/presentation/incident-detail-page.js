@@ -2039,12 +2039,6 @@ document.getElementById('btnEnviarSolicitudEstado')?.addEventListener('click', a
   }
 
   const { incident, targetStateId } = pendingStateRequest
-  const attachments = Array.isArray(incident.attachments) ? incident.attachments : []
-  if (attachments.length === 0) {
-    showGlobalAlert('Debes adjuntar al menos una evidencia antes de enviar la solicitud de cambio de estado.', 'warning')
-    return
-  }
-
   const stateId = targetStateId
   const reason = document.getElementById('solicitudMotivo')?.value.trim()
   if (!reason) {
