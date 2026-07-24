@@ -102,14 +102,13 @@
 
     <h2 class="section-title">2. Indicadores ejecutivos</h2>
     <table class="kpis">
-        <thead><tr><th scope="col">Total analizado</th><th scope="col">Activas</th><th scope="col">Resueltas</th><th scope="col">Tasa de resolución</th><th scope="col">Tiempo promedio</th><th scope="col">Vencidas</th></tr></thead>
+        <thead><tr><th scope="col">Total analizado</th><th scope="col">Activas</th><th scope="col">Resueltas</th><th scope="col">Tasa de resolución</th><th scope="col">Tiempo promedio</th></tr></thead>
         <tbody><tr>
             <td>{{ $total }}</td>
             <td>{{ $active }}</td>
             <td>{{ $resolved }}</td>
             <td>{{ (int) ($analytics['resolutionRate'] ?? 0) }} <span class="unit">%</span></td>
             <td>{{ number_format((float) ($analytics['averageResolutionDays'] ?? 0), 1, ',', '.') }} <span class="unit">días</span></td>
-            <td>{{ (int) ($analytics['overdue'] ?? 0) }}</td>
         </tr></tbody>
     </table>
 
@@ -118,7 +117,7 @@
         @if($total === 0)
             No existen incidencias que coincidan con los filtros seleccionados.
         @elseif($active > $resolved)
-            La carga activa supera el volumen resuelto dentro del alcance seleccionado; se recomienda priorizar los casos vencidos y críticos.
+            La carga activa supera el volumen resuelto dentro del alcance seleccionado; se recomienda priorizar los casos críticos.
         @else
             El volumen de casos resueltos es igual o superior a la carga activa del periodo analizado.
         @endif
