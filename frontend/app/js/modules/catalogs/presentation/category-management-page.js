@@ -505,7 +505,10 @@ function initEventHandlers() {
   })
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof globalThis.renderLayout === 'function') {
+    await globalThis.renderLayout('category-management')
+  }
   initEventHandlers()
   loadData()
 })
