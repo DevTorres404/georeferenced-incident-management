@@ -214,8 +214,7 @@ function renderKpis(analytics) {
     { num: analytics.active, label: 'Activas', sub: 'Carga operativa actual', icon: 'fa-bolt', variant: 'kpi-pending' },
     { num: analytics.critical, label: 'Críticas', sub: 'Requieren seguimiento', icon: 'fa-radiation-alt', variant: 'kpi-progress' },
     { num: `${analytics.resolutionRate}%`, label: 'Resolución', sub: 'Cierre efectivo', icon: 'fa-check-double', variant: 'kpi-resolved' },
-    { num: `${Number(analytics.averageResolutionDays || 0).toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolución media', icon: 'fa-stopwatch', variant: 'kpi-time' },
-    { num: analytics.overdue, label: 'Vencidas', sub: 'Fuera de plazo', icon: 'fa-hourglass-end', variant: 'kpi-rate' }
+    { num: `${Number(analytics.averageResolutionDays || 0).toFixed(1)}d`, label: 'Tiempo prom.', sub: 'Resolución media', icon: 'fa-stopwatch', variant: 'kpi-time' }
   ]
 
   container.innerHTML = cards.map(card => `
@@ -309,7 +308,6 @@ function renderInsights(analytics, filters) {
   narrativeContainer.innerHTML = `
     <p class="mb-0">
       <strong>Lectura operativa:</strong> ${escapeHtml(pressure)}
-      ${analytics.overdue > 0 ? ` Hay ${analytics.overdue} incidencias vencidas que merecen priorización.` : ' No hay incidencias vencidas dentro del filtro seleccionado.'}
       ${rangeLabel ? ` Periodo analizado: ${escapeHtml(rangeLabel)}.` : ''}
     </p>
   `
