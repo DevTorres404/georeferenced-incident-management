@@ -1342,6 +1342,23 @@ class IncidentsTest extends TestCase
         $this->assertSame($reopenedState->id, $incident->fresh()->state_id);
     }
 
+    public function test_state_change_requests_use_the_core_schema(): void
+    {
+        $this->assertSame('core.state_change_requests', (new StateChangeRequest)->getTable());
+        $this->assertTrue(
+            DB::table('information_schema.tables')
+                ->where('table_schema', 'core')
+                ->where('table_name', 'state_change_requests')
+                ->exists()
+        );
+        $this->assertFalse(
+            DB::table('information_schema.tables')
+                ->where('table_schema', 'public')
+                ->where('table_name', 'state_change_requests')
+                ->exists()
+        );
+    }
+
     public function test_resolution_request_notifies_supervisor_and_approval_notifies_requester_and_broadcasts(): void
     {
         Event::fake([IncidentStateChanged::class]);
@@ -1372,6 +1389,13 @@ class IncidentsTest extends TestCase
             ])->assertCreated();
 
         $requestId = (int) $requestResponse->json('data.id');
+        $this->assertDatabaseHas('core.state_change_requests', [
+            'id' => $requestId,
+            'incident_id' => $incident->id,
+            'requested_by_user_id' => $operator['user']->id,
+            'requested_state_id' => $resolvedState->id,
+            'status' => 'pending',
+        ]);
         $this->assertDatabaseHas('core.notifications', [
             'user_id' => $supervisor['user']->id,
             'incident_id' => $incident->id,

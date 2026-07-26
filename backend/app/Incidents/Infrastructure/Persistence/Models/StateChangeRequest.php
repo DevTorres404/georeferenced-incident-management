@@ -13,7 +13,7 @@ final class StateChangeRequest extends Model
 
     public const UPDATED_AT = null;
 
-    protected $table = 'state_change_requests';
+    protected $table = 'core.state_change_requests';
 
     protected $fillable = [
         'incident_id',

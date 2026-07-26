@@ -257,11 +257,15 @@ class AuditTest extends TestCase
             'file_size_bytes' => 1024,
             'file_hash' => hash('sha256', 'audit-evidence'),
         ]);
-        StateChangeRequest::create([
+        $stateChangeRequest = StateChangeRequest::create([
             'incident_id' => $incident->id,
             'requested_by_user_id' => $operator->id,
             'requested_state_id' => State::where('id', '!=', $incident->state_id)->firstOrFail()->id,
             'reason' => 'Solicitud auditada.',
+        ]);
+        $this->assertDatabaseHas('core.state_change_requests', [
+            'id' => $stateChangeRequest->id,
+            'incident_id' => $incident->id,
         ]);
 
         foreach ([Category::class, StateTransition::class, IncidentAssignment::class, IncidentComment::class, IncidentAttachment::class, StateChangeRequest::class] as $modelClass) {
