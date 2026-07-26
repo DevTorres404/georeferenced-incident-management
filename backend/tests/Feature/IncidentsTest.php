@@ -2281,10 +2281,11 @@ class IncidentsTest extends TestCase
                 'comment' => 'First resolution.',
             ])->assertOk();
 
-        $firstResolvedAt = IncidentAssignment::query()
+        $firstAssignment = IncidentAssignment::query()
             ->where('incident_id', $incident->id)
             ->where('active', true)
-            ->value('resolved_at');
+            ->firstOrFail();
+        $firstResolvedAt = $firstAssignment->resolved_at;
         $this->assertNotNull($firstResolvedAt);
 
         $this->actingAsUser($admin['user'])
@@ -2336,10 +2337,8 @@ class IncidentsTest extends TestCase
                 'comment' => 'Second resolution.',
             ])->assertOk();
 
-        $oldAssignment = IncidentAssignment::query()
-            ->where('incident_id', $incident->id)
-            ->where('user_id', $firstPrimary['user']->id)
-            ->first();
+        $oldAssignment = IncidentAssignment::query()->findOrFail($firstAssignment->id);
+        $this->assertFalse($oldAssignment->active, 'First cycle assignment must remain historical');
         $this->assertNotNull($oldAssignment->resolved_at, 'First cycle resolved_at must be preserved');
         $this->assertEquals(
             $firstResolvedAt,

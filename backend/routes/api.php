@@ -5,6 +5,7 @@ use App\Auth\Infrastructure\Http\Controllers\AuthController;
 use App\Auth\Infrastructure\Http\Controllers\TwoFactorAuthController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogController;
 use App\Catalogs\Infrastructure\Http\Controllers\CatalogManagementController;
+use App\Catalogs\Infrastructure\Http\Controllers\CategoryRequestController;
 use App\Incidents\Infrastructure\Http\Controllers\DashboardController;
 use App\Incidents\Infrastructure\Http\Controllers\IncidentController;
 use App\Incidents\Infrastructure\Http\Controllers\NotificationController;
@@ -106,6 +107,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             ->middleware('permission:incidents.assign');
         Route::patch('/incidents/{incident}/classification', [IncidentController::class, 'classify'])
             ->middleware('permission:incidents.edit');
+        Route::post('/incidents/{incident}/category-requests', [CategoryRequestController::class, 'store'])
+            ->middleware('permission:incidents.edit');
         Route::patch('/incidents/{incident}/state', [IncidentController::class, 'changeState'])
             ->middleware('permission:incidents.edit');
 
@@ -142,6 +145,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
         Route::middleware('permission:users.manage_roles')->group(function () {
             Route::get('/admin/access-control', [AccessControlController::class, 'index']);
+            Route::put('/admin/roles/{role}/access', [AccessControlController::class, 'syncRoleAccess']);
             Route::put('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
             Route::patch('/admin/roles/{role}/permissions', [AccessControlController::class, 'syncRolePermissions']);
         });
@@ -156,6 +160,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             Route::get('operators', [OperationalStructureController::class, 'operators'])
                 ->middleware('permission:operations.view');
             Route::put('zones/{zoneId}/supervisor', [OperationalStructureController::class, 'assignSupervisor'])
+                ->middleware('permission:operations.manage');
+            Route::delete('zones/{zoneId}/supervisor', [OperationalStructureController::class, 'releaseSupervisor'])
                 ->middleware('permission:operations.manage');
             Route::put('supervisors/{supervisorUserId}/operators', [OperationalStructureController::class, 'syncSupervisorOperators'])
                 ->middleware('permission:operations.manage');
@@ -174,6 +180,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::get('/team/operators/{id}/work-report', [TeamController::class, 'workReport'])->middleware('permission:operations.view_team');
 
         Route::middleware('permission:catalogs.manage')->group(function () {
+            Route::get('/admin/catalogs/category-requests', [CategoryRequestController::class, 'index']);
+            Route::put('/admin/catalogs/category-requests/{id}/approve', [CategoryRequestController::class, 'approve']);
+            Route::put('/admin/catalogs/category-requests/{id}/reject', [CategoryRequestController::class, 'reject']);
             Route::get('/admin/catalogs/{catalog}', [CatalogManagementController::class, 'index']);
             Route::post('/admin/catalogs/{catalog}', [CatalogManagementController::class, 'store']);
             Route::get('/admin/catalogs/{catalog}/{id}', [CatalogManagementController::class, 'show']);

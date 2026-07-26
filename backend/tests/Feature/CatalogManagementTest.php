@@ -7,6 +7,7 @@ use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Category;
 use App\Incidents\Infrastructure\Persistence\Models\State;
+use App\Incidents\Infrastructure\Persistence\Models\Subcategory;
 use Database\Seeders\CategorySeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\PrioritySeeder;
@@ -110,7 +111,7 @@ class CatalogManagementTest extends TestCase
         $admin = $this->authenticateAdminWithPermission('catalogs.manage');
 
         $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/categories', [
-            'name' => 'Nueva Categoria',
+            'name' => '  Nueva   Categoria  ',
             'description' => 'Test',
             'color' => '#123456',
             'is_active' => true,
@@ -119,6 +120,21 @@ class CatalogManagementTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('data.name', 'Nueva Categoria');
         $this->assertDatabaseHas('core.categories', ['name' => 'Nueva Categoria']);
+    }
+
+    public function test_admin_can_list_catalog_records_with_typed_query_filters(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+
+        $response = $this->actingAs($admin)
+            ->getJson('/api/admin/catalogs/categories?per_page=100&is_active=1');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [['id', 'name']],
+                'meta' => ['current_page', 'per_page', 'total'],
+            ])
+            ->assertJsonPath('meta.per_page', 100);
     }
 
     public function test_admin_can_update_category(): void
@@ -152,6 +168,135 @@ class CatalogManagementTest extends TestCase
 
         $response->assertCreated();
         $this->assertDatabaseHas('core.priorities', ['name' => 'Nueva Prioridad', 'level' => 10]);
+    }
+
+    public function test_admin_can_toggle_category_active_state(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $category = Category::first();
+        $originalActive = $category->is_active;
+
+        $response = $this->actingAs($admin)->putJson("/api/admin/catalogs/categories/{$category->id}", [
+            'name' => $category->name,
+            'is_active' => ! $originalActive,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', ! $originalActive);
+        $this->assertDatabaseHas('core.categories', ['id' => $category->id, 'is_active' => ! $originalActive]);
+    }
+
+    public function test_create_category_fails_with_duplicate_name(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $existing = Category::first();
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/categories', [
+            'name' => $existing->name,
+            'color' => '#aabbcc',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_user_without_permission_cannot_create_category(): void
+    {
+        $user = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $role = Role::where('code', 'CIUDADANO')->firstOrFail();
+        $user->roles()->sync([$role->id]);
+
+        $response = $this->actingAs($user)->postJson('/api/admin/catalogs/categories', [
+            'name' => 'Sin Permiso',
+            'color' => '#111111',
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_admin_can_create_subcategory(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $category = Category::first();
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/subcategories', [
+            'category_id' => $category->id,
+            'name' => 'Nuevo Subtipo',
+            'description' => 'Descripción del subtipo',
+            'is_active' => true,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.name', 'Nuevo Subtipo');
+        $this->assertDatabaseHas('core.subcategories', [
+            'category_id' => $category->id,
+            'name' => 'Nuevo Subtipo',
+        ]);
+    }
+
+    public function test_admin_can_update_subcategory(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $category = Category::first();
+
+        // Crear subtipo para luego actualizarlo
+        $createResponse = $this->actingAs($admin)->postJson('/api/admin/catalogs/subcategories', [
+            'category_id' => $category->id,
+            'name' => 'Subtipo Original',
+            'is_active' => true,
+        ]);
+        $createResponse->assertCreated();
+        $subId = $createResponse->json('data.id');
+
+        $response = $this->actingAs($admin)->putJson("/api/admin/catalogs/subcategories/{$subId}", [
+            'category_id' => $category->id,
+            'name' => 'Subtipo Actualizado',
+            'is_active' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.name', 'Subtipo Actualizado');
+        $this->assertDatabaseHas('core.subcategories', ['id' => $subId, 'name' => 'Subtipo Actualizado', 'is_active' => false]);
+    }
+
+    public function test_create_subcategory_requires_valid_category_id(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+
+        $response = $this->actingAs($admin)->postJson('/api/admin/catalogs/subcategories', [
+            'category_id' => 99999,
+            'name' => 'Subtipo Huérfano',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['category_id']);
+    }
+
+    public function test_create_subcategory_rejects_duplicate_name_within_same_category(): void
+    {
+        $admin = $this->authenticateAdminWithPermission('catalogs.manage');
+        $existing = Subcategory::firstOrFail();
+
+        $this->actingAs($admin)->postJson('/api/admin/catalogs/subcategories', [
+            'category_id' => $existing->category_id,
+            'name' => $existing->name,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
+    }
+
+    public function test_supervisor_with_catalog_permission_cannot_mutate_catalogs(): void
+    {
+        $supervisor = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $role = Role::where('code', 'SUPERVISOR')->firstOrFail();
+        $permission = Permission::where('code', 'catalogs.manage')->firstOrFail();
+        $role->permissions()->syncWithoutDetaching([$permission->id]);
+        $supervisor->roles()->sync([$role->id]);
+
+        $this->actingAs($supervisor)->postJson('/api/admin/catalogs/categories', [
+            'name' => 'Categoría no autorizada',
+            'color' => '#112233',
+        ])->assertForbidden();
     }
 
     private function authenticateAdminWithPermission(string $permissionCode): User

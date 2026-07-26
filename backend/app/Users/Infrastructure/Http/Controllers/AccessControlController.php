@@ -8,6 +8,7 @@ use App\Shared\Infrastructure\Http\Controllers\ApiController;
 use App\Shared\Infrastructure\Notifications\AdminNotifier;
 use App\Shared\Infrastructure\Notifications\UserNotifier;
 use App\Users\Application\UseCases\AccessControlUseCase;
+use App\Users\Infrastructure\Http\Requests\SyncRoleAccessRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -65,6 +66,35 @@ class AccessControlController extends ApiController
         return response()->json([
             'message' => 'Permisos del rol actualizados correctamente.',
             'data' => $roleData,
+        ]);
+    }
+
+    public function syncRoleAccess(SyncRoleAccessRequest $request, int $role): JsonResponse
+    {
+        $roleModel = Role::findOrFail($role);
+        $affectedUserIds = $roleModel->users()
+            ->where('is_active', true)
+            ->get()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $accessData = $this->accessControlUseCase->syncRoleAccess($request->toData($role));
+
+        $this->adminNotifier->notify(
+            title: 'Cambio de accesos',
+            message: "Se modificaron los permisos y pantallas del rol {$roleModel->name}.",
+            type: 'STATUS_CHANGE'
+        );
+        $this->userNotifier->notifyMany(
+            $affectedUserIds,
+            'Accesos actualizados',
+            "Los permisos y pantallas del rol {$roleModel->name} fueron actualizados. Recarga la pagina para aplicar los cambios.",
+            'STATUS_CHANGE'
+        );
+
+        return response()->json([
+            'message' => 'Accesos del rol actualizados correctamente.',
+            'data' => $accessData,
         ]);
     }
 }

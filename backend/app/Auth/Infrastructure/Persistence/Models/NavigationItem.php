@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'icon',
     'route',
     'permission_code',
+    'allowed_roles',
     'sort_order',
     'active',
 ])]
@@ -25,6 +26,7 @@ class NavigationItem extends Model
     {
         return [
             'active' => 'boolean',
+            'allowed_roles' => 'array',
             'sort_order' => 'integer',
         ];
     }

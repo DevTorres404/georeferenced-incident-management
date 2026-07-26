@@ -5,6 +5,7 @@ namespace App\Operations\Infrastructure\Http\Controllers;
 use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Operations\Application\DTOs\AssignOperatorTerritoryInputData;
 use App\Operations\Application\DTOs\AssignSupervisorToZoneInputData;
+use App\Operations\Application\DTOs\ReleaseSupervisorFromZoneInputData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
 use App\Operations\Application\DTOs\UpdateOperatorProfileInputData;
@@ -81,6 +82,10 @@ final class OperationalStructureController extends ApiController
                 ->where('code', 'SUPERVISOR')
                 ->where('is_active', true))
             ->value('user_id');
+        $selectedSupervisorPreviousZoneId = UserTerritory::query()
+            ->active()
+            ->where('user_id', (int) $data['supervisor_user_id'])
+            ->value('territorial_unit_id');
 
         try {
             $zone = $this->operationalStructureUseCase->assignSupervisorToZone(
@@ -95,23 +100,77 @@ final class OperationalStructureController extends ApiController
         }
 
         $zoneName = TerritorialUnit::query()->whereKey($zoneId)->value('name') ?: "#{$zoneId}";
+        $wasInterchanged = $previousSupervisorUserId
+            && (int) $previousSupervisorUserId !== (int) $data['supervisor_user_id']
+            && $selectedSupervisorPreviousZoneId
+            && (int) $selectedSupervisorPreviousZoneId !== $zoneId;
         $this->userNotifier->notify(
             (int) $data['supervisor_user_id'],
-            'Zona operativa asignada',
+            $wasInterchanged ? 'Zona operativa intercambiada' : 'Zona operativa asignada',
             "Ahora eres responsable de la zona {$zoneName}.",
             'STATUS_CHANGE'
         );
         if ($previousSupervisorUserId && (int) $previousSupervisorUserId !== (int) $data['supervisor_user_id']) {
+            $previousSupervisorNewZoneId = UserTerritory::query()
+                ->active()
+                ->where('user_id', (int) $previousSupervisorUserId)
+                ->value('territorial_unit_id');
+            $previousSupervisorNewZoneName = $previousSupervisorNewZoneId
+                ? TerritorialUnit::query()->whereKey($previousSupervisorNewZoneId)->value('name')
+                : null;
             $this->userNotifier->notify(
                 (int) $previousSupervisorUserId,
-                'Zona operativa reasignada',
-                "La responsabilidad de la zona {$zoneName} fue transferida a otro supervisor.",
+                $previousSupervisorNewZoneName ? 'Zona operativa intercambiada' : 'Zona operativa liberada',
+                $previousSupervisorNewZoneName
+                    ? "Ahora eres responsable de la zona {$previousSupervisorNewZoneName}."
+                    : "La responsabilidad de la zona {$zoneName} fue transferida a otro supervisor.",
                 'STATUS_CHANGE'
             );
         }
 
         return response()->json([
-            'message' => 'Supervisor asignado correctamente a la zona operativa.',
+            'message' => $wasInterchanged
+                ? 'Supervisores intercambiados correctamente entre zonas operativas.'
+                : 'Supervisor asignado correctamente a la zona operativa.',
+            'data' => $zone,
+        ]);
+    }
+
+    public function releaseSupervisor(Request $request, int $zoneId): JsonResponse
+    {
+        $this->ensureAdministrator($request);
+
+        $supervisorUserId = UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zoneId)
+            ->whereHas('user.roles', fn ($query) => $query
+                ->where('code', 'SUPERVISOR')
+                ->where('is_active', true))
+            ->value('user_id');
+
+        try {
+            $zone = $this->operationalStructureUseCase->releaseSupervisorFromZone(
+                new ReleaseSupervisorFromZoneInputData(
+                    zoneId: $zoneId,
+                    releasedByUserId: (int) $request->user()->id,
+                )
+            );
+        } catch (OperationalAssignmentException $exception) {
+            return response()->json(['message' => $exception->getMessage()], $exception->getCode());
+        }
+
+        $zoneName = TerritorialUnit::query()->whereKey($zoneId)->value('name') ?: "#{$zoneId}";
+        if ($supervisorUserId) {
+            $this->userNotifier->notify(
+                (int) $supervisorUserId,
+                'Zona operativa liberada',
+                "Ya no eres responsable de la zona {$zoneName}.",
+                'STATUS_CHANGE'
+            );
+        }
+
+        return response()->json([
+            'message' => 'Supervisor liberado correctamente de la zona operativa.',
             'data' => $zone,
         ]);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Users\Application\UseCases;
 
+use App\Users\Application\DTOs\SyncRoleAccessInputData;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
 
 final class AccessControlUseCase
@@ -23,6 +24,14 @@ final class AccessControlUseCase
     public function syncRolePermissions(int $roleId, array $permissionCodes): array
     {
         return $this->accessControlRepository->syncRolePermissions($roleId, $permissionCodes);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function syncRoleAccess(SyncRoleAccessInputData $data): array
+    {
+        return $this->accessControlRepository->syncRoleAccess($data);
     }
 
     /**

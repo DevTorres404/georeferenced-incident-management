@@ -13,6 +13,7 @@ use App\Operations\Application\DTOs\OperationalTerritoryData;
 use App\Operations\Application\DTOs\OperationalUserData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
 use App\Operations\Application\DTOs\OperatorProfileData;
+use App\Operations\Application\DTOs\ReleaseSupervisorFromZoneInputData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\DTOs\SupervisorProfileData;
 use App\Operations\Application\DTOs\SyncSupervisorOperatorsInputData;
@@ -83,15 +84,52 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             ->latest('assigned_at')
             ->first();
         $currentSupervisorUserId = $currentSupervisorAssignment?->user_id ? (int) $currentSupervisorAssignment->user_id : null;
+        if ($currentSupervisorUserId === (int) $supervisor->id) {
+            return $this->zoneSummary($zone);
+        }
+
+        $supervisorSourceZone = $this->activeZoneForUser((int) $supervisor->id);
+        $isCrossZoneSwap = $supervisorSourceZone
+            && (int) $supervisorSourceZone->id !== (int) $zone->id
+            && $currentSupervisorUserId;
         $zoneOperatorIds = $this->activeOperatorIdsForZone($zone);
+        $sourceZoneOperatorIds = $isCrossZoneSwap
+            ? $this->activeOperatorIdsForZone($supervisorSourceZone)
+            : [];
+        $zoneIncidentCodes = $this->activeZoneIncidentCodes($zone);
+        $sourceZoneIncidentCodes = $isCrossZoneSwap
+            ? $this->activeZoneIncidentCodes($supervisorSourceZone)
+            : [];
+        $currentSupervisorProfile = $isCrossZoneSwap
+            ? $this->loadActiveSupervisorProfile($currentSupervisorUserId)
+            : null;
 
         try {
             $this->supervisorCapacityPolicy->ensureWithinLimit(count($zoneOperatorIds), (int) $supervisorProfile->max_operators);
+
+            if ($currentSupervisorProfile) {
+                $this->supervisorCapacityPolicy->ensureWithinLimit(
+                    count($sourceZoneOperatorIds),
+                    (int) $currentSupervisorProfile->max_operators
+                );
+            }
         } catch (OperationalAssignmentException) {
             throw OperationalAssignmentException::supervisorTransferLimitExceeded();
         }
 
-        DB::transaction(function () use ($data, $zone, $supervisor, $currentSupervisorUserId, $zoneOperatorIds): void {
+        DB::transaction(function () use (
+            $data,
+            $zone,
+            $supervisor,
+            $currentSupervisorAssignment,
+            $currentSupervisorUserId,
+            $supervisorSourceZone,
+            $isCrossZoneSwap,
+            $zoneOperatorIds,
+            $sourceZoneOperatorIds,
+            $zoneIncidentCodes,
+            $sourceZoneIncidentCodes
+        ): void {
             SupervisorProfile::query()->firstOrCreate(
                 ['user_id' => $supervisor->id],
                 ['max_operators' => SupervisorProfile::DEFAULT_MAX_OPERATORS, 'active' => true]
@@ -104,13 +142,9 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
                     ->where('territorial_unit_id', '!=', $zone->id)
             );
 
-            $this->deactivateUserTerritories(
-                UserTerritory::query()
-                    ->active()
-                    ->where('territorial_unit_id', $zone->id)
-                    ->where('user_id', '!=', $supervisor->id)
-                    ->whereHas('user.roles', fn (Builder $query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
-            );
+            if ($currentSupervisorAssignment) {
+                $this->deactivateUserTerritoryAssignment($currentSupervisorAssignment);
+            }
 
             if (! UserTerritory::query()->active()->where('user_id', $supervisor->id)->where('territorial_unit_id', $zone->id)->exists()) {
                 UserTerritory::create([
@@ -129,24 +163,108 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
                 assignedByUserId: $data->assignedByUserId,
             );
             $this->deactivateSupervisorAssignmentsOutsideZone((int) $supervisor->id, $zone);
+
+            if ($isCrossZoneSwap && $supervisorSourceZone && $currentSupervisorUserId) {
+                UserTerritory::create([
+                    'user_id' => $currentSupervisorUserId,
+                    'territorial_unit_id' => $supervisorSourceZone->id,
+                    'assigned_by' => $data->assignedByUserId,
+                    'assigned_at' => now(),
+                    'is_active' => true,
+                ]);
+
+                $this->transferZoneOperatorsToSupervisor(
+                    zone: $supervisorSourceZone,
+                    operatorIds: $sourceZoneOperatorIds,
+                    newSupervisorUserId: $currentSupervisorUserId,
+                    assignedByUserId: $data->assignedByUserId,
+                );
+                $this->deactivateSupervisorAssignmentsOutsideZone($currentSupervisorUserId, $supervisorSourceZone);
+            }
+
             $this->transferUnreadNotificationsByIncidentCodes(
                 fromUserId: $currentSupervisorUserId,
                 toUserId: (int) $supervisor->id,
-                incidentCodes: $this->activeZoneIncidentCodes($zone),
+                incidentCodes: $zoneIncidentCodes,
             );
+
+            if ($isCrossZoneSwap && $currentSupervisorUserId) {
+                $this->transferUnreadNotificationsByIncidentCodes(
+                    fromUserId: (int) $supervisor->id,
+                    toUserId: $currentSupervisorUserId,
+                    incidentCodes: $sourceZoneIncidentCodes,
+                );
+            }
+
             $this->writeTransferAudit(
                 auditableType: TerritorialUnit::class,
                 auditableId: (int) $zone->id,
                 userId: $data->assignedByUserId,
                 oldValues: [
-                    'supervisor_user_id' => $currentSupervisorUserId,
+                    'target_zone_id' => (int) $zone->id,
+                    'target_supervisor_user_id' => $currentSupervisorUserId,
+                    'target_operator_user_ids' => $zoneOperatorIds,
+                    'source_zone_id' => $supervisorSourceZone ? (int) $supervisorSourceZone->id : null,
+                    'source_supervisor_user_id' => (int) $supervisor->id,
+                    'source_operator_user_ids' => $sourceZoneOperatorIds,
+                ],
+                newValues: [
+                    'target_zone_id' => (int) $zone->id,
+                    'target_supervisor_user_id' => (int) $supervisor->id,
+                    'target_operator_user_ids' => $zoneOperatorIds,
+                    'source_zone_id' => $supervisorSourceZone ? (int) $supervisorSourceZone->id : null,
+                    'source_supervisor_user_id' => $isCrossZoneSwap ? $currentSupervisorUserId : null,
+                    'source_operator_user_ids' => $sourceZoneOperatorIds,
+                ],
+                tags: ['operations', $isCrossZoneSwap ? 'zone-supervisor-swap' : 'zone-supervisor-transfer']
+            );
+        });
+
+        return $this->zoneSummary($zone->fresh(TerritorialUnit::PARENT_CHAIN));
+    }
+
+    public function releaseSupervisorFromZone(ReleaseSupervisorFromZoneInputData $data): OperationalZoneSummaryData
+    {
+        $zone = $this->loadZone($data->zoneId);
+        $supervisorAssignment = UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zone->id)
+            ->whereHas('user.roles', fn (Builder $query) => $query->where('code', 'SUPERVISOR')->where('is_active', true))
+            ->latest('assigned_at')
+            ->first();
+
+        if (! $supervisorAssignment) {
+            throw OperationalAssignmentException::zoneSupervisorRequired();
+        }
+
+        $supervisorUserId = (int) $supervisorAssignment->user_id;
+        $zoneOperatorIds = $this->activeOperatorIdsForZone($zone);
+
+        DB::transaction(function () use ($data, $zone, $supervisorAssignment, $supervisorUserId, $zoneOperatorIds): void {
+            $this->deactivateUserTerritoryAssignment($supervisorAssignment);
+
+            if ($zoneOperatorIds !== []) {
+                $this->deactivateSupervisorAssignments(
+                    SupervisorOperatorAssignment::query()
+                        ->active()
+                        ->where('supervisor_user_id', $supervisorUserId)
+                        ->whereIn('operator_user_id', $zoneOperatorIds)
+                );
+            }
+
+            $this->writeTransferAudit(
+                auditableType: TerritorialUnit::class,
+                auditableId: (int) $zone->id,
+                userId: $data->releasedByUserId,
+                oldValues: [
+                    'supervisor_user_id' => $supervisorUserId,
                     'operator_user_ids' => $zoneOperatorIds,
                 ],
                 newValues: [
-                    'supervisor_user_id' => (int) $supervisor->id,
+                    'supervisor_user_id' => null,
                     'operator_user_ids' => $zoneOperatorIds,
                 ],
-                tags: ['operations', 'zone-supervisor-transfer']
+                tags: ['operations', 'zone-supervisor-release']
             );
         });
 
@@ -288,63 +406,119 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
         }
 
         $replacementOperator = $this->loadUserByRole($data->replacementOperatorUserId, 'OPERADOR');
+        $currentProfile = $this->loadActiveOperatorProfile((int) $currentOperator->id);
         $replacementProfile = $this->loadActiveOperatorProfile((int) $replacementOperator->id);
-        $currentZone = $this->activeZoneForUser((int) $currentOperator->id);
-        $replacementZone = $this->activeZoneForUser((int) $replacementOperator->id);
+        $currentTerritory = $this->activeTerritoryForUser((int) $currentOperator->id);
+        $replacementTerritory = $this->activeTerritoryForUser((int) $replacementOperator->id);
+        $currentZone = $currentTerritory ? $this->resolveOperationalZoneModel($currentTerritory) : null;
+        $replacementZone = $replacementTerritory ? $this->resolveOperationalZoneModel($replacementTerritory) : null;
 
-        if (! $currentZone) {
+        if (! $currentTerritory || ! $currentZone) {
             throw OperationalAssignmentException::operatorZoneMismatch();
         }
 
-        $isCrossZoneTransfer = ! $replacementZone || (int) $currentZone->id !== (int) $replacementZone->id;
+        $isCrossZoneSwap = $replacementZone && (int) $currentZone->id !== (int) $replacementZone->id;
+        $replacementIsFree = ! $replacementZone;
 
-        $transferIncidents = $this->activeTransferIncidentsForOperator((int) $currentOperator->id);
-        $this->ensureOperatorCanReceiveTransferredIncidents($transferIncidents, $replacementProfile, (int) $replacementOperator->id);
+        $currentOperatorIncidents = $this->activeTransferIncidentsForOperator((int) $currentOperator->id);
+        $replacementOperatorIncidents = $isCrossZoneSwap
+            ? $this->activeTransferIncidentsForOperator((int) $replacementOperator->id)
+            : collect();
 
-        DB::transaction(function () use ($data, $currentOperator, $replacementOperator, $currentZone, $replacementZone, $isCrossZoneTransfer, $transferIncidents): void {
-            if ($isCrossZoneTransfer) {
-                $this->deactivateUserTerritories(
-                    UserTerritory::query()
-                        ->active()
-                        ->where('user_id', $replacementOperator->id)
-                        ->where('territorial_unit_id', '!=', $currentZone->id)
-                );
+        if ($isCrossZoneSwap) {
+            $this->ensureTransferredIncidentsFitProfile($currentOperatorIncidents, $replacementProfile);
+            $this->ensureTransferredIncidentsFitProfile($replacementOperatorIncidents, $currentProfile);
+        } else {
+            $this->ensureOperatorCanReceiveTransferredIncidents(
+                $currentOperatorIncidents,
+                $replacementProfile,
+                (int) $replacementOperator->id
+            );
+        }
 
-                if (! UserTerritory::query()->active()->where('user_id', $replacementOperator->id)->where('territorial_unit_id', $currentZone->id)->exists()) {
-                    UserTerritory::create([
-                        'user_id' => $replacementOperator->id,
-                        'territorial_unit_id' => $currentZone->id,
-                        'assigned_by' => $data->assignedByUserId,
-                        'assigned_at' => now(),
-                        'is_active' => true,
-                    ]);
-                }
-            }
-
+        DB::transaction(function () use (
+            $data,
+            $currentOperator,
+            $replacementOperator,
+            $currentTerritory,
+            $replacementTerritory,
+            $currentZone,
+            $replacementZone,
+            $isCrossZoneSwap,
+            $replacementIsFree,
+            $currentOperatorIncidents,
+            $replacementOperatorIncidents
+        ): void {
             $currentAssignment = SupervisorOperatorAssignment::query()
                 ->active()
                 ->where('operator_user_id', $currentOperator->id)
                 ->latest('assigned_at')
                 ->first();
+            $replacementAssignment = SupervisorOperatorAssignment::query()
+                ->active()
+                ->where('operator_user_id', $replacementOperator->id)
+                ->latest('assigned_at')
+                ->first();
+            $currentSupervisorUserId = $currentAssignment?->supervisor_user_id
+                ? (int) $currentAssignment->supervisor_user_id
+                : null;
+            $replacementSupervisorUserId = $replacementAssignment?->supervisor_user_id
+                ? (int) $replacementAssignment->supervisor_user_id
+                : null;
+
+            $this->deactivateUserTerritories(
+                UserTerritory::query()
+                    ->active()
+                    ->where('user_id', $currentOperator->id)
+            );
+
+            if ($isCrossZoneSwap || $replacementIsFree) {
+                $this->deactivateUserTerritories(
+                    UserTerritory::query()
+                        ->active()
+                        ->where('user_id', $replacementOperator->id)
+                );
+
+                UserTerritory::create([
+                    'user_id' => $replacementOperator->id,
+                    'territorial_unit_id' => $currentTerritory->id,
+                    'assigned_by' => $data->assignedByUserId,
+                    'assigned_at' => now(),
+                    'is_active' => true,
+                ]);
+            }
 
             if ($currentAssignment) {
                 $this->deactivateSupervisorAssignment($currentAssignment);
+            }
 
-                $replacementAssignment = SupervisorOperatorAssignment::query()
-                    ->active()
-                    ->where('operator_user_id', $replacementOperator->id)
-                    ->latest('assigned_at')
-                    ->first();
+            if ($replacementAssignment) {
+                $this->deactivateSupervisorAssignment($replacementAssignment);
+            }
 
-                if ($replacementAssignment && (int) $replacementAssignment->supervisor_user_id !== (int) $currentAssignment->supervisor_user_id) {
-                    $this->deactivateSupervisorAssignment($replacementAssignment);
-                    $replacementAssignment = null;
-                }
+            if ($currentSupervisorUserId) {
+                SupervisorOperatorAssignment::create([
+                    'supervisor_user_id' => $currentSupervisorUserId,
+                    'operator_user_id' => $replacementOperator->id,
+                    'assigned_by' => $data->assignedByUserId,
+                    'assigned_at' => now(),
+                    'is_active' => true,
+                ]);
+            }
 
-                if (! $replacementAssignment) {
+            if ($isCrossZoneSwap && $replacementTerritory) {
+                UserTerritory::create([
+                    'user_id' => $currentOperator->id,
+                    'territorial_unit_id' => $replacementTerritory->id,
+                    'assigned_by' => $data->assignedByUserId,
+                    'assigned_at' => now(),
+                    'is_active' => true,
+                ]);
+
+                if ($replacementSupervisorUserId) {
                     SupervisorOperatorAssignment::create([
-                        'supervisor_user_id' => $currentAssignment->supervisor_user_id,
-                        'operator_user_id' => $replacementOperator->id,
+                        'supervisor_user_id' => $replacementSupervisorUserId,
+                        'operator_user_id' => $currentOperator->id,
                         'assigned_by' => $data->assignedByUserId,
                         'assigned_at' => now(),
                         'is_active' => true,
@@ -353,30 +527,52 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             }
 
             $this->transferIncidentsToOperator(
-                incidents: $transferIncidents,
+                incidents: $currentOperatorIncidents,
                 newOperatorUserId: (int) $replacementOperator->id,
                 assignedByUserId: $data->assignedByUserId,
             );
+
+            if ($isCrossZoneSwap) {
+                $this->transferIncidentsToOperator(
+                    incidents: $replacementOperatorIncidents,
+                    newOperatorUserId: (int) $currentOperator->id,
+                    assignedByUserId: $data->assignedByUserId,
+                );
+            }
+
             $this->transferUnreadNotificationsByIncidentCodes(
                 fromUserId: (int) $currentOperator->id,
                 toUserId: (int) $replacementOperator->id,
-                incidentCodes: $transferIncidents->pluck('code')->all(),
+                incidentCodes: $currentOperatorIncidents->pluck('code')->all(),
             );
+
+            if ($isCrossZoneSwap) {
+                $this->transferUnreadNotificationsByIncidentCodes(
+                    fromUserId: (int) $replacementOperator->id,
+                    toUserId: (int) $currentOperator->id,
+                    incidentCodes: $replacementOperatorIncidents->pluck('code')->all(),
+                );
+            }
+
             $this->writeTransferAudit(
                 auditableType: User::class,
                 auditableId: (int) $replacementOperator->id,
                 userId: $data->assignedByUserId,
                 oldValues: [
                     'replaced_operator_user_id' => (int) $currentOperator->id,
-                    'incident_codes' => $transferIncidents->pluck('code')->all(),
-                    'zone_id' => $replacementZone ? (int) $replacementZone->id : null,
+                    'current_operator_incident_codes' => $currentOperatorIncidents->pluck('code')->all(),
+                    'replacement_operator_incident_codes' => $replacementOperatorIncidents->pluck('code')->all(),
+                    'current_operator_zone_id' => (int) $currentZone->id,
+                    'replacement_operator_zone_id' => $replacementZone ? (int) $replacementZone->id : null,
                 ],
                 newValues: [
                     'replacement_operator_user_id' => (int) $replacementOperator->id,
-                    'incident_codes' => $transferIncidents->pluck('code')->all(),
-                    'zone_id' => (int) $currentZone->id,
+                    'current_operator_zone_id' => $isCrossZoneSwap && $replacementZone
+                        ? (int) $replacementZone->id
+                        : null,
+                    'replacement_operator_zone_id' => (int) $currentZone->id,
                 ],
-                tags: ['operations', 'operator-transfer']
+                tags: ['operations', $isCrossZoneSwap ? 'operator-zone-swap' : 'operator-transfer']
             );
         });
 
@@ -508,13 +704,6 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             )
             : null;
 
-        $activeOperatorsCount = $supervisor
-            ? SupervisorOperatorAssignment::query()
-                ->active()
-                ->where('supervisor_user_id', $supervisor->id)
-                ->count()
-            : 0;
-
         $operatorIds = $this->usersByRole('OPERADOR')
             ->filter(function (User $user) use ($zone): bool {
                 $operatorZone = $this->activeZoneForUser((int) $user->id);
@@ -524,6 +713,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();
+        $activeOperatorsCount = count($operatorIds);
 
         $activeIncidents = $operatorIds === [] ? 0 : Incident::query()
             ->whereIn('current_assigned_id', $operatorIds)
@@ -820,6 +1010,21 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
         if (
             ($currentActiveIncidents + $transferIncidentCount) > (int) $profile->max_active_incidents
             || ($currentWorkloadPoints + $transferWorkloadPoints) > (int) $profile->max_workload_points
+        ) {
+            throw OperationalAssignmentException::operatorCapacityExceeded();
+        }
+    }
+
+    private function ensureTransferredIncidentsFitProfile(Collection $incidents, OperatorProfile $profile): void
+    {
+        $incidentCount = $incidents->count();
+        $workloadPoints = (int) $incidents->sum(
+            fn (Incident $incident) => (int) ($incident->priority?->weight ?? 0)
+        );
+
+        if (
+            $incidentCount > (int) $profile->max_active_incidents
+            || $workloadPoints > (int) $profile->max_workload_points
         ) {
             throw OperationalAssignmentException::operatorCapacityExceeded();
         }

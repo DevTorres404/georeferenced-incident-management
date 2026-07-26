@@ -46,6 +46,11 @@ final class OperationalAssignmentException extends Exception
         return new self('El supervisor debe tener una zona operativa activa asignada.', 422);
     }
 
+    public static function zoneSupervisorRequired(): self
+    {
+        return new self('La zona operativa no tiene un supervisor activo para liberar.', 422);
+    }
+
     public static function supervisorProfileInactive(): self
     {
         return new self('El supervisor seleccionado no tiene un perfil operativo activo.', 422);

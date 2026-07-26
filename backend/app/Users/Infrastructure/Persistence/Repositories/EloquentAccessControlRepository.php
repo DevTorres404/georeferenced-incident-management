@@ -7,8 +7,10 @@ use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Users\Application\DTOs\SyncRoleAccessInputData;
 use App\Users\Domain\Repositories\AccessControlRepositoryInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentAccessControlRepository implements AccessControlRepositoryInterface
 {
@@ -70,6 +72,40 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
         return $this->mapRole($role->fresh('permissions'));
     }
 
+    public function syncRoleAccess(SyncRoleAccessInputData $data): array
+    {
+        return DB::transaction(function () use ($data): array {
+            $role = Role::findOrFail($data->roleId);
+            $previousPermissionCodes = $role->permissions()->pluck('code')->sort()->values()->all();
+            $previousNavigationCodes = $this->visibleNavigationCodesForRole($role->code);
+            $permissionIds = Permission::whereIn('code', $data->permissionCodes)->pluck('id')->all();
+
+            $role->permissions()->sync($permissionIds);
+            $this->syncNavigationVisibilityForRole($role->code, $data->navigationItemCodes);
+
+            $currentPermissionCodes = $role->permissions()->pluck('code')->sort()->values()->all();
+            $currentNavigationCodes = $this->visibleNavigationCodesForRole($role->code);
+            $this->auditRecorder->recordChange(
+                Role::class,
+                (int) $role->id,
+                [
+                    'permissions' => $previousPermissionCodes,
+                    'navigation_items' => $previousNavigationCodes,
+                ],
+                [
+                    'permissions' => $currentPermissionCodes,
+                    'navigation_items' => $currentNavigationCodes,
+                ],
+                table: $role->getTable()
+            );
+
+            return [
+                'role' => $this->mapRole($role->fresh('permissions')),
+                'navigation_items' => $this->navigationOverview(),
+            ];
+        });
+    }
+
     public function navigationForUser(int $userId): array
     {
         $user = User::with('roles.permissions')->findOrFail($userId);
@@ -84,6 +120,13 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
             ->filter()
             ->unique()
             ->values();
+        $roleCodes = $user->roles
+            ->where('is_active', true)
+            ->pluck('code')
+            ->filter()
+            ->map(fn (string $code) => strtoupper($code))
+            ->unique()
+            ->values();
 
         return NavigationItem::query()
             ->whereNull('parent_id')
@@ -95,7 +138,7 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
             ->orderBy('sort_order')
             ->orderBy('label')
             ->get()
-            ->map(fn (NavigationItem $item) => $this->mapNavigationItem($item, $permissionCodes))
+            ->map(fn (NavigationItem $item) => $this->mapNavigationItem($item, $permissionCodes, $roleCodes))
             ->filter()
             ->values()
             ->all();
@@ -146,11 +189,18 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
         ];
     }
 
-    private function mapNavigationItem(NavigationItem $item, Collection $permissionCodes): ?array
-    {
+    private function mapNavigationItem(
+        NavigationItem $item,
+        Collection $permissionCodes,
+        Collection $roleCodes
+    ): ?array {
+        if (! $this->isVisibleForRoles($item, $roleCodes)) {
+            return null;
+        }
+
         $childItems = $item->relationLoaded('children') ? $item->children : collect();
         $children = $childItems
-            ->map(fn (NavigationItem $child) => $this->mapNavigationItem($child, $permissionCodes))
+            ->map(fn (NavigationItem $child) => $this->mapNavigationItem($child, $permissionCodes, $roleCodes))
             ->filter()
             ->values()
             ->all();
@@ -184,6 +234,88 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
         return $permissionCodes->contains($item->permission_code);
     }
 
+    private function isVisibleForRoles(NavigationItem $item, Collection $roleCodes): bool
+    {
+        $allowedRoles = collect($item->allowed_roles)
+            ->filter()
+            ->map(fn (string $code) => strtoupper($code));
+
+        return $allowedRoles->isEmpty() || $allowedRoles->intersect($roleCodes)->isNotEmpty();
+    }
+
+    /**
+     * @param  array<int, string>  $selectedNavigationCodes
+     */
+    private function syncNavigationVisibilityForRole(string $roleCode, array $selectedNavigationCodes): void
+    {
+        $normalizedRoleCode = strtoupper($roleCode);
+        $selectedCodes = collect($selectedNavigationCodes)->map(fn (string $code) => trim($code))->filter();
+        $activeRoleCodes = Role::activos()
+            ->pluck('code')
+            ->map(fn (string $code) => strtoupper($code))
+            ->unique()
+            ->values();
+
+        NavigationItem::query()
+            ->whereNull('route')
+            ->whereNotNull('allowed_roles')
+            ->update(['allowed_roles' => null]);
+
+        NavigationItem::query()
+            ->where('active', true)
+            ->whereNotNull('route')
+            ->lockForUpdate()
+            ->get()
+            ->each(function (NavigationItem $item) use (
+                $activeRoleCodes,
+                $normalizedRoleCode,
+                $selectedCodes
+            ): void {
+                $allowedRoles = $item->allowed_roles === null
+                    ? $activeRoleCodes->collect()
+                    : collect($item->allowed_roles)
+                        ->map(fn (string $code) => strtoupper($code))
+                        ->filter()
+                        ->unique()
+                        ->values();
+
+                if ($selectedCodes->contains($item->code)) {
+                    $allowedRoles->push($normalizedRoleCode);
+                } else {
+                    $allowedRoles = $allowedRoles->reject(
+                        fn (string $code) => $code === $normalizedRoleCode
+                    );
+                }
+
+                $allowedRoles = $allowedRoles->unique()->sort()->values();
+                $allowsEveryActiveRole = $activeRoleCodes->every(
+                    fn (string $code) => $allowedRoles->contains($code)
+                );
+
+                $item->update([
+                    'allowed_roles' => $allowsEveryActiveRole ? null : $allowedRoles->all(),
+                ]);
+            });
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function visibleNavigationCodesForRole(string $roleCode): array
+    {
+        $roleCodes = collect([strtoupper($roleCode)]);
+
+        return NavigationItem::query()
+            ->where('active', true)
+            ->whereNotNull('route')
+            ->orderBy('code')
+            ->get()
+            ->filter(fn (NavigationItem $item) => $this->isVisibleForRoles($item, $roleCodes))
+            ->pluck('code')
+            ->values()
+            ->all();
+    }
+
     private function navigationOverview(): array
     {
         return NavigationItem::query()
@@ -210,6 +342,7 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
             'icon' => $item->icon,
             'route' => $item->route,
             'permission' => $item->permission_code,
+            'allowed_roles' => $item->allowed_roles,
             'sort_order' => (int) $item->sort_order,
             'active' => (bool) $item->active,
             'children' => $childItems

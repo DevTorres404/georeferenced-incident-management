@@ -29,9 +29,9 @@ class NavigationItemSeeder extends Seeder
                 'sort_order' => 20,
                 'children' => [
                     ['code' => 'incidents', 'label' => 'Listado general', 'icon' => 'fa-list-alt', 'route' => 'incidents.html', 'permission_code' => 'incidents.list', 'sort_order' => 10],
-                    ['code' => 'assignment-management', 'label' => 'Gestion de asignaciones', 'icon' => 'fa-tasks', 'route' => 'assignment-management.html', 'permission_code' => 'incidents.assign', 'sort_order' => 20],
+                    ['code' => 'assignment-management', 'label' => 'Gestion de asignaciones', 'icon' => 'fa-tasks', 'route' => 'assignment-management.html', 'permission_code' => 'incidents.assign', 'allowed_roles' => ['SUPERVISOR'], 'sort_order' => 20],
                     ['code' => 'incident-map', 'label' => 'Mapa de incidencias', 'icon' => 'fa-map-marked-alt', 'route' => 'incident-map.html', 'permission_code' => 'incidents.map', 'sort_order' => 30],
-                    ['code' => 'incident-create', 'label' => 'Nueva incidencia', 'icon' => 'fa-plus-circle', 'route' => 'incident-create.html', 'permission_code' => 'incidents.create', 'sort_order' => 40],
+                    ['code' => 'incident-create', 'label' => 'Nueva incidencia', 'icon' => 'fa-plus-circle', 'route' => 'incident-create.html', 'permission_code' => 'incidents.create', 'allowed_roles' => ['CIUDADANO'], 'sort_order' => 40],
                 ],
             ],
             [
@@ -51,7 +51,7 @@ class NavigationItemSeeder extends Seeder
                 'permission_code' => 'operations.view_team',
                 'sort_order' => 35,
                 'children' => [
-                    ['code' => 'my-team', 'label' => 'Mi equipo', 'icon' => 'fa-users', 'route' => 'my-team.html', 'permission_code' => 'operations.view_team', 'sort_order' => 10],
+                    ['code' => 'my-team', 'label' => 'Mi equipo', 'icon' => 'fa-users', 'route' => 'my-team.html', 'permission_code' => 'operations.view_team', 'allowed_roles' => ['SUPERVISOR'], 'sort_order' => 10],
                 ],
             ],
             [
@@ -86,15 +86,20 @@ class NavigationItemSeeder extends Seeder
 
             $parent = NavigationItem::updateOrCreate(
                 ['code' => $group['code']],
-                [...$group, 'parent_id' => null, 'route' => null, 'active' => true]
+                [...$group, 'parent_id' => null, 'route' => null, 'allowed_roles' => null, 'active' => true]
             );
             $activeCodes[] = $group['code'];
 
             foreach ($children as $child) {
-                NavigationItem::updateOrCreate(
-                    ['code' => $child['code']],
-                    [...$child, 'parent_id' => $parent->id, 'active' => true]
-                );
+                $defaultAllowedRoles = $child['allowed_roles'] ?? null;
+                unset($child['allowed_roles']);
+
+                $navigationItem = NavigationItem::firstOrNew(['code' => $child['code']]);
+                $navigationItem->fill([...$child, 'parent_id' => $parent->id, 'active' => true]);
+                if (! $navigationItem->exists) {
+                    $navigationItem->allowed_roles = $defaultAllowedRoles;
+                }
+                $navigationItem->save();
                 $activeCodes[] = $child['code'];
             }
         }

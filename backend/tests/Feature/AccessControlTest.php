@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use App\Auth\Infrastructure\Persistence\Models\User;
@@ -69,6 +70,73 @@ class AccessControlTest extends TestCase
         $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de permisos'));
     }
 
+    public function test_admin_can_sync_role_permissions_and_visible_screens_atomically(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $this->seed(NavigationItemSeeder::class);
+        $operatorRole = Role::where('code', 'OPERADOR')->firstOrFail();
+
+        $response = $this->withToken($admin['token'])
+            ->putJson("/api/admin/roles/{$operatorRole->id}/access", [
+                'permissions' => ['incidents.assign'],
+                'navigation_items' => ['assignment-management'],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Accesos del rol actualizados correctamente.')
+            ->assertJsonPath('data.role.code', 'OPERADOR');
+
+        $operatorRole->refresh();
+        $this->assertTrue($operatorRole->permissions()->where('code', 'incidents.assign')->exists());
+        $this->assertContains(
+            'OPERADOR',
+            NavigationItem::where('code', 'assignment-management')->firstOrFail()->allowed_roles
+        );
+        $this->assertNotContains(
+            'OPERADOR',
+            NavigationItem::where('code', 'dashboard')->firstOrFail()->allowed_roles
+        );
+        $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de accesos'));
+    }
+
+    public function test_admin_control_plane_cannot_be_removed_from_admin_role(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $this->seed(NavigationItemSeeder::class);
+        $adminRole = Role::where('code', 'ADMIN')->firstOrFail();
+
+        $this->withToken($admin['token'])
+            ->putJson("/api/admin/roles/{$adminRole->id}/access", [
+                'permissions' => ['dashboard.view'],
+                'navigation_items' => ['dashboard'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['permissions', 'navigation_items']);
+
+        $this->assertTrue($adminRole->permissions()->where('code', 'users.manage_roles')->exists());
+        $this->assertNull(
+            NavigationItem::where('code', 'role-permissions')->firstOrFail()->allowed_roles
+        );
+    }
+
+    public function test_saved_role_access_survives_catalog_reseeding(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+        $operatorRole = Role::where('code', 'OPERADOR')->firstOrFail();
+        $operatorRole->permissions()->sync([]);
+        NavigationItem::where('code', 'incident-map')->firstOrFail()->update([
+            'allowed_roles' => ['ADMIN'],
+        ]);
+
+        $this->seed([PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $this->assertSame(0, $operatorRole->permissions()->count());
+        $this->assertSame(
+            ['ADMIN'],
+            NavigationItem::where('code', 'incident-map')->firstOrFail()->allowed_roles
+        );
+    }
+
     public function test_admin_can_sync_user_roles(): void
     {
         $admin = $this->authenticateAdmin();
@@ -95,9 +163,9 @@ class AccessControlTest extends TestCase
     public function test_navigation_includes_authorized_child_when_parent_uses_another_permission(): void
     {
         $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
-        
-        $workspaceNode = \App\Auth\Infrastructure\Persistence\Models\NavigationItem::where('code', 'workspace')->firstOrFail();
-        \App\Auth\Infrastructure\Persistence\Models\NavigationItem::create([
+
+        $workspaceNode = NavigationItem::where('code', 'workspace')->firstOrFail();
+        NavigationItem::create([
             'code' => 'notifications',
             'label' => 'Notificaciones',
             'permission_code' => 'notifications.view',
@@ -133,6 +201,69 @@ class AccessControlTest extends TestCase
             ->getJson('/api/navigation/menu')
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_admin_navigation_contains_only_the_requested_operational_areas(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $admin = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $admin->roles()->sync([Role::where('code', 'ADMIN')->firstOrFail()->id]);
+
+        $response = $this->withToken($admin->createToken('admin-navigation-test')->plainTextToken)
+            ->getJson('/api/navigation/menu')
+            ->assertOk();
+
+        $groups = collect($response->json('data'));
+
+        $this->assertSame(
+            ['workspace', 'incident-hub', 'territorial-ops', 'admin-tools', 'system-info'],
+            $groups->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['dashboard', 'reports'],
+            collect($groups->firstWhere('code', 'workspace')['children'])->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['incidents', 'incident-map'],
+            collect($groups->firstWhere('code', 'incident-hub')['children'])->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['operational-structure'],
+            collect($groups->firstWhere('code', 'territorial-ops')['children'])->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['role-permissions', 'user-roles', 'category-management', 'audit-logs'],
+            collect($groups->firstWhere('code', 'admin-tools')['children'])->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['about'],
+            collect($groups->firstWhere('code', 'system-info')['children'])->pluck('code')->all()
+        );
+        $this->assertNull($groups->firstWhere('code', 'territorial-zonal'));
+    }
+
+    public function test_supervisor_keeps_assignment_management_and_zonal_coverage(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $supervisor = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $supervisor->roles()->sync([Role::where('code', 'SUPERVISOR')->firstOrFail()->id]);
+
+        $response = $this->withToken($supervisor->createToken('supervisor-navigation-test')->plainTextToken)
+            ->getJson('/api/navigation/menu')
+            ->assertOk();
+
+        $groups = collect($response->json('data'));
+
+        $this->assertSame(
+            ['assignment-management', 'incident-map'],
+            collect($groups->firstWhere('code', 'incident-hub')['children'])->pluck('code')->all()
+        );
+        $this->assertSame(
+            ['my-team'],
+            collect($groups->firstWhere('code', 'territorial-zonal')['children'])->pluck('code')->all()
+        );
     }
 
     public function test_non_admin_cannot_manage_roles(): void

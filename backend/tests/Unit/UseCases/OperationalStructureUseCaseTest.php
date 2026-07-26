@@ -8,6 +8,7 @@ use App\Operations\Application\DTOs\OperationalTerritoryData;
 use App\Operations\Application\DTOs\OperationalUserData;
 use App\Operations\Application\DTOs\OperationalZoneSummaryData;
 use App\Operations\Application\DTOs\OperatorProfileData;
+use App\Operations\Application\DTOs\ReleaseSupervisorFromZoneInputData;
 use App\Operations\Application\DTOs\ReplaceZoneOperatorInputData;
 use App\Operations\Application\UseCases\OperationalStructureUseCase;
 use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
@@ -89,6 +90,34 @@ class OperationalStructureUseCaseTest extends TestCase
         $result = $this->useCase->replaceZoneOperator($data);
 
         $this->assertSame($operatorProfile, $result);
+    }
+
+    public function test_release_supervisor_from_zone_delegates_to_repository(): void
+    {
+        $data = new ReleaseSupervisorFromZoneInputData(
+            zoneId: 1,
+            releasedByUserId: 3
+        );
+
+        $zoneData = new OperationalTerritoryData(1, 'Zone', 'ZONE', null, 'Zone');
+        $summary = new OperationalZoneSummaryData(
+            zone: $zoneData,
+            supervisor: null,
+            maxOperators: 5,
+            activeOperatorsCount: 4,
+            activeIncidents: 0,
+            averageWorkloadPoints: 0.0,
+            provincesCovered: []
+        );
+
+        $this->repository->shouldReceive('releaseSupervisorFromZone')
+            ->with($data)
+            ->once()
+            ->andReturn($summary);
+
+        $result = $this->useCase->releaseSupervisorFromZone($data);
+
+        $this->assertSame($summary, $result);
     }
 
     public function test_assign_operator_territory_delegates_to_repository(): void

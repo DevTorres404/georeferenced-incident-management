@@ -7,6 +7,7 @@ use App\Auth\Infrastructure\Persistence\Models\User;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
+use App\Operations\Infrastructure\Persistence\Models\SupervisorProfile;
 use App\Operations\Infrastructure\Persistence\Models\UserTerritory;
 use App\TerritorialUnits\Infrastructure\Persistence\Models\TerritorialUnit;
 use Database\Seeders\OperationalStructureSeeder;
@@ -192,9 +193,19 @@ final class OperationalStructureTest extends TestCase
             'territorial_unit_id' => $zones['Z1']->id,
             'is_active' => false,
         ]);
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $zoneOneSupervisorId,
+            'territorial_unit_id' => $zones['Z2']->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $zoneTwoSupervisorId,
+            'territorial_unit_id' => $zones['Z2']->id,
+            'is_active' => false,
+        ]);
     }
 
-    public function test_supervisor_change_transfers_zone_operators_and_pending_notifications(): void
+    public function test_supervisor_change_interchanges_zones_operators_and_pending_notifications(): void
     {
         $this->seedBaseStructure();
         $admin = $this->authenticateAdmin();
@@ -219,6 +230,12 @@ final class OperationalStructureTest extends TestCase
 
         $zoneOperatorIds = SupervisorOperatorAssignment::query()
             ->where('supervisor_user_id', $currentSupervisorId)
+            ->where('is_active', true)
+            ->pluck('operator_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $sourceZoneOperatorIds = SupervisorOperatorAssignment::query()
+            ->where('supervisor_user_id', $newSupervisorId)
             ->where('is_active', true)
             ->pluck('operator_user_id')
             ->map(fn ($id) => (int) $id)
@@ -256,10 +273,182 @@ final class OperationalStructureTest extends TestCase
             ]);
         }
 
+        foreach ($sourceZoneOperatorIds as $operatorId) {
+            $this->assertDatabaseHas('auth.supervisor_operator_assignments', [
+                'supervisor_user_id' => $currentSupervisorId,
+                'operator_user_id' => $operatorId,
+                'is_active' => true,
+            ]);
+        }
+
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $currentSupervisorId,
+            'territorial_unit_id' => $zones['Z2']->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $newSupervisorId,
+            'territorial_unit_id' => $zones['Z1']->id,
+            'is_active' => true,
+        ]);
         $this->assertDatabaseHas('core.notifications', [
             'user_id' => $newSupervisorId,
             'message' => "Supervisa la incidencia {$incidentCode}.",
             'is_read' => false,
+        ]);
+    }
+
+    public function test_admin_can_assign_a_free_supervisor_and_release_the_previous_one(): void
+    {
+        $this->seedBaseStructure();
+        $admin = $this->authenticateAdmin();
+
+        $zone = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->where('code', 'Z1')
+            ->firstOrFail();
+        $currentSupervisorId = (int) UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zone->id)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR'))
+            ->value('user_id');
+        $zoneOperatorIds = SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $currentSupervisorId)
+            ->pluck('operator_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $freeSupervisor = $this->createFreeSupervisor();
+
+        $this->actingAsUser($admin)
+            ->putJson("/api/admin/operations/zones/{$zone->id}/supervisor", [
+                'supervisor_user_id' => (int) $freeSupervisor->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.supervisor.id', (int) $freeSupervisor->id);
+
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => (int) $freeSupervisor->id,
+            'territorial_unit_id' => $zone->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseMissing('auth.user_territories', [
+            'user_id' => $currentSupervisorId,
+            'is_active' => true,
+        ]);
+
+        foreach ($zoneOperatorIds as $operatorId) {
+            $this->assertDatabaseHas('auth.supervisor_operator_assignments', [
+                'supervisor_user_id' => (int) $freeSupervisor->id,
+                'operator_user_id' => $operatorId,
+                'is_active' => true,
+            ]);
+        }
+    }
+
+    public function test_admin_can_release_a_supervisor_without_removing_zone_operators(): void
+    {
+        $this->seedBaseStructure();
+        $admin = $this->authenticateAdmin();
+
+        $zone = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->where('code', 'Z1')
+            ->firstOrFail();
+        $supervisorId = (int) UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zone->id)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR'))
+            ->value('user_id');
+        $zoneOperatorIds = SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $supervisorId)
+            ->pluck('operator_user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->actingAsUser($admin)
+            ->deleteJson("/api/admin/operations/zones/{$zone->id}/supervisor")
+            ->assertOk()
+            ->assertJsonPath('data.supervisor', null)
+            ->assertJsonPath('data.active_operators_count', count($zoneOperatorIds));
+
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $supervisorId,
+            'territorial_unit_id' => $zone->id,
+            'is_active' => false,
+        ]);
+
+        foreach ($zoneOperatorIds as $operatorId) {
+            $this->assertDatabaseMissing('auth.supervisor_operator_assignments', [
+                'supervisor_user_id' => $supervisorId,
+                'operator_user_id' => $operatorId,
+                'is_active' => true,
+            ]);
+            $this->assertTrue(
+                UserTerritory::query()->active()->where('user_id', $operatorId)->exists(),
+                "El operador {$operatorId} debe conservar su territorio."
+            );
+        }
+    }
+
+    public function test_cross_zone_operator_change_swaps_territories_and_supervisors(): void
+    {
+        $this->seedBaseStructure();
+        $admin = $this->authenticateAdmin();
+
+        $zones = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->whereIn('code', ['Z1', 'Z2'])
+            ->get()
+            ->keyBy('code');
+        $zoneOneSupervisorId = (int) UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zones['Z1']->id)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR'))
+            ->value('user_id');
+        $zoneTwoSupervisorId = (int) UserTerritory::query()
+            ->active()
+            ->where('territorial_unit_id', $zones['Z2']->id)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR'))
+            ->value('user_id');
+        $zoneOneOperatorId = (int) SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $zoneOneSupervisorId)
+            ->value('operator_user_id');
+        $zoneTwoOperatorId = (int) SupervisorOperatorAssignment::query()
+            ->active()
+            ->where('supervisor_user_id', $zoneTwoSupervisorId)
+            ->value('operator_user_id');
+        $zoneOneTerritoryId = (int) UserTerritory::query()->active()->where('user_id', $zoneOneOperatorId)->value('territorial_unit_id');
+        $zoneTwoTerritoryId = (int) UserTerritory::query()->active()->where('user_id', $zoneTwoOperatorId)->value('territorial_unit_id');
+
+        $this->actingAsUser($admin)
+            ->putJson("/api/admin/operations/operators/{$zoneOneOperatorId}/replacement", [
+                'replacement_operator_user_id' => $zoneTwoOperatorId,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.operator.operational_zone.id', (int) $zones['Z1']->id);
+
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $zoneOneOperatorId,
+            'territorial_unit_id' => $zoneTwoTerritoryId,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => $zoneTwoOperatorId,
+            'territorial_unit_id' => $zoneOneTerritoryId,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.supervisor_operator_assignments', [
+            'supervisor_user_id' => $zoneTwoSupervisorId,
+            'operator_user_id' => $zoneOneOperatorId,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.supervisor_operator_assignments', [
+            'supervisor_user_id' => $zoneOneSupervisorId,
+            'operator_user_id' => $zoneTwoOperatorId,
+            'is_active' => true,
         ]);
     }
 
@@ -283,7 +472,11 @@ final class OperationalStructureTest extends TestCase
             ->where('is_active', true)
             ->value('operator_user_id');
 
-        $replacementOperator = $this->createOperatorInZone($zone, $admin);
+        $currentTerritoryId = (int) UserTerritory::query()
+            ->active()
+            ->where('user_id', $currentOperatorId)
+            ->value('territorial_unit_id');
+        $replacementOperator = $this->createFreeOperator();
         $territory = TerritorialUnit::query()
             ->where('parent_id', $zone->id)
             ->where('type', TerritorialUnit::TYPE_CANTON)
@@ -330,6 +523,15 @@ final class OperationalStructureTest extends TestCase
         $this->assertDatabaseHas('auth.supervisor_operator_assignments', [
             'supervisor_user_id' => $supervisorId,
             'operator_user_id' => (int) $replacementOperator->id,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseMissing('auth.user_territories', [
+            'user_id' => $currentOperatorId,
+            'is_active' => true,
+        ]);
+        $this->assertDatabaseHas('auth.user_territories', [
+            'user_id' => (int) $replacementOperator->id,
+            'territorial_unit_id' => $currentTerritoryId,
             'is_active' => true,
         ]);
     }
@@ -445,11 +647,11 @@ final class OperationalStructureTest extends TestCase
         return $incidentId;
     }
 
-    private function createOperatorInZone(TerritorialUnit $zone, User $admin): User
+    private function createFreeOperator(): User
     {
         $operatorRole = Role::query()->where('code', 'OPERADOR')->firstOrFail();
         $operator = User::factory()->create([
-            'email' => 'replacement-'.$zone->code.'@incidents.local',
+            'email' => 'free-replacement@incidents.local',
             'two_factor_confirmed_at' => now(),
         ]);
         $operator->roles()->sync([$operatorRole->id]);
@@ -462,14 +664,24 @@ final class OperationalStructureTest extends TestCase
             'active' => true,
         ]);
 
-        UserTerritory::query()->create([
-            'user_id' => $operator->id,
-            'territorial_unit_id' => $zone->id,
-            'assigned_by' => $admin->id,
-            'assigned_at' => now(),
-            'is_active' => true,
+        return $operator->fresh('roles');
+    }
+
+    private function createFreeSupervisor(): User
+    {
+        $supervisorRole = Role::query()->where('code', 'SUPERVISOR')->firstOrFail();
+        $supervisor = User::factory()->create([
+            'email' => 'free-supervisor@incidents.local',
+            'two_factor_confirmed_at' => now(),
+        ]);
+        $supervisor->roles()->sync([$supervisorRole->id]);
+
+        SupervisorProfile::query()->create([
+            'user_id' => $supervisor->id,
+            'max_operators' => 5,
+            'active' => true,
         ]);
 
-        return $operator->fresh('roles');
+        return $supervisor->fresh('roles');
     }
 }

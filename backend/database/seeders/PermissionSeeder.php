@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class PermissionSeeder extends Seeder
 {
@@ -63,6 +64,10 @@ class PermissionSeeder extends Seeder
             );
         }
 
+        if (DB::table('auth.permission_role')->exists()) {
+            return;
+        }
+
         $assignments = [
             'ADMIN' => Permission::pluck('id')->toArray(),
             'SUPERVISOR' => Permission::whereIn('code', [
@@ -83,7 +88,6 @@ class PermissionSeeder extends Seeder
                 'operations.view_team',
                 'reportes.ver',
                 'reportes.exportar',
-                'catalogs.manage',
                 'territorial_units.view',
             ])->pluck('id')->toArray(),
             'OPERADOR' => Permission::whereIn('code', [
@@ -116,7 +120,7 @@ class PermissionSeeder extends Seeder
             $role = Role::where('code', $roleCode)->first();
 
             if ($role) {
-                $role->permissions()->syncWithoutDetaching($permissionIds);
+                $role->permissions()->sync($permissionIds);
             }
         }
     }

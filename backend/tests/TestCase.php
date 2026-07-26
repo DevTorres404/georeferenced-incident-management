@@ -14,7 +14,7 @@ abstract class TestCase extends BaseTestCase
         // RefreshDatabase from running migrate:fresh again (which causes
         // PostgreSQL deadlocks with multi-schema DROP TABLE CASCADE when the
         // Laravel app connection and the artisan connection overlap).
-        RefreshDatabaseState::$migrated = true;
+        // RefreshDatabaseState::$migrated = true;
 
         parent::setUp();
     }
