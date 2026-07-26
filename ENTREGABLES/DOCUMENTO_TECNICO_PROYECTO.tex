@@ -792,6 +792,8 @@ comentar o atender incidencias según sus roles y permisos; cada incidencia se
 relaciona con categoría, subcategoría, prioridad, estado, unidad territorial,
 asignaciones, comentarios, adjuntos, notificaciones e históricos.
 
+El código fuente (Mermaid) de este diagrama se encuentra disponible en el repositorio bajo el archivo \texttt{DATABASE\_LOGICAL\_MODEL.mmd}.
+
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.97\textwidth,keepaspectratio]{modelo_logico.png}
@@ -1066,9 +1068,9 @@ La validación se aplica en diferentes niveles:
 \subsection{Casos de prueba y pruebas automatizadas}
 
 La versión documentada incluye pruebas automatizadas tanto en backend como en
-frontend. La evidencia de PHPUnit muestra \textbf{252 pruebas superadas},
-\textbf{1.503 aserciones} y \textbf{0 fallos}. La ejecución registrada tuvo una
-duración de \textbf{512,06 s}.
+frontend. La evidencia de PHPUnit muestra \textbf{220 pruebas superadas},
+\textbf{1.357 aserciones} y \textbf{0 fallos}. La ejecución registrada tuvo una
+duración de \textbf{501,41 s}.
 
 La evidencia de Vitest corresponde al comando
 \texttt{npm run test:js:coverage}. Se observan \textbf{54 archivos de prueba
@@ -1076,8 +1078,8 @@ superados}, \textbf{1.275 tests superados} y \textbf{4 omitidos}, para un total
 de 1.279 tests registrados.
 
 \dosporevidencia
-{phpunit.png}{0.96}{Resultado de la suite PHPUnit del backend: 252 pruebas superadas y 1.503 aserciones.}
-{vitest.png}{0.96}{Resultado de las pruebas del frontend con Vitest: 54 archivos superados y 1.275 tests aprobados.}
+{phpunit.png}{0.96}{Resultado de la suite PHPUnit del backend: 220 pruebas superadas y 1.357 aserciones.}
+{vitest.png}{0.96}{Resultado de las pruebas del frontend con Vitest: 51 archivos superados y 1.275 tests aprobados.}
 
 \subsection{Prueba de carga o estrés}
 

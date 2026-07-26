@@ -1,0 +1,589 @@
+erDiagram
+
+    %% Modelo logico generado desde el catalogo PostgreSQL.
+    %% Incluye todas las tablas base de los esquemas auth, core, audit y public.
+    %% Se excluyen las vistas y public.spatial_ref_sys porque son objetos tecnicos de PostGIS.
+    %% Las relaciones polimorficas (audit.audit_logs y auth.personal_access_tokens)
+    %% se documentan como atributos, ya que no tienen claves foraneas fisicas.
+
+    %% ==========================================
+    %% ESQUEMA AUTH
+    %% ==========================================
+
+    auth_navigation_items["auth.navigation_items"] {
+        bigint id PK
+        bigint parent_id FK "nullable"
+        varchar code UK
+        varchar label
+        varchar icon "nullable"
+        varchar route "nullable"
+        varchar permission_code FK "nullable"
+        smallint sort_order
+        boolean active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        json allowed_roles "nullable"
+    }
+
+    auth_operator_profiles["auth.operator_profiles"] {
+        bigint id PK
+        bigint user_id FK, UK
+        int incident_capacity
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        smallint max_active_incidents
+        smallint max_workload_points
+        boolean active
+    }
+
+    auth_password_reset_tokens["auth.password_reset_tokens"] {
+        varchar email PK
+        varchar token
+        timestamp created_at "nullable"
+        timestamp expires_at "nullable"
+        smallint attempts
+        timestamp used_at "nullable"
+    }
+
+    auth_permission_role["auth.permission_role"] {
+        bigint id PK
+        bigint permission_id FK
+        bigint role_id FK
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_permissions["auth.permissions"] {
+        bigint id PK
+        varchar code UK
+        varchar name
+        varchar description "nullable"
+        varchar module
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_personal_access_tokens["auth.personal_access_tokens"] {
+        bigint id PK
+        varchar tokenable_type
+        bigint tokenable_id
+        varchar name
+        varchar token UK
+        text abilities "nullable"
+        timestamp last_used_at "nullable"
+        timestamp expires_at "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_role_user["auth.role_user"] {
+        bigint id PK
+        bigint user_id FK, UK
+        bigint role_id FK
+        bigint assigned_by FK "nullable"
+        timestamp assigned_at
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_roles["auth.roles"] {
+        bigint id PK
+        varchar code UK
+        varchar name
+        varchar description "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_sessions["auth.sessions"] {
+        varchar id PK
+        bigint user_id FK "nullable"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        text payload
+        int last_activity
+    }
+
+    auth_supervisor_operator_assignments["auth.supervisor_operator_assignments"] {
+        bigint id PK
+        bigint supervisor_user_id FK
+        bigint operator_user_id FK
+        bigint assigned_by FK "nullable"
+        timestamp assigned_at
+        timestamp unassigned_at "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_supervisor_profiles["auth.supervisor_profiles"] {
+        bigint id PK
+        bigint user_id FK, UK
+        smallint max_operators
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        boolean active
+    }
+
+    auth_user_identities["auth.user_identities"] {
+        bigint id PK
+        bigint user_id FK
+        varchar provider
+        varchar provider_uid "nullable"
+        varchar provider_email
+        timestamp verified_at "nullable"
+        timestamp last_used_at "nullable"
+        jsonb provider_data "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_user_territories["auth.user_territories"] {
+        bigint id PK
+        bigint user_id FK
+        bigint territorial_unit_id FK
+        bigint assigned_by FK "nullable"
+        timestamp assigned_at
+        timestamp unassigned_at "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    auth_users["auth.users"] {
+        bigint id PK
+        varchar first_name
+        varchar last_name
+        varchar email UK
+        varchar password
+        varchar phone "nullable"
+        varchar profile_photo "nullable"
+        timestamp email_verified_at "nullable"
+        varchar remember_token "nullable"
+        timestamp last_login "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        timestamp deleted_at "nullable"
+        varchar username UK "nullable"
+        varchar two_factor_secret "nullable"
+        text two_factor_recovery_codes "nullable"
+        timestamp two_factor_confirmed_at "nullable"
+    }
+
+    %% ==========================================
+    %% ESQUEMA CORE
+    %% ==========================================
+
+    core_categories["core.categories"] {
+        bigint id PK
+        varchar name UK
+        varchar description "nullable"
+        varchar icon "nullable"
+        char color "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        boolean is_fallback
+    }
+
+    core_category_requests["core.category_requests"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint requested_by FK
+        varchar suggested_name
+        varchar reason
+        varchar status
+        bigint resolved_by FK "nullable"
+        varchar admin_comment "nullable"
+        timestamp resolved_at "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        varchar suggested_icon "nullable"
+        varchar suggested_subcategory_name "nullable"
+        bigint created_category_id FK "nullable"
+        bigint created_subcategory_id FK "nullable"
+        varchar suggested_category_description "nullable"
+    }
+
+    core_incident_assignments["core.incident_assignments"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint user_id FK
+        bigint assigned_by_id FK
+        timestamp assignment_date
+        timestamp unassignment_date "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        varchar assignment_role
+        boolean active
+        timestamp resolved_at "nullable"
+        bigint incident_cycle_id FK "nullable"
+    }
+
+    core_incident_attachments["core.incident_attachments"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint user_id FK
+        varchar original_name
+        varchar file_path
+        varchar mime_type
+        bigint file_size_bytes
+        varchar file_hash "nullable"
+        timestamp created_at
+        bigint incident_cycle_id FK "nullable"
+    }
+
+    core_incident_classification_history["core.incident_classification_history"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint previous_category_id FK "nullable"
+        bigint previous_subcategory_id FK "nullable"
+        bigint new_category_id FK
+        bigint new_subcategory_id FK "nullable"
+        bigint changed_by FK
+        text reason
+        timestamp created_at
+    }
+
+    core_incident_comments["core.incident_comments"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint user_id FK
+        text comment
+        boolean is_internal
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        bigint incident_cycle_id FK "nullable"
+    }
+
+    core_incident_cycles["core.incident_cycles"] {
+        bigint id PK
+        bigint incident_id FK
+        int cycle_number
+        timestamp opened_at
+        bigint opened_by FK
+        text reopening_reason "nullable"
+        timestamp resolved_at "nullable"
+        bigint resolved_by FK "nullable"
+        text resolution_description "nullable"
+        timestamp closed_at "nullable"
+        bigint closed_by FK "nullable"
+        text closure_reason "nullable"
+        jsonb snapshot "nullable"
+        timestamp snapshot_generated_at "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    core_incident_states["core.incident_states"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint previous_state_id FK "nullable"
+        bigint new_state_id FK
+        bigint user_id FK
+        text comment "nullable"
+        timestamp created_at
+        bigint incident_cycle_id FK "nullable"
+    }
+
+    core_incidents["core.incidents"] {
+        bigint id PK
+        varchar code UK
+        varchar title
+        text description
+        bigint category_id FK
+        bigint subcategory_id FK "nullable"
+        bigint priority_id FK "nullable"
+        bigint state_id FK
+        varchar address "nullable"
+        decimal latitude "nullable"
+        decimal longitude "nullable"
+        bigint reported_by_id FK
+        bigint current_assigned_id FK "nullable"
+        timestamp due_date "nullable"
+        timestamp resolution_date "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        timestamp deleted_at "nullable"
+        geometry location "nullable"
+        bigint territorial_unit_id FK "nullable"
+        varchar address_reference "nullable"
+        timestamp reopened_at "nullable"
+        timestamp previous_resolution_date "nullable"
+        timestamp rejected_at "nullable"
+        bigint resolved_by_supervisor_id FK "nullable"
+        jsonb resolution_snapshots "nullable"
+        bigint current_cycle_id FK "nullable"
+        varchar classification_status
+        text classification_detail "nullable"
+        bigint classified_by FK "nullable"
+        timestamp classified_at "nullable"
+    }
+
+    core_notifications["core.notifications"] {
+        bigint id PK
+        bigint user_id FK
+        varchar title
+        text message
+        boolean is_read
+        timestamp read_at "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        notification_type type
+        bigint incident_id FK "nullable"
+    }
+
+    core_priorities["core.priorities"] {
+        bigint id PK
+        varchar name
+        smallint level UK
+        char color "nullable"
+        smallint sla_hours
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        smallint weight
+    }
+
+    core_settings["core.settings"] {
+        bigint id PK
+        varchar key UK
+        text value
+        varchar type
+        varchar description "nullable"
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    core_state_change_requests["core.state_change_requests"] {
+        bigint id PK
+        bigint incident_id FK
+        bigint requested_by_user_id FK
+        bigint requested_state_id FK
+        varchar reason
+        varchar status
+        bigint reviewed_by_user_id FK "nullable"
+        varchar reviewer_comment "nullable"
+        timestamp created_at
+        timestamp reviewed_at "nullable"
+    }
+
+    core_state_transitions["core.state_transitions"] {
+        bigint id PK
+        bigint source_state_id FK
+        bigint target_state_id FK
+        boolean requires_comment
+        jsonb allowed_roles "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    core_states["core.states"] {
+        bigint id PK
+        varchar name UK
+        varchar description "nullable"
+        char color "nullable"
+        boolean is_initial_state
+        boolean is_final_state
+        boolean allows_edition
+        smallint order
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    core_subcategories["core.subcategories"] {
+        bigint id PK
+        bigint category_id FK
+        varchar name
+        varchar description "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+    }
+
+    core_territorial_units["core.territorial_units"] {
+        bigint id PK
+        varchar name
+        varchar type
+        bigint parent_id FK "nullable"
+        varchar code UK "nullable"
+        boolean is_active
+        timestamp created_at "nullable"
+        timestamp updated_at "nullable"
+        geometry coverage_area "nullable"
+    }
+
+    %% ==========================================
+    %% ESQUEMA AUDIT
+    %% ==========================================
+
+    audit_access_logs["audit.access_logs"] {
+        bigint id PK
+        varchar email
+        bigint user_id FK "nullable"
+        varchar login_type
+        boolean is_success
+        varchar failure_reason "nullable"
+        varchar session_id "nullable"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        timestamp created_at
+    }
+
+    audit_audit_logs["audit.audit_logs"] {
+        bigint id PK
+        varchar auditable_type
+        bigint auditable_id
+        varchar event
+        jsonb old_values "nullable"
+        jsonb new_values "nullable"
+        varchar url "nullable"
+        bigint user_id FK "nullable"
+        varchar ip_address "nullable"
+        text user_agent "nullable"
+        jsonb tags "nullable"
+        timestamp created_at
+    }
+
+    %% ==========================================
+    %% ESQUEMA PUBLIC
+    %% ==========================================
+
+    public_cache["public.cache"] {
+        varchar key PK
+        text value
+        int expiration
+    }
+
+    public_cache_locks["public.cache_locks"] {
+        varchar key PK
+        varchar owner
+        int expiration
+    }
+
+    public_failed_jobs["public.failed_jobs"] {
+        bigint id PK
+        varchar uuid UK
+        text connection
+        text queue
+        text payload
+        text exception
+        timestamp failed_at
+    }
+
+    public_job_batches["public.job_batches"] {
+        varchar id PK
+        varchar name
+        int total_jobs
+        int pending_jobs
+        int failed_jobs
+        text failed_job_ids
+        text options "nullable"
+        int cancelled_at "nullable"
+        int created_at
+        int finished_at "nullable"
+    }
+
+    public_jobs["public.jobs"] {
+        bigint id PK
+        varchar queue
+        text payload
+        smallint attempts
+        int reserved_at "nullable"
+        int available_at
+        int created_at
+    }
+
+    public_migrations["public.migrations"] {
+        int id PK
+        varchar migration
+        int batch
+    }
+
+    %% ==========================================
+    %% RELACIONES FISICAS (CLAVES FORANEAS)
+    %% ==========================================
+
+    auth_users o|--o{ audit_access_logs : "user_id"
+    auth_users o|--o{ audit_audit_logs : "user_id"
+    auth_navigation_items o|--o{ auth_navigation_items : "parent_id"
+    auth_permissions o|--o{ auth_navigation_items : "permission_code"
+    auth_users ||--o| auth_operator_profiles : "user_id"
+    auth_permissions ||--o{ auth_permission_role : "permission_id"
+    auth_roles ||--o{ auth_permission_role : "role_id"
+    auth_users o|--o{ auth_role_user : "assigned_by"
+    auth_roles ||--o{ auth_role_user : "role_id"
+    auth_users ||--o| auth_role_user : "user_id"
+    auth_users o|--o{ auth_sessions : "user_id"
+    auth_users o|--o{ auth_supervisor_operator_assignments : "assigned_by"
+    auth_users ||--o{ auth_supervisor_operator_assignments : "operator_user_id"
+    auth_users ||--o{ auth_supervisor_operator_assignments : "supervisor_user_id"
+    auth_users ||--o| auth_supervisor_profiles : "user_id"
+    auth_users ||--o{ auth_user_identities : "user_id"
+    auth_users o|--o{ auth_user_territories : "assigned_by"
+    core_territorial_units ||--o{ auth_user_territories : "territorial_unit_id"
+    auth_users ||--o{ auth_user_territories : "user_id"
+    core_categories o|--o{ core_category_requests : "created_category_id"
+    core_subcategories o|--o{ core_category_requests : "created_subcategory_id"
+    core_incidents ||--o{ core_category_requests : "incident_id"
+    auth_users ||--o{ core_category_requests : "requested_by"
+    auth_users o|--o{ core_category_requests : "resolved_by"
+    auth_users ||--o{ core_incident_assignments : "assigned_by_id"
+    core_incident_cycles o|--o{ core_incident_assignments : "incident_cycle_id"
+    core_incidents ||--o{ core_incident_assignments : "incident_id"
+    auth_users ||--o{ core_incident_assignments : "user_id"
+    core_incident_cycles o|--o{ core_incident_attachments : "incident_cycle_id"
+    core_incidents ||--o{ core_incident_attachments : "incident_id"
+    auth_users ||--o{ core_incident_attachments : "user_id"
+    auth_users ||--o{ core_incident_classification_history : "changed_by"
+    core_incidents ||--o{ core_incident_classification_history : "incident_id"
+    core_categories ||--o{ core_incident_classification_history : "new_category_id"
+    core_subcategories o|--o{ core_incident_classification_history : "new_subcategory_id"
+    core_categories o|--o{ core_incident_classification_history : "previous_category_id"
+    core_subcategories o|--o{ core_incident_classification_history : "previous_subcategory_id"
+    core_incident_cycles o|--o{ core_incident_comments : "incident_cycle_id"
+    core_incidents ||--o{ core_incident_comments : "incident_id"
+    auth_users ||--o{ core_incident_comments : "user_id"
+    auth_users o|--o{ core_incident_cycles : "closed_by"
+    core_incidents ||--o{ core_incident_cycles : "incident_id"
+    auth_users ||--o{ core_incident_cycles : "opened_by"
+    auth_users o|--o{ core_incident_cycles : "resolved_by"
+    core_incident_cycles o|--o{ core_incident_states : "incident_cycle_id"
+    core_incidents ||--o{ core_incident_states : "incident_id"
+    core_states ||--o{ core_incident_states : "new_state_id"
+    core_states o|--o{ core_incident_states : "previous_state_id"
+    auth_users ||--o{ core_incident_states : "user_id"
+    core_categories ||--o{ core_incidents : "category_id"
+    auth_users o|--o{ core_incidents : "classified_by"
+    auth_users o|--o{ core_incidents : "current_assigned_id"
+    core_incident_cycles o|--o{ core_incidents : "current_cycle_id"
+    core_priorities o|--o{ core_incidents : "priority_id"
+    auth_users ||--o{ core_incidents : "reported_by_id"
+    auth_users o|--o{ core_incidents : "resolved_by_supervisor_id"
+    core_states ||--o{ core_incidents : "state_id"
+    core_subcategories o|--o{ core_incidents : "subcategory_id"
+    core_territorial_units o|--o{ core_incidents : "territorial_unit_id"
+    core_incidents o|--o{ core_notifications : "incident_id"
+    auth_users ||--o{ core_notifications : "user_id"
+    core_incidents ||--o{ core_state_change_requests : "incident_id"
+    auth_users ||--o{ core_state_change_requests : "requested_by_user_id"
+    core_states ||--o{ core_state_change_requests : "requested_state_id"
+    auth_users o|--o{ core_state_change_requests : "reviewed_by_user_id"
+    core_states ||--o{ core_state_transitions : "source_state_id"
+    core_states ||--o{ core_state_transitions : "target_state_id"
+    core_categories ||--o{ core_subcategories : "category_id"
+    core_territorial_units o|--o{ core_territorial_units : "parent_id"
+
+    %% ==========================================
+    %% RESTRICCIONES UNICAS COMPUESTAS
+    %% ==========================================
+    %% UNIQUE auth.permission_role (permission_id, role_id)
+    %% UNIQUE auth.user_identities (provider, provider_uid)
+    %% UNIQUE auth.user_identities (user_id, provider)
+    %% UNIQUE core.incident_cycles (incident_id, cycle_number)
+    %% UNIQUE core.state_transitions (source_state_id, target_state_id)
+    %% UNIQUE core.subcategories (category_id, name)
