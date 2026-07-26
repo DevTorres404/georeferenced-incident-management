@@ -17,7 +17,7 @@ const auditHtml = read('app/html/audit-logs.html')
 const myTeamHtml = read('app/html/my-team.html')
 const incidentsHtml = read('app/html/incidents.html')
 const reportsHtml = read('app/html/reports.html')
-const incidentDetailHtml = read('app/html/incident-detail.html')
+const categoryManagementHtml = read('app/html/category-management.html')
 const registerHtml = read('app/html/register.html')
 const indexHtml = read('app/index.html')
 const dashboardJs = read('app/js/modules/dashboard/presentation/dashboard-page.js')
@@ -53,6 +53,14 @@ describe('responsive layout contracts', () => {
     expect(incidentsHtml.match(/incident-filter-(?:scope|state|priority)/g)).toHaveLength(3)
     expect(reportsCss).toMatch(/@media \(max-width: 768px\)[\S\s]*?\.reports-filter-date,[\S\s]*?width:\s*100%;/)
     expect(incidentsCss).toMatch(/@media \(max-width: 768px\)[\S\s]*?\.incident-filter-scope,[\S\s]*?width:\s*100%;/)
+  })
+
+  it('keeps catalog headings and search controls responsive', () => {
+    expect(categoryManagementHtml).toContain('id="categorySearch"')
+    expect(categoryManagementHtml).toContain('id="subcategorySearch"')
+    expect(categoryManagementHtml).not.toMatch(/<h3[^>]*card-title[^>]*>[^<]*(?:Catálogo de Categorías|Subtipos de Incidencia)/)
+    expect(categoryManagementHtml).not.toMatch(/id="filtroCatPadre"[^>]*style=/)
+    expect(categoryManagementHtml).toContain('flex-column flex-lg-row')
   })
 
   it('keeps KPI grids at one column on narrow screens', () => {

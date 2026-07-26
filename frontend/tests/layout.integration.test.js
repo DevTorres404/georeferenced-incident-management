@@ -190,7 +190,7 @@ function configureSuccessfulBackend(userData) {
     }
 
     if (path === '/navigation/menu') {
-      return Promise.resolve({ data: [] })
+      return Promise.resolve({ data: null })
     }
 
     if (path === '/notifications/unread/count') {

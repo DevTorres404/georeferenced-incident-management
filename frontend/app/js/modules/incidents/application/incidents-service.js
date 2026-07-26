@@ -99,6 +99,13 @@ async function classifyIncident(incidentId, payload) {
   })
 }
 
+async function requestNewCategory(incidentId, payload) {
+  return request(`/incidents/${incidentId}/category-requests`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  })
+}
+
 async function listIncidentCategories() {
   return request('/catalogs/categories')
 }
@@ -169,7 +176,8 @@ const incidentsService = {
   rejectStateChangeRequest,
   getStateChangeRequests,
   getPendingStateChangeRequests,
-  getReportAnalytics
+  getReportAnalytics,
+  requestNewCategory
 }
 
 globalThis.SGIGIncidentsService = incidentsService
@@ -195,5 +203,6 @@ export {
   requestStateChange,
   updateIncident,
   uploadIncidentAttachment,
-  getReportAnalytics
+  getReportAnalytics,
+  requestNewCategory
 }

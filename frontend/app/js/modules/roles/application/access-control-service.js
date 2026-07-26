@@ -31,6 +31,29 @@ async function updateRolePermissions(roleId, permissions) {
 }
 
 /**
+ * Actualiza de forma atomica los permisos funcionales y las pantallas de un rol.
+ */
+async function updateRoleAccess(roleId, permissions, navigationItems) {
+  const data = await request(`/admin/roles/${encodeURIComponent(roleId)}/access`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      permissions,
+      navigation_items: navigationItems
+    })
+  })
+
+  if (data?.data?.role) {
+    data.data.role = normalizeRole(data.data.role)
+  }
+
+  if (data?.data?.navigation_items) {
+    data.data.navigationItems = normalizeNavigationItems(data.data.navigation_items)
+  }
+
+  return data
+}
+
+/**
  * Obtiene todos los usuarios y los roles disponibles para asignación
  */
 async function getUsersAndRoles() {
@@ -96,6 +119,7 @@ function normalizeNavigationItems(items = []) {
     icon: item.icon || '',
     route: item.route || item.href || '',
     permission: item.permission || item.permission_code || item.permissionCode || '',
+    allowedRoles: item.allowed_roles || item.allowedRoles || null,
     active: item.active ?? item.activo ?? true,
     children: normalizeNavigationItems(item.children || [])
   }))
@@ -119,6 +143,7 @@ function normalizeUser(user = {}) {
 
 export {
   getAccessControlOverview,
+  updateRoleAccess,
   updateRolePermissions,
   getUsersAndRoles,
   assignUserRole

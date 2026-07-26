@@ -157,48 +157,56 @@
 % ==========================================================
 \begin{titlepage}
 \centering
-\vspace*{0.4cm}
+\vspace*{1.0cm}
 
+% --- Encabezado institucional ---
 \IfFileExists{upse.jpg}{
-    \includegraphics[width=4.8cm]{upse.jpg}\\[0.45cm]
+    \includegraphics[width=3.8cm]{upse.jpg}\\[0.6cm]
 }{
-    {\Large \textbf{UPSE}}\\[0.45cm]
+    {\Large \textbf{UPSE}}\\[0.6cm]
 }
 
-{\Large \textbf{\textcolor{primarygray}{UNIVERSIDAD ESTATAL PENÍNSULA DE SANTA ELENA}}}\\[0.25cm]
-{\large \textbf{Facultad de Sistemas y Telecomunicaciones}}\\
-{\large \textbf{Carrera de Software}}\\
-{\large Sexto Semestre}\\[0.85cm]
+{\large \textbf{\textcolor{primarygray}{UNIVERSIDAD ESTATAL PENÍNSULA DE SANTA ELENA}}}\\[0.18cm]
+{\normalsize \textbf{Facultad de Sistemas y Telecomunicaciones}}\\[0.06cm]
+{\normalsize \textbf{Carrera de Software}}\\[0.06cm]
+{\normalsize Sexto Semestre}
 
-{\LARGE \textbf{\textcolor{primarygray}{DOCUMENTO TÉCNICO DEL PROYECTO INTEGRADOR}}}\\[0.5cm]
+\vspace{0.9cm}
+\noindent\rule{\textwidth}{0.8pt}
+\vspace{0.3cm}
 
-{\large \textbf{Sistema Web de Gestión de Incidencias Georreferenciadas}}\\
-{\large \textbf{(SGI)}}\\[0.8cm]
+% --- Asignatura ---
+{\normalsize \textsc{Asignatura:} \textbf{Tecnología y Desarrollo Web}}
 
+\vspace{0.3cm}
+\noindent\rule{\textwidth}{0.8pt}
+\vspace{0.8cm}
 
+% --- Tipo de documento ---
+{\large \textbf{\textcolor{primarygray}{DOCUMENTO TÉCNICO DEL PROYECTO INTEGRADOR}}}
+
+\vspace{0.8cm}
+
+% --- Título del proyecto ---
+{\LARGE \textbf{Sistema Web de Gestión de}}\\[0.2cm]
+{\LARGE \textbf{Incidencias Georreferenciadas}}\\[0.3cm]
+{\large \textit{(SGI)}}
 
 \vfill
 
-{\textbf{Integrantes}}\\[0.2cm]
-Damián Jesús Torres Cadena\\
-Melanie Adriana Tomalá Merejildo\\
-Jean Pierre Cedeño Andrade\\[0.6cm]
+% --- Datos académicos ---
+\begin{tabular}{@{}r@{\quad}l@{}}
+\textbf{Integrantes:}          & Damián Jesús Torres Cadena \\
+                                & Melanie Adriana Tomalá Merejildo \\
+                                & Jean Pierre Cedeño Andrade \\[0.4cm]
+\textbf{Docente:}              & Ing. Evelyn Del Pezo Izaguirre \\[0.4cm]
+\textbf{Repositorio:}          & \small\url{https://github.com/DevTorres404/georeferenced-incident-management} \\[0.15cm]
+\textbf{Sistema en producción:}& \small\url{https://app.labtorres.me/} \\[0.4cm]
+\textbf{Período académico:}    & 2026--1 \\
+\textbf{Fecha de entrega:}     & Julio de 2026 \\
+\end{tabular}
 
-{\textbf{Docente:}}\\[0.2cm]
-Ing. Evelyn Del Pezo Izaguirre\\[0.35cm]
-
-
-
-{\textbf{Repositorio}}\\
-\url{https://github.com/DevTorres404/georeferenced-incident-management.git}\\[0.35cm]
-
-{\textbf{Sistema en producción}}\\
-\url{https://app.labtorres.me/}\\[0.55cm]
-
-{\textbf{Período Académico}}\\
-2026--1\\[0.15cm]
-{\textbf{Fecha}}\\
-Julio de 2026
+\vspace{1.0cm}
 
 \end{titlepage}
 
@@ -272,8 +280,8 @@ La solución utiliza una arquitectura \textbf{cliente--servidor desacoplada con 
 \midrule
 Frontend & HTML5, CSS3, Bootstrap 4.5.3, AdminLTE 3.1.0-rc y JavaScript ES6 modular \\
 Mapas & MapLibre GL JS 5.24.0 con OpenFreeMap \\
-Backend & PHP 8.3+ y Laravel 13.8+ \\
-Autenticación & Laravel Sanctum 4.3+, Bearer Tokens, verificación de correo, Google Auth y 2FA \\
+Backend & PHP 8.4+ y Laravel 13.16+ \\
+Autenticación & Laravel Sanctum 4.3.2+, Bearer Tokens, verificación de correo, Google Auth y 2FA \\
 Tiempo real & Laravel Reverb 1.10+ y WebSockets \\
 Base de datos & PostgreSQL 16 con PostGIS 3.4 \\
 Caché, sesiones y colas & Redis 7 \\
@@ -298,24 +306,464 @@ El usuario accede al frontend desde Vercel. La interfaz envía solicitudes HTTPS
 \end{figure}
 
 % ==========================================================
-% 3. FUNCIONALIDADES
+% 3. LÓGICA DE NEGOCIO
 % ==========================================================
-\section{Funcionalidades implementadas}
+\section{Lógica de negocio por módulo}
 
-La versión entregada implementa el ciclo operativo completo de una incidencia:
+Esta sección describe el comportamiento funcional real del sistema desde la creación
+de una cuenta hasta los módulos de analítica y auditoría. Cada flujo está
+implementado como un Caso de Uso dentro de la capa de Aplicación y se apoya
+en entidades y reglas de dominio que son independientes del framework.
+
+% ----------------------------------------------------------
+\subsection{Módulo 1: Registro y autenticación de usuarios}
+% ----------------------------------------------------------
+
+El sistema ofrece dos mecanismos de acceso: formulario de correo y contraseña, y
+autenticación con Google. Ambos comparten las mismas reglas de seguridad.
+
+\subsubsection*{Registro con correo y contraseña}
+
+\begin{enumerate}
+    \item El usuario completa el formulario con nombre, apellido, nombre de usuario,
+          correo y contraseña.
+    \item El caso de uso \texttt{RegisterUserUseCase} crea la cuenta con estado
+          activo pero sin correo verificado, asigna automáticamente el rol
+          \textbf{CIUDADANO} y registra una identidad de tipo \texttt{local}
+          para trazabilidad del proveedor de acceso.
+    \item Se envía un correo de verificación de forma inmediata. Si el envío falla,
+          el error se registra en el log y la cuenta queda creada igualmente; el
+          usuario puede solicitar el reenvío desde el cliente.
+    \item \textbf{El inicio de sesión queda bloqueado hasta que el correo sea verificado.}
+          Al hacer clic en el enlace de verificación, el caso de uso
+          \texttt{VerifyEmailUseCase} marca el campo \texttt{email\_verified\_at}.
+\end{enumerate}
+
+\subsubsection*{Inicio de sesión con correo y contraseña}
+
+El caso de uso \texttt{LoginUseCase} aplica las siguientes validaciones en orden:
+\begin{enumerate}
+    \item Busca el usuario por correo. Si no existe, registra un intento fallido y
+          lanza una excepción de credenciales inválidas (el mensaje no distingue
+          si fue el correo o la contraseña, para evitar enumeración de usuarios).
+    \item Verifica la contraseña mediante el \texttt{PasswordHasherPort}.
+    \item Comprueba que la cuenta esté activa.
+    \item Comprueba que el correo esté verificado.
+    \item Si todas las comprobaciones pasan, registra un intento exitoso, actualiza
+          el campo \texttt{last\_login} y sincroniza la identidad local.
+    \item Si el usuario tiene \textbf{2FA habilitado}, el caso de uso no emite un
+          token de sesión, sino un \texttt{two\_factor\_token} temporal. El cliente
+          debe usarlo para completar el segundo factor antes de obtener acceso.
+    \item Sin 2FA, emite el Bearer token de Sanctum y devuelve el perfil completo
+          del usuario (roles, permisos, menús de navegación).
+\end{enumerate}
+
+Todo intento de inicio de sesión --- exitoso o fallido, con cualquier razón --- queda
+registrado en la tabla \texttt{auth.login\_attempts} con correo, IP, user-agent,
+resultado y motivo del fallo.
+
+\subsubsection*{Autenticación con Google}
+
+El caso de uso \texttt{GoogleRegistrationUseCase} acepta un \texttt{id\_token}
+de Firebase y aplica la siguiente lógica:
+\begin{enumerate}
+    \item Verifica el token con la interfaz \texttt{GoogleTokenVerifierInterface},
+          cuya implementación concreta usa la SDK de Firebase Admin.
+    \item Extrae el correo, el UID de Firebase y el campo \texttt{email\_verified}
+          del payload. Si alguno es inválido, el intento se registra y se rechaza.
+    \item Distingue entre intención \textbf{register} e intención \textbf{login}.
+          Si el usuario ya existe y se intenta registrar, o no existe y se intenta
+          iniciar sesión, lanza la excepción correspondiente.
+    \item En registro nuevo: crea la cuenta con contraseña aleatoria (el usuario
+          nunca la conoce), asigna rol CIUDADANO y, si Google provee una foto de
+          perfil, la descarga de forma asíncrona mediante el job
+          \texttt{DownloadGoogleProfilePhotoJob}.
+    \item En ambos flujos, sincroniza la identidad de proveedor \texttt{google}
+          con el UID de Firebase, marca el correo como verificado si aún no lo está
+          y actualiza el último acceso.
+    \item Si el usuario tiene 2FA, aplica el mismo desvío de token temporal
+          que en el login por contraseña.
+\end{enumerate}
+
+\subsubsection*{Recuperación de contraseña}
+
+El flujo tiene tres pasos secuenciales obligatorios:
+\begin{enumerate}
+    \item \texttt{RequestPasswordResetCodeUseCase}: genera un código numérico de
+          6 dígitos y lo envía al correo. El código tiene una ventana de validez
+          definida en configuración.
+    \item \texttt{VerifyPasswordResetCodeUseCase}: valida el código e intenta
+          consumir el token, devolviendo una confirmación de que el código es
+          correcto sin aún cambiar la contraseña.
+    \item \texttt{ResetPasswordWithCodeUseCase}: con el código validado, aplica
+          la nueva contraseña. Invalida el token para que no pueda reutilizarse.
+\end{enumerate}
+
+\subsubsection*{Autenticación de dos factores (2FA)}
+
 \begin{itemize}
-    \item \textbf{Autenticación y acceso:} registro, inicio de sesión, verificación de correo, recuperación de contraseña, Google Auth, 2FA, roles y permisos granulares.
-    \item \textbf{Gestión de incidencias:} creación, consulta, edición y eliminación lógica; adjuntos y comentarios con autor y fecha.
-    \item \textbf{Clasificación y prioridad:} categorías, subcategorías, prioridades configurables y SLA.
-    \item \textbf{Ubicación:} provincias, cantones y parroquias, además de coordenadas y representación geoespacial en PostGIS.
-    \item \textbf{Estados y trazabilidad:} transiciones configurables, solicitudes de cambio, aprobación/rechazo, historial, línea de tiempo y ciclos de reapertura.
-    \item \textbf{Asignaciones:} operadores responsables y de apoyo, perfiles operativos, territorios y relación supervisor--operador.
-    \item \textbf{Notificaciones:} listado, contador de no leídas, marcar individualmente o todas como leídas y eventos en tiempo real.
-    \item \textbf{Consultas y reportes:} DataTables, mapa, KPI, dashboard, analítica, filtros, reportes y exportación PDF.
-    \item \textbf{Auditoría:} consulta de registros de actividad e intentos de autenticación.
+    \item \textbf{Habilitar:} \texttt{EnableTwoFactorUseCase} genera un secreto
+          TOTP y devuelve la URL del código QR para escanear con una app
+          autenticadora (Google Authenticator, etc.).
+    \item \textbf{Confirmar:} \texttt{ConfirmTwoFactorUseCase} valida el primer
+          código TOTP ingresado por el usuario. Solo tras esta confirmación el 2FA
+          queda activo en la cuenta.
+    \item \textbf{Verificar en login:} \texttt{VerifyTwoFactorLoginUseCase} recibe
+          el \texttt{two\_factor\_token} temporal y el código TOTP de 6 dígitos,
+          los valida y, si son correctos, emite el Bearer token definitivo.
+    \item \textbf{Deshabilitar:} \texttt{DisableTwoFactorUseCase} elimina el
+          secreto almacenado y desactiva el flag en la cuenta.
 \end{itemize}
 
-\textbf{Limitaciones actuales:} el catálogo territorial está especializado para Ecuador y no modela el país como nivel independiente. El despliegue productivo utiliza múltiples servicios Docker, pero no configura réplicas del backend para escalamiento horizontal.
+% ----------------------------------------------------------
+\subsection{Módulo 2: Gestión de usuarios y perfiles}
+% ----------------------------------------------------------
+
+El administrador gestiona la base de usuarios del sistema. Un usuario tiene
+nombre, apellido, nombre de usuario, correo, estado activo/inactivo y rol.
+Los datos se validan mediante \texttt{FormRequest} antes de llegar al caso de uso.
+
+Cada usuario autenticado puede actualizar su propio perfil
+(\texttt{UpdateOwnProfileUseCase}), cambiar su contraseña
+(\texttt{ChangeOwnPasswordUseCase}) y gestionar su foto de perfil
+(\texttt{UpdateOwnProfilePhotoUseCase} y \texttt{GetOwnProfilePhotoUseCase}).
+
+Los roles disponibles son: \textbf{ADMIN}, \textbf{SUPERVISOR}, \textbf{OPERADOR}
+y \textbf{CIUDADANO}. Cada rol tiene un conjunto de permisos granulares asignados
+que determinan qué operaciones puede ejecutar el usuario en cada endpoint. El
+sistema evalúa permisos --- no solo roles --- antes de procesar cualquier acción
+sensible.
+
+% ----------------------------------------------------------
+\subsection{Módulo 3: Estructura operativa}
+% ----------------------------------------------------------
+
+La estructura operativa relaciona supervisores, operadores y territorios. Esto
+define qué personas atienden incidencias en qué zonas geográficas.
+
+\begin{itemize}
+    \item \textbf{Zonas operativas:} cada zona abarca una o más unidades
+          territoriales. Un supervisor puede ser asignado a una zona
+          (\texttt{assignSupervisorToZone}).
+    \item \textbf{Supervisores y operadores:} un supervisor tiene un límite
+          configurable de operadores a cargo, controlado por el servicio de dominio
+          \texttt{SupervisorCapacityPolicy}. Si se intenta asignar más operadores
+          que el límite configurado, o si se reduce el límite por debajo del número
+          actual de operadores, el dominio lanza una excepción de negocio.
+    \item \textbf{Territorios:} a cada operador se le asigna un territorio de
+          trabajo (\texttt{assignOperatorTerritory}). El sistema filtra la
+          visibilidad de incidencias según el territorio del operador.
+    \item \textbf{Perfiles:} tanto supervisores como operadores tienen un perfil
+          con datos operativos que pueden actualizarse de forma independiente al
+          perfil de autenticación del usuario.
+\end{itemize}
+
+% ----------------------------------------------------------
+\subsection{Módulo 4: Registro de incidencias}
+% ----------------------------------------------------------
+
+Una incidencia es el objeto central del sistema. Puede ser reportada por cualquier
+usuario con acceso a la plataforma.
+
+\subsubsection*{Creación}
+
+El caso de uso \texttt{IncidentUseCase::store} persiste la incidencia con los
+datos básicos: título, descripción, coordenadas geográficas (latitud y longitud)
+y unidad territorial. En la base de datos, el trigger
+\texttt{trg\_actualizar\_ubicacion} sincroniza automáticamente el campo
+\texttt{geometry(Point, 4326)} de PostGIS con las coordenadas proporcionadas,
+garantizando la consistencia entre los campos numéricos y la representación
+espacial.
+
+La incidencia se crea con estado inicial \textbf{NUEVA} y con
+\texttt{classification\_status = Pending}, lo que indica que aún no ha sido
+clasificada por un supervisor o administrador.
+
+\subsubsection*{Campos requeridos y opcionales}
+
+\begin{itemize}
+    \item \textbf{Obligatorios:} título, descripción y categoría.
+    \item \textbf{Opcionales en creación:} subcategoría, prioridad, dirección,
+          latitud, longitud, unidad territorial, fecha de resolución y detalle
+          de clasificación.
+\end{itemize}
+
+\subsubsection*{Adjuntos}
+
+El método \texttt{attachFile} recibe el archivo validado por la capa HTTP,
+lo sube al almacenamiento S3 compatible (RustFS) mediante el puerto
+\texttt{FileStoragePort} y registra únicamente la metadata en la base de datos:
+nombre original, ruta en el bucket, tipo MIME, tamaño en bytes y hash de
+integridad. Los archivos binarios nunca se guardan en PostgreSQL.
+
+\subsubsection*{Comentarios}
+
+Cualquier usuario con acceso a la incidencia puede añadir comentarios con texto
+y fecha mediante \texttt{addComment}. Cada comentario queda ligado al usuario
+que lo creó y a la incidencia correspondiente.
+
+\subsubsection*{Edición y eliminación}
+
+La edición solo está permitida cuando la entidad de dominio \texttt{Incident}
+confirma que el estado actual lo permite (\texttt{canBeEdited()}). Si el estado
+no lo permite, el caso de uso lanza \texttt{IncidentException::editNotAllowed}
+sin llegar a la capa de persistencia. La eliminación es lógica (soft delete).
+
+% ----------------------------------------------------------
+\subsection{Módulo 5: Clasificación de incidencias}
+% ----------------------------------------------------------
+
+Después de que un ciudadano reporta una incidencia, un supervisor o administrador
+debe clasificarla. La clasificación asigna categoría, subcategoría, prioridad
+y cualquier otro metadato necesario para la atención.
+
+El método \texttt{classify} del caso de uso registra el historial de clasificación
+en \texttt{incident\_classification\_history}, de modo que queda trazabilidad de
+todos los cambios de categoría y subcategoría, con la razón del cambio, el usuario
+responsable y la fecha.
+
+Hasta que la incidencia sea clasificada, \texttt{classification\_status} permanece
+en \texttt{Pending} y la entidad de dominio rechaza las operaciones que requieren
+clasificación previa (\texttt{requiresClassification()} retorna \texttt{true}).
+
+\subsubsection*{Solicitud de nueva categoría}
+
+Si al momento de clasificar una incidencia el supervisor no encuentra una categoría
+apropiada en el catálogo existente, tiene la facultad de proponer la creación de
+una nueva categoría al equipo administrador.
+
+\begin{enumerate}
+    \item El supervisor envía una solicitud utilizando \texttt{CategoryRequestUseCase::requestNewCategory},
+          proporcionando un nombre sugerido para la categoría, una justificación de la necesidad y,
+          opcionalmente, vinculando la incidencia actual.
+    \item La solicitud se registra con estado \textbf{NUEVA} (\texttt{pending}) y
+          se notifica a todos los administradores activos con permiso para gestionar catálogos,
+          utilizando el servicio \texttt{AdminNotifier}.
+    \item El equipo administrador revisa la bandeja de solicitudes pendientes. Un administrador
+          puede:
+          \begin{itemize}
+              \item \textbf{Aprobar:} El caso de uso \texttt{CategoryRequestUseCase::approveRequest}
+                    actualiza el estado de la solicitud a aprobada y registra al administrador que
+                    tomó la decisión. Tras esto, el administrador debe crear manualmente la categoría
+                    en el catálogo. El supervisor solicitante recibe una notificación de aprobación.
+              \item \textbf{Rechazar:} El caso de uso \texttt{CategoryRequestUseCase::rejectRequest}
+                    actualiza el estado a rechazada, exigiendo un comentario o justificación. El supervisor
+                    solicitante es notificado del rechazo y del motivo correspondiente.
+          \end{itemize}
+\end{enumerate}
+
+% ----------------------------------------------------------
+\subsection{Módulo 6: Estados y ciclo de vida de la incidencia}
+% ----------------------------------------------------------
+
+El ciclo de vida de una incidencia está gobernado por un grafo de estados
+persistido en la tabla \texttt{state\_transitions}. El sistema no tiene
+transiciones hardcodeadas: las rutas válidas entre estados se configuran en
+la base de datos y se consultan en tiempo de ejecución.
+
+\subsubsection*{Estados del sistema}
+
+\begin{table}[H]
+\centering
+\small
+\rowcolors{2}{softgray}{white}
+\begin{tabularx}{\textwidth}{@{}p{0.22\textwidth} X@{}}
+\toprule
+\textbf{Estado} & \textbf{Significado operativo} \\
+\midrule
+NUEVA & Incidencia recién reportada, sin atención aún. \\
+ASIGNADA & Se han designado operadores responsables. \\
+EN PROGRESO & Un operador está trabajando activamente en la atención. \\
+RESUELTA & El operador solicitó resolución y fue aprobada por el supervisor. \\
+CERRADA & Ciclo finalizado sin posibilidad de reapertura inmediata. \\
+REABIERTA & El supervisor o administrador reabrió la incidencia; inicia un nuevo ciclo. \\
+RECHAZADA & La incidencia fue evaluada y no procede su atención. \\
+CANCELADA & La incidencia fue cancelada antes de ser atendida. \\
+\bottomrule
+\end{tabularx}
+\caption{Estados de incidencia y su significado operativo.}
+\end{table}
+
+\subsubsection*{Cambio de estado directo}
+
+El método \texttt{changeState} ejecuta las siguientes verificaciones antes de
+persistir cualquier cambio:
+\begin{enumerate}
+    \item Carga la incidencia con bloqueo de escritura (\texttt{SELECT FOR UPDATE})
+          para evitar condiciones de carrera.
+    \item Busca la transición entre el estado actual y el estado destino en el
+          repositorio. Si no existe, lanza \texttt{IncidentException::transitionNotAllowed}.
+    \item Verifica que los roles del usuario autenticado estén incluidos en los
+          roles permitidos por esa transición. Si no, lanza
+          \texttt{IncidentException::transitionForbidden}.
+    \item Si el estado destino es REABIERTA, verifica que el usuario tenga el
+          permiso \texttt{incidents.reopen} además de su rol.
+    \item Si la transición requiere comentario obligatorio y el comentario está
+          vacío o es solo espacios en blanco, lanza
+          \texttt{IncidentException::transitionRequiresComment}.
+    \item Aplica el cambio de estado dentro de una transacción.
+\end{enumerate}
+
+\subsubsection*{Solicitud de resolución por operador}
+
+El operador no puede marcar una incidencia como resuelta directamente. En su lugar,
+utiliza el flujo de solicitud de cambio de estado:
+\begin{enumerate}
+    \item El operador llama a \texttt{requestStateChange}, que valida que el
+          solicitante tenga rol OPERADOR, que la incidencia esté en un estado que
+          permita solicitar resolución (\texttt{canRequestResolution()}), que el
+          estado destino sea RESUELTA, que el operador tenga una asignación activa
+          en esa incidencia, y que no exista ya una solicitud pendiente.
+    \item Se crea la solicitud y se notifica al supervisor responsable en tiempo
+          real mediante WebSockets (Reverb).
+    \item El supervisor puede \textbf{aprobar} (\texttt{approveStateChange}) o
+          \textbf{rechazar} (\texttt{rejectStateChange}) la solicitud. En ambos
+          casos, el operador recibe una notificación con el resultado.
+    \item Solo los roles SUPERVISOR y ADMIN pueden aprobar o rechazar solicitudes.
+\end{enumerate}
+
+\subsubsection*{Reapertura y ciclos}
+
+Cuando una incidencia es reabierta, el sistema crea un nuevo registro en
+\texttt{incident\_cycles}. Las asignaciones del ciclo anterior se desactivan y se
+clonan al nuevo ciclo, preservando la trazabilidad histórica completa. Esto
+permite saber qué operadores atendieron cada ciclo de vida de la incidencia.
+
+% ----------------------------------------------------------
+\subsection{Módulo 7: Asignación de operadores}
+% ----------------------------------------------------------
+
+El supervisor (o administrador) asigna operadores a una incidencia mediante
+\texttt{assign}. La asignación registra un operador responsable principal y
+opcionalmente operadores de apoyo. Cada asignación queda vinculada al ciclo
+de vida activo de la incidencia.
+
+Para facilitar la selección, el método \texttt{assignmentOperatorOptions} devuelve
+la lista de operadores disponibles según la visibilidad del supervisor. El sistema
+distingue entre asignación activa e inactiva: al reabrir una incidencia, las
+asignaciones del ciclo anterior se inactivan automáticamente.
+
+Una vez que un operador tiene una asignación activa, puede solicitar el cambio de
+estado hacia RESUELTA. Si no tiene asignación activa, la solicitud es rechazada
+por el dominio antes de llegar a la base de datos.
+
+% ----------------------------------------------------------
+\subsection{Módulo 8: Notificaciones en tiempo real}
+% ----------------------------------------------------------
+
+El sistema genera notificaciones automáticas ante eventos relevantes del ciclo de
+vida de una incidencia. Las notificaciones se almacenan en la tabla
+\texttt{notifications} con referencia al usuario destinatario, el texto del mensaje
+y el estado de lectura.
+
+Los eventos que generan notificaciones incluyen: solicitud de cambio de estado,
+aprobación de solicitud, rechazo de solicitud, y cualquier otro evento configurado
+en el puerto \texttt{IncidentStateChangeNotifierPort}.
+
+La entrega en tiempo real se realiza mediante \textbf{Laravel Reverb} (WebSockets).
+El frontend recibe el evento instantáneamente y actualiza el contador de no leídas
+sin recargar la página.
+
+El usuario puede:
+\begin{itemize}
+    \item Consultar todas sus notificaciones paginadas.
+    \item Ver el conteo de no leídas en tiempo real.
+    \item Marcar una notificación individual como leída (\texttt{markAsRead}).
+    \item Marcar todas las notificaciones como leídas de una vez
+          (\texttt{markAllAsRead}).
+\end{itemize}
+
+% ----------------------------------------------------------
+\subsection{Módulo 9: Mapa georreferenciado}
+% ----------------------------------------------------------
+
+El método \texttt{mapPoints} devuelve la lista de incidencias con sus coordenadas
+geográficas para su representación en el mapa interactivo. La consulta aplica
+el mismo filtro de visibilidad por rol y territorio que el listado de tabla.
+
+El backend expone \texttt{GET /api/incidents/map} con la colección de puntos.
+El frontend los renderiza mediante \textbf{MapLibre GL JS} sobre teselas de
+\textbf{OpenFreeMap} (sin token, sin costo). El ciudadano puede usar el mapa
+directamente al reportar una incidencia: hace clic en el punto del mapa, las
+coordenadas se capturan automáticamente y se completan los campos de latitud y
+longitud en el formulario.
+
+% ----------------------------------------------------------
+\subsection{Módulo 10: Catálogos y unidades territoriales}
+% ----------------------------------------------------------
+
+Los catálogos son datos de referencia que el sistema consume desde la API;
+nada está codificado directamente en la interfaz.
+
+\begin{itemize}
+    \item \textbf{Categorías y subcategorías:} clasifican el tipo de incidencia.
+    \item \textbf{Prioridades:} cada prioridad tiene un nombre y un SLA
+          (en horas) que determina el tiempo esperado de resolución.
+    \item \textbf{Estados y transiciones:} se consultan para construir dinámicamente
+          los controles de cambio de estado disponibles para el usuario.
+    \item \textbf{Roles y permisos:} se leen de la API para construir la interfaz
+          de administración.
+    \item \textbf{Unidades territoriales:} organizadas en tres niveles jerárquicos
+          --- Provincia, Cantón, Parroquia --- con código de referencia y estado
+          activo/inactivo. El administrador puede crear, editar y desactivar
+          unidades. La interfaz carga las unidades en cascada (provincias →
+          cantones → parroquias) según la selección del usuario.
+\end{itemize}
+
+% ----------------------------------------------------------
+\subsection{Módulo 11: Dashboard y analítica}
+% ----------------------------------------------------------
+
+El dashboard presenta indicadores clave de rendimiento (KPI) obtenidos mediante
+\texttt{GetDashboardMetricsUseCase}. Los reportes avanzados provienen de
+\texttt{ReportUseCase::getAnalytics}, que procesa las incidencias aplicando el
+filtro de visibilidad del usuario y calcula:
+
+\begin{itemize}
+    \item Total de incidencias, tasa de resolución y tiempo promedio de resolución
+          en días.
+    \item Incidencias activas, resueltas, cerradas, vencidas, críticas y de alta
+          prioridad.
+    \item Incidencias reportadas en los últimos 7 días.
+    \item Distribución por prioridad y por categoría.
+    \item Top 5 de unidades territoriales con más incidencias.
+    \item Tendencia mensual de incidencias registradas, resueltas y pendientes
+          (agrupadas por mes).
+    \item Tabla resumen por categoría con totales, pendientes, resueltos y tasa
+          de resolución.
+    \item Tiempo promedio de resolución por categoría.
+\end{itemize}
+
+Los reportes se pueden filtrar por rango de fechas, categoría y estado. La
+visibilidad de los datos respeta el rol: un operador solo ve las incidencias
+de su territorio, mientras que supervisores y administradores tienen visión global.
+
+% ----------------------------------------------------------
+\subsection{Módulo 12: Auditoría y trazabilidad del sistema}
+% ----------------------------------------------------------
+
+El módulo de auditoría expone dos consultas paginadas accesibles solo para roles
+con el permiso correspondiente:
+
+\begin{itemize}
+    \item \textbf{Logs de actividad:} registran operaciones de crear, actualizar
+          y eliminar sobre las tablas del sistema, con referencia al usuario, la
+          tabla afectada, el ID del registro y la acción realizada.
+    \item \textbf{Intentos de autenticación:} registran todos los intentos de
+          login --- exitosos y fallidos --- con correo, IP, user-agent, resultado
+          y, en caso de fallo, el motivo (usuario no encontrado, contraseña
+          incorrecta, cuenta inactiva, correo no verificado, token de Google
+          inválido, etc.).
+\end{itemize}
+
+Ambas consultas admiten filtros y paginación. La tabla de intentos de autenticación
+es un instrumento de seguridad operacional que permite al administrador detectar
+patrones de acceso no autorizados.
+
+\textbf{Limitaciones actuales:} el catálogo territorial está especializado para
+Ecuador y no modela el país como nivel independiente. El despliegue productivo
+utiliza múltiples servicios Docker, pero no configura réplicas del backend para
+escalamiento horizontal.
 
 
 % ==========================================================
@@ -361,7 +809,8 @@ incidencias. Entre las tablas principales se encuentran
 \texttt{incident\_comments}, \texttt{incident\_attachments},
 \texttt{categories}, \texttt{subcategories}, \texttt{priorities},
 \texttt{territorial\_units}, \texttt{incident\_cycles},
-\texttt{notifications}, \texttt{incident\_classification\_history} y
+\texttt{notifications}, \texttt{incident\_classification\_history},
+\texttt{category\_requests}, \texttt{state\_change\_requests} y
 \texttt{settings}.
 
 \clearpage
@@ -383,8 +832,8 @@ identidad, autenticación, autorización y estructura operativa. Incluye
 \texttt{permission\_role}, \texttt{operator\_profiles},
 \texttt{supervisor\_profiles}, \texttt{supervisor\_operator\_assignments},
 \texttt{user\_territories}, \texttt{sessions}, \texttt{user\_identities},
-\texttt{navigation\_items}, \texttt{password\_reset\_tokens} y
-\texttt{personal\_access\_tokens}.
+\texttt{navigation\_items} (con soporte de \texttt{allowed\_roles} por ítem),
+\texttt{password\_reset\_tokens} y \texttt{personal\_access\_tokens}.
 
 \clearpage
 \begin{landscape}
@@ -464,8 +913,9 @@ Los \textit{seeders} de demostración incluyen los siguientes usuarios, todos co
 \textbf{Rol} & \textbf{Correo} & \textbf{Contraseña} \\
 \midrule
 Administrador & admin@incidents.local & password \\
-Supervisor & supervisor@incidents.local & password \\
-Operador & operador1@incidents.local & password \\
+Administrador (Revisión) & admindocente@incidents.local & password \\
+Supervisor (Guayas Z2) & supervisor.guayas@incidents.local & password \\
+Operador (Guayas Z2) & operador.z2.01@incidents.local & password \\
 Ciudadano & ciudadano1@incidents.local & password \\
 \bottomrule
 \end{tabularx}
@@ -515,7 +965,7 @@ php artisan reverb:start
 cd ../frontend
 docker compose up -d
 \end{verbatim}
-    El frontend queda disponible normalmente en \url{http://localhost:5500} y la API local en \url{http://127.0.0.1:8000}.
+
 \end{enumerate}
 
 
@@ -616,18 +1066,18 @@ La validación se aplica en diferentes niveles:
 \subsection{Casos de prueba y pruebas automatizadas}
 
 La versión documentada incluye pruebas automatizadas tanto en backend como en
-frontend. La evidencia de PHPUnit muestra \textbf{220 pruebas superadas},
-\textbf{1.357 aserciones} y \textbf{0 fallos}. La ejecución registrada tuvo una
-duración de \textbf{501,41 s}.
+frontend. La evidencia de PHPUnit muestra \textbf{252 pruebas superadas},
+\textbf{1.503 aserciones} y \textbf{0 fallos}. La ejecución registrada tuvo una
+duración de \textbf{512,06 s}.
 
 La evidencia de Vitest corresponde al comando
-\texttt{npm run test:js:coverage}. Se observan \textbf{51 archivos de prueba
+\texttt{npm run test:js:coverage}. Se observan \textbf{54 archivos de prueba
 superados}, \textbf{1.275 tests superados} y \textbf{4 omitidos}, para un total
 de 1.279 tests registrados.
 
 \dosporevidencia
-{phpunit.png}{0.96}{Resultado de la suite PHPUnit del backend: 220 pruebas superadas y 1.357 aserciones.}
-{vitest.png}{0.96}{Resultado de las pruebas del frontend con Vitest: 51 archivos superados y 1.275 tests aprobados.}
+{phpunit.png}{0.96}{Resultado de la suite PHPUnit del backend: 252 pruebas superadas y 1.503 aserciones.}
+{vitest.png}{0.96}{Resultado de las pruebas del frontend con Vitest: 54 archivos superados y 1.275 tests aprobados.}
 
 \subsection{Prueba de carga o estrés}
 

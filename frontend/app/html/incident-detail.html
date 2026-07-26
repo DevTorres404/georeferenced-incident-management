@@ -214,7 +214,12 @@
             <div class="modal-body">
               <div class="alert alert-light border" id="classificationCitizenDetail"></div>
               <div class="form-group">
-                <label for="classificationCategory">Categoría definitiva</label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <label for="classificationCategory" class="mb-0">Categoría definitiva</label>
+                  <a href="#" id="btnOpenRequestCategory" class="text-warning small" style="text-decoration: underline;">
+                    <i class="fas fa-plus-circle"></i> Solicitar nueva
+                  </a>
+                </div>
                 <select id="classificationCategory" class="form-control" required></select>
               </div>
               <div class="form-group">
@@ -237,13 +242,83 @@
         </div>
       </div>
     </div>
+    <div class="modal fade" id="modalRequestCategory" tabindex="-1" role="dialog" aria-labelledby="modalRequestCategoryLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <form id="formRequestCategory" novalidate>
+            <div class="modal-header bg-warning">
+              <h5 class="modal-title" id="modalRequestCategoryLabel">
+                <i class="fas fa-envelope-open-text mr-2"></i>Solicitar Nueva Categoría
+              </h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-info small">
+                <div class="font-weight-bold mb-1"><i class="fas fa-user-shield mr-1"></i>Revisión administrativa</div>
+                Proponé una categoría y un subtipo. El administrador definirá los datos finales y, al aprobarlos, la incidencia quedará clasificada automáticamente.
+              </div>
+              <div class="form-group">
+                <label for="requestCategoryName">Categoría sugerida <span class="text-danger">*</span></label>
+                <input type="text" id="requestCategoryName" class="form-control" required minlength="3" maxlength="100" placeholder="Ej. Infraestructura eléctrica">
+                <small class="form-text text-muted">Área general a la que pertenece el problema.</small>
+              </div>
+              <div class="form-group">
+                <label for="requestCategoryDescription">Descripción de la categoría <span class="text-danger">*</span></label>
+                <textarea id="requestCategoryDescription" class="form-control" rows="3" required minlength="10"
+                  maxlength="255" placeholder="Describa qué tipos de incidencias debería agrupar esta categoría."></textarea>
+                <small class="form-text text-muted">Esta descripción servirá como referencia editable para el administrador.</small>
+              </div>
+              <div class="form-group">
+                <label for="requestSubcategoryName">Subtipo sugerido <span class="text-danger">*</span></label>
+                <input type="text" id="requestSubcategoryName" class="form-control" required minlength="3" maxlength="100" placeholder="Ej. Cable energizado en vía pública">
+                <small class="form-text text-muted">Problema específico observado en esta incidencia.</small>
+              </div>
+              <div class="form-group">
+                <label for="requestCategoryIcon">Ícono sugerido <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text"><i class="fas fa-tags" id="requestCategoryIconPreview"></i></span>
+                  </div>
+                  <input type="text" id="requestCategoryIcon" class="form-control" value="fa-tags" required readonly
+                    pattern="^fa-[a-z0-9-]+$" aria-label="Ícono sugerido seleccionado">
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" id="btnToggleSupervisorIconPicker"
+                      title="Seleccionar ícono de la lista" aria-controls="supervisorIconPickerPanel" aria-expanded="false">
+                      <i class="fas fa-icons"></i>
+                    </button>
+                  </div>
+                </div>
+                <div id="supervisorIconPickerPanel" class="p-2 border rounded bg-white mt-2 d-none shadow-sm"
+                  style="max-height: 130px; overflow-y: auto;">
+                  <small class="text-muted d-block mb-1 font-weight-bold">Íconos disponibles:</small>
+                  <div class="d-flex flex-wrap" id="supervisorIconPickerGrid" style="gap: 4px;"></div>
+                </div>
+              </div>
+              <div class="form-group mb-0">
+                <label for="requestCategoryReason">Justificación y alcance <span class="text-danger">*</span></label>
+                <textarea id="requestCategoryReason" class="form-control" rows="4" minlength="10" maxlength="500" required placeholder="Explicá por qué el catálogo actual no cubre el caso y qué situaciones debería incluir este subtipo."></textarea>
+                <small class="form-text text-muted">El administrador usará esta información para evitar categorías duplicadas o ambiguas.</small>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light border" data-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-warning" id="btnSubmitCategoryRequest">
+                <i class="fas fa-paper-plane mr-1"></i>Enviar Solicitud
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
     <script src="/plugins/jquery/jquery.min.js"></script>
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
     <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous"></script>
-    <script type="module" src="/js/layout/layout.js?v=46"></script>
-    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=62"></script>
+    <script type="module" src="/js/layout/layout.js?v=48"></script>
+    <script type="module" src="/js/modules/incidents/presentation/incident-detail-page.js?v=65"></script>
 </body>
 
 </html>

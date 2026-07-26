@@ -12,8 +12,9 @@ import {
   getOperationalZonesGeoJson,
   updateOperationalOperatorProfile,
   assignOperationalZoneSupervisor,
+  releaseOperationalZoneSupervisor,
   replaceOperationalZoneOperator
-} from '../application/operational-structure-service.js?v=4'
+} from '../application/operational-structure-service.js?v=5'
 
 const ZONE_COLOR_BY_CODE = {
   Z1: '#0f766e',
@@ -127,6 +128,7 @@ export function bindEvents() {
 
   document.getElementById('operatorProfileForm')?.addEventListener('submit', submitOperatorProfileForm)
   document.getElementById('changeSupervisorForm')?.addEventListener('submit', submitChangeSupervisorForm)
+  document.getElementById('btnReleaseSupervisor')?.addEventListener('click', releaseSelectedZoneSupervisor)
   document.getElementById('replaceOperatorForm')?.addEventListener('submit', submitReplaceOperatorForm)
 }
 
@@ -466,6 +468,11 @@ export function renderSupervisors() {
 
   target.innerHTML = state.supervisors.map(item => {
     const sName = fullName(item.supervisor) || 'Supervisor'
+    let assignmentBadge = '<span class="badge badge-success px-3 py-1">Libre</span>'
+    if (item.supervisor?.operational_zone?.name) {
+      assignmentBadge = `<span class="badge badge-primary px-3 py-1">Asignado · ${escapeHtml(item.supervisor.operational_zone.name)}</span>`
+    }
+
     return `
       <tr>
         <td>
@@ -477,9 +484,9 @@ export function renderSupervisors() {
             </div>
           </div>
         </td>
-        <td><span class="badge badge-light shadow-sm text-dark px-3 py-1 border">${escapeHtml(item.supervisor?.operational_zone?.name || 'Sin zona')}</span></td>
+        <td>${assignmentBadge}</td>
         <td><strong>${escapeHtml(item.active_operators_count || 0)}</strong> <span class="text-muted">/ ${escapeHtml(item.max_operators || 0)}</span></td>
-        <td><small class="text-muted"><i class="fas fa-map-marker-alt mr-1 text-primary"></i>${escapeHtml(item.supervisor?.territory?.full_path || '-')}</small></td>
+        <td><small class="text-muted"><i class="fas fa-map-marker-alt mr-1 text-primary"></i>${escapeHtml(item.supervisor?.territory?.full_path || 'Sin cobertura asignada')}</small></td>
         <td>${renderOperatorStack(item.operators || [])}</td>
       </tr>
     `
@@ -501,6 +508,20 @@ export function renderOperators() {
 
   target.innerHTML = state.operators.map(item => {
     const oName = fullName(item.operator) || 'Operador'
+    let zoneBadge = '<span class="badge badge-success px-3 py-1">Libre</span>'
+    if (item.operator?.operational_zone?.name) {
+      zoneBadge = `<span class="badge badge-primary px-3 py-1">${escapeHtml(item.operator.operational_zone.name)}</span>`
+    }
+
+    let actionsHtml = '<span class="text-muted small">Solo lectura</span>'
+    if (canManageOperations) {
+      actionsHtml = `
+        <button type="button" class="btn btn-sm btn-outline-primary" data-action="edit-operator-profile" data-operator-id="${escapeHtml(item.operator?.id || 0)}">
+          Ajustar
+        </button>
+      `
+    }
+
     return `
       <tr>
         <td>
@@ -512,7 +533,7 @@ export function renderOperators() {
             </div>
           </div>
         </td>
-        <td><span class="badge badge-light shadow-sm text-dark px-3 py-1 border">${escapeHtml(item.operator?.operational_zone?.name || 'Sin zona')}</span></td>
+        <td>${zoneBadge}</td>
         <td>${escapeHtml(item.supervisor ? fullName(item.supervisor) : 'Sin supervisor')}</td>
         <td><small class="text-muted"><i class="fas fa-map-marker-alt mr-1 text-primary"></i>${escapeHtml(item.operator?.territory?.full_path || '-')}</small></td>
         <td>
@@ -523,11 +544,7 @@ export function renderOperators() {
           </div>
         </td>
         <td class="text-right">
-          ${canManageOperations ? `
-            <button type="button" class="btn btn-sm btn-outline-primary" data-action="edit-operator-profile" data-operator-id="${escapeHtml(item.operator?.id || 0)}">
-              Ajustar
-            </button>
-          ` : '<span class="text-muted small">Solo lectura</span>'}
+          ${actionsHtml}
         </td>
       </tr>
     `
@@ -657,8 +674,6 @@ export function openZoneManagersModal(zoneId) {
   const supervisorName = fullName(zone.supervisor) || 'Sin supervisor asignado'
   const supervisorEmail = zone.supervisor?.email || 'Pendiente de asignación'
   const provinceNames = (zone.provinces_covered || []).map(province => province.name).filter(Boolean)
-
-
   subtitle.textContent = `${zone.zone?.name || 'Zona'} · ${provinceNames.join(', ') || 'Sin provincias asociadas'}`
   target.innerHTML = `
     <div class="ops-managers-modal">
@@ -792,10 +807,6 @@ function zoneFeatures(zoneId) {
 
 function findZoneById(zoneId) {
   return state.zones.find(item => Number(item.zone?.id) === Number(zoneId)) || null
-}
-
-function findZoneByCode(zoneCode) {
-  return state.zones.find(item => String(item.zone?.code || '') === String(zoneCode || '')) || null
 }
 
 export function zoneColor(zoneCode) {
@@ -1057,6 +1068,7 @@ function updateTeamManagementTab(zone) {
   const supContainer = document.getElementById('supervisorInfoContainer')
   const supSelect = document.getElementById('supervisorSelect')
   const btnSup = document.getElementById('btnSaveSupervisor')
+  const btnReleaseSupervisor = document.getElementById('btnReleaseSupervisor')
 
   if (supContainer && supSelect && btnSup) {
     const supervisorName = fullName(zone.supervisor) || 'Sin supervisor asignado'
@@ -1073,14 +1085,38 @@ function updateTeamManagementTab(zone) {
     `
 
     const currentSupervisorId = Number(zone.supervisor?.id || 0)
-    supSelect.innerHTML = state.supervisors.map(item => {
+    const supervisorOptions = [...state.supervisors].sort((left, right) => {
+      const leftId = Number(left.supervisor?.id || 0)
+      const rightId = Number(right.supervisor?.id || 0)
+      const leftRank = leftId === currentSupervisorId ? 0 : (left.supervisor?.operational_zone ? 2 : 1)
+      const rightRank = rightId === currentSupervisorId ? 0 : (right.supervisor?.operational_zone ? 2 : 1)
+
+      return leftRank - rightRank || fullName(left.supervisor).localeCompare(fullName(right.supervisor))
+    }).map(item => {
       const supervisorId = Number(item.supervisor?.id || 0)
-      const label = `${fullName(item.supervisor) || 'Supervisor'}${supervisorId === currentSupervisorId ? ' (Actual)' : ''}`
+      const zoneName = item.supervisor?.operational_zone?.name
+      let status = 'Libre'
+      if (supervisorId === currentSupervisorId) {
+        status = `Actual · ${zoneName || zone.zone?.name || 'Zona seleccionada'}`
+      } else if (zoneName) {
+        status = `Asignado · ${zoneName}`
+      }
+
+      const label = `${fullName(item.supervisor) || 'Supervisor'} — ${status}`
       return `<option value="${escapeHtml(supervisorId)}" ${supervisorId === currentSupervisorId ? 'selected' : ''}>${escapeHtml(label)}</option>`
     }).join('')
+    let emptyOption = ''
+    if (!currentSupervisorId) {
+      emptyOption = '<option value="" selected>Selecciona un supervisor...</option>'
+    }
 
-    supSelect.disabled = false
-    btnSup.disabled = false
+    supSelect.innerHTML = emptyOption + supervisorOptions
+    supSelect.disabled = state.supervisors.length === 0
+    btnSup.disabled = state.supervisors.length === 0
+
+    if (btnReleaseSupervisor) {
+      btnReleaseSupervisor.disabled = currentSupervisorId === 0
+    }
   }
 
   const opContainer = document.getElementById('operatorsListContainer')
@@ -1137,8 +1173,9 @@ function updateTeamManagementTab(zone) {
       opSelectReplacement.innerHTML = '<option value="">No hay operadores disponibles</option>'
     } else {
       opSelectReplacement.innerHTML = availableOperators.map(item => {
-        const zoneName = item.operator?.operational_zone?.name || 'Sin zona'
-        return `<option value="${escapeHtml(item.operator?.id || 0)}">${escapeHtml(fullName(item.operator) || 'Operador')} (${escapeHtml(zoneName)})</option>`
+        const zoneName = item.operator?.operational_zone?.name
+        const status = zoneName ? `Actualmente en ${zoneName}` : 'Libre'
+        return `<option value="${escapeHtml(item.operator?.id || 0)}">${escapeHtml(fullName(item.operator) || 'Operador')} — ${escapeHtml(status)}</option>`
       }).join('')
     }
 
@@ -1168,9 +1205,34 @@ export async function submitChangeSupervisorForm(event) {
     await assignOperationalZoneSupervisor(state.selectedZoneId, formData)
     await refreshPageData()
     selectZone(state.selectedZoneId, { fit: false })
-    renderSuccess('Supervisor asignado correctamente.')
+    renderSuccess('Cambio de supervisor aplicado correctamente.')
   } catch (error) {
     renderError(error.message || 'No se pudo cambiar el supervisor.')
+  } finally {
+    hidePageLoading()
+  }
+}
+
+export async function releaseSelectedZoneSupervisor() {
+  if (!state.selectedZoneId) {
+    renderError('Selecciona una zona operativa.')
+    return
+  }
+
+  const zone = state.zones.find(item => Number(item.zone?.id) === Number(state.selectedZoneId))
+  if (!zone?.supervisor?.id) {
+    renderError('La zona seleccionada no tiene un supervisor asignado.')
+    return
+  }
+
+  try {
+    showPageLoading('Liberando supervisor', 'Actualizando la estructura operativa...')
+    await releaseOperationalZoneSupervisor(state.selectedZoneId)
+    await refreshPageData()
+    selectZone(state.selectedZoneId, { fit: false })
+    renderSuccess('Supervisor liberado correctamente. Los operadores permanecen en la zona.')
+  } catch (error) {
+    renderError(error.message || 'No se pudo liberar al supervisor.')
   } finally {
     hidePageLoading()
   }
@@ -1199,7 +1261,7 @@ export async function submitReplaceOperatorForm(event) {
     await replaceOperationalZoneOperator(currentId, formData)
     await refreshPageData()
     selectZone(state.selectedZoneId, { fit: false })
-    renderSuccess('Operador reemplazado y cargas transferidas exitosamente.')
+    renderSuccess('Cambio de operadores completado y cargas transferidas correctamente.')
   } catch (error) {
     renderError(error.message || 'No se pudo reemplazar al operador.')
   } finally {

@@ -13,6 +13,7 @@ vi.mock('../app/js/modules/operations/application/operational-structure-service.
   getOperationalZonesGeoJson: vi.fn(),
   updateOperationalOperatorProfile: vi.fn(),
   assignOperationalZoneSupervisor: vi.fn(),
+  releaseOperationalZoneSupervisor: vi.fn(),
   replaceOperationalZoneOperator: vi.fn()
 }))
 
@@ -58,6 +59,7 @@ const PAGE_FIXTURE = `
   <form id="changeSupervisorForm">
     <select id="supervisorSelect"></select>
     <button id="btnSaveSupervisor"></button>
+    <button id="btnReleaseSupervisor" type="button"></button>
   </form>
 
   <form id="replaceOperatorForm">
@@ -99,6 +101,12 @@ const sampleSupervisors = [
       { first_name: 'Pedro', last_name: 'Ramirez' },
       { first_name: 'Luis', last_name: 'Gomez' }
     ]
+  },
+  {
+    supervisor: { id: 12, first_name: 'Sofia', last_name: 'Libre', email: 'sofia@test.com', operational_zone: null, territory: null },
+    active_operators_count: 0,
+    max_operators: 5,
+    operators: []
   }
 ]
 
@@ -270,6 +278,9 @@ describe('Integration — operational-structure-page', () => {
 
       await vi.waitFor(() => {
         expect(document.getElementById('supervisorsTableBody').innerHTML).toContain('Carlos Mendez')
+        expect(document.getElementById('supervisorsTableBody').innerHTML).toContain('Sofia Libre')
+        expect(document.getElementById('supervisorsTableBody').innerHTML).toContain('Asignado · Zona Norte')
+        expect(document.getElementById('supervisorsTableBody').innerHTML).toContain('Libre')
         expect(document.getElementById('operatorsTableBody').innerHTML).toContain('Pedro Ramirez')
         expect(document.getElementById('operatorsTableBody').innerHTML).toContain('Maria Diaz')
       })
@@ -407,6 +418,10 @@ describe('Integration — operational-structure-page', () => {
 
       expect(document.getElementById('zoneTitle').innerHTML).toContain('Zona Norte')
       expect(document.getElementById('supervisorInfoContainer').innerHTML).toContain('Carlos Mendez')
+      expect(document.getElementById('supervisorSelect').textContent).toContain('Carlos Mendez — Actual · Zona Norte')
+      expect(document.getElementById('supervisorSelect').textContent).toContain('Sofia Libre — Libre')
+      expect(document.getElementById('replacementOperatorSelect').textContent).toContain('Maria Diaz — Actualmente en Zona Centro')
+      expect(document.getElementById('btnReleaseSupervisor').disabled).toBe(false)
     })
 
     it('click on [data-action="close-zone-detail"] clears selection', async () => {
@@ -611,7 +626,7 @@ describe('Integration — operational-structure-page', () => {
         { supervisor_user_id: 10 }
       )
       const alert = document.getElementById('operationalStructureAlert')
-      expect(alert.textContent).toContain('Supervisor asignado correctamente')
+      expect(alert.textContent).toContain('Cambio de supervisor aplicado correctamente')
     })
 
     it('validates supervisor is selected', async () => {
@@ -665,7 +680,7 @@ describe('Integration — operational-structure-page', () => {
         { replacement_operator_user_id: 21 }
       )
       const alert = document.getElementById('operationalStructureAlert')
-      expect(alert.textContent).toContain('reemplazado')
+      expect(alert.textContent).toContain('Cambio de operadores completado')
     })
 
     it('validates both selects have values', async () => {
@@ -688,6 +703,31 @@ describe('Integration — operational-structure-page', () => {
 
       const alert = document.getElementById('operationalStructureAlert')
       expect(alert.textContent).toContain('Selecciona el operador actual')
+    })
+  })
+
+  describe('10. releaseSelectedZoneSupervisor', () => {
+    it('releases the current supervisor and refreshes the selected zone', async () => {
+      const mod = await import('../app/js/modules/operations/presentation/operational-structure-page.js')
+      const services = await import('../app/js/modules/operations/application/operational-structure-service.js')
+
+      services.listOperationalZones.mockResolvedValue(sampleZones)
+      services.listOperationalSupervisors.mockResolvedValue(sampleSupervisors)
+      services.listOperationalOperators.mockResolvedValue(sampleOperators)
+      services.getOperationalZonesGeoJson.mockResolvedValue(sampleGeoJson)
+      services.releaseOperationalZoneSupervisor.mockResolvedValue({})
+
+      localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }] }))
+
+      await mod.refreshPageData()
+      await flushMicrotasks()
+      mod.selectZone(1, { fit: false })
+
+      await mod.releaseSelectedZoneSupervisor()
+      await flushMicrotasks()
+
+      expect(services.releaseOperationalZoneSupervisor).toHaveBeenCalledWith(1)
+      expect(document.getElementById('operationalStructureAlert').textContent).toContain('Supervisor liberado correctamente')
     })
   })
 })

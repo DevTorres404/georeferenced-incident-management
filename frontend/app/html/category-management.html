@@ -86,20 +86,45 @@
                                         <i class="fas fa-sitemap mr-1"></i>Subtipos / Subcategorías
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link font-weight-bold text-warning" id="tabRequestsLink" data-toggle="pill" href="#tabRequests" role="tab" aria-controls="tabRequests" aria-selected="false">
+                                        <i class="fas fa-envelope-open-text mr-1"></i>Solicitudes Pendientes
+                                        <span class="badge badge-danger ml-1 d-none" id="requestsBadgeCount">0</span>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
                         <div class="card-body">
                             <div class="tab-content" id="catalogTabsContent">
                                 <!-- TAB 1: CATEGORÍAS -->
                                 <div class="tab-pane fade show active" id="tabCategories" role="tabpanel" aria-labelledby="tabCategoriesLink">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <div>
-                                            <h3 class="card-title font-weight-bold text-dark h5 mb-1">Catálogo de Categorías</h3>
+                                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start mb-3">
+                                        <div class="mb-3 mb-sm-0 mr-sm-3">
+                                            <h3 class="font-weight-bold text-dark h5 mb-1">Catálogo de Categorías</h3>
                                             <p class="text-muted small mb-0">Gestión de áreas o tipos principales de incidencias registradas en el sistema.</p>
                                         </div>
                                         <button type="button" class="btn btn-primary btn-sm" id="btnNuevaCategoria">
                                             <i class="fas fa-plus mr-1"></i>Nueva categoría
                                         </button>
+                                    </div>
+                                    <div class="row align-items-center mb-3">
+                                        <div class="col-lg-6">
+                                            <label class="sr-only" for="categorySearch">Buscar categorías</label>
+                                            <div class="input-group input-group-sm">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text bg-white" aria-hidden="true">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                </div>
+                                                <input type="search" class="form-control" id="categorySearch"
+                                                    placeholder="Buscar por nombre o descripción"
+                                                    autocomplete="off" aria-controls="tablaCategorias">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 mt-2 mt-lg-0 text-lg-right">
+                                            <small class="text-muted" id="categorySearchSummary" role="status"
+                                                aria-live="polite"></small>
+                                        </div>
                                     </div>
                                     <div class="table-responsive">
                                         <table class="table table-hover table-striped border-0" id="tablaCategorias">
@@ -125,18 +150,38 @@
 
                                 <!-- TAB 2: SUBCATEGORÍAS -->
                                 <div class="tab-pane fade" id="tabSubcategories" role="tabpanel" aria-labelledby="tabSubcategoriesLink">
-                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
-                                        <div class="mb-2 mb-md-0">
-                                            <h3 class="card-title font-weight-bold text-dark h5 mb-1">Subtipos de Incidencia</h3>
+                                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start mb-3">
+                                        <div class="mb-3 mb-lg-0 mr-lg-3">
+                                            <h3 class="font-weight-bold text-dark h5 mb-1">Subtipos de Incidencia</h3>
                                             <p class="text-muted small mb-0">Clasificación específica vinculada a una categoría principal.</p>
                                         </div>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <select class="form-control form-control-sm mr-2" id="filtroCatPadre" style="min-width: 200px;">
+                                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center">
+                                            <label class="sr-only" for="filtroCatPadre">Filtrar por categoría principal</label>
+                                            <select class="form-control form-control-sm mr-sm-2" id="filtroCatPadre">
                                                 <option value="">Todas las categorías</option>
                                             </select>
-                                            <button type="button" class="btn btn-primary btn-sm text-nowrap" id="btnNuevoSubtipo">
+                                            <button type="button" class="btn btn-primary btn-sm text-nowrap mt-2 mt-sm-0" id="btnNuevoSubtipo">
                                                 <i class="fas fa-plus mr-1"></i>Nuevo subtipo
                                             </button>
+                                        </div>
+                                    </div>
+                                    <div class="row align-items-center mb-3">
+                                        <div class="col-lg-6">
+                                            <label class="sr-only" for="subcategorySearch">Buscar subtipos</label>
+                                            <div class="input-group input-group-sm">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text bg-white" aria-hidden="true">
+                                                        <i class="fas fa-search text-muted"></i>
+                                                    </span>
+                                                </div>
+                                                <input type="search" class="form-control" id="subcategorySearch"
+                                                    placeholder="Buscar por subtipo, categoría o descripción"
+                                                    autocomplete="off" aria-controls="tablaSubcategorias">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 mt-2 mt-lg-0 text-lg-right">
+                                            <small class="text-muted" id="subcategorySearchSummary" role="status"
+                                                aria-live="polite"></small>
                                         </div>
                                     </div>
                                     <div class="table-responsive">
@@ -153,6 +198,35 @@
                                             <tbody id="bodySubcategorias">
                                                 <tr>
                                                     <td colspan="5" class="text-center py-4 text-muted">Cargando subtipos...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- TAB 3: SOLICITUDES PENDIENTES -->
+                                <div class="tab-pane fade" id="tabRequests" role="tabpanel" aria-labelledby="tabRequestsLink">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+                                        <div class="mb-2 mb-md-0">
+                                            <h3 class="card-title font-weight-bold text-dark h5 mb-1">Solicitudes de clasificación</h3>
+                                            <p class="text-muted small mb-0">El administrador crea la categoría y el subtipo definitivos y los aplica a la incidencia de origen.</p>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped border-0" id="tablaRequests">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th scope="col">Fecha</th>
+                                                    <th scope="col">Incidencia</th>
+                                                    <th scope="col">Solicitante</th>
+                                                    <th scope="col">Categoría / subtipo sugeridos</th>
+                                                    <th scope="col">Justificación</th>
+                                                    <th scope="col" style="width: 150px;" class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bodyRequests">
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-4 text-muted">Cargando solicitudes...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -182,7 +256,7 @@
                         <div class="modal-body">
                             <div class="form-group">
                                 <label for="catNombre">Nombre de la Categoría <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="catNombre" required maxlength="100" placeholder="Ej. Alumbrado Público">
+                                <input type="text" class="form-control" id="catNombre" required minlength="3" maxlength="100" autocomplete="off" placeholder="Ej. Alumbrado Público">
                             </div>
                             <div class="form-group">
                                 <label for="catDescripcion">Descripción</label>
@@ -190,20 +264,20 @@
                             </div>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
-                                    <label for="catIcono">Icono FontAwesome</label>
+                                    <label for="catIcono">Ícono</label>
                                     <div class="input-group">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><i class="fas fa-tags" id="previewCatIcon"></i></span>
                                         </div>
-                                        <input type="text" class="form-control" id="catIcono" placeholder="fa-lightbulb" value="fa-tags">
+                                        <input type="text" class="form-control" id="catIcono" required readonly maxlength="50" pattern="^fa-[a-z0-9-]+$" value="fa-tags" aria-label="Ícono seleccionado">
                                         <div class="input-group-append">
-                                            <button class="btn btn-outline-secondary" type="button" id="btnToggleIconPicker" title="Seleccionar icono de la lista">
+                                            <button class="btn btn-outline-secondary" type="button" id="btnToggleIconPicker" title="Seleccionar ícono de la lista" aria-controls="iconPickerPanel" aria-expanded="false">
                                                 <i class="fas fa-icons"></i>
                                             </button>
                                         </div>
                                     </div>
                                     <div id="iconPickerPanel" class="p-2 border rounded bg-white mt-2 d-none shadow-sm" style="max-height: 130px; overflow-y: auto;">
-                                        <small class="text-muted d-block mb-1 font-weight-bold">Iconos sugeridos:</small>
+                                        <small class="text-muted d-block mb-1 font-weight-bold">Íconos disponibles:</small>
                                         <div class="d-flex flex-wrap" id="iconPickerGrid" style="gap: 4px;"></div>
                                     </div>
                                 </div>
@@ -213,7 +287,7 @@
                                         <div class="input-group-prepend">
                                             <input type="color" class="form-control form-control-color border-0 p-1" id="catColorPicker" value="#007bff" style="width: 40px; height: 38px;">
                                         </div>
-                                        <input type="text" class="form-control" id="catColor" placeholder="#007bff" value="#007bff" maxlength="7">
+                                        <input type="text" class="form-control" id="catColor" required pattern="^#[0-9A-Fa-f]{6}$" title="Ingrese un color hexadecimal, por ejemplo #007bff." placeholder="#007bff" value="#007bff" maxlength="7">
                                     </div>
                                     <small class="text-danger font-weight-bold d-none mt-1" id="catColorWarning">
                                         <i class="fas fa-exclamation-circle mr-1"></i>Este color ya está asignado a otra categoría.
@@ -261,7 +335,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="subCatNombre">Nombre del Subtipo <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="subCatNombre" required maxlength="100" placeholder="Ej. Lámpara quemada">
+                                <input type="text" class="form-control" id="subCatNombre" required minlength="3" maxlength="100" autocomplete="off" placeholder="Ej. Lámpara quemada">
                             </div>
                             <div class="form-group">
                                 <label for="subCatDescripcion">Descripción</label>
@@ -285,6 +359,106 @@
             </div>
         </div>
 
+        <!-- MODAL RESOLVER SOLICITUD -->
+        <div class="modal fade" id="modalResolveRequest" tabindex="-1" role="dialog" aria-labelledby="modalResolveRequestLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title font-weight-bold" id="modalResolveRequestLabel">
+                            <i class="fas fa-envelope-open-text mr-2"></i><span>Resolver Solicitud</span>
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <form id="formResolveRequest">
+                        <input type="hidden" id="reqId" value="">
+                        <div class="modal-body">
+                            <div class="alert alert-light border small" id="reqRequestSummary"></div>
+                            <div class="alert alert-info py-2 small">
+                                <i class="fas fa-edit mr-1"></i>
+                                La propuesta del supervisor es una referencia. Como administrador puede corregir los nombres y completar los datos definitivos antes de aprobar.
+                            </div>
+                            <div class="form-row" id="reqApprovalFields">
+                                <div class="form-group col-md-6">
+                                    <label for="reqCategoryName">Categoría definitiva <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="reqCategoryName" required minlength="3" maxlength="100">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="reqSubcategoryName">Subtipo definitivo <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="reqSubcategoryName" required minlength="3" maxlength="100">
+                                </div>
+                            </div>
+                            <div class="form-row" id="reqApprovalDescriptions">
+                                <div class="form-group col-md-6">
+                                    <label for="reqCategoryDescription">Descripción de categoría</label>
+                                    <textarea class="form-control" id="reqCategoryDescription" rows="2" maxlength="255"></textarea>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="reqSubcategoryDescription">Descripción del subtipo</label>
+                                    <textarea class="form-control" id="reqSubcategoryDescription" rows="2" maxlength="255"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-row" id="reqApprovalAppearance">
+                                <div class="form-group col-md-6">
+                                    <label for="reqCategoryIcon">Ícono definitivo</label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fas fa-tags" id="reqCategoryIconPreview"></i></span>
+                                        </div>
+                                        <input type="text" class="form-control" id="reqCategoryIcon" value="fa-tags" required readonly pattern="^fa-[a-z0-9-]+$" aria-label="Ícono definitivo seleccionado">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" id="btnToggleRequestIconPicker" title="Seleccionar ícono de la lista" aria-controls="requestIconPickerPanel" aria-expanded="false">
+                                                <i class="fas fa-icons"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="requestIconPickerPanel" class="p-2 border rounded bg-white mt-2 d-none shadow-sm" style="max-height: 130px; overflow-y: auto;">
+                                        <small class="text-muted d-block mb-1 font-weight-bold">Íconos disponibles:</small>
+                                        <div class="d-flex flex-wrap" id="requestIconPickerGrid" style="gap: 4px;"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="reqCategoryColor">Color definitivo</label>
+                                    <div class="d-flex align-items-center">
+                                        <input type="color" class="form-control p-1" id="reqCategoryColor" value="#007bff" required
+                                            aria-describedby="reqCategoryColorHelp reqCategoryColorValue"
+                                            style="width: 72px; height: 42px; flex: 0 0 72px; cursor: pointer;">
+                                        <code class="ml-2 px-2 py-1 border rounded bg-light text-dark font-weight-bold"
+                                            id="reqCategoryColorValue">#007BFF</code>
+                                    </div>
+                                    <small class="form-text text-muted" id="reqCategoryColorHelp">Seleccione el color que identificará la categoría.</small>
+                                </div>
+                            </div>
+                            <div class="form-group" id="reqApprovalCommentGroup">
+                                <label for="reqApprovalComment">Comentario de aprobación</label>
+                                <textarea class="form-control" id="reqApprovalComment" rows="2" maxlength="500" placeholder="Detalle opcional para el supervisor solicitante."></textarea>
+                            </div>
+                            <div class="form-group mb-0" id="reqRejectCommentGroup" style="display: none;">
+                                <label for="reqAdminComment">Comentario de rechazo <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="reqAdminComment" rows="2" minlength="10" maxlength="500" placeholder="Explique por qué rechaza esta solicitud..."></textarea>
+                            </div>
+                            <div class="alert alert-info py-2 small mt-3" id="reqApproveInfo">
+                                <i class="fas fa-link mr-1"></i> Al aprobar se crearán ambos registros y la incidencia quedará clasificada automáticamente.
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                            <button type="button" class="btn btn-success btn-sm" id="btnApproveRequest">
+                                <i class="fas fa-check mr-1"></i>Aprobar Solicitud
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" id="btnRejectRequest">
+                                <i class="fas fa-times mr-1"></i>Rechazar
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm d-none" id="btnConfirmRejectRequest">
+                                Confirmar Rechazo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- FOOTER -->
         <footer class="main-footer text-sm">
             <div class="float-right d-none d-sm-inline">Versión 1.0.0</div>
@@ -297,8 +471,8 @@
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=46"></script>
-    <script type="module" src="/js/modules/catalogs/presentation/category-management-page.js?v=1"></script>
+    <script type="module" src="/js/layout/layout.js?v=48"></script>
+    <script type="module" src="/js/modules/catalogs/presentation/category-management-page.js?v=9"></script>
 </body>
 
 </html>

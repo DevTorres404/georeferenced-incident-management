@@ -139,6 +139,14 @@ describe('role-permissions-page.js — pure functions', () => {
       const { canShowNavigationItem } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
       expect(canShowNavigationItem({ permission: 'admin' }, new Set(['admin']))).toBe(true)
     })
+
+    it('respects the roles allowed for the screen', async () => {
+      const { canShowNavigationItem } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
+      const item = { permission: 'admin', allowedRoles: ['SUPERVISOR'] }
+
+      expect(canShowNavigationItem(item, new Set(['admin']), 'ADMIN')).toBe(false)
+      expect(canShowNavigationItem(item, new Set(['admin']), 'SUPERVISOR')).toBe(true)
+    })
   })
 
   describe('buildAuthorizedNavigationPreview', () => {
@@ -151,6 +159,34 @@ describe('role-permissions-page.js — pure functions', () => {
       const result = buildAuthorizedNavigationPreview(items, new Set(['view_dashboard']))
       expect(result).toHaveLength(1)
       expect(result[0].label).toBe('Dashboard')
+    })
+  })
+
+  describe('navigation access configuration', () => {
+    it('returns the screens enabled for a role', async () => {
+      const { getNavigationCodesForRole } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
+      const items = [{
+        code: 'group',
+        children: [
+          { code: 'admin-only', route: '/admin', allowedRoles: ['ADMIN'] },
+          { code: 'shared', route: '/shared', allowedRoles: null }
+        ]
+      }]
+
+      expect(getNavigationCodesForRole(items, 'ADMIN')).toEqual(['admin-only', 'shared'])
+      expect(getNavigationCodesForRole(items, 'SUPERVISOR')).toEqual(['shared'])
+    })
+
+    it('protects the ADMIN control permission and screen', async () => {
+      const {
+        isProtectedAdminPermission,
+        isProtectedAdminScreen
+      } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
+      const admin = { code: 'ADMIN' }
+
+      expect(isProtectedAdminPermission(admin, 'users.manage_roles')).toBe(true)
+      expect(isProtectedAdminScreen(admin, 'role-permissions')).toBe(true)
+      expect(isProtectedAdminScreen({ code: 'SUPERVISOR' }, 'role-permissions')).toBe(false)
     })
   })
 

@@ -1,5 +1,5 @@
 import { buildSidebarHtml } from './sidebar.js?v=24'
-import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=7'
+import { NAV_ITEMS, PAGE_ACCESS, ROLES } from './nav-items.js?v=9'
 import { buildTopbarHtml } from './topbar.js?v=23'
 import { hydrateOwnProfilePhoto } from '../shared/profile-photo.js?v=1'
 import { requestBackend as apiRequestBackend, requestRaw as apiRequestRaw } from '../infrastructure/backend-client.js?v=21'
@@ -10,6 +10,7 @@ import {
 export { normalizePermissionCode } from '../core/auth-session.js?v=16'
 import { subscribeToUserNotifications } from '../modules/notifications/application/subscribe-notifications.usecase.js?v=21'
 import { INCIDENT_STATES } from '../modules/incidents/domain/incident-states.js?v=1'
+import { getNotificationTarget } from '../modules/notifications/presentation/notification-navigation.js?v=1'
 
 /**
  * ============================================================
@@ -32,6 +33,7 @@ globalThis.SGINavigationStore = {
   menuItems: NAV_ITEMS,
   pageAccess: PAGE_ACCESS,
   authorizedMenuItems: null,
+  loadedFromBackend: false,
   getAuthorizedMenu() {
     return this.authorizedMenuItems || filterAuthorizedMenuItems(this.menuItems)
   },
@@ -315,17 +317,20 @@ async function loadAuthorizedNavigation() {
 
   try {
     const response = await requestBackend('/navigation/menu', { noCache: true })
-    const items = normalizeNavigationItems(Array.isArray(response?.data) ? response.data : [])
-
-    if (items.length) {
-      globalThis.SGINavigationStore.authorizedMenuItems = items
-      return items
+    if (!Array.isArray(response?.data)) {
+      throw new TypeError('La respuesta de navegacion no contiene una lista valida.')
     }
+
+    const items = normalizeNavigationItems(response.data)
+    globalThis.SGINavigationStore.authorizedMenuItems = items
+    globalThis.SGINavigationStore.loadedFromBackend = true
+    return items
   } catch {
     // Si el endpoint aún no está migrado, mantenemos la navegación local filtrada.
   }
 
   globalThis.SGINavigationStore.authorizedMenuItems = fallbackMenu
+  globalThis.SGINavigationStore.loadedFromBackend = false
   return fallbackMenu
 }
 
@@ -557,11 +562,16 @@ function renderBetterNavbarNotifications(count, notifications) {
     const isClosed = notification.type === 'INCIDENT_CLOSED' ||
       String(notification.message || '').toUpperCase().includes(INCIDENT_STATES.CLOSED)
     const incidentId = isClosed ? '' : (notification.incident_id ?? notification.incidentId ?? '')
+    const notificationTarget = isClosed ?
+      null :
+      getNotificationTarget({ ...notification, incident_id: incidentId })
 
     return `
       <button type="button" class="sgi-notif-item ${isUnread ? 'is-unread' : ''} js-notification-item"
               data-notification-id="${escapeHtml(String(notification.id))}"
-              data-incident-id="${escapeHtml(String(incidentId))}">
+              data-notification-type="${escapeHtml(String(notification.type))}"
+              data-incident-id="${escapeHtml(String(incidentId))}"
+              data-notification-target="${escapeHtml(String(notificationTarget || ''))}">
         <div class="sgi-notif-icon ${typeClass}">
           <i class="fas ${iconClass}"></i>
         </div>
@@ -576,16 +586,16 @@ function renderBetterNavbarNotifications(count, notifications) {
   if (globalThis.SGIDomUtils?.delegateEvent) {
     globalThis.SGIDomUtils.delegateEvent(list, '.js-notification-item', 'click', async (e, item) => {
       const id = item.dataset.notificationId
-      const { incidentId } = item.dataset
+      const { notificationTarget } = item.dataset
       if (!id) {
         return
       }
 
       try {
         await mutateBackend(`/notifications/${id}/read`, { method: 'PATCH' })
-        item.style.transition = 'opacity 0.25s ease, max-height 0.25s ease, padding 0.25s ease'
+        item.style.height = `${item.offsetHeight}px`
+        item.style.transition = 'all 0.25s ease-out'
         item.style.opacity = '0'
-        item.style.maxHeight = '0'
         item.style.paddingTop = '0'
         item.style.paddingBottom = '0'
         item.style.overflow = 'hidden'
@@ -613,8 +623,8 @@ function renderBetterNavbarNotifications(count, notifications) {
             </div>`
         }
 
-        if (incidentId) {
-          globalThis.location.href = `/html/incident-detail.html?id=${incidentId}`
+        if (notificationTarget) {
+          globalThis.location.href = notificationTarget
         }
       } catch {
         if (globalThis.showGlobalAlert) {
@@ -830,15 +840,24 @@ async function renderLayout(activeId = '') { // NOSONAR - Inherently complex UI 
 
   // Ruteo de accesos por rol y permiso.
   const menuItems = await loadAuthorizedNavigation()
-  const currentItem = flattenMenuItems(menuItems).find(i => i.id === activeId) ||
-    flattenMenuItems(globalThis.SGINavigationStore.menuItems).find(i => i.id === activeId)
+  const currentItem = flattenMenuItems(menuItems).find(i => i.id === activeId)
+  const configuredItem = flattenMenuItems(globalThis.SGINavigationStore.menuItems).find(i => i.id === activeId)
   if (activeId === 'territorial-units') {
     globalThis.location.href = 'operational-structure.html'
     return
   }
 
-  const pageAccess = currentItem || globalThis.SGINavigationStore.pageAccess?.[activeId] || null
-  if (pageAccess && !canAccessItem(pageAccess)) {
+  const deniedByBackendNavigation = isNavigationPageDenied(
+    activeId,
+    menuItems,
+    globalThis.SGINavigationStore.menuItems,
+    globalThis.SGINavigationStore.loadedFromBackend
+  )
+  const pageAccess = currentItem ||
+    (!globalThis.SGINavigationStore.loadedFromBackend ? configuredItem : null) ||
+    globalThis.SGINavigationStore.pageAccess?.[activeId] ||
+    null
+  if (deniedByBackendNavigation || (pageAccess && !canAccessItem(pageAccess))) {
     const defaultPage = getDefaultPageForSession()
     if (!defaultPage) {
       showLayoutMessage('No tienes una pantalla disponible para tu rol.', 'danger')
@@ -1058,6 +1077,10 @@ globalThis.addEventListener('sgi:validate-session', () => {
 
 function filterAuthorizedMenuItems(items = []) {
   return items.reduce((result, item) => {
+    if (!isItemVisibleForSessionRoles(item)) {
+      return result
+    }
+
     const hasChildren = Array.isArray(item.children) && item.children.length > 0
     const children = Array.isArray(item.children) ? filterAuthorizedMenuItems(item.children) : []
     const canViewItem = canAccessItem(item)
@@ -1080,11 +1103,27 @@ function filterAuthorizedMenuItems(items = []) {
   }, [])
 }
 
+function isItemVisibleForSessionRoles(item = {}, sessionUser = readSessionUser()) {
+  const allowedRoles = Array.isArray(item.allowedRoles) ? item.allowedRoles : []
+  return allowedRoles.length === 0 || allowedRoles.some(role => hasRole(role, sessionUser))
+}
+
 function flattenMenuItems(items = []) {
   return items.flatMap(item => {
     const children = Array.isArray(item.children) ? flattenMenuItems(item.children) : []
     return (item.route || item.href) ? [{ ...item, children: undefined }, ...children] : children
   })
+}
+
+function isNavigationPageDenied(activeId, authorizedItems = [], configuredItems = [], loadedFromBackend = false) {
+  if (!loadedFromBackend) {
+    return false
+  }
+
+  const configuredItem = flattenMenuItems(configuredItems).find(item => item.id === activeId)
+  const authorizedItem = flattenMenuItems(authorizedItems).find(item => item.id === activeId)
+
+  return Boolean(configuredItem) && !authorizedItem
 }
 
 function canAccessItem(item = {}) {
@@ -1093,7 +1132,8 @@ function canAccessItem(item = {}) {
     return false
   }
 
-  return !item.permission || hasPermission(item.permission)
+  return isItemVisibleForSessionRoles(item, user) &&
+    (!item.permission || hasPermission(item.permission))
 }
 
 if ('serviceWorker' in navigator) {
@@ -1196,6 +1236,7 @@ export {
   escapeHtml,
   filterAuthorizedMenuItems,
   flattenMenuItems,
+  isNavigationPageDenied,
   formatRelativeTime,
   formatRoleLabel,
   formatUserRoles,
@@ -1203,6 +1244,7 @@ export {
   getNotificationTypeClass,
   html,
   isSessionExpired,
+  isItemVisibleForSessionRoles,
   loadNavbarNotifications,
   logoutManually,
   normalizeMobileSidebar,

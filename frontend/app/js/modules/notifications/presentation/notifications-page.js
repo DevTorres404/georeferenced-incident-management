@@ -1,5 +1,6 @@
 import { escapeHtml } from '../../../shared/sanitizer.js?v=20'
 import { hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16'
+import { getNotificationTarget } from './notification-navigation.js?v=1'
 
 export const PER_PAGE = 15
 let currentPage = 1
@@ -130,7 +131,7 @@ function createNotificationElement(notification) {
   el.className = `notif-history-item ${isUnread ? 'is-unread' : ''}`
   el.dataset.notificationId = String(notification.id)
 
-  const incidentId = notification.incident_id ?? notification.incidentId ?? ''
+  const target = getNotificationTarget(notification)
 
   el.innerHTML = `
     <div class="notif-history-icon ${typeClass}">
@@ -155,7 +156,7 @@ function createNotificationElement(notification) {
     </div>` : ''}
   `
 
-  if (incidentId) {
+  if (target) {
     el.style.cursor = 'pointer'
     el.addEventListener('click', async e => {
       if (e.target.closest('.js-mark-read')) {
@@ -168,7 +169,7 @@ function createNotificationElement(notification) {
         } catch { /* silent */ }
       }
 
-      globalThis.location.href = `/html/incident-detail.html?id=${incidentId}`
+      globalThis.location.href = target
     })
   }
 

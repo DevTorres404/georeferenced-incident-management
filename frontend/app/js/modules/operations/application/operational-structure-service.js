@@ -37,6 +37,14 @@ async function assignOperationalZoneSupervisor(zoneId, payload) {
   return response?.data || null
 }
 
+async function releaseOperationalZoneSupervisor(zoneId) {
+  const response = await requestBackend(`/admin/operations/zones/${zoneId}/supervisor`, {
+    method: 'DELETE'
+  })
+
+  return response?.data || null
+}
+
 async function replaceOperationalZoneOperator(operatorUserId, payload) {
   const response = await requestBackend(`/admin/operations/operators/${operatorUserId}/replacement`, {
     method: 'PUT',
@@ -66,6 +74,7 @@ export {
   listOperationalOperators,
   getOperationalZonesGeoJson,
   assignOperationalZoneSupervisor,
+  releaseOperationalZoneSupervisor,
   replaceOperationalZoneOperator,
   updateOperationalOperatorProfile,
   listPriorityCatalog,

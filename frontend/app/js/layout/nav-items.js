@@ -1,5 +1,7 @@
 const ROLES = {
-  ADMIN: 'ADMIN'
+  ADMIN: 'ADMIN',
+  SUPERVISOR: 'SUPERVISOR',
+  CITIZEN: 'CIUDADANO'
 }
 
 const NAV_ITEMS = [
@@ -17,25 +19,11 @@ const NAV_ITEMS = [
         permission: 'dashboard.view'
       },
       {
-        id: 'my-team',
-        label: 'Mi equipo',
-        icon: 'fa-users',
-        route: 'my-team.html',
-        permission: 'operations.view_team'
-      },
-      {
         id: 'reports',
         label: 'Reportes y estadísticas',
         icon: 'fa-chart-bar',
         route: 'reports.html',
         permission: 'reportes.ver'
-      },
-      {
-        id: 'notifications',
-        label: 'Notificaciones',
-        icon: 'fa-bell',
-        route: 'notifications.html',
-        permission: 'notifications.view'
       }
     ]
   },
@@ -57,7 +45,8 @@ const NAV_ITEMS = [
         label: 'Gestión de asignaciones',
         icon: 'fa-tasks',
         route: 'assignment-management.html',
-        permission: 'incidents.assign'
+        permission: 'incidents.assign',
+        allowedRoles: [ROLES.SUPERVISOR]
       },
       {
         id: 'incident-map',
@@ -71,7 +60,8 @@ const NAV_ITEMS = [
         label: 'Nueva incidencia',
         icon: 'fa-plus-circle',
         route: 'incident-create.html',
-        permission: 'incidents.create'
+        permission: 'incidents.create',
+        allowedRoles: [ROLES.CITIZEN]
       }
     ]
   },
@@ -87,6 +77,22 @@ const NAV_ITEMS = [
         icon: 'fa-draw-polygon',
         route: 'operational-structure.html',
         permission: 'operations.view'
+      }
+    ]
+  },
+  {
+    id: 'territorial-zonal',
+    label: 'Cobertura zonal',
+    icon: 'fa-map-pin',
+    permission: 'operations.view_team',
+    children: [
+      {
+        id: 'my-team',
+        label: 'Mi equipo',
+        icon: 'fa-users',
+        route: 'my-team.html',
+        permission: 'operations.view_team',
+        allowedRoles: [ROLES.SUPERVISOR]
       }
     ]
   },
@@ -125,6 +131,21 @@ const NAV_ITEMS = [
         permission: 'audit.view'
       }
     ]
+  },
+  {
+    id: 'system-info',
+    label: 'Información del sistema',
+    icon: 'fa-info-circle',
+    permission: 'about.view',
+    children: [
+      {
+        id: 'about',
+        label: 'Acerca del SGI',
+        icon: 'fa-question-circle',
+        route: 'about.html',
+        permission: 'about.view'
+      }
+    ]
   }
 ]
 
@@ -136,10 +157,10 @@ const PAGE_ACCESS = {
   dashboard: { permission: 'dashboard.view' },
   incidents: { permission: 'incidents.list' },
   'incident-map': { permission: 'incidents.map' },
-  'incident-create': { permission: 'incidents.create' },
-  'assignment-management': { permission: 'incidents.assign' },
+  'incident-create': { permission: 'incidents.create', allowedRoles: [ROLES.CITIZEN] },
+  'assignment-management': { permission: 'incidents.assign', allowedRoles: [ROLES.SUPERVISOR] },
   'operational-structure': { permission: 'operations.view' },
-  'my-team': { permission: 'operations.view_team' },
+  'my-team': { permission: 'operations.view_team', allowedRoles: [ROLES.SUPERVISOR] },
   'role-permissions': { permission: 'users.manage_roles' },
   'user-roles': { permission: 'users.manage_roles' },
   'category-management': { permission: 'catalogs.manage' },

@@ -2,16 +2,19 @@ import {
   addIncidentComment,
   approveStateChangeRequest,
   changeIncidentState,
+  classifyIncident,
   getIncident,
   getStateChangeRequests,
+  listIncidentCategories,
   listPriorities,
   listStateTransitions,
   listStates,
   rejectStateChangeRequest,
+  requestNewCategory,
   requestStateChange,
   updateIncident,
   uploadIncidentAttachment
-} from '../application/incidents-service.js?v=17'
+} from '../application/incidents-service.js?v=18'
 import { subscribeToIncidentComments } from '../application/subscribe-incident-comments.usecase.js?v=2'
 import { subscribeToIncidentRealtime } from '../application/subscribe-incident-realtime.usecase.js?v=1'
 import {
@@ -27,6 +30,10 @@ import {
   MAP_ECUADOR_BOUNDS
 } from '../../../core/config.js?v=21'
 import { hasPermission } from '../../../core/auth-session.js?v=16'
+import {
+  initializeCategoryIconPicker,
+  setCategoryIconPickerValue
+} from '../../../shared/category-icon-picker.js?v=1'
 import {
   escapeHtml,
   formatCatalogLabel,
@@ -272,7 +279,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             <hr>
             <p class="detalle-label">Descripción completa</p>
             <p class="text-justify mb-4">${escapeHtml(incident.description || '-')}</p>
-            
+
             ${renderActiveOperators(incident.assignments || [], incident)}
           </div>
         </div>
@@ -495,9 +502,12 @@ export function bindClassificationForm(incident, transitions, priorities, contai
 
   openButton.addEventListener('click', async () => {
     try {
-      const response = await globalThis.SGIGIncidentsService?.listIncidentCategories?.()
+      const response = await listIncidentCategories()
       const rawCategories = Array.isArray(response) ? response : (Array.isArray(response?.data) ? response.data : [])
       categories = rawCategories.filter(category => !category.is_fallback)
+      if (categories.length === 0) {
+        throw new Error('No hay categorías activas disponibles para clasificar.')
+      }
       fillClassificationSelect(categorySelect, categories, 'Seleccione categoría')
       fillClassificationSelect(subcategorySelect, [], 'Primero seleccione categoría')
       subcategorySelect.disabled = true
@@ -529,7 +539,7 @@ export function bindClassificationForm(incident, transitions, priorities, contai
     }
 
     try {
-      const response = await globalThis.SGIGIncidentsService?.classifyIncident?.(incident.id, {
+      const response = await classifyIncident(incident.id, {
         category_id: Number(categorySelect.value),
         subcategory_id: subcategorySelect.value ? Number(subcategorySelect.value) : null,
         reason
@@ -550,6 +560,96 @@ export function bindClassificationForm(incident, transitions, priorities, contai
       }
     }
   })
+
+  // Category Request UI Logic
+  const openRequestCategoryBtn = document.getElementById('btnOpenRequestCategory')
+  const formRequestCategory = document.getElementById('formRequestCategory')
+
+  if (openRequestCategoryBtn && formRequestCategory) {
+    // Only bind click once by removing previous listeners if any (though typically bindClassificationForm is called once per render, so we'll just clone/replace or bind directly)
+    // To be safe against multiple binds:
+    const newBtn = openRequestCategoryBtn.cloneNode(true)
+    openRequestCategoryBtn.parentNode.replaceChild(newBtn, openRequestCategoryBtn)
+    const userRoles = (readCurrentUser()?.roles || []).map(normalizeCode)
+    if (!userRoles.includes('SUPERVISOR') || userRoles.includes('ADMIN')) {
+      newBtn.classList.add('d-none')
+      return
+    }
+
+    newBtn.addEventListener('click', e => {
+      e.preventDefault()
+      globalThis.jQuery?.('#modalClasificarIncidencia')?.modal('hide')
+      const actualForm = document.getElementById('formRequestCategory')
+      if (actualForm) {
+        actualForm.reset()
+        actualForm.classList.remove('was-validated')
+      }
+
+      setTimeout(() => {
+        globalThis.jQuery?.('#modalRequestCategory')?.modal('show')
+      }, 400)
+    })
+
+    const newForm = formRequestCategory.cloneNode(true)
+    formRequestCategory.parentNode.replaceChild(newForm, formRequestCategory)
+    initializeCategoryIconPicker({
+      inputId: 'requestCategoryIcon',
+      previewId: 'requestCategoryIconPreview',
+      toggleId: 'btnToggleSupervisorIconPicker',
+      panelId: 'supervisorIconPickerPanel',
+      gridId: 'supervisorIconPickerGrid'
+    })
+
+    newForm.addEventListener('submit', async e => {
+      e.preventDefault()
+
+      const suggestedCategoryName = document.getElementById('requestCategoryName').value.trim()
+      const suggestedCategoryDescription = document.getElementById('requestCategoryDescription').value.trim()
+      const suggestedSubcategoryName = document.getElementById('requestSubcategoryName').value.trim()
+      const suggestedIcon = document.getElementById('requestCategoryIcon').value.trim()
+      const reason = document.getElementById('requestCategoryReason').value.trim()
+
+      if (
+        suggestedCategoryName.length < 3 ||
+        suggestedCategoryDescription.length < 10 ||
+        suggestedSubcategoryName.length < 3 ||
+        !/^fa-[\da-z-]+$/.test(suggestedIcon) ||
+        reason.length < 10
+      ) {
+        newForm.classList.add('was-validated')
+        showGlobalAlert('Completa la categoría, su descripción, el subtipo, el ícono y una justificación válida.', 'warning')
+        return
+      }
+
+      const submitBtn = document.getElementById('btnSubmitCategoryRequest')
+      if (submitBtn) {
+        submitBtn.disabled = true
+      }
+
+      try {
+        const response = await requestNewCategory(incident.id, {
+          suggested_category_name: suggestedCategoryName,
+          suggested_category_description: suggestedCategoryDescription,
+          suggested_subcategory_name: suggestedSubcategoryName,
+          suggested_icon: suggestedIcon,
+          reason
+        })
+        globalThis.jQuery?.('#modalRequestCategory')?.modal('hide')
+        showGlobalAlert(response?.message || 'Solicitud enviada al administrador.', 'success')
+        newForm.reset()
+        setCategoryIconPickerValue('requestCategoryIcon', 'fa-tags')
+        newBtn.classList.add('disabled')
+        newBtn.setAttribute('aria-disabled', 'true')
+        newBtn.textContent = 'Solicitud pendiente'
+      } catch (error) {
+        showGlobalAlert(error.message || 'No se pudo enviar la solicitud.', 'danger')
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false
+        }
+      }
+    })
+  }
 }
 
 function fillClassificationSelect(select, items, placeholder) {

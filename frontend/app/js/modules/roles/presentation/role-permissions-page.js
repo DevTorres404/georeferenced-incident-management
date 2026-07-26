@@ -1,8 +1,11 @@
-import { getAccessControlOverview, updateRolePermissions } from '../application/access-control-service.js?v=16'
+import { getAccessControlOverview, updateRoleAccess } from '../application/access-control-service.js?v=17'
 import { hidePageLoading, showPageLoading } from '../../incidents/presentation/incidents-ui.js?v=16'
 import { handleBackendErrors, setFormAlert } from '../../../shared/validators/validation-utils.js?v=1'
 
 document.addEventListener('DOMContentLoaded', initRolePermissionsPage)
+
+const ADMIN_CONTROL_PERMISSION = 'users.manage_roles'
+const ADMIN_CONTROL_SCREEN = 'role-permissions'
 
 export async function initRolePermissionsPage() {
   if (typeof globalThis.renderLayout === 'function') {
@@ -89,16 +92,19 @@ export function renderPermissions(state) {
   }
 
   const selectedPermissions = new Set((role.permissions || []).map(permission => permission.code))
+  const selectedNavigationCodes = new Set(getNavigationCodesForRole(state.navigationItems, role.code))
   const navigationByPermission = buildNavigationPermissionIndex(state.navigationItems)
   const modules = filterPermissionModules(state.permissionsByModule, navigationByPermission, state)
-  const navigationPreview = buildAuthorizedNavigationPreview(state.navigationItems, selectedPermissions)
-  const navigationPermissionCount = countNavigationPermissions(state.navigationItems, selectedPermissions)
+  const navigationPreview = buildAuthorizedNavigationPreview(state.navigationItems, selectedPermissions, role.code)
+  const navigationPermissionCount = countNavigationPermissions(state.navigationItems, selectedPermissions, role.code)
 
   container.innerHTML = `
     ${renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount)}
+    ${renderNavigationAccessMatrix(state.navigationItems, role, selectedPermissions, selectedNavigationCodes)}
     ${renderPermissionToolbar(state)}
     <div class="permission-modules">
-      ${modules.length ? modules.map(([module, permissions]) => `
+      ${modules.length ?
+    modules.map(([module, permissions]) => `
     <div class="permission-module mb-3">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <div>
@@ -119,7 +125,8 @@ export function renderPermissions(state) {
                 id="permission-${escapeAttr(permission.code)}"
                 data-module="${escapeHtml(module)}"
                 value="${escapeAttr(permission.code)}"
-                ${selectedPermissions.has(permission.code) ? 'checked' : ''}>
+                ${selectedPermissions.has(permission.code) ? 'checked' : ''}
+                ${isProtectedAdminPermission(role, permission.code) ? 'disabled' : ''}>
               <label class="custom-control-label" for="permission-${escapeAttr(permission.code)}">
                 <span class="d-block">${escapeHtml(formatPermissionLabel(permission))}</span>
                 ${renderNavigationBadges(navigationByPermission.get(permission.code))}
@@ -129,7 +136,8 @@ export function renderPermissions(state) {
             </div>
           </div>`).join('')}
       </div>
-    </div>`).join('') : emptyState('No hay permisos que coincidan con el filtro actual.')}
+    </div>`).join('') :
+    emptyState('No hay permisos que coincidan con el filtro actual.')}
     </div>`
 
   bindPermissionFilters(container, state)
@@ -137,6 +145,7 @@ export function renderPermissions(state) {
   container.querySelectorAll('.js-toggle-module').forEach(button => {
     button.addEventListener('click', () => {
       const checkboxes = [...container.querySelectorAll(`.permission-checkbox[data-module="${cssEscape(button.dataset.module)}"]`)]
+        .filter(checkbox => !checkbox.disabled)
       const shouldCheck = checkboxes.some(checkbox => !checkbox.checked)
       checkboxes.forEach(checkbox => {
         checkbox.checked = shouldCheck
@@ -151,7 +160,7 @@ export function renderRoleOverview(role, selectedPermissions, navigationPreview,
       <div class="role-permission-heading">
         <span class="text-uppercase small font-weight-bold">Rol seleccionado</span>
         <h2>${escapeHtml(role.name)}</h2>
-        <p>${escapeHtml(getRoleDescription(role.code))}. Los permisos marcados definen acciones del backend y también qué pantallas aparecen en el menú.</p>
+        <p>${escapeHtml(getRoleDescription(role.code))}. Los permisos controlan acciones y la matriz de pantallas define la navegación disponible.</p>
       </div>
       <div class="role-permission-stats">
         <div>
@@ -171,11 +180,55 @@ export function renderRoleOverview(role, selectedPermissions, navigationPreview,
         <div class="role-menu-preview-title">
           <i class="fas fa-sitemap mr-1"></i>Menu que vera este rol
         </div>
-        ${navigationPreview.length ? navigationPreview.map(item => `
+        ${navigationPreview.length ?
+    navigationPreview.map(item => `
           <div class="role-menu-preview-group">
             <strong><i class="fas ${escapeHtml(item.icon || 'fa-circle')} mr-1"></i>${escapeHtml(item.label)}</strong>
             <span>${escapeHtml(item.children.map(child => child.label).join(' / '))}</span>
-          </div>`).join('') : '<p class="text-muted mb-0">Este rol no tiene pantallas visibles con los permisos actuales.</p>'}
+          </div>`).join('') :
+    '<p class="text-muted mb-0">Este rol no tiene pantallas visibles con los permisos actuales.</p>'}
+      </div>
+    </section>`
+}
+
+export function renderNavigationAccessMatrix(items, role, selectedPermissions, selectedNavigationCodes) {
+  const routes = flattenNavigationRoutes(items)
+
+  return `
+    <section class="navigation-access-matrix">
+      <div class="navigation-access-heading">
+        <div>
+          <span class="text-uppercase small font-weight-bold text-primary">Acceso a pantallas</span>
+          <h3 class="h5 mb-1">Menú disponible para ${escapeHtml(role.name)}</h3>
+          <p class="text-muted mb-0">Activa o desactiva cada pantalla sin alterar los permisos funcionales del rol.</p>
+        </div>
+        <span class="badge badge-primary">${selectedNavigationCodes.size} habilitadas</span>
+      </div>
+      <div class="row navigation-access-grid">
+        ${routes.map(item => {
+    const checked = selectedNavigationCodes.has(item.code)
+    const hasRequiredPermission = !item.permission || selectedPermissions.has(item.permission)
+    const protectedScreen = isProtectedAdminScreen(role, item.code)
+
+    return `
+            <div class="col-md-6 col-xl-4">
+              <label class="navigation-access-card ${checked ? 'is-enabled' : ''} ${hasRequiredPermission ? '' : 'is-missing-permission'}">
+                <input type="checkbox" class="navigation-checkbox"
+                  value="${escapeAttr(item.code)}"
+                  ${checked ? 'checked' : ''}
+                  ${protectedScreen ? 'disabled' : ''}>
+                <span class="navigation-access-icon"><i class="fas ${escapeHtml(item.icon || 'fa-file')}"></i></span>
+                <span class="navigation-access-content">
+                  <strong>${escapeHtml(item.label)}</strong>
+                  <small>${escapeHtml(item.path)}</small>
+                  ${hasRequiredPermission ?
+    '<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Permiso compatible</span>' :
+    `<span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Requiere ${escapeHtml(item.permission)}</span>`}
+                  ${protectedScreen ? '<span class="text-info"><i class="fas fa-lock mr-1"></i>Acceso administrativo protegido</span>' : ''}
+                </span>
+              </label>
+            </div>`
+  }).join('')}
       </div>
     </section>`
 }
@@ -249,13 +302,13 @@ export function filterPermissionModules(permissionsByModule, navigationByPermiss
     .filter(([, permissions]) => permissions.length)
 }
 
-export function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new Set()) {
+export function buildAuthorizedNavigationPreview(items = [], selectedPermissions = new Set(), roleCode = null) {
   return (items || []).reduce((result, item) => {
-    if (!canShowNavigationItem(item, selectedPermissions)) {
+    if (!canShowNavigationItem(item, selectedPermissions, roleCode)) {
       return result
     }
 
-    const children = buildAuthorizedNavigationPreview(item.children || [], selectedPermissions)
+    const children = buildAuthorizedNavigationPreview(item.children || [], selectedPermissions, roleCode)
     if ((item.children || []).length && !children.length) {
       return result
     }
@@ -265,14 +318,40 @@ export function buildAuthorizedNavigationPreview(items = [], selectedPermissions
   }, [])
 }
 
-export function canShowNavigationItem(item, selectedPermissions) {
-  return !item.permission || selectedPermissions.has(item.permission)
+export function canShowNavigationItem(item, selectedPermissions, roleCode = null) {
+  return isNavigationItemVisibleForRole(item, roleCode) &&
+    (!item.permission || selectedPermissions.has(item.permission))
 }
 
-export function countNavigationPermissions(items = [], selectedPermissions = new Set()) {
-  return flattenNavigationItems(buildAuthorizedNavigationPreview(items, selectedPermissions))
+export function countNavigationPermissions(items = [], selectedPermissions = new Set(), roleCode = null) {
+  return flattenNavigationItems(buildAuthorizedNavigationPreview(items, selectedPermissions, roleCode))
     .filter(item => item.route)
     .length
+}
+
+export function isNavigationItemVisibleForRole(item, roleCode = null) {
+  if (!roleCode) {
+    return true
+  }
+
+  const allowedRoles = Array.isArray(item.allowedRoles) ? item.allowedRoles : []
+  return allowedRoles.length === 0 ||
+    allowedRoles.map(code => String(code).toUpperCase()).includes(String(roleCode).toUpperCase())
+}
+
+export function getNavigationCodesForRole(items = [], roleCode = null) {
+  return flattenNavigationItems(items)
+    .filter(item => item.route && item.active !== false && isNavigationItemVisibleForRole(item, roleCode))
+    .map(item => item.code)
+}
+
+export function flattenNavigationRoutes(items = [], parentLabel = '') {
+  return (items || []).flatMap(item => {
+    const path = parentLabel ? `${parentLabel} / ${item.label}` : item.label
+    const current = item.route ? [{ ...item, path }] : []
+
+    return [...current, ...flattenNavigationRoutes(item.children || [], path)]
+  })
 }
 
 export function flattenNavigationItems(items = []) {
@@ -376,21 +455,47 @@ export async function saveRolePermissions(state) {
 
   const permissions = [...document.querySelectorAll('.permission-checkbox:checked')]
     .map(checkbox => checkbox.value)
+  const navigationItems = [...document.querySelectorAll('.navigation-checkbox:checked')]
+    .map(checkbox => checkbox.value)
 
-  showPageLoading('Guardando permisos', 'Actualizando configuración del rol...')
+  if (String(role.code).toUpperCase() === 'ADMIN') {
+    if (!permissions.includes(ADMIN_CONTROL_PERMISSION)) {
+      permissions.push(ADMIN_CONTROL_PERMISSION)
+    }
+
+    if (!navigationItems.includes(ADMIN_CONTROL_SCREEN)) {
+      navigationItems.push(ADMIN_CONTROL_SCREEN)
+    }
+  }
+
+  showPageLoading('Guardando accesos', 'Actualizando permisos y pantallas del rol...')
 
   try {
-    const response = await updateRolePermissions(role.id, permissions)
+    const response = await updateRoleAccess(role.id, permissions, navigationItems)
 
-    replaceRole(state, response?.data)
+    replaceRole(state, response?.data?.role)
+    if (Array.isArray(response?.data?.navigationItems)) {
+      state.navigationItems = response.data.navigationItems
+    }
+
     renderRoles(state)
     renderPermissions(state)
-    setFormAlert(document.getElementById('access-alert'), response.message || 'Permisos actualizados.', 'success')
+    setFormAlert(document.getElementById('access-alert'), response.message || 'Accesos actualizados.', 'success')
   } catch (error) {
     handleBackendErrors(error, null, document.getElementById('access-alert'))
   } finally {
     hidePageLoading()
   }
+}
+
+export function isProtectedAdminPermission(role, permissionCode) {
+  return String(role?.code || '').toUpperCase() === 'ADMIN' &&
+    permissionCode === ADMIN_CONTROL_PERMISSION
+}
+
+export function isProtectedAdminScreen(role, navigationCode) {
+  return String(role?.code || '').toUpperCase() === 'ADMIN' &&
+    navigationCode === ADMIN_CONTROL_SCREEN
 }
 
 export function selectedRole(state) {

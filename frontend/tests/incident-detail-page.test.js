@@ -2,10 +2,18 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 
 vi.mock('../app/js/modules/incidents/application/incidents-service.js', () => ({
   addIncidentComment: vi.fn(),
+  approveStateChangeRequest: vi.fn(),
   changeIncidentState: vi.fn(),
+  classifyIncident: vi.fn(),
   getIncident: vi.fn(),
+  getStateChangeRequests: vi.fn(),
+  listIncidentCategories: vi.fn(),
   listPriorities: vi.fn(),
+  listStates: vi.fn(),
   listStateTransitions: vi.fn(),
+  rejectStateChangeRequest: vi.fn(),
+  requestNewCategory: vi.fn(),
+  requestStateChange: vi.fn(),
   updateIncident: vi.fn(),
   uploadIncidentAttachment: vi.fn()
 }))

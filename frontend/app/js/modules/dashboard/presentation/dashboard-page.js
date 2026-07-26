@@ -84,7 +84,7 @@ export function renderDashboardKpis(kpis, navigation = getDashboardIncidentNavig
     { label: 'Incidencias totales', value: kpis.total || 0, caption: 'Registros visibles', icon: 'fa-clipboard-list', accent: 'info' },
     { label: 'Pendientes', value: kpis.pending || 0, caption: 'Requieren clasificación', icon: 'fa-inbox', accent: 'warning' },
     { label: 'En progreso', value: kpis.progress || 0, caption: 'Atención operativa', icon: 'fa-tools', accent: 'primary' },
-    { label: 'Resueltas', value: kpis.resolved || 0, caption: 'Casos completados', icon: 'fa-check-circle', accent: 'success' }
+    { label: 'Cerradas', value: kpis.resolved || 0, caption: 'Casos completados', icon: 'fa-check-circle', accent: 'success' }
   ]
 
   container.innerHTML = cards.map(card => `
@@ -193,7 +193,7 @@ export function renderInfoCards(metrics) {
       <div class="dash-info-body">
         <span class="dash-info-label">Tiempo promedio de resolución</span>
         <span class="dash-info-value">${avgDays.toFixed(1)} dias</span>
-        <span class="dash-info-caption">En incidencias resueltas</span>
+        <span class="dash-info-caption">En incidencias cerradas</span>
       </div>
     </div>`
 }

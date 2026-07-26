@@ -57,6 +57,7 @@ import {
 
 import {
   getAccessControlOverview,
+  updateRoleAccess,
   updateRolePermissions,
   getUsersAndRoles,
   assignUserRole
@@ -76,6 +77,7 @@ import {
 import {
   listOperationalZones,
   assignOperationalZoneSupervisor,
+  releaseOperationalZoneSupervisor,
   replaceOperationalZoneOperator,
   listPriorityCatalog
 } from '../app/js/modules/operations/application/operational-structure-service.js'
@@ -563,7 +565,14 @@ describe('access-control-service.js', () => {
             Users: [{ permission_id: 1, codigo: 'users.view', nombre: 'Ver usuarios', descripcion: 'D', modulo: 'Users' }]
           },
           navigation_items: [
-            { navigation_item_id: 1, codigo: 'dashboard', nombre: 'Dashboard', href: '/', permission_code: 'dashboard.view' }
+            {
+              navigation_item_id: 1,
+              codigo: 'dashboard',
+              nombre: 'Dashboard',
+              href: '/',
+              permission_code: 'dashboard.view',
+              allowed_roles: ['ADMIN']
+            }
           ],
           users: [{ nombre: 'John', apellido: 'Doe', email: 'john@test.com' }]
         }
@@ -584,7 +593,8 @@ describe('access-control-service.js', () => {
         code: 'dashboard',
         label: 'Dashboard',
         route: '/',
-        permission: 'dashboard.view'
+        permission: 'dashboard.view',
+        allowedRoles: ['ADMIN']
       })
       expect(result.users[0].name).toBe('John Doe')
     })
@@ -645,6 +655,31 @@ describe('access-control-service.js', () => {
         '/admin/roles/role%2Fwith%2Fslashes/permissions',
         expect.any(Object)
       )
+    })
+  })
+
+  describe('updateRoleAccess', () => {
+    it('saves permissions and navigation items atomically', async () => {
+      request.mockResolvedValue({
+        data: {
+          role: { id: 1, code: 'ADMIN', name: 'Administrador', permissions: [] },
+          navigation_items: [
+            { id: 1, code: 'dashboard', label: 'Panel', allowed_roles: ['ADMIN'] }
+          ]
+        }
+      })
+
+      const result = await updateRoleAccess(1, ['dashboard.view'], ['dashboard'])
+
+      expect(request).toHaveBeenCalledWith('/admin/roles/1/access', {
+        method: 'PUT',
+        body: JSON.stringify({
+          permissions: ['dashboard.view'],
+          navigation_items: ['dashboard']
+        })
+      })
+      expect(result.data.role.code).toBe('ADMIN')
+      expect(result.data.navigationItems[0].allowedRoles).toEqual(['ADMIN'])
     })
   })
 
@@ -846,6 +881,19 @@ describe('operational-structure-service.js', () => {
         body: JSON.stringify({ user_id: 5 })
       })
       expect(result).toEqual({ user_id: 5 })
+    })
+  })
+
+  describe('releaseOperationalZoneSupervisor', () => {
+    it('sends DELETE /admin/operations/zones/{id}/supervisor', async () => {
+      requestBackend.mockResolvedValue({ data: { supervisor: null } })
+
+      const result = await releaseOperationalZoneSupervisor(1)
+
+      expect(requestBackend).toHaveBeenCalledWith('/admin/operations/zones/1/supervisor', {
+        method: 'DELETE'
+      })
+      expect(result).toEqual({ supervisor: null })
     })
   })
 

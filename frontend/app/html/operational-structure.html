@@ -111,15 +111,21 @@
                                             </div>
                                             <form id="changeSupervisorForm" class="bg-light p-3 rounded border"> <label
                                                     for="supervisorSelect"
-                                                    class="small text-muted font-weight-bold mb-2">Cambiar supervisor
-                                                    asignado</label>
+                                                    class="small text-muted font-weight-bold mb-2">Asignar o intercambiar
+                                                    supervisor</label>
                                                 <div class="form-group"> <select class="form-control"
                                                         name="supervisor_user_id" id="supervisorSelect" required
                                                         disabled>
                                                         <option value="">Selecciona una zona...</option>
-                                                    </select> </div> <button class="btn btn-primary btn-block"
+                                                    </select>
+                                                    <small class="form-text text-muted">Un supervisor asignado intercambiará su zona con el actual. Si está libre, el supervisor saliente quedará libre.</small>
+                                                </div> <button class="btn btn-primary btn-block"
                                                     type="submit" id="btnSaveSupervisor" disabled> <i
-                                                        class="fas fa-save mr-1"></i> Asignar Supervisor </button>
+                                                        class="fas fa-exchange-alt mr-1"></i> Aplicar cambio </button>
+                                                <button class="btn btn-outline-danger btn-block mt-2"
+                                                    type="button" id="btnReleaseSupervisor" disabled> <i
+                                                        class="fas fa-user-minus mr-1"></i> Liberar supervisor actual
+                                                </button>
                                             </form>
                                         </div> <!-- Sección Operadores -->
                                         <div class="col-md-6 pl-md-4 mt-4 mt-md-0">
@@ -141,7 +147,9 @@
                                                         name="replacement_operator_user_id"
                                                         id="replacementOperatorSelect" required disabled>
                                                         <option value="">Selecciona una zona...</option>
-                                                    </select> </div> <button class="btn btn-warning btn-block"
+                                                    </select>
+                                                    <small class="form-text text-muted">Si pertenece a otra zona, ambos operadores intercambian zona y carga. Si está libre, el operador saliente queda libre.</small>
+                                                </div> <button class="btn btn-warning btn-block"
                                                     type="submit" id="btnReplaceOperator" disabled> <i
                                                         class="fas fa-exchange-alt mr-1"></i> Ejecutar Reemplazo
                                                 </button>
@@ -209,9 +217,8 @@
     <script src="/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
     <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
     <script src="/dist/js/adminlte.min.js"></script>
-    <script type="module" src="/js/layout/layout.js?v=46"></script>
-    <script type="module" src="/js/modules/operations/presentation/operational-structure-page.js?v=17"></script>
+    <script type="module" src="/js/layout/layout.js?v=48"></script>
+    <script type="module" src="/js/modules/operations/presentation/operational-structure-page.js?v=18"></script>
 </body>
 
 </html>
-

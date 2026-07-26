@@ -426,9 +426,66 @@ describe('A. layout.js — pure functions', () => {
       expect(ws).toBeUndefined()
     })
 
+    it('removes menu entries that are not enabled for the current role', async () => {
+      localStorage.setItem('user_data', JSON.stringify({
+        permissions: ['incidents.list', 'incidents.assign'],
+        roles: ['ADMIN']
+      }))
+
+      const { filterAuthorizedMenuItems } = await import('../app/js/layout/layout.js')
+      const result = filterAuthorizedMenuItems([{
+        id: 'incident-hub',
+        children: [
+          { id: 'incidents', route: 'incidents.html', permission: 'incidents.list' },
+          {
+            id: 'assignment-management',
+            route: 'assignment-management.html',
+            permission: 'incidents.assign',
+            allowedRoles: ['SUPERVISOR']
+          }
+        ]
+      }])
+
+      expect(result[0].children.map(item => item.id)).toEqual(['incidents'])
+    })
+
+    it('denies a direct page entry that is reserved for another role', async () => {
+      localStorage.setItem('user_data', JSON.stringify({
+        permissions: ['incidents.assign'],
+        roles: ['ADMIN']
+      }))
+
+      const { canAccessItem } = await import('../app/js/layout/layout.js')
+
+      expect(canAccessItem({
+        permission: 'incidents.assign',
+        allowedRoles: ['SUPERVISOR']
+      })).toBe(false)
+    })
+
     it('returns empty array for empty input', async () => {
       const { filterAuthorizedMenuItems } = await import('../app/js/layout/layout.js')
       expect(filterAuthorizedMenuItems([])).toEqual([])
+    })
+  })
+
+  describe('backend navigation page guard', () => {
+    it('denies direct access when a configured screen is absent from the backend menu', async () => {
+      const { isNavigationPageDenied } = await import('../app/js/layout/layout.js')
+      const configured = [{
+        id: 'admin',
+        children: [{ id: 'audit-logs', route: 'audit-logs.html' }]
+      }]
+
+      expect(isNavigationPageDenied('audit-logs', [], configured, true)).toBe(true)
+      expect(isNavigationPageDenied('audit-logs', [], configured, false)).toBe(false)
+    })
+
+    it('allows a screen returned by the backend menu', async () => {
+      const { isNavigationPageDenied } = await import('../app/js/layout/layout.js')
+      const menu = [{ id: 'admin', children: [{ id: 'audit-logs', route: 'audit-logs.html' }] }]
+
+      expect(isNavigationPageDenied('audit-logs', menu, menu, true)).toBe(false)
     })
   })
 

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 vi.mock('../app/js/modules/roles/application/access-control-service.js', () => ({
   getAccessControlOverview: vi.fn(),
-  updateRolePermissions: vi.fn()
+  updateRoleAccess: vi.fn()
 }))
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
@@ -15,7 +15,7 @@ vi.mock('../app/js/shared/validators/validation-utils.js', () => ({
   setFormAlert: vi.fn()
 }))
 
-import { getAccessControlOverview, updateRolePermissions } from '../app/js/modules/roles/application/access-control-service.js'
+import { getAccessControlOverview, updateRoleAccess } from '../app/js/modules/roles/application/access-control-service.js'
 import { hidePageLoading, showPageLoading } from '../app/js/modules/incidents/presentation/incidents-ui.js'
 import { handleBackendErrors, setFormAlert } from '../app/js/shared/validators/validation-utils.js'
 
@@ -33,11 +33,11 @@ const MOCK_PERMISSIONS = {
 }
 
 const MOCK_NAV_ITEMS = [
-  { label: 'Dashboard', icon: 'fa-dashboard', route: '/dashboard', permission: 'view_dashboard', children: [] },
+  { code: 'dashboard', label: 'Dashboard', icon: 'fa-dashboard', route: '/dashboard', permission: 'view_dashboard', children: [] },
   {
-    label: 'Incidencias', icon: 'fa-list', route: '/incidents',
+    code: 'incident-hub', label: 'Incidencias', icon: 'fa-list', route: '',
     children: [
-      { label: 'Todas', route: '/incidents', permission: 'view_incidents', children: [] }
+      { code: 'incidents', label: 'Todas', route: '/incidents', permission: 'view_incidents', children: [] }
     ]
   }
 ]
@@ -98,7 +98,7 @@ describe('role-permissions-page — integration', () => {
     globalThis.renderLayout = vi.fn()
 
     vi.mocked(getAccessControlOverview).mockReset()
-    vi.mocked(updateRolePermissions).mockReset()
+    vi.mocked(updateRoleAccess).mockReset()
     vi.mocked(showPageLoading).mockReset()
     vi.mocked(hidePageLoading).mockReset()
     vi.mocked(handleBackendErrors).mockReset()
@@ -414,9 +414,12 @@ describe('role-permissions-page — integration', () => {
   describe('save permissions', () => {
     async function initFullPage() {
       vi.mocked(getAccessControlOverview).mockResolvedValue(MOCK_OVERVIEW)
-      vi.mocked(updateRolePermissions).mockResolvedValue({
-        message: 'Permisos actualizados correctamente.',
-        data: MOCK_ROLES[0]
+      vi.mocked(updateRoleAccess).mockResolvedValue({
+        message: 'Accesos actualizados correctamente.',
+        data: {
+          role: MOCK_ROLES[0],
+          navigationItems: MOCK_NAV_ITEMS
+        }
       })
 
       await import('../app/js/modules/roles/presentation/role-permissions-page.js')
@@ -427,15 +430,16 @@ describe('role-permissions-page — integration', () => {
       })
     }
 
-    it('calls updateRolePermissions with checked permission codes', async () => {
+    it('saves checked permissions and visible screens together', async () => {
       await initFullPage()
 
       document.getElementById('save-role-permissions-btn').click()
 
       await vi.waitFor(() => {
-        expect(updateRolePermissions).toHaveBeenCalledWith(
+        expect(updateRoleAccess).toHaveBeenCalledWith(
           1,
-          ['view_incidents', 'create_incidents', 'view_users', 'view_dashboard']
+          ['view_incidents', 'create_incidents', 'view_users', 'view_dashboard', 'users.manage_roles'],
+          ['dashboard', 'incidents', 'role-permissions']
         )
       })
     })
@@ -461,8 +465,8 @@ describe('role-permissions-page — integration', () => {
 
       await vi.waitFor(() => {
         expect(showPageLoading).toHaveBeenCalledWith(
-          'Guardando permisos',
-          'Actualizando configuración del rol...'
+          'Guardando accesos',
+          'Actualizando permisos y pantallas del rol...'
         )
       })
 
@@ -475,7 +479,7 @@ describe('role-permissions-page — integration', () => {
       vi.mocked(getAccessControlOverview).mockResolvedValue(MOCK_OVERVIEW)
       const apiError = new Error('Validation error')
       apiError.status = 422
-      vi.mocked(updateRolePermissions).mockRejectedValue(apiError)
+      vi.mocked(updateRoleAccess).mockRejectedValue(apiError)
 
       await import('../app/js/modules/roles/presentation/role-permissions-page.js')
       document.dispatchEvent(new Event('DOMContentLoaded'))
@@ -499,7 +503,7 @@ describe('role-permissions-page — integration', () => {
       const { saveRolePermissions } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
       await saveRolePermissions({ roles: [], selectedRoleCode: null })
 
-      expect(updateRolePermissions).not.toHaveBeenCalled()
+      expect(updateRoleAccess).not.toHaveBeenCalled()
       expect(showPageLoading).not.toHaveBeenCalled()
     })
   })

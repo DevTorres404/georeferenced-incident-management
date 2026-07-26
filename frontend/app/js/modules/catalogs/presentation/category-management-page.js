@@ -1,8 +1,71 @@
 import { request, extractErrorMessage } from '../../../infrastructure/backend-client.js?v=20'
 import { escapeHtml } from '../../../shared/sanitizer.js?v=20'
+import {
+  initializeCategoryIconPicker,
+  setCategoryIconPickerValue
+} from '../../../shared/category-icon-picker.js?v=1'
 
 let categoriesData = []
 let subcategoriesData = []
+let requestsData = []
+
+function normalizeCatalogName(value = '') {
+  return String(value).trim().replace(/\s+/g, ' ')
+}
+
+function normalizeSearchText(value = '') {
+  return normalizeCatalogName(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036F]/g, '')
+    .toLocaleLowerCase('es')
+}
+
+function updateSearchSummary(elementId, visibleCount, totalCount, label) {
+  const summary = document.getElementById(elementId)
+  if (!summary) {
+    return
+  }
+
+  summary.textContent = `Mostrando ${visibleCount} de ${totalCount} ${label}.`
+}
+
+function catalogNamesMatch(first, second) {
+  return normalizeCatalogName(first).localeCompare(
+    normalizeCatalogName(second),
+    'es',
+    { sensitivity: 'base' }
+  ) === 0
+}
+
+function hasDuplicateCategory(name, excludeId = null) {
+  return categoriesData.some(category => {
+    if (excludeId && String(category.id) === String(excludeId)) {
+      return false
+    }
+
+    return catalogNamesMatch(category.name, name)
+  })
+}
+
+function hasDuplicateSubcategory(categoryId, name, excludeId = null) {
+  return subcategoriesData.some(subcategory => {
+    if (excludeId && String(subcategory.id) === String(excludeId)) {
+      return false
+    }
+
+    const parentId = subcategory.category_id ?? subcategory.categoryId
+    return String(parentId) === String(categoryId) && catalogNamesMatch(subcategory.name, name)
+  })
+}
+
+function validateForm(form) {
+  if (!form || form.checkValidity()) {
+    return true
+  }
+
+  form.reportValidity()
+  return false
+}
 
 function showGlobalAlert(message, type = 'success') {
   const alertDiv = document.getElementById('alertaGlobal')
@@ -10,6 +73,7 @@ function showGlobalAlert(message, type = 'success') {
     if (globalThis.showGlobalAlert) {
       globalThis.showGlobalAlert(message, type)
     }
+
     return
   }
 
@@ -26,22 +90,57 @@ function showGlobalAlert(message, type = 'success') {
 }
 
 async function loadData() {
+  renderCatalogLoadingState()
+
   try {
-    const [catResponse, subResponse] = await Promise.all([
-      request('/admin/catalogs/categories?per_page=100'),
-      request('/admin/catalogs/subcategories?per_page=100')
+    const [catResponse, subResponse, reqResponse] = await Promise.all([
+      request('/admin/catalogs/categories?per_page=100', { noCache: true }),
+      request('/admin/catalogs/subcategories?per_page=100', { noCache: true }),
+      request('/admin/catalogs/category-requests', { noCache: true })
     ])
 
     categoriesData = Array.isArray(catResponse?.data) ? catResponse.data : (catResponse?.data?.data || [])
     subcategoriesData = Array.isArray(subResponse?.data) ? subResponse.data : (subResponse?.data?.data || [])
+    requestsData = Array.isArray(reqResponse?.data) ? reqResponse.data : (reqResponse?.data?.data || [])
 
+    updateRequestsBadge()
     renderCategoriesTable()
     populateCategoryFilter()
     renderSubcategoriesTable()
+    renderRequestsTable()
   } catch (error) {
     const msg = extractErrorMessage(error, 'No se pudieron cargar los catálogos.')
+    renderCatalogLoadError()
     showGlobalAlert(msg, 'danger')
   }
+}
+
+function renderCatalogLoadingState() {
+  setTableState('bodyCategorias', 7, 'Cargando categorías...')
+  setTableState('bodySubcategorias', 5, 'Cargando subtipos...')
+  setTableState('bodyRequests', 6, 'Cargando solicitudes...')
+}
+
+function renderCatalogLoadError() {
+  setTableState('bodyCategorias', 7, 'No se pudieron cargar las categorías. Recarga la página para intentarlo nuevamente.', true)
+  setTableState('bodySubcategorias', 5, 'No se pudieron cargar los subtipos.', true)
+  setTableState('bodyRequests', 6, 'No se pudieron cargar las solicitudes pendientes.', true)
+}
+
+function setTableState(bodyId, colspan, message, isError = false) {
+  const body = document.getElementById(bodyId)
+  if (!body) {
+    return
+  }
+
+  body.innerHTML = `
+    <tr>
+      <td colspan="${colspan}" class="text-center py-4 ${isError ? 'text-danger' : 'text-muted'}">
+        ${isError ? '<i class="fas fa-exclamation-triangle mr-1"></i>' : ''}
+        ${escapeHtml(message)}
+      </td>
+    </tr>
+  `
 }
 
 function renderCategoriesTable() {
@@ -51,11 +150,34 @@ function renderCategoriesTable() {
   }
 
   if (categoriesData.length === 0) {
+    updateSearchSummary('categorySearchSummary', 0, 0, 'categorías')
     tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No existen categorías registradas.</td></tr>'
     return
   }
 
-  tbody.innerHTML = categoriesData.map(cat => {
+  const searchTerm = normalizeSearchText(document.getElementById('categorySearch')?.value)
+  let filteredCategories = categoriesData
+  if (searchTerm) {
+    filteredCategories = categoriesData.filter(category => normalizeSearchText([
+      category.name,
+      category.description,
+      category.is_active ? 'activa' : 'inactiva'
+    ].filter(Boolean).join(' ')).includes(searchTerm))
+  }
+
+  updateSearchSummary(
+    'categorySearchSummary',
+    filteredCategories.length,
+    categoriesData.length,
+    'categorías'
+  )
+
+  if (filteredCategories.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No se encontraron categorías que coincidan con la búsqueda.</td></tr>'
+    return
+  }
+
+  tbody.innerHTML = filteredCategories.map(cat => {
     const iconClass = cat.icon ? escapeHtml(cat.icon) : 'fa-tags'
     const colorHex = cat.color ? escapeHtml(cat.color) : '#007bff'
     const isActive = Boolean(cat.is_active)
@@ -107,14 +229,14 @@ function populateCategoryFilter() {
 
   if (selectFilter) {
     const currentVal = selectFilter.value
-    selectFilter.innerHTML = '<option value="">Todas las categorías</option>' +
-      categoriesData.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
+    selectFilter.innerHTML = `<option value="">Todas las categorías</option>${
+      categoriesData.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}`
     selectFilter.value = currentVal
   }
 
   if (selectModal) {
-    selectModal.innerHTML = '<option value="">Seleccione una categoría</option>' +
-      categoriesData.filter(c => c.is_active).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')
+    selectModal.innerHTML = `<option value="">Seleccione una categoría</option>${
+      categoriesData.filter(c => c.is_active).map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}`
   }
 }
 
@@ -125,18 +247,48 @@ function renderSubcategoriesTable() {
   }
 
   const filterCatId = document.getElementById('filtroCatPadre')?.value || ''
-  let filtered = subcategoriesData
+  const searchTerm = normalizeSearchText(document.getElementById('subcategorySearch')?.value)
+  let categoryFiltered = subcategoriesData
 
   if (filterCatId) {
-    filtered = subcategoriesData.filter(s => String(s.category_id) === String(filterCatId))
+    categoryFiltered = subcategoriesData.filter(s => String(s.category_id ?? s.categoryId) === String(filterCatId))
   }
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">No existen subtipos registrados para el filtro seleccionado.</td></tr>'
+  let filteredSubcategories = categoryFiltered
+  if (searchTerm) {
+    filteredSubcategories = categoryFiltered.filter(subcategory => {
+      const categoryId = subcategory.category_id ?? subcategory.categoryId
+      const parentCategory = categoriesData.find(category => Number(category.id) === Number(categoryId))
+      const isActive = Boolean(subcategory.is_active ?? subcategory.isActive)
+      const searchableText = [
+        subcategory.name,
+        subcategory.description,
+        parentCategory?.name,
+        isActive ? 'activo' : 'inactivo'
+      ].filter(Boolean).join(' ')
+
+      return normalizeSearchText(searchableText).includes(searchTerm)
+    })
+  }
+
+  updateSearchSummary(
+    'subcategorySearchSummary',
+    filteredSubcategories.length,
+    categoryFiltered.length,
+    'subtipos'
+  )
+
+  if (filteredSubcategories.length === 0) {
+    let message = 'No se encontraron subtipos que coincidan con la búsqueda o categoría seleccionada.'
+    if (subcategoriesData.length === 0) {
+      message = 'No existen subtipos registrados.'
+    }
+
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${message}</td></tr>`
     return
   }
 
-  tbody.innerHTML = filtered.map(sub => {
+  tbody.innerHTML = filteredSubcategories.map(sub => {
     const catId = sub.category_id ?? sub.categoryId
     const parentCat = categoriesData.find(c => Number(c.id) === Number(catId))
     const parentName = parentCat ? parentCat.name : `Categoría ID: ${catId}`
@@ -176,6 +328,148 @@ function renderSubcategoriesTable() {
   bindSubcategoryActions()
 }
 
+function updateRequestsBadge() {
+  const badge = document.getElementById('requestsBadgeCount')
+  if (!badge) {
+    return
+  }
+
+  if (requestsData.length > 0) {
+    badge.textContent = requestsData.length
+    badge.classList.remove('d-none')
+  } else {
+    badge.classList.add('d-none')
+  }
+}
+
+function renderRequestsTable() {
+  const tbody = document.getElementById('bodyRequests')
+  if (!tbody) {
+    return
+  }
+
+  if (requestsData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay solicitudes pendientes.</td></tr>'
+    return
+  }
+
+  tbody.innerHTML = requestsData.map(req => {
+    const dateStr = new Date(req.created_at || req.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const userStr = escapeHtml(req.requestedByName || 'Usuario desconocido')
+    const categoryName = req.suggestedCategoryName || req.suggested_name || ''
+    const subcategoryName = req.suggestedSubcategoryName || ''
+    const incidentCode = req.incidentCode || `INC-${req.incidentId}`
+
+    return `
+      <tr>
+        <td class="align-middle text-muted small">${dateStr}</td>
+        <td class="align-middle">
+          <a href="incident-detail.html?id=${encodeURIComponent(req.incidentId)}" class="font-weight-bold">
+            ${escapeHtml(incidentCode)}
+          </a>
+        </td>
+        <td class="align-middle font-weight-bold">${userStr}</td>
+        <td class="align-middle">
+          <span class="d-block font-weight-bold">${escapeHtml(categoryName)}</span>
+          <small class="text-muted"><i class="fas fa-level-down-alt mr-1"></i>${escapeHtml(subcategoryName)}</small>
+        </td>
+        <td class="align-middle small">${escapeHtml(req.reason)}</td>
+        <td class="text-center align-middle">
+          <button type="button" class="btn btn-xs btn-outline-success mr-1 btn-approve-req" data-id="${req.id}" title="Aprobar">
+            <i class="fas fa-check"></i>
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-danger btn-reject-req" data-id="${req.id}" title="Rechazar">
+            <i class="fas fa-times"></i>
+          </button>
+        </td>
+      </tr>
+    `
+  }).join('')
+
+  bindRequestActions()
+}
+
+function bindRequestActions() {
+  document.querySelectorAll('.btn-approve-req').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const req = requestsData.find(r => String(r.id) === String(btn.dataset.id))
+      if (req) {
+        openResolveRequestModal(req, 'approve')
+      }
+    })
+  })
+
+  document.querySelectorAll('.btn-reject-req').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const req = requestsData.find(r => String(r.id) === String(btn.dataset.id))
+      if (req) {
+        openResolveRequestModal(req, 'reject')
+      }
+    })
+  })
+}
+
+function openResolveRequestModal(req, action) {
+  const reqId = document.getElementById('reqId')
+  const requestSummary = document.getElementById('reqRequestSummary')
+  const categoryName = document.getElementById('reqCategoryName')
+  const subcategoryName = document.getElementById('reqSubcategoryName')
+  const categoryDescription = document.getElementById('reqCategoryDescription')
+  const subcategoryDescription = document.getElementById('reqSubcategoryDescription')
+  const categoryColor = document.getElementById('reqCategoryColor')
+  const approvalComment = document.getElementById('reqApprovalComment')
+  const approvalSections = [
+    document.getElementById('reqApprovalFields'),
+    document.getElementById('reqApprovalDescriptions'),
+    document.getElementById('reqApprovalAppearance'),
+    document.getElementById('reqApprovalCommentGroup')
+  ]
+  const reqRejectCommentGroup = document.getElementById('reqRejectCommentGroup')
+  const reqAdminComment = document.getElementById('reqAdminComment')
+  const reqApproveInfo = document.getElementById('reqApproveInfo')
+  const btnApproveRequest = document.getElementById('btnApproveRequest')
+  const btnRejectRequest = document.getElementById('btnRejectRequest')
+  const btnConfirmRejectRequest = document.getElementById('btnConfirmRejectRequest')
+
+  reqId.value = req.id
+  const suggestedCategoryName = req.suggestedCategoryName || req.suggested_name || ''
+  const suggestedSubcategoryName = req.suggestedSubcategoryName || ''
+  requestSummary.innerHTML = `
+    <div class="font-weight-bold mb-1">${escapeHtml(req.incidentCode || `INC-${req.incidentId}`)}</div>
+    <div><strong>Propuesta:</strong> ${escapeHtml(suggestedCategoryName)} / ${escapeHtml(suggestedSubcategoryName)}</div>
+    <div class="mt-1"><strong>Justificación:</strong> ${escapeHtml(req.reason)}</div>
+  `
+  categoryName.value = suggestedCategoryName
+  subcategoryName.value = suggestedSubcategoryName
+  categoryDescription.value = req.suggestedCategoryDescription || ''
+  subcategoryDescription.value = req.reason
+  setCategoryIconPickerValue('reqCategoryIcon', req.suggestedIcon || 'fa-tags')
+  categoryColor.value = getUniqueColor()
+  document.getElementById('reqCategoryColorValue').textContent = categoryColor.value.toUpperCase()
+  approvalComment.value = ''
+
+  if (action === 'approve') {
+    approvalSections.forEach(section => section?.classList.remove('d-none'))
+    reqRejectCommentGroup.style.display = 'none'
+    reqAdminComment.removeAttribute('required')
+    reqApproveInfo.classList.remove('d-none')
+    btnApproveRequest.classList.remove('d-none')
+    btnRejectRequest.classList.add('d-none')
+    btnConfirmRejectRequest.classList.add('d-none')
+  } else {
+    approvalSections.forEach(section => section?.classList.add('d-none'))
+    reqRejectCommentGroup.style.display = 'block'
+    reqAdminComment.setAttribute('required', 'true')
+    reqAdminComment.value = ''
+    reqApproveInfo.classList.add('d-none')
+    btnApproveRequest.classList.add('d-none')
+    btnRejectRequest.classList.add('d-none')
+    btnConfirmRejectRequest.classList.remove('d-none')
+  }
+
+  globalThis.jQuery?.('#modalResolveRequest').modal('show')
+}
+
 function bindCategoryActions() {
   document.querySelectorAll('.btn-edit-cat').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -188,7 +482,7 @@ function bindCategoryActions() {
 
   document.querySelectorAll('.btn-toggle-cat').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id
+      const { id } = btn.dataset
       const newActive = btn.dataset.active === '1'
       const cat = categoriesData.find(c => String(c.id) === String(id))
 
@@ -213,8 +507,8 @@ function bindCategoryActions() {
 
   document.querySelectorAll('.btn-delete-cat').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id
-      const name = btn.dataset.name
+      const { id } = btn.dataset
+      const { name } = btn.dataset
       if (!confirm(`¿Está seguro de eliminar la categoría "${name}"? Esta acción no se puede deshacer.`)) {
         return
       }
@@ -242,7 +536,7 @@ function bindSubcategoryActions() {
 
   document.querySelectorAll('.btn-toggle-sub').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id
+      const { id } = btn.dataset
       const newActive = btn.dataset.active === '1'
       const sub = subcategoriesData.find(s => String(s.id) === String(id))
 
@@ -266,8 +560,8 @@ function bindSubcategoryActions() {
 
   document.querySelectorAll('.btn-delete-sub').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.id
-      const name = btn.dataset.name
+      const { id } = btn.dataset
+      const { name } = btn.dataset
       if (!confirm(`¿Está seguro de eliminar el subtipo "${name}"? Esta acción no se puede deshacer.`)) {
         return
       }
@@ -284,28 +578,49 @@ function bindSubcategoryActions() {
 }
 
 const PALETTE_COLORS = [
-  '#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6f42c1',
-  '#fd7e14', '#e83e8c', '#20c997', '#6c757d', '#1e293b', '#0284c7'
+  '#007bff',
+  '#28a745',
+  '#dc3545',
+  '#ffc107',
+  '#17a2b8',
+  '#6f42c1',
+  '#fd7e14',
+  '#e83e8c',
+  '#20c997',
+  '#6c757d',
+  '#1e293b',
+  '#0284c7'
 ]
 
 function checkColorIsUsed(colorHex, excludeCatId = null) {
-  if (!colorHex) return false
+  if (!colorHex) {
+    return false
+  }
+
   const target = colorHex.toLowerCase()
   return categoriesData.some(c => {
-    if (excludeCatId && String(c.id) === String(excludeCatId)) return false
+    if (excludeCatId && String(c.id) === String(excludeCatId)) {
+      return false
+    }
+
     return c.color && c.color.toLowerCase() === target
   })
 }
 
 function getUniqueColor(excludeCatId = null) {
   const available = PALETTE_COLORS.find(hex => !checkColorIsUsed(hex, excludeCatId))
-  if (available) return available
+  if (available) {
+    return available
+  }
 
   // Si todos los presets están ocupados, generar uno aleatorio que no se repita
   for (let i = 0; i < 50; i++) {
-    const randomHex = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')
-    if (!checkColorIsUsed(randomHex, excludeCatId)) return randomHex
+    const randomHex = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`
+    if (!checkColorIsUsed(randomHex, excludeCatId)) {
+      return randomHex
+    }
   }
+
   return '#007bff'
 }
 
@@ -315,7 +630,9 @@ function updateColorValidation() {
   const catColorWarning = document.getElementById('catColorWarning')
   const catColorInput = document.getElementById('catColor')
 
-  if (!colorHex) return true
+  if (!colorHex) {
+    return true
+  }
 
   const isUsed = checkColorIsUsed(colorHex, catId)
   if (isUsed) {
@@ -325,6 +642,7 @@ function updateColorValidation() {
     catColorWarning?.classList.add('d-none')
     catColorInput?.classList.remove('is-invalid')
   }
+
   return !isUsed
 }
 
@@ -340,26 +658,78 @@ function openCategoryModal(cat = null) {
   const previewIcon = document.getElementById('previewCatIcon')
 
   if (cat) {
-    if (modalLabel) modalLabel.querySelector('span').textContent = 'Editar Categoría'
-    if (catId) catId.value = cat.id
-    if (catNombre) catNombre.value = cat.name
-    if (catDescripcion) catDescripcion.value = cat.description || ''
-    if (catIcono) catIcono.value = cat.icon || 'fa-tags'
-    if (catColor) catColor.value = cat.color || '#007bff'
-    if (catColorPicker) catColorPicker.value = cat.color || '#007bff'
-    if (catIsActive) catIsActive.checked = Boolean(cat.is_active)
-    if (previewIcon) previewIcon.className = `fas ${cat.icon || 'fa-tags'}`
+    if (modalLabel) {
+      modalLabel.querySelector('span').textContent = 'Editar Categoría'
+    }
+
+    if (catId) {
+      catId.value = cat.id
+    }
+
+    if (catNombre) {
+      catNombre.value = cat.name
+    }
+
+    if (catDescripcion) {
+      catDescripcion.value = cat.description || ''
+    }
+
+    if (catIcono) {
+      catIcono.value = cat.icon || 'fa-tags'
+    }
+
+    if (catColor) {
+      catColor.value = cat.color || '#007bff'
+    }
+
+    if (catColorPicker) {
+      catColorPicker.value = cat.color || '#007bff'
+    }
+
+    if (catIsActive) {
+      catIsActive.checked = Boolean(cat.is_active)
+    }
+
+    if (previewIcon) {
+      previewIcon.className = `fas ${cat.icon || 'fa-tags'}`
+    }
   } else {
     const initialColor = getUniqueColor()
-    if (modalLabel) modalLabel.querySelector('span').textContent = 'Nueva Categoría'
-    if (catId) catId.value = ''
-    if (catNombre) catNombre.value = ''
-    if (catDescripcion) catDescripcion.value = ''
-    if (catIcono) catIcono.value = 'fa-tags'
-    if (catColor) catColor.value = initialColor
-    if (catColorPicker) catColorPicker.value = initialColor
-    if (catIsActive) catIsActive.checked = true
-    if (previewIcon) previewIcon.className = 'fas fa-tags'
+    if (modalLabel) {
+      modalLabel.querySelector('span').textContent = 'Nueva Categoría'
+    }
+
+    if (catId) {
+      catId.value = ''
+    }
+
+    if (catNombre) {
+      catNombre.value = ''
+    }
+
+    if (catDescripcion) {
+      catDescripcion.value = ''
+    }
+
+    if (catIcono) {
+      catIcono.value = 'fa-tags'
+    }
+
+    if (catColor) {
+      catColor.value = initialColor
+    }
+
+    if (catColorPicker) {
+      catColorPicker.value = initialColor
+    }
+
+    if (catIsActive) {
+      catIsActive.checked = true
+    }
+
+    if (previewIcon) {
+      previewIcon.className = 'fas fa-tags'
+    }
   }
 
   updateColorValidation()
@@ -377,63 +747,74 @@ function openSubcategoryModal(sub = null) {
   const subCatIsActive = document.getElementById('subCatIsActive')
 
   if (sub) {
-    if (modalLabel) modalLabel.querySelector('span').textContent = 'Editar Subtipo'
-    if (subCatId) subCatId.value = sub.id
-    if (subCatParentId) subCatParentId.value = sub.category_id
-    if (subCatNombre) subCatNombre.value = sub.name
-    if (subCatDescripcion) subCatDescripcion.value = sub.description || ''
-    if (subCatIsActive) subCatIsActive.checked = Boolean(sub.is_active)
+    if (modalLabel) {
+      modalLabel.querySelector('span').textContent = 'Editar Subtipo'
+    }
+
+    if (subCatId) {
+      subCatId.value = sub.id
+    }
+
+    if (subCatParentId) {
+      subCatParentId.value = sub.category_id
+    }
+
+    if (subCatNombre) {
+      subCatNombre.value = sub.name
+    }
+
+    if (subCatDescripcion) {
+      subCatDescripcion.value = sub.description || ''
+    }
+
+    if (subCatIsActive) {
+      subCatIsActive.checked = Boolean(sub.is_active)
+    }
   } else {
-    if (modalLabel) modalLabel.querySelector('span').textContent = 'Nuevo Subtipo'
-    if (subCatId) subCatId.value = ''
+    if (modalLabel) {
+      modalLabel.querySelector('span').textContent = 'Nuevo Subtipo'
+    }
+
+    if (subCatId) {
+      subCatId.value = ''
+    }
+
     const currentFilter = document.getElementById('filtroCatPadre')?.value || ''
-    if (subCatParentId) subCatParentId.value = currentFilter
-    if (subCatNombre) subCatNombre.value = ''
-    if (subCatDescripcion) subCatDescripcion.value = ''
-    if (subCatIsActive) subCatIsActive.checked = true
+    if (subCatParentId) {
+      subCatParentId.value = currentFilter
+    }
+
+    if (subCatNombre) {
+      subCatNombre.value = ''
+    }
+
+    if (subCatDescripcion) {
+      subCatDescripcion.value = ''
+    }
+
+    if (subCatIsActive) {
+      subCatIsActive.checked = true
+    }
   }
 
   globalThis.jQuery?.('#modalSubcategoria').modal('show')
 }
 
-const PRESET_ICONS = [
-  'fa-tags', 'fa-lightbulb', 'fa-road', 'fa-water', 'fa-fire', 'fa-shield-alt',
-  'fa-exclamation-triangle', 'fa-wrench', 'fa-building', 'fa-tree', 'fa-bus',
-  'fa-car-crash', 'fa-bolt', 'fa-trash-alt', 'fa-hospital', 'fa-broadcast-tower',
-  'fa-traffic-light', 'fa-hard-hat', 'fa-plug', 'fa-first-aid', 'fa-biohazard',
-  'fa-tools', 'fa-paw', 'fa-cloud-showers-heavy', 'fa-bullhorn', 'fa-cog'
-]
-
 function setupIconPicker() {
-  const grid = document.getElementById('iconPickerGrid')
-  const panel = document.getElementById('iconPickerPanel')
-  const toggleBtn = document.getElementById('btnToggleIconPicker')
-  const catIcono = document.getElementById('catIcono')
-  const previewIcon = document.getElementById('previewCatIcon')
-
-  if (!grid || !panel || !toggleBtn || !catIcono) {
-    return
-  }
-
-  grid.innerHTML = PRESET_ICONS.map(icon => `
-    <button type="button" class="btn btn-sm btn-outline-secondary p-1 btn-select-icon" data-icon="${icon}" title="${icon}" style="width: 32px; height: 32px;">
-      <i class="fas ${icon}"></i>
-    </button>
-  `).join('')
-
-  toggleBtn.addEventListener('click', () => {
-    panel.classList.toggle('d-none')
+  initializeCategoryIconPicker({
+    inputId: 'catIcono',
+    previewId: 'previewCatIcon',
+    toggleId: 'btnToggleIconPicker',
+    panelId: 'iconPickerPanel',
+    gridId: 'iconPickerGrid'
   })
 
-  grid.querySelectorAll('.btn-select-icon').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const icon = btn.dataset.icon
-      catIcono.value = icon
-      if (previewIcon) {
-        previewIcon.className = `fas ${icon}`
-      }
-      panel.classList.add('d-none')
-    })
+  initializeCategoryIconPicker({
+    inputId: 'reqCategoryIcon',
+    previewId: 'reqCategoryIconPreview',
+    toggleId: 'btnToggleRequestIconPicker',
+    panelId: 'requestIconPickerPanel',
+    gridId: 'requestIconPickerGrid'
   })
 }
 
@@ -442,41 +823,59 @@ function initEventHandlers() {
   document.getElementById('btnNuevaCategoria')?.addEventListener('click', () => openCategoryModal())
   document.getElementById('btnNuevoSubtipo')?.addEventListener('click', () => openSubcategoryModal())
   document.getElementById('filtroCatPadre')?.addEventListener('change', () => renderSubcategoriesTable())
-
-  const catIcono = document.getElementById('catIcono')
-  const previewIcon = document.getElementById('previewCatIcon')
-  catIcono?.addEventListener('input', () => {
-    if (previewIcon) {
-      previewIcon.className = `fas ${catIcono.value.trim() || 'fa-tags'}`
-    }
-  })
+  document.getElementById('categorySearch')?.addEventListener('input', () => renderCategoriesTable())
+  document.getElementById('subcategorySearch')?.addEventListener('input', () => renderSubcategoriesTable())
 
   const catColor = document.getElementById('catColor')
   const catColorPicker = document.getElementById('catColorPicker')
   catColorPicker?.addEventListener('input', () => {
-    if (catColor) catColor.value = catColorPicker.value
+    if (catColor) {
+      catColor.value = catColorPicker.value
+    }
+
     updateColorValidation()
   })
   catColor?.addEventListener('input', () => {
-    if (catColorPicker && /^#[0-9A-Fa-f]{6}$/.test(catColor.value)) {
+    if (catColorPicker && /^#[\dA-Fa-f]{6}$/.test(catColor.value)) {
       catColorPicker.value = catColor.value
     }
+
     updateColorValidation()
   })
 
+  const reqCategoryColor = document.getElementById('reqCategoryColor')
+  const reqCategoryColorValue = document.getElementById('reqCategoryColorValue')
+  reqCategoryColor?.addEventListener('input', () => {
+    if (reqCategoryColorValue) {
+      reqCategoryColorValue.textContent = reqCategoryColor.value.toUpperCase()
+    }
+  })
+
   // Submit Form Categoría
-  document.getElementById('formCategoria')?.addEventListener('submit', async (e) => {
+  document.getElementById('formCategoria')?.addEventListener('submit', async e => {
     e.preventDefault()
 
+    const form = e.currentTarget
+    if (!validateForm(form)) {
+      showGlobalAlert('Revisa los campos marcados antes de guardar la categoría.', 'warning')
+      return
+    }
+
     const id = document.getElementById('catId')?.value
-    const name = document.getElementById('catNombre')?.value.trim()
+    const nameInput = document.getElementById('catNombre')
+    const name = normalizeCatalogName(nameInput?.value)
     const description = document.getElementById('catDescripcion')?.value.trim()
     const icon = document.getElementById('catIcono')?.value.trim() || 'fa-tags'
     const color = document.getElementById('catColor')?.value.trim() || '#007bff'
     const is_active = document.getElementById('catIsActive')?.checked ?? true
 
-    if (!name) {
-      showGlobalAlert('El nombre de la categoría es obligatorio.', 'warning')
+    if (nameInput) {
+      nameInput.value = name
+    }
+
+    if (hasDuplicateCategory(name, id)) {
+      showGlobalAlert('Ya existe una categoría con ese nombre.', 'warning')
+      nameInput?.focus()
       return
     }
 
@@ -486,7 +885,9 @@ function initEventHandlers() {
     }
 
     const btnSubmit = document.getElementById('btnGuardarCategoria')
-    if (btnSubmit) btnSubmit.disabled = true
+    if (btnSubmit) {
+      btnSubmit.disabled = true
+    }
 
     try {
       if (id) {
@@ -508,31 +909,43 @@ function initEventHandlers() {
     } catch (error) {
       showGlobalAlert(extractErrorMessage(error, 'No se pudo guardar la categoría.'), 'danger')
     } finally {
-      if (btnSubmit) btnSubmit.disabled = false
+      if (btnSubmit) {
+        btnSubmit.disabled = false
+      }
     }
   })
 
   // Submit Form Subcategoría
-  document.getElementById('formSubcategoria')?.addEventListener('submit', async (e) => {
+  document.getElementById('formSubcategoria')?.addEventListener('submit', async e => {
     e.preventDefault()
+
+    const form = e.currentTarget
+    if (!validateForm(form)) {
+      showGlobalAlert('Revisa los campos marcados antes de guardar el subtipo.', 'warning')
+      return
+    }
 
     const id = document.getElementById('subCatId')?.value
     const category_id = document.getElementById('subCatParentId')?.value
-    const name = document.getElementById('subCatNombre')?.value.trim()
+    const nameInput = document.getElementById('subCatNombre')
+    const name = normalizeCatalogName(nameInput?.value)
     const description = document.getElementById('subCatDescripcion')?.value.trim()
     const is_active = document.getElementById('subCatIsActive')?.checked ?? true
 
-    if (!category_id) {
-      showGlobalAlert('Debe seleccionar la categoría padre.', 'warning')
-      return
+    if (nameInput) {
+      nameInput.value = name
     }
-    if (!name) {
-      showGlobalAlert('El nombre del subtipo es obligatorio.', 'warning')
+
+    if (hasDuplicateSubcategory(category_id, name, id)) {
+      showGlobalAlert('Ya existe un subtipo con ese nombre dentro de la categoría seleccionada.', 'warning')
+      nameInput?.focus()
       return
     }
 
     const btnSubmit = document.getElementById('btnGuardarSubcategoria')
-    if (btnSubmit) btnSubmit.disabled = true
+    if (btnSubmit) {
+      btnSubmit.disabled = true
+    }
 
     try {
       if (id) {
@@ -554,16 +967,151 @@ function initEventHandlers() {
     } catch (error) {
       showGlobalAlert(extractErrorMessage(error, 'No se pudo guardar el subtipo.'), 'danger')
     } finally {
-      if (btnSubmit) btnSubmit.disabled = false
+      if (btnSubmit) {
+        btnSubmit.disabled = false
+      }
     }
   })
+
+  // Resolve Request Buttons
+  document.getElementById('btnApproveRequest')?.addEventListener('click', async () => {
+    const id = document.getElementById('reqId')?.value
+    if (!id) {
+      return
+    }
+
+    const form = document.getElementById('formResolveRequest')
+    if (!validateForm(form)) {
+      showGlobalAlert('Revisa los datos definitivos antes de aprobar la solicitud.', 'warning')
+      return
+    }
+
+    const categoryNameInput = document.getElementById('reqCategoryName')
+    const subcategoryNameInput = document.getElementById('reqSubcategoryName')
+    const categoryName = normalizeCatalogName(categoryNameInput?.value)
+    const subcategoryName = normalizeCatalogName(subcategoryNameInput?.value)
+    const categoryDescription = document.getElementById('reqCategoryDescription')?.value.trim()
+    const subcategoryDescription = document.getElementById('reqSubcategoryDescription')?.value.trim()
+    const icon = document.getElementById('reqCategoryIcon')?.value.trim()
+    const color = document.getElementById('reqCategoryColor')?.value
+    const adminComment = document.getElementById('reqApprovalComment')?.value.trim()
+
+    if (categoryNameInput) {
+      categoryNameInput.value = categoryName
+    }
+
+    if (subcategoryNameInput) {
+      subcategoryNameInput.value = subcategoryName
+    }
+
+    if (hasDuplicateCategory(categoryName)) {
+      showGlobalAlert('Ya existe una categoría con ese nombre. Ajusta el nombre definitivo antes de aprobar.', 'warning')
+      categoryNameInput?.focus()
+      return
+    }
+
+    if (checkColorIsUsed(color)) {
+      showGlobalAlert('El color definitivo ya está asignado a otra categoría.', 'warning')
+      return
+    }
+
+    const btnSubmit = document.getElementById('btnApproveRequest')
+    if (btnSubmit) {
+      btnSubmit.disabled = true
+    }
+
+    try {
+      await request(`/admin/catalogs/category-requests/${id}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          category_name: categoryName,
+          subcategory_name: subcategoryName,
+          category_description: categoryDescription || null,
+          subcategory_description: subcategoryDescription || null,
+          icon,
+          color,
+          admin_comment: adminComment || null
+        })
+      })
+      showGlobalAlert('Categoría y subtipo creados; la incidencia fue clasificada.', 'success')
+      globalThis.jQuery?.('#modalResolveRequest').modal('hide')
+      await loadData()
+    } catch (error) {
+      showGlobalAlert(extractErrorMessage(error, 'Error al aprobar solicitud.'), 'danger')
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false
+      }
+    }
+  })
+
+  document.getElementById('btnConfirmRejectRequest')?.addEventListener('click', async () => {
+    const id = document.getElementById('reqId')?.value
+    const comment = document.getElementById('reqAdminComment')?.value.trim()
+
+    if (!comment || comment.length < 10) {
+      showGlobalAlert('El comentario de rechazo debe tener al menos 10 caracteres.', 'warning')
+      return
+    }
+
+    const btnSubmit = document.getElementById('btnConfirmRejectRequest')
+    if (btnSubmit) {
+      btnSubmit.disabled = true
+    }
+
+    try {
+      await request(`/admin/catalogs/category-requests/${id}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ comment })
+      })
+      showGlobalAlert('Solicitud rechazada exitosamente.', 'success')
+      globalThis.jQuery?.('#modalResolveRequest').modal('hide')
+      await loadData()
+    } catch (error) {
+      showGlobalAlert(extractErrorMessage(error, 'Error al rechazar solicitud.'), 'danger')
+    } finally {
+      if (btnSubmit) {
+        btnSubmit.disabled = false
+      }
+    }
+  })
+}
+
+function activateRequestedTab() {
+  if (globalThis.location?.hash !== '#tabRequests') {
+    return
+  }
+
+  const link = document.getElementById('tabRequestsLink')
+  const pane = document.getElementById('tabRequests')
+  if (!link || !pane) {
+    return
+  }
+
+  if (globalThis.jQuery?.fn?.tab) {
+    globalThis.jQuery(link).tab('show')
+    return
+  }
+
+  document.querySelectorAll('[data-toggle="pill"]').forEach(tab => {
+    tab.classList.remove('active')
+    tab.setAttribute('aria-selected', 'false')
+  })
+  document.querySelectorAll('.tab-pane').forEach(tabPane => {
+    tabPane.classList.remove('active', 'show')
+  })
+  link.classList.add('active')
+  link.setAttribute('aria-selected', 'true')
+  pane.classList.add('active', 'show')
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof globalThis.renderLayout === 'function') {
     await globalThis.renderLayout('category-management')
   }
+
   initEventHandlers()
+  activateRequestedTab()
   loadData()
 })
 
@@ -571,6 +1119,10 @@ export {
   loadData,
   renderCategoriesTable,
   renderSubcategoriesTable,
+  renderRequestsTable,
   openCategoryModal,
-  openSubcategoryModal
+  openSubcategoryModal,
+  openResolveRequestModal,
+  initEventHandlers,
+  activateRequestedTab
 }

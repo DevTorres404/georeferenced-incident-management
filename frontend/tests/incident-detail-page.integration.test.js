@@ -4,13 +4,16 @@ vi.mock('../app/js/modules/incidents/application/incidents-service.js', () => ({
   addIncidentComment: vi.fn(),
   approveStateChangeRequest: vi.fn(),
   changeIncidentState: vi.fn(),
+  classifyIncident: vi.fn(),
   getIncident: vi.fn(),
   getPendingStateChangeRequests: vi.fn(),
   getStateChangeRequests: vi.fn(),
+  listIncidentCategories: vi.fn(),
   listPriorities: vi.fn(),
   listStates: vi.fn(),
   listStateTransitions: vi.fn(),
   rejectStateChangeRequest: vi.fn(),
+  requestNewCategory: vi.fn(),
   requestStateChange: vi.fn(),
   updateIncident: vi.fn(),
   uploadIncidentAttachment: vi.fn()
@@ -60,6 +63,29 @@ const MODAL_FIXTURE = `
   <img id="attachmentPreviewModalImage" />
   <div id="attachmentPreviewModalFallback"></div>
   <a id="attachmentPreviewModalOpen"></a>
+</div>
+<div id="modalClasificarIncidencia">
+  <form id="formClasificarIncidencia">
+    <div id="classificationCitizenDetail"></div>
+    <select id="classificationCategory"></select>
+    <select id="classificationSubcategory"></select>
+    <textarea id="classificationReason"></textarea>
+    <button id="btnConfirmClassification" type="submit"></button>
+    <a id="btnOpenRequestCategory" href="#"></a>
+  </form>
+</div>
+<div id="modalRequestCategory">
+  <form id="formRequestCategory">
+    <input id="requestCategoryName">
+    <textarea id="requestCategoryDescription"></textarea>
+    <input id="requestSubcategoryName">
+    <i id="requestCategoryIconPreview"></i>
+    <input id="requestCategoryIcon" value="fa-tags">
+    <button id="btnToggleSupervisorIconPicker" type="button"></button>
+    <div id="supervisorIconPickerPanel" class="d-none"><div id="supervisorIconPickerGrid"></div></div>
+    <textarea id="requestCategoryReason"></textarea>
+    <button id="btnSubmitCategoryRequest" type="submit"></button>
+  </form>
 </div>`
 
 const sampleIncident = {
@@ -328,6 +354,62 @@ describe('Integration — incident-detail-page', () => {
       expect(container.textContent).toContain('El problema no coincidía')
       expect(container.querySelector('#btnClassifyIncident')).not.toBeNull()
       expect(container.innerHTML).not.toContain('assignment-management.html?incident_id=1')
+    })
+
+    it('loads active categories explicitly and submits a category and subtype request', async () => {
+      const service = await import('../app/js/modules/incidents/application/incidents-service.js')
+      service.getIncident.mockResolvedValue({
+        data: {
+          ...sampleIncident,
+          classification_status: 'PENDING',
+          classification_detail: 'No existe una opción adecuada.'
+        }
+      })
+      service.listStateTransitions.mockResolvedValue({ data: [] })
+      service.listPriorities.mockResolvedValue({ data: [] })
+      service.listIncidentCategories.mockResolvedValue({
+        data: [{
+          id: 8,
+          name: 'Servicios urbanos',
+          is_fallback: false,
+          subcategories: [{ id: 12, name: 'Mobiliario dañado' }]
+        }]
+      })
+      service.requestNewCategory.mockResolvedValue({ message: 'Solicitud enviada al administrador.' })
+      localStorage.setItem('user_data', JSON.stringify({
+        id: 1,
+        roles: [{ code: 'SUPERVISOR' }],
+        permissions: ['incidents.edit']
+      }))
+
+      const { initIncidentDetailPage } = await import('../app/js/modules/incidents/presentation/incident-detail-page.js')
+      await initIncidentDetailPage()
+
+      document.getElementById('btnClassifyIncident').click()
+      await flushMicrotasks()
+      expect(service.listIncidentCategories).toHaveBeenCalledTimes(1)
+      expect(document.getElementById('classificationCategory').textContent).toContain('Servicios urbanos')
+
+      document.getElementById('btnOpenRequestCategory').click()
+      document.getElementById('requestCategoryName').value = 'Infraestructura de gas'
+      document.getElementById('requestCategoryDescription').value = 'Incidencias relacionadas con redes y suministro de gas.'
+      document.getElementById('requestSubcategoryName').value = 'Fuga domiciliaria'
+      document.getElementById('btnToggleSupervisorIconPicker').click()
+      document.querySelector('[data-category-icon="fa-fire"]').click()
+      document.getElementById('requestCategoryReason').value = 'El catálogo actual no cubre este tipo de fuga.'
+      document.getElementById('formRequestCategory').dispatchEvent(new Event('submit', {
+        bubbles: true,
+        cancelable: true
+      }))
+      await flushMicrotasks()
+
+      expect(service.requestNewCategory).toHaveBeenCalledWith(1, {
+        suggested_category_name: 'Infraestructura de gas',
+        suggested_category_description: 'Incidencias relacionadas con redes y suministro de gas.',
+        suggested_subcategory_name: 'Fuga domiciliaria',
+        suggested_icon: 'fa-fire',
+        reason: 'El catálogo actual no cubre este tipo de fuga.'
+      })
     })
 
     it.each([
