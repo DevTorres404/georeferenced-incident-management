@@ -13,7 +13,7 @@ import {
 } from '../../territorial-units/application/territorial-unit-service.js?v=2'
 
 const STEPS = ['location', 'evidence', 'details', 'review']
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
+const MAX_IMAGE_SIZE_BYTES = 50 * 1024 * 1024
 const ALLOWED_EVIDENCE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm']
 const INCIDENT_CREATE_INITIAL_CENTER = [-78.55, -1.7]
 const INCIDENT_CREATE_INITIAL_ZOOM = 6.15
@@ -695,7 +695,7 @@ export function addEvidenceFiles(fileList) {
     }
 
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setEvidenceError('Cada foto debe pesar maximo 10 MB.')
+      setEvidenceError('Cada archivo debe pesar máximo 50 MB.')
       return
     }
 

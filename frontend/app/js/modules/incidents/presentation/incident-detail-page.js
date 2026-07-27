@@ -358,7 +358,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               <i class="fas fa-info-circle text-success mr-2 mt-1"></i>
               <div>
                 <strong>Adjuntos permitidos:</strong> imagenes JPG, PNG, WebP o videos MP4, WebM.
-                <div class="text-muted small">Tamano maximo por archivo: 10 MB.</div>
+                <div class="text-muted small">Tamano maximo por archivo: 50 MB.</div>
               </div>
             </div>
 
@@ -376,7 +376,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                     >
                     <label class="custom-file-label" for="attachmentFile" id="attachmentFileLabel">Seleccione un archivo...</label>
                   </div>
-                  <small class="text-muted d-block mt-1">Formatos permitidos: JPG, PNG, WebP, MP4, WebM (Máx 10MB).</small>
+                  <small class="text-muted d-block mt-1">Formatos permitidos: JPG, PNG, WebP, MP4, WebM (Máx 50MB).</small>
                   <small class="text-danger d-none mt-1" id="attachmentFileError"></small>
                 </div>
                 <div class="col-md-4 mt-3 mt-md-0">
@@ -1131,6 +1131,13 @@ function bindAttachmentForm(incident) {
     if (!file) {
       input.classList.add('is-invalid')
       errorElement.textContent = 'Seleccione un archivo antes de enviarlo.'
+      errorElement.classList.remove('d-none')
+      return
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      input.classList.add('is-invalid')
+      errorElement.textContent = 'El archivo supera el tamaño máximo permitido de 50 MB.'
       errorElement.classList.remove('d-none')
       return
     }

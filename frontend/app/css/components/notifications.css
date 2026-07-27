@@ -54,8 +54,11 @@
   box-shadow: 0 12px 36px rgba(8, 32, 51, 0.12);
   overflow: hidden;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+}
+
+.sgi-notif-dropdown.show {
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .sgi-notif-dropdown-header {
@@ -89,12 +92,13 @@
 }
 
 .sgi-notif-dropdown-list {
-  flex: 1 1 auto;
-  min-height: 0;
-  max-height: 250px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: 250px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   padding: 0.25rem 0;
+  overscroll-behavior: contain;
 }
 
 /* NOSONAR - scrollbar pseudo-elementos sin equivalente estandar */

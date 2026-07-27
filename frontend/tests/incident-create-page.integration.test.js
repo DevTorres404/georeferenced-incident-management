@@ -513,7 +513,7 @@ describe('incident-create-page — integration', () => {
     it('addEvidenceFiles rejects oversized files', async () => {
       const { addEvidenceFiles } = await import('../app/js/modules/incidents/presentation/incident-create-page.js')
       const file = new File([''], 'large.jpg', { type: 'image/jpeg' })
-      Object.defineProperty(file, 'size', { value: 11 * 1024 * 1024 })
+      Object.defineProperty(file, 'size', { value: 51 * 1024 * 1024 })
 
       addEvidenceFiles([file])
       expect(document.getElementById('evidenceCount').textContent).toBe('0')
