@@ -54,7 +54,7 @@ class MyTeamAccessTest extends TestCase
         }
 
         $this->assertSame(
-            Permission::count() - 3,
+            Permission::count() - 9,
             Role::where('code', 'ADMIN')->firstOrFail()->permissions()->count()
         );
 
@@ -118,7 +118,7 @@ class MyTeamAccessTest extends TestCase
         $this->assertRolePermission('CIUDADANO', 'incidents.create', true);
         $this->assertRolePermission('OPERADOR', 'incidents.create', false);
         $this->assertSame(
-            Permission::count() - 3,
+            Permission::count() - 9,
             Role::where('code', 'ADMIN')->firstOrFail()->permissions()->count()
         );
         $this->assertSame(

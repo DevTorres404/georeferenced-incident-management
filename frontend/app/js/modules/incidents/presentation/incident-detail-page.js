@@ -143,6 +143,8 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
   const history = Array.isArray(incident.history) ? incident.history : []
   const attachments = Array.isArray(incident.attachments) ? incident.attachments : []
   const isOperatorRole = isOperator()
+  const userRoles = Array.isArray(readCurrentUser()?.roles) ? readCurrentUser().roles.map(r => normalizeCode(r)) : []
+  const isAdmin = userRoles.includes('ADMIN')
   const isFinalState = Boolean(incident.state?.is_final_state)
   const isReadOnly = isFinalState ||
                      isIncidentState(incident.state?.name, INCIDENT_STATES.RESOLVED) ||
@@ -330,7 +332,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
           <div class="card-body" id="listadoComentarios" style="max-height: 400px; overflow-y: auto;">
             ${renderComments(comments)}
           </div>
-          ${!isReadOnly ? `
+          ${(!isReadOnly && !isAdmin) ? `
           <div class="card-footer">
             <div class="input-group">
               <input type="text" id="nuevoComentario" class="form-control" placeholder="Escriba un comentario...">
@@ -360,7 +362,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
               </div>
             </div>
 
-            ${!isReadOnly ? `
+            ${(!isReadOnly && !isAdmin) ? `
             <form id="attachmentUploadForm" class="mb-4" novalidate>
               <div class="form-row align-items-end">
                 <div class="col-md-8">
@@ -1842,7 +1844,7 @@ function canManagePriority() {
 
   return user.roles.some(role => {
     const code = normalizeCode(role)
-    return code === 'ADMIN' || code === 'SUPERVISOR'
+    return code === 'SUPERVISOR'
   })
 }
 
