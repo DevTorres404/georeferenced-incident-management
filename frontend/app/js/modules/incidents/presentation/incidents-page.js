@@ -1,4 +1,4 @@
-import { deleteIncident, listStates, listPriorities } from '../application/incidents-service.js?v=14'
+import { deleteIncident, listStates, listPriorities, listIncidentCategories } from '../application/incidents-service.js?v=14'
 import { request } from '../../../infrastructure/backend-client.js?v=21'
 import { readUser, userHasPermission } from '../../../core/auth-session.js?v=16'
 import {
@@ -33,6 +33,7 @@ export async function initIncidentsPage() {
     priorities: [],
     priorityNameToId: {},
     activeStateFilter: 'todos',
+    activeCategoryFilter: 'todas',
     activePriorityFilter: 'todas',
     activePendingStateRequest: false,
     activeSearchQuery: readStoredSearch(),
@@ -49,16 +50,19 @@ export async function initIncidentsPage() {
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 12000)
 
   try {
-    const [statesData, prioritiesData] = await Promise.all([
+    const [statesData, prioritiesData, categoriesData] = await Promise.all([
       listStates(),
-      listPriorities()
+      listPriorities(),
+      listIncidentCategories()
     ])
     state.states = Array.isArray(statesData?.data) ? statesData.data : []
+    state.categories = Array.isArray(categoriesData?.data) ? categoriesData.data : []
     const rawPriorities = Array.isArray(prioritiesData?.data) ? prioritiesData.data : []
     state.priorities = rawPriorities
     state.priorityNameToId = buildPriorityLookup(rawPriorities)
 
     renderStateFilters(state)
+    renderCategoryFilters(state)
     configureScopeFilters(state)
     configureRoleActions(state)
     bindPriorityFilters(state)
@@ -73,6 +77,7 @@ export async function initIncidentsPage() {
       document.getElementById('incidentScopeSection')?.classList.add('d-none')
       document.getElementById('stateFilterSection')?.classList.add('d-none')
       document.getElementById('priorityFilterSection')?.classList.add('d-none')
+      document.getElementById('filterCategory')?.classList.add('d-none')
     }
 
     initDataTable(state)
@@ -151,6 +156,10 @@ function initDataTable(state) {
 
       if (state.activePriorityFilter !== 'todas') {
         params.set('priority_filter', String(state.activePriorityFilter))
+      }
+
+      if (state.activeCategoryFilter !== 'todas') {
+        params.set('category_filter', String(state.activeCategoryFilter))
       }
 
       if (state.activePendingStateRequest) {
@@ -329,7 +338,7 @@ function initDataTable(state) {
       sInfo: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
       sInfoEmpty: 'Mostrando 0 a 0 de 0 registros',
       sInfoFiltered: '(filtrado de _MAX_ registros totales)',
-      sSearch: 'Buscar:',
+      sSearch: '',
       oPaginate: {
         sFirst: 'Primero',
         sLast: 'Último',
@@ -413,6 +422,29 @@ function renderStateFilters(state) {
         state.activeStateFilter = filtro
       }
 
+      if (state.dataTable) {
+        state.dataTable.ajax.reload()
+      }
+    })
+    select.dataset.eventsBound = 'true'
+  }
+}
+
+function renderCategoryFilters(state) {
+  const select = document.getElementById('filterCategory')
+  if (!select) return
+
+  select.innerHTML = '<option value="todas">Todas</option>'
+  state.categories.forEach(c => {
+    const option = document.createElement('option')
+    option.value = escapeHtml(c.id)
+    option.textContent = escapeHtml(formatCatalogLabel(c.name))
+    select.appendChild(option)
+  })
+
+  if (!select.dataset.eventsBound) {
+    select.addEventListener('change', e => {
+      state.activeCategoryFilter = e.target.value
       if (state.dataTable) {
         state.dataTable.ajax.reload()
       }
@@ -584,6 +616,12 @@ function bindPriorityFilters(state) {
       if (prioritySelect) {
         prioritySelect.value = 'todas'
         state.activePriorityFilter = 'todas'
+      }
+
+      const categorySelect = document.getElementById('filterCategory')
+      if (categorySelect) {
+        categorySelect.value = 'todas'
+        state.activeCategoryFilter = 'todas'
       }
 
       if (state.dataTable) {

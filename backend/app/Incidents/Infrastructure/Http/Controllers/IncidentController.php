@@ -130,6 +130,7 @@ class IncidentController extends ApiController
             'state_filter' => ['nullable', 'string', 'max:50'],
             'state_id' => ['nullable', 'integer'],
             'priority_filter' => ['nullable', 'integer'],
+            'category_filter' => ['nullable', 'integer'],
             'pending_state_request' => ['nullable', 'boolean'],
         ]);
 
@@ -146,6 +147,7 @@ class IncidentController extends ApiController
             stateFilter: $validated['state_filter'] ?? null,
             stateId: $validated['state_id'] ?? null,
             priorityId: $validated['priority_filter'] ?? null,
+            categoryId: $validated['category_filter'] ?? null,
             mine: isset($validated['mine']) ? filter_var($validated['mine'], FILTER_VALIDATE_BOOLEAN) : null,
             assignedToMe: isset($validated['assigned_to_me']) ? filter_var($validated['assigned_to_me'], FILTER_VALIDATE_BOOLEAN) : null,
             search: $searchValue,

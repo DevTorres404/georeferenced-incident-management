@@ -209,11 +209,8 @@ function renderCategoriesTable() {
           <button type="button" class="btn btn-xs btn-outline-primary mr-1 btn-edit-cat" data-id="${cat.id}" title="Editar categoría">
             <i class="fas fa-edit"></i>
           </button>
-          <button type="button" class="btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} mr-1 btn-toggle-cat" data-id="${cat.id}" data-active="${isActive ? '0' : '1'}" title="${isActive ? 'Desactivar' : 'Activar'}">
+          <button type="button" class="btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} btn-toggle-cat" data-id="${cat.id}" data-active="${isActive ? '0' : '1'}" title="${isActive ? 'Desactivar' : 'Activar'}">
             <i class="fas ${isActive ? 'fa-eye-slash' : 'fa-eye'}"></i>
-          </button>
-          <button type="button" class="btn btn-xs btn-outline-danger btn-delete-cat" data-id="${cat.id}" data-name="${escapeHtml(cat.name)}" title="Eliminar categoría">
-            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
@@ -314,11 +311,8 @@ function renderSubcategoriesTable() {
           <button type="button" class="btn btn-xs btn-outline-primary mr-1 btn-edit-sub" data-id="${sub.id}" title="Editar subtipo">
             <i class="fas fa-edit"></i>
           </button>
-          <button type="button" class="btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} mr-1 btn-toggle-sub" data-id="${sub.id}" data-active="${isActive ? '0' : '1'}" title="${isActive ? 'Desactivar' : 'Activar'}">
+          <button type="button" class="btn btn-xs ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} btn-toggle-sub" data-id="${sub.id}" data-active="${isActive ? '0' : '1'}" title="${isActive ? 'Desactivar' : 'Activar'}">
             <i class="fas ${isActive ? 'fa-eye-slash' : 'fa-eye'}"></i>
-          </button>
-          <button type="button" class="btn btn-xs btn-outline-danger btn-delete-sub" data-id="${sub.id}" data-name="${escapeHtml(sub.name)}" title="Eliminar subtipo">
-            <i class="fas fa-trash"></i>
           </button>
         </td>
       </tr>
@@ -505,23 +499,6 @@ function bindCategoryActions() {
     })
   })
 
-  document.querySelectorAll('.btn-delete-cat').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const { id } = btn.dataset
-      const { name } = btn.dataset
-      if (!confirm(`¿Está seguro de eliminar la categoría "${name}"? Esta acción no se puede deshacer.`)) {
-        return
-      }
-
-      try {
-        await request(`/admin/catalogs/categories/${id}`, { method: 'DELETE' })
-        showGlobalAlert(`Categoría "${name}" eliminada correctamente.`, 'success')
-        await loadData()
-      } catch (error) {
-        showGlobalAlert(extractErrorMessage(error, 'No se pudo eliminar la categoría.'), 'danger')
-      }
-    })
-  })
 }
 
 function bindSubcategoryActions() {
@@ -558,23 +535,6 @@ function bindSubcategoryActions() {
     })
   })
 
-  document.querySelectorAll('.btn-delete-sub').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const { id } = btn.dataset
-      const { name } = btn.dataset
-      if (!confirm(`¿Está seguro de eliminar el subtipo "${name}"? Esta acción no se puede deshacer.`)) {
-        return
-      }
-
-      try {
-        await request(`/admin/catalogs/subcategories/${id}`, { method: 'DELETE' })
-        showGlobalAlert(`Subtipo "${name}" eliminado correctamente.`, 'success')
-        await loadData()
-      } catch (error) {
-        showGlobalAlert(extractErrorMessage(error, 'No se pudo eliminar el subtipo.'), 'danger')
-      }
-    })
-  })
 }
 
 const PALETTE_COLORS = [
