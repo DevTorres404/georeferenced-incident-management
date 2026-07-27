@@ -69,6 +69,22 @@ body.dark-mode .table th {
   border-top-color: var(--sgi-border);
 }
 
+/* Fix sticky columns en modo oscuro */
+@media (max-width: 767.98px) {
+  body.dark-mode .table-responsive .table thead th:last-child {
+    background-color: #2a2d35 !important;
+  }
+  body.dark-mode .table-responsive .table tbody td:last-child {
+    background-color: var(--sgi-surface) !important;
+  }
+  body.dark-mode .table-responsive .table-striped tbody tr:nth-of-type(odd) td:last-child {
+    background-color: #2a2d34 !important;
+  }
+  body.dark-mode .table-responsive .table tbody tr:hover td:last-child {
+    background-color: #30333a !important;
+  }
+}
+
 body.dark-mode .table-ticket-code {
   color: var(--sgi-primary);
 }

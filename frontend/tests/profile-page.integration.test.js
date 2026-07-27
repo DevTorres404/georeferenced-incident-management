@@ -50,6 +50,12 @@ const DOM_FIXTURE = `
 <div id="modalEditProfile" class="modal fade">
   <form id="formEditProfile">
     <div class="form-group">
+      <input id="editFirstName" type="text" class="form-control" />
+    </div>
+    <div class="form-group">
+      <input id="editLastName" type="text" class="form-control" />
+    </div>
+    <div class="form-group">
       <input id="editUsername" type="text" class="form-control" />
     </div>
     <div id="editProfileAlert" class="d-none alert alert-danger"></div>
@@ -325,7 +331,7 @@ describe('profile-page — integration', () => {
           '/auth/profile',
           expect.objectContaining({
             method: 'PATCH',
-            body: JSON.stringify({ username: 'updateduser' })
+            body: JSON.stringify({ username: 'updateduser', first_name: 'Juan', last_name: 'Pérez' })
           })
         )
       })

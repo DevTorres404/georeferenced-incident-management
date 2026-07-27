@@ -501,7 +501,7 @@ export function renderSecurityData(user) {
 
   const isGoogleUser = hasGoogleIdentity(user)
   const has2FA = user.two_factor_enabled
-  const isCiudadano = hasRole('CIUDADANO', user)
+  const isAdmin = hasRole('ADMIN', user)
 
   container.innerHTML = `
     <div class="security-grid">
@@ -516,7 +516,10 @@ export function renderSecurityData(user) {
           ${has2FA ?
     `<div class="d-flex align-items-center justify-content-between">
                  <span><span class="status-dot on"></span><strong class="text-success">Activado</strong></span>
-                 <button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>
+                 ${isAdmin ? 
+                   '<span class="badge badge-info"><i class="fas fa-lock mr-1"></i>Obligatorio para tu rol</span>' : 
+                   '<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>'
+                 }
                </div>` :
     '<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>'
 }
