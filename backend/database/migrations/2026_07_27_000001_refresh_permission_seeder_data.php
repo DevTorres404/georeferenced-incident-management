@@ -11,14 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Borrar los registros antiguos de permisos de roles
-        DB::table('auth.permission_role')->truncate();
-
-        // Correr el PermissionSeeder actualizado
-        Artisan::call('db:seed', [
-            '--class' => 'PermissionSeeder',
-            '--force' => true
-        ]);
+        $role = \App\Auth\Infrastructure\Persistence\Models\Role::where('code', 'ADMIN')->first();
+        if ($role) {
+            $permissions = \App\Auth\Infrastructure\Persistence\Models\Permission::whereNotIn('code', [
+                'incidents.create',
+                'incidents.edit',
+                'incidents.delete',
+                'incidents.assign',
+                'incidents.close',
+                'incidents.reopen',
+                'comments.create',
+                'comments.internal',
+                'operations.view_team',
+            ])->pluck('id');
+            
+            $role->permissions()->sync($permissions);
+        }
     }
 
     /**
