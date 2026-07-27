@@ -215,6 +215,34 @@
     </div>
   </div>
 
+  <!-- Modal Desactivar 2FA -->
+  <div class="modal fade" id="modalDisable2fa" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header border-0"
+          style="background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 1rem 1rem 0 0;">
+          <h5 class="modal-title text-white font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>Desactivar 2FA</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="tfaDisableAlert" class="alert d-none" role="alert"></div>
+          <div id="tfaDisableModalBody">
+            <p class="text-muted mb-3">Para desactivar la autenticación de dos pasos, ingresa el código generado por tu aplicación autenticadora.</p>
+            <div class="form-group">
+              <label for="tfaDisableCodeInput" class="small font-weight-bold text-muted">Código de verificación</label>
+              <input type="text" id="tfaDisableCodeInput" class="form-control text-center" maxlength="6" placeholder="000000"
+                style="font-size: 1.1rem; letter-spacing: 0.2em;">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <aside class="control-sidebar control-sidebar-dark"></aside>
 
   <script src="/plugins/jquery/jquery.min.js"></script>
@@ -222,7 +250,7 @@
   <script src="/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
   <script src="/dist/js/adminlte.min.js"></script>
     <script type="module" src="/js/layout/layout.js?v=48"></script>
-  <script type="module" src="/js/modules/profile/presentation/profile-page.js?v=19"></script>
+  <script type="module" src="/js/modules/profile/presentation/profile-page.js?v=20"></script>
 </body>
 
 </html>

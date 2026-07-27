@@ -36,9 +36,13 @@ final class TwoFactorAuthController
 
     public function disable(Request $request): JsonResponse
     {
+        $request->validate([
+            'code' => ['required', 'string', 'regex:/^[0-9]{6}$/'],
+        ]);
+
         try {
             $userId = $request->user()->id;
-            $this->disableTwoFactor->execute($userId);
+            $this->disableTwoFactor->execute($userId, $request->input('code'));
         } catch (AuthException $exception) {
             return $this->authError($exception);
         } catch (DomainException $exception) {

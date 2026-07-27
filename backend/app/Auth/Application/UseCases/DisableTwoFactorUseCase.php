@@ -2,16 +2,18 @@
 
 namespace App\Auth\Application\UseCases;
 
+use App\Auth\Application\Ports\TwoFactorAuthPort;
 use App\Auth\Domain\Exceptions\AuthException;
 use App\Auth\Domain\Repositories\UserRepositoryInterface;
 
 final class DisableTwoFactorUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
+        private TwoFactorAuthPort $twoFactorAuth
     ) {}
 
-    public function execute(int $userId): void
+    public function execute(int $userId, string $code): void
     {
         $user = $this->userRepository->findById($userId);
 
@@ -21,6 +23,12 @@ final class DisableTwoFactorUseCase
 
         if (! $user->isTwoFactorEnabled()) {
             throw new \DomainException('La autenticación de dos factores no está habilitada.');
+        }
+
+        $isValid = $this->twoFactorAuth->verifyKey($user->twoFactorSecret, $code);
+
+        if (! $isValid) {
+            throw new \DomainException('El código proporcionado es inválido.');
         }
 
         $this->userRepository->updateTwoFactorSecret($userId, null);

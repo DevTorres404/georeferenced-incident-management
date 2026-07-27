@@ -510,9 +510,7 @@ export function renderSecurityData(user) {
           ${has2FA ?
     `<div class="d-flex align-items-center justify-content-between">
                  <span><span class="status-dot on"></span><strong class="text-success">Activado</strong></span>
-                 ${isCiudadano ?
-    '<button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>' :
-    ''}
+                 <button type="button" class="btn btn-outline-danger btn-sm" id="btnDisable2fa"><i class="fas fa-ban mr-1"></i>Desactivar</button>
                </div>` :
     '<button type="button" class="btn btn-primary btn-sm" id="btnSetup2fa"><i class="fas fa-qrcode mr-1"></i>Configurar 2FA</button>'
 }
@@ -541,7 +539,15 @@ export function renderSecurityData(user) {
   if (has2FA) {
     const btnDisable2fa = document.getElementById('btnDisable2fa')
     if (btnDisable2fa) {
-      btnDisable2fa.addEventListener('click', disableTwoFactor)
+      btnDisable2fa.addEventListener('click', () => {
+        const modalEl = document.getElementById('modalDisable2fa')
+        if (modalEl) {
+          const input = document.getElementById('tfaDisableCodeInput')
+          if (input) input.value = ''
+          clearTwoFactorDisableAlert()
+          $(modalEl).modal('show')
+        }
+      })
     }
   } else {
     const btnSetup2fa = document.getElementById('btnSetup2fa')
@@ -553,6 +559,11 @@ export function renderSecurityData(user) {
   const btnConfirm2fa = document.getElementById('btnConfirm2fa')
   if (btnConfirm2fa) {
     btnConfirm2fa.addEventListener('click', confirmSetup2FA)
+  }
+
+  const btnConfirmDisable2fa = document.getElementById('btnConfirmDisable2fa')
+  if (btnConfirmDisable2fa) {
+    btnConfirmDisable2fa.addEventListener('click', disableTwoFactor)
   }
 }
 
@@ -711,7 +722,16 @@ async function confirmSetup2FA() {
 }
 
 async function disableTwoFactor() {
-  const btn = document.getElementById('btnDisable2fa')
+  const btn = document.getElementById('btnConfirmDisable2fa')
+  const modalEl = document.getElementById('modalDisable2fa')
+  const input = document.getElementById('tfaDisableCodeInput')
+  const code = input?.value.trim() || ''
+
+  if (!/^\d{6}$/.test(code)) {
+    setTwoFactorDisableAlert('El código debe tener 6 dígitos.', 'warning')
+    return
+  }
+
   if (!btn) {
     return
   }
@@ -720,7 +740,15 @@ async function disableTwoFactor() {
   btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Desactivando...'
 
   try {
-    await requestBackend('/auth/2fa/disable', { method: 'POST' })
+    await requestBackend('/auth/2fa/disable', { 
+      method: 'POST',
+      body: JSON.stringify({ code })
+    })
+
+    if (modalEl) {
+      $(modalEl).modal('hide')
+    }
+
     const user = readSessionUser()
     if (user) {
       user.two_factor_enabled = false
@@ -735,15 +763,30 @@ async function disableTwoFactor() {
       globalThis.location.reload()
     }, 1500)
   } catch (error) {
-    if (globalThis.showGlobalAlert) {
-      globalThis.showGlobalAlert(error.message || 'Error al desactivar 2FA.', 'danger')
-    } else {
-      alert(error.message || 'Error al desactivar 2FA.')
-    }
-
+    setTwoFactorDisableAlert(error.message || 'Error al desactivar 2FA.', 'danger')
     btn.disabled = false
-    btn.innerHTML = '<i class="fas fa-ban mr-2"></i>Desactivar 2FA'
+    btn.innerHTML = '<i class="fas fa-ban mr-1"></i>Desactivar'
   }
+}
+
+function clearTwoFactorDisableAlert() {
+  const alert = document.getElementById('tfaDisableAlert')
+  if (!alert) {
+    return
+  }
+
+  alert.innerHTML = ''
+  alert.classList.add('d-none')
+}
+
+function setTwoFactorDisableAlert(message, type = 'danger') {
+  const alert = document.getElementById('tfaDisableAlert')
+  if (!alert) {
+    return
+  }
+
+  alert.innerHTML = `<div class="alert alert-${type} py-2 mb-0">${escapeHtml(message)}</div>`
+  alert.classList.remove('d-none')
 }
 
 function clearTwoFactorAlert() {
