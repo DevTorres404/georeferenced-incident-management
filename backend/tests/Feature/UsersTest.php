@@ -57,21 +57,21 @@ class UsersTest extends TestCase
     public function test_admin_can_update_user(): void
     {
         $admin = $this->authenticateAdmin();
-        $user = User::factory()->create(['first_name' => 'Old Name', 'is_active' => true]);
+        $user = User::factory()->create(['first_name' => 'Antiguo', 'is_active' => true]);
 
         $response = $this->withToken($admin['token'])
             ->patchJson("/api/users/{$user->id}", [
-                'first_name' => 'New Name',
+                'first_name' => 'Nuevo',
                 'is_active' => false,
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.nombre', 'New Name')
+            ->assertJsonPath('data.nombre', 'Nuevo')
             ->assertJsonPath('data.activo', false);
 
         $this->assertDatabaseHas('auth.users', [
             'id' => $user->id,
-            'first_name' => 'New Name',
+            'first_name' => 'Nuevo',
             'is_active' => false,
         ]);
     }

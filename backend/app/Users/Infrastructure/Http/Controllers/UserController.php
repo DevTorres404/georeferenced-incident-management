@@ -88,10 +88,10 @@ class UserController extends ApiController
         }
 
         $data = $request->validate([
-            'nombre' => ['nullable', 'string', 'max:100'],
-            'apellido' => ['nullable', 'string', 'max:100'],
-            'first_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
+            'nombre' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'apellido' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'first_name' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'last_name' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
             'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9_.-]+$/i', Rule::unique(User::class, 'username')],
             'email' => ['required', 'email', 'max:255', Rule::unique(User::class, 'email')],
             'password' => ['required', 'string', 'min:8'],
@@ -180,10 +180,10 @@ class UserController extends ApiController
         }
 
         $data = $request->validate([
-            'nombre' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'apellido' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'first_name' => ['sometimes', 'nullable', 'string', 'max:100'],
-            'last_name' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'nombre' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'apellido' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'first_name' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'last_name' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
             'username' => ['nullable', 'string', 'min:3', 'max:50', 'regex:/^[a-z0-9_.-]+$/i', Rule::unique(User::class, 'username')->ignore($user->id)],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique(User::class, 'email')->ignore($user->id)],
             'password' => ['sometimes', 'string', 'min:8'],
@@ -202,8 +202,8 @@ class UserController extends ApiController
         $user = $this->userManagementUseCase->update(
             $user->id,
             new UpdateManagedUserInputData(
-                firstName: $data['first_name'] ?? $data['nombre'] ?? null,
-                lastName: $data['last_name'] ?? $data['apellido'] ?? null,
+                firstName: isset($data['first_name']) || isset($data['nombre']) ? mb_convert_case(trim($data['first_name'] ?? $data['nombre']), MB_CASE_TITLE, 'UTF-8') : null,
+                lastName: isset($data['last_name']) || isset($data['apellido']) ? mb_convert_case(trim($data['last_name'] ?? $data['apellido']), MB_CASE_TITLE, 'UTF-8') : null,
                 username: array_key_exists('username', $data) ? $data['username'] : null,
                 email: $data['email'] ?? null,
                 password: $data['password'] ?? null,
@@ -344,8 +344,8 @@ class UserController extends ApiController
      */
     private function resolveNames(array $data): array
     {
-        $firstName = trim((string) ($data['first_name'] ?? $data['nombre'] ?? ''));
-        $lastName = trim((string) ($data['last_name'] ?? $data['apellido'] ?? ''));
+        $firstName = mb_convert_case(trim((string) ($data['first_name'] ?? $data['nombre'] ?? '')), MB_CASE_TITLE, 'UTF-8');
+        $lastName = mb_convert_case(trim((string) ($data['last_name'] ?? $data['apellido'] ?? '')), MB_CASE_TITLE, 'UTF-8');
 
         abort_if($firstName === '' || $lastName === '', 422, 'Nombre y apellido son requeridos.');
 
@@ -364,6 +364,10 @@ class UserController extends ApiController
             'email.unique' => 'Ya existe una cuenta con ese correo electronico.',
             'password.required' => 'Ingresa una contrasena.',
             'password.min' => 'La contrasena debe tener al menos 8 caracteres.',
+            'nombre.regex' => 'Ingresa solo un nombre (sin espacios).',
+            'apellido.regex' => 'Ingresa solo un apellido (sin espacios).',
+            'first_name.regex' => 'Ingresa solo un nombre (sin espacios).',
+            'last_name.regex' => 'Ingresa solo un apellido (sin espacios).',
         ];
     }
 
