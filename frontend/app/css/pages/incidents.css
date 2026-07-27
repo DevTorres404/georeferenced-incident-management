@@ -118,6 +118,10 @@
   width: 150px;
 }
 
+.incident-filter-category {
+  width: 160px;
+}
+
 .incident-filter-state {
   width: 160px;
 }
@@ -134,6 +138,7 @@
   .inc-kpi-grid { grid-template-columns: 1fr; }
 
   .incident-filter-scope,
+  .incident-filter-category,
   .incident-filter-state,
   .incident-filter-priority {
     width: 100%;

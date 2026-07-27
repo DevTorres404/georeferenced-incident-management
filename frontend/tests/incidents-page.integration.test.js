@@ -7,7 +7,8 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
 vi.mock('../app/js/modules/incidents/application/incidents-service.js', () => ({
   deleteIncident: vi.fn(),
   listStates: vi.fn(),
-  listPriorities: vi.fn()
+  listPriorities: vi.fn(),
+  listIncidentCategories: vi.fn()
 }))
 
 function flushMicrotasks() {
@@ -38,6 +39,9 @@ const FIXTURE = `
   <div id="incidentScopeSection">
       <div id="incidentScopeContext"></div>
   </div>
+  <select id="filterCategory">
+      <option value="todas">Todas</option>
+  </select>
   <select id="filterState">
       <option value="todos">Todos los estados</option>
   </select>
@@ -70,6 +74,11 @@ const samplePriorities = [
   { id: 2, name: 'Alta' },
   { id: 3, name: 'Media' },
   { id: 4, name: 'Baja' }
+]
+
+const sampleCategories = [
+  { id: 1, name: 'Infraestructura' },
+  { id: 2, name: 'Vialidad' }
 ]
 
 const sampleDTData = [
@@ -105,11 +114,12 @@ function teardownGlobals() {
 }
 
 async function initWithDefaults() {
-  const { listStates, listPriorities } = await import(
+  const { listStates, listPriorities, listIncidentCategories } = await import(
     '../app/js/modules/incidents/application/incidents-service.js'
   )
   listStates.mockResolvedValue({ data: sampleStates })
   listPriorities.mockResolvedValue({ data: samplePriorities })
+  listIncidentCategories.mockResolvedValue({ data: sampleCategories })
 
   localStorage.setItem('user_data', JSON.stringify({ id: 1, roles: [{ code: 'ADMIN' }], permissions: ['incidents.delete'] }))
 

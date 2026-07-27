@@ -131,6 +131,9 @@ function initDataTable(state) {
   state.dataTable = globalThis.jQuery('#tablaIncidencias').DataTable({
     responsive: true,
     serverSide: true,
+    dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     ajax(data, callback, settings) {
       const params = new URLSearchParams()
       params.set('draw', data.draw)
