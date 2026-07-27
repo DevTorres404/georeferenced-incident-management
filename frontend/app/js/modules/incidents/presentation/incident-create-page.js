@@ -814,15 +814,22 @@ export async function handleSubmit(event) {
       return
     }
 
-    await Promise.all(
-      evidenceFiles.map(item => uploadIncidentAttachment(incident.id, item.file))
-    )
+    // Limpiamos el borrador apenas se registra la incidencia base para evitar restauraciones fantasma
+    clearDraft()
+
+    try {
+      await Promise.all(
+        evidenceFiles.map(item => uploadIncidentAttachment(incident.id, item.file))
+      )
+    } catch (photoError) {
+      console.warn('Algunas fotos no pudieron subirse por límite de tasa u error de red:', photoError)
+      // No abortamos la redirección, la incidencia principal ya se registró.
+    }
 
     const successMessage = requiresClassificationReview() ?
       'Incidencia registrada. Un supervisor revisará su clasificación antes de asignarla.' :
       (response?.message || 'Incidencia registrada con éxito.')
     showSuccessAlert(successMessage)
-    clearDraft()
     globalThis.setTimeout(() => {
       globalThis.location.href = `incident-detail.html?id=${encodeURIComponent(incident.id)}`
     }, 1000)
