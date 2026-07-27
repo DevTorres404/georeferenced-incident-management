@@ -18,8 +18,13 @@ describe('global loading screen contracts', () => {
 
     pagesWithLoader.forEach(({ file, html }) => {
       const loaderMarkup = html.match(/<div id="pageLoader"[\S\s]*?<\/div>\s*<\/div>/)?.[0] || ''
-      expect(loaderMarkup, file).toContain('class="fas fa-map-marker-alt"')
-      expect(loaderMarkup.match(/<i class="fas fa-map-marker-alt"><\/i>/g), file).toHaveLength(1)
+      
+      if (file === 'register.html' || file === 'index.html') {
+        expect(loaderMarkup, file).toContain('SGI_LOGO.png')
+      } else {
+        expect(loaderMarkup, file).toContain('class="fas fa-map-marker-alt"')
+        expect(loaderMarkup.match(/<i class="fas fa-map-marker-alt"><\/i>/g), file).toHaveLength(1)
+      }
     })
   })
 

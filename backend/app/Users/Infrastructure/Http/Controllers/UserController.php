@@ -308,6 +308,36 @@ class UserController extends ApiController
         ]);
     }
 
+    public function resetTwoFactor(Request $request, User $user): JsonResponse
+    {
+        if (! $request->user()?->tieneRol('ADMIN')) {
+            return $this->forbid();
+        }
+
+        if ((int) $request->user()->id === (int) $user->id) {
+            return response()->json([
+                'message' => 'No puedes restablecer tu propia doble autenticacion desde esta pantalla.',
+            ], 422);
+        }
+
+        $managedUser = $this->userManagementUseCase->resetTwoFactor(
+            (int) $user->id,
+            (int) $request->user()->id
+        );
+
+        $this->userNotifier->notify(
+            userId: (int) $user->id,
+            title: 'Doble autenticacion restablecida',
+            message: 'Un administrador restablecio tu doble autenticacion. Inicia sesion y configurala nuevamente desde tu perfil.',
+            type: 'STATUS_CHANGE'
+        );
+
+        return response()->json([
+            'message' => 'Doble autenticacion restablecida correctamente.',
+            'data' => $managedUser,
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array{0: string, 1: string}

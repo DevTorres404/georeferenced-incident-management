@@ -22,4 +22,6 @@ interface UserRepositoryInterface
     public function delete(int $userId): void;
 
     public function syncRoles(SyncUserRolesInputData $data): AuthUser;
+
+    public function resetTwoFactor(int $userId, int $actorId): AuthUser;
 }

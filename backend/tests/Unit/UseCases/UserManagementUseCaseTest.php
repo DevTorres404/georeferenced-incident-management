@@ -63,4 +63,28 @@ class UserManagementUseCaseTest extends TestCase
 
         $this->assertSame($authUser, $result);
     }
+
+    public function test_reset_two_factor_delegates_to_repository(): void
+    {
+        $authUser = new AuthUser(
+            id: 2,
+            firstName: 'Jane',
+            lastName: 'Doe',
+            username: 'janedoe',
+            email: 'jane@example.com',
+            passwordHash: 'hash',
+            phone: null,
+            profilePhoto: null,
+            isActive: true,
+            emailVerifiedAt: null,
+            lastAccessAt: null
+        );
+
+        $this->repository->shouldReceive('resetTwoFactor')
+            ->with(2, 1)
+            ->once()
+            ->andReturn($authUser);
+
+        $this->assertSame($authUser, $this->useCase->resetTwoFactor(2, 1));
+    }
 }

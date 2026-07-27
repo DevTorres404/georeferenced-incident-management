@@ -142,6 +142,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
             ->middleware('permission:users.view');
         Route::put('/users/{user}/roles', [UserController::class, 'syncUserRoles'])
             ->middleware('permission:users.manage_roles');
+        Route::delete('/admin/users/{user}/two-factor', [UserController::class, 'resetTwoFactor'])
+            ->middleware('permission:users.manage_roles');
 
         Route::middleware('permission:users.manage_roles')->group(function () {
             Route::get('/admin/access-control', [AccessControlController::class, 'index']);

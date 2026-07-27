@@ -15,6 +15,7 @@ use App\Users\Application\DTOs\SyncUserRolesInputData;
 use App\Users\Application\DTOs\UpdateManagedUserInputData;
 use App\Users\Application\DTOs\UserFiltersData;
 use App\Users\Domain\Repositories\UserRepositoryInterface;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentUserRepository implements UserRepositoryInterface
 {
@@ -135,6 +136,45 @@ final class EloquentUserRepository implements UserRepositoryInterface
         );
 
         return $this->show($user->id);
+    }
+
+    public function resetTwoFactor(int $userId, int $actorId): AuthUser
+    {
+        return DB::transaction(function () use ($userId, $actorId): AuthUser {
+            $user = User::findOrFail($userId);
+            $wasConfigured = $user->two_factor_secret !== null
+                || $user->two_factor_confirmed_at !== null
+                || $user->two_factor_recovery_codes !== null;
+
+            abort_unless($wasConfigured, 422, 'La doble autenticacion del usuario ya esta desactivada.');
+
+            $wasEnabled = $user->two_factor_secret !== null
+                && $user->two_factor_confirmed_at !== null;
+
+            $user->forceFill([
+                'two_factor_secret' => null,
+                'two_factor_recovery_codes' => null,
+                'two_factor_confirmed_at' => null,
+            ])->save();
+            $user->tokens()->delete();
+
+            $this->auditRecorder->recordChange(
+                User::class,
+                (int) $user->id,
+                [
+                    'two_factor_configured' => true,
+                    'two_factor_enabled' => $wasEnabled,
+                ],
+                [
+                    'two_factor_configured' => false,
+                    'two_factor_enabled' => false,
+                ],
+                $actorId,
+                $user->getTable()
+            );
+
+            return $this->show($user->id);
+        });
     }
 
     private function syncLocalIdentity(int $userId): void

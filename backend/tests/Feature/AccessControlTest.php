@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
 use App\Auth\Infrastructure\Persistence\Models\Permission;
 use App\Auth\Infrastructure\Persistence\Models\Role;
@@ -50,6 +51,28 @@ class AccessControlTest extends TestCase
             ]);
 
         $this->assertNotEmpty($response->json('data.permissions_by_module'));
+    }
+
+    public function test_access_control_overview_exposes_two_factor_status_without_secrets(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $managedUser = User::factory()->create([
+            'email' => 'two-factor-overview@incidencias.local',
+            'two_factor_secret' => 'SECRET-NOT-EXPOSED',
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $users = collect(
+            $this->withToken($admin['token'])
+                ->getJson('/api/admin/access-control')
+                ->assertOk()
+                ->json('data.users')
+        );
+        $userData = $users->firstWhere('id', $managedUser->id);
+
+        $this->assertSame('enabled', $userData['two_factor_status']);
+        $this->assertTrue($userData['two_factor_enabled']);
+        $this->assertArrayNotHasKey('two_factor_secret', $userData);
     }
 
     public function test_admin_can_sync_role_permissions(): void
@@ -281,6 +304,77 @@ class AccessControlTest extends TestCase
                 ->where('title', 'Tu rol fue actualizado')
                 ->exists()
         );
+    }
+
+    public function test_admin_can_reset_another_users_two_factor_authentication(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $managedUser = User::factory()->create([
+            'email' => 'lost-two-factor@incidencias.local',
+            'two_factor_secret' => 'OLD-SECRET',
+            'two_factor_recovery_codes' => json_encode(['old-code']),
+            'two_factor_confirmed_at' => now(),
+        ]);
+        $managedUser->roles()->sync([Role::where('code', 'CIUDADANO')->firstOrFail()->id]);
+        $managedUser->createToken('active-session');
+        AuditLog::query()->delete();
+
+        $this->withToken($admin['token'])
+            ->deleteJson("/api/admin/users/{$managedUser->id}/two-factor")
+            ->assertOk()
+            ->assertJsonPath('message', 'Doble autenticacion restablecida correctamente.')
+            ->assertJsonPath('data.two_factor_enabled', false);
+
+        $managedUser->refresh();
+        $this->assertNull($managedUser->two_factor_secret);
+        $this->assertNull($managedUser->two_factor_recovery_codes);
+        $this->assertNull($managedUser->two_factor_confirmed_at);
+        $this->assertSame(0, $managedUser->tokens()->count());
+        $this->assertTrue(
+            Notification::where('user_id', $managedUser->id)
+                ->where('title', 'Doble autenticacion restablecida')
+                ->exists()
+        );
+        $this->assertTrue(
+            AuditLog::where('auditable_type', User::class)
+                ->where('auditable_id', $managedUser->id)
+                ->get()
+                ->contains(fn (AuditLog $log) => ($log->new_values['two_factor_configured'] ?? null) === false)
+        );
+    }
+
+    public function test_admin_cannot_reset_own_two_factor_from_user_management(): void
+    {
+        $admin = $this->authenticateAdmin();
+
+        $this->withToken($admin['token'])
+            ->deleteJson("/api/admin/users/{$admin['user']->id}/two-factor")
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'No puedes restablecer tu propia doble autenticacion desde esta pantalla.'
+            );
+    }
+
+    public function test_non_admin_cannot_reset_two_factor_even_with_manage_roles_permission(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class]);
+        $operatorRole = Role::where('code', 'OPERADOR')->firstOrFail();
+        $permission = Permission::where('code', 'users.manage_roles')->firstOrFail();
+        $operatorRole->permissions()->syncWithoutDetaching([$permission->id]);
+
+        $operator = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $operator->roles()->sync([$operatorRole->id]);
+        $managedUser = User::factory()->create([
+            'two_factor_secret' => 'TARGET-SECRET',
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        $this->withToken($operator->createToken('operator-token')->plainTextToken)
+            ->deleteJson("/api/admin/users/{$managedUser->id}/two-factor")
+            ->assertForbidden();
+
+        $this->assertSame('TARGET-SECRET', $managedUser->fresh()->two_factor_secret);
     }
 
     public function test_navigation_includes_parent_when_user_can_access_at_least_one_child(): void

@@ -43,4 +43,9 @@ final class UserManagementUseCase
     {
         return $this->userRepository->syncRoles($data);
     }
+
+    public function resetTwoFactor(int $userId, int $actorId): AuthUser
+    {
+        return $this->userRepository->resetTwoFactor($userId, $actorId);
+    }
 }

@@ -60,7 +60,8 @@ import {
   updateRoleAccess,
   updateRolePermissions,
   getUsersAndRoles,
-  assignUserRole
+  assignUserRole,
+  resetUserTwoFactor
 } from '../app/js/modules/roles/application/access-control-service.js'
 
 import { getCategories, getSubcategories } from '../app/js/modules/catalogs/application/catalog-service.js'
@@ -710,6 +711,19 @@ describe('access-control-service.js', () => {
         body: JSON.stringify({ roles: ['admin'] })
       })
       expect(result.data).toBeDefined()
+    })
+  })
+
+  describe('resetUserTwoFactor', () => {
+    it('sends DELETE /admin/users/{id}/two-factor', async () => {
+      request.mockResolvedValue({ data: { id: 7, two_factor_enabled: false } })
+
+      const result = await resetUserTwoFactor(7)
+
+      expect(request).toHaveBeenCalledWith('/admin/users/7/two-factor', {
+        method: 'DELETE'
+      })
+      expect(result.data.two_factor_enabled).toBe(false)
     })
   })
 })

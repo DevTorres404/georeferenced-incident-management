@@ -80,6 +80,18 @@ async function assignUserRole(userId, roleCode) {
   return data
 }
 
+async function resetUserTwoFactor(userId) {
+  const data = await request(`/admin/users/${encodeURIComponent(userId)}/two-factor`, {
+    method: 'DELETE'
+  })
+
+  if (data?.data) {
+    data.data = normalizeUser(data.data)
+  }
+
+  return data
+}
+
 function normalizeRole(role = {}) {
   return {
     ...role,
@@ -146,5 +158,6 @@ export {
   updateRoleAccess,
   updateRolePermissions,
   getUsersAndRoles,
-  assignUserRole
+  assignUserRole,
+  resetUserTwoFactor
 }

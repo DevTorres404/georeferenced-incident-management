@@ -178,6 +178,11 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
             'username' => $user->username,
             'email' => $user->email,
             'is_active' => (bool) $user->is_active,
+            'two_factor_enabled' => $user->two_factor_secret !== null
+                && $user->two_factor_confirmed_at !== null,
+            'two_factor_status' => $user->two_factor_secret !== null
+                ? ($user->two_factor_confirmed_at !== null ? 'enabled' : 'pending')
+                : 'disabled',
             'roles' => $user->roles
                 ->map(fn (Role $role) => [
                     'id' => (int) $role->id,

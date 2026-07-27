@@ -1,7 +1,8 @@
-import { getUsersAndRoles, assignUserRole } from '../../roles/application/access-control-service.js?v=15'
+import { getUsersAndRoles, assignUserRole, resetUserTwoFactor } from '../../roles/application/access-control-service.js?v=16'
 import { hidePageLoading, showPageLoading, escapeHtml } from '../../incidents/presentation/incidents-ui.js?v=16'
 import { handleBackendErrors } from '../../../shared/validators/validation-utils.js?v=1'
 import { requestBackend } from '../../../infrastructure/backend-client.js?v=20'
+import { readUser } from '../../../core/auth-session.js?v=4'
 
 export const CITIZEN_ROLE_CODE = 'CIUDADANO'
 export const EXECUTIVE_ROLE_CODES = new Set(['ADMIN', 'SUPERVISOR', 'OPERADOR'])
@@ -49,13 +50,16 @@ async function initUserRolesPage() {
     perPage: 10,
     searchTerm: '',
     roleGroup: 'all',
+    currentUserId: readUser()?.id ?? null,
     // Modal state
-    selectedUserForRole: null
+    selectedUserForRole: null,
+    selectedUserForTwoFactor: null
   }
 
   bindActions(state)
   bindAssignModal(state)
   bindDeactivateModal(state)
+  bindTwoFactorModal(state)
 
   showPageLoading('Cargando usuarios', 'Consultando directorio de usuarios...')
   const loadingFallback = globalThis.setTimeout(hidePageLoading, 3500)
@@ -153,6 +157,20 @@ function bindActions(state) {
         const { userId } = deactivateBtn.dataset
         document.getElementById('btnConfirmDeactivate').dataset.userId = userId
         $('#modalDeactivateUser').modal('show')
+
+        return
+      }
+
+      const twoFactorBtn = e.target.closest('.btn-reset-two-factor')
+      if (twoFactorBtn) {
+        const { userId } = twoFactorBtn.dataset
+        const user = state.users.find(item => item.id == userId)
+        if (user) {
+          state.selectedUserForTwoFactor = user
+          document.getElementById('resetTwoFactorUserName').textContent =
+            user.name || user.username || user.email || 'este usuario'
+          $('#modalResetTwoFactor').modal('show')
+        }
       }
     })
   }
@@ -336,6 +354,44 @@ function bindDeactivateModal(state) {
   })
 }
 
+function bindTwoFactorModal(state) {
+  const confirmButton = document.getElementById('btnConfirmResetTwoFactor')
+  if (!confirmButton) {
+    return
+  }
+
+  confirmButton.addEventListener('click', async () => {
+    const user = state.selectedUserForTwoFactor
+    if (!user) {
+      return
+    }
+
+    confirmButton.disabled = true
+    const originalHtml = confirmButton.innerHTML
+    confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Restableciendo...'
+
+    try {
+      const response = await resetUserTwoFactor(user.id)
+      Object.assign(user, response?.data || {}, {
+        two_factor_enabled: false,
+        two_factor_status: 'disabled'
+      })
+      $('#modalResetTwoFactor').modal('hide')
+      applyFilters(state, { keepPage: true })
+
+      globalThis.showGlobalAlert?.(
+        'Doble autenticación restablecida. El usuario deberá configurarla nuevamente desde su perfil.',
+        'success'
+      )
+    } catch (error) {
+      handleBackendErrors(error, null, document.getElementById('access-alert'))
+    } finally {
+      confirmButton.disabled = false
+      confirmButton.innerHTML = originalHtml
+    }
+  })
+}
+
 // ─── Filtering & rendering ──────────────────────────────────────────
 export function applyFilters(state, options = {}) {
   const term = state.searchTerm
@@ -374,13 +430,13 @@ export function renderPaginatedUsers(state) {
   const startIndex = (state.page - 1) * state.perPage
   const pageUsers = state.filteredUsers.slice(startIndex, startIndex + state.perPage)
 
-  renderUsersTable(pageUsers, state.roles)
+  renderUsersTable(pageUsers, state.roles, state.currentUserId)
   renderPagination(state, total, totalPages, startIndex, pageUsers.length)
   renderTotalBadge(state.users.length, total)
   renderRoleCounters(state.users)
 }
 
-export function renderUsersTable(users, roles) {
+export function renderUsersTable(users, roles, currentUserId = null) {
   const tbody = document.getElementById('user-role-table')
   if (!tbody) {
     return
@@ -406,6 +462,8 @@ export function renderUsersTable(users, roles) {
     const roleDisplay = user.role_name || user.role || 'Sin rol'
     const roleGroupLabel = getRoleGroupLabel(user.role)
     const isActive = user.is_active ?? user.activo ?? true
+    const twoFactorBadge = renderTwoFactorBadge(user)
+    const twoFactorButton = renderTwoFactorButton(user, currentUserId)
 
     html += `
       <tr class="${isActive ? '' : 'table-inactive'}">
@@ -421,6 +479,7 @@ export function renderUsersTable(users, roles) {
               <small class="text-muted d-block d-md-none text-truncate mt-1"><i class="fas fa-envelope mr-1"></i>${escapeHtml(user.email || '—')}</small>
               <div class="d-block d-md-none mt-1 text-truncate">
                 <span class="badge badge-${badgeColor} px-2 py-1 font-weight-bold">${escapeHtml(roleDisplay)}</span>
+                ${twoFactorBadge}
               </div>
             </div>
           </div>
@@ -429,6 +488,7 @@ export function renderUsersTable(users, roles) {
                     data-user-id="${user.id}" title="Asignar rol">
               <i class="fas fa-user-tag"></i><span class="d-none d-sm-inline ml-1">Rol</span>
             </button>
+            ${twoFactorButton}
             <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user"
                     data-user-id="${user.id}" title="Desactivar usuario">
               <i class="fas fa-trash-alt"></i>
@@ -442,6 +502,7 @@ export function renderUsersTable(users, roles) {
           <div class="d-flex align-items-center flex-wrap gap-1">
             <span class="badge badge-${badgeColor} px-3 py-2 font-weight-bold">${escapeHtml(roleDisplay)}</span>
             <small class="text-muted d-block w-100 mt-1">${escapeHtml(roleGroupLabel)}</small>
+            <div class="w-100 mt-1">${twoFactorBadge}</div>
           </div>
         </td>
         <td class="text-center d-none d-md-table-cell">
@@ -450,6 +511,7 @@ export function renderUsersTable(users, roles) {
                     data-user-id="${user.id}" title="Asignar rol">
               <i class="fas fa-user-tag"></i><span class="d-none d-sm-inline ml-1">Rol</span>
             </button>
+            ${twoFactorButton}
             <button type="button" class="btn btn-sm btn-outline-danger btn-deactivate-user"
                     data-user-id="${user.id}" title="Desactivar usuario">
               <i class="fas fa-trash-alt"></i>
@@ -460,6 +522,50 @@ export function renderUsersTable(users, roles) {
   })
 
   tbody.innerHTML = html
+}
+
+export function getTwoFactorStatus(user) {
+  if (user.two_factor_status) {
+    return user.two_factor_status
+  }
+
+  return user.two_factor_enabled ? 'enabled' : 'disabled'
+}
+
+export function renderTwoFactorBadge(user) {
+  const status = getTwoFactorStatus(user)
+  const variants = {
+    enabled: ['success', '2FA activa'],
+    pending: ['warning', '2FA pendiente'],
+    disabled: ['secondary', '2FA no configurada']
+  }
+  const [color, label] = variants[status] || variants.disabled
+
+  return `<span class="badge badge-${color} px-2 py-1 font-weight-bold">
+    <i class="fas fa-shield-alt mr-1"></i>${label}
+  </span>`
+}
+
+export function renderTwoFactorButton(user, currentUserId = null) {
+  const status = getTwoFactorStatus(user)
+  const isCurrentUser = currentUserId !== null && String(user.id) === String(currentUserId)
+
+  if (status === 'disabled' || isCurrentUser) {
+    const title = isCurrentUser ?
+      'Gestiona tu propia 2FA desde Mi perfil' :
+      'La activación debe completarla el usuario desde Mi perfil'
+
+    return `<button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                    title="${title}" aria-label="${title}">
+      <i class="fas fa-shield-alt"></i>
+    </button>`
+  }
+
+  return `<button type="button" class="btn btn-sm btn-outline-warning btn-reset-two-factor"
+                  data-user-id="${user.id}" title="Restablecer doble autenticación"
+                  aria-label="Restablecer doble autenticación">
+    <i class="fas fa-unlock-alt"></i>
+  </button>`
 }
 
 // ─── Role helpers ───────────────────────────────────────────────────
@@ -629,7 +735,7 @@ export function buildPageList(currentPage, totalPages) {
   return pages
 }
 
-export function renderTotalBadge(totalUsers, filteredUsers) {
+export function renderTotalBadge(totalUsers, _filteredUsers) {
   const badge = document.getElementById('user-total-badge')
   if (!badge) {
     return

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 vi.mock('../app/js/modules/roles/application/access-control-service.js', () => ({
   getUsersAndRoles: vi.fn(),
-  assignUserRole: vi.fn()
+  assignUserRole: vi.fn(),
+  resetUserTwoFactor: vi.fn()
 }))
 
 vi.mock('../app/js/modules/incidents/presentation/incidents-ui.js', () => ({
@@ -20,7 +21,11 @@ vi.mock('../app/js/infrastructure/backend-client.js', () => ({
   requestBackend: vi.fn()
 }))
 
-import { getUsersAndRoles, assignUserRole } from '../app/js/modules/roles/application/access-control-service.js'
+import {
+  getUsersAndRoles,
+  assignUserRole,
+  resetUserTwoFactor
+} from '../app/js/modules/roles/application/access-control-service.js'
 import { handleBackendErrors } from '../app/js/shared/validators/validation-utils.js'
 import { requestBackend } from '../app/js/infrastructure/backend-client.js'
 import { showPageLoading, hidePageLoading } from '../app/js/modules/incidents/presentation/incidents-ui.js'
@@ -72,13 +77,18 @@ const DOM_FIXTURE = `
 <div id="modalDeactivateUser" class="modal fade">
   <button id="btnConfirmDeactivate" type="button">Desactivar</button>
 </div>
+
+<div id="modalResetTwoFactor" class="modal fade">
+  <strong id="resetTwoFactorUserName"></strong>
+  <button id="btnConfirmResetTwoFactor" type="button">Restablecer 2FA</button>
+</div>
 `
 
 function getMockUsers() {
   return [
-    { id: 1, name: 'Juan Pérez', username: 'jperez', email: 'juan@test.com', role: 'ADMIN', role_name: 'Administrador', is_active: true },
-    { id: 2, name: 'María López', username: 'mlopez', email: 'maria@test.com', role: 'CIUDADANO', role_name: 'Ciudadano', is_active: true },
-    { id: 3, name: 'Carlos Ruiz', username: 'cruiz', email: 'carlos@test.com', role: 'OPERADOR', role_name: 'Operador', is_active: false }
+    { id: 1, name: 'Juan Pérez', username: 'jperez', email: 'juan@test.com', role: 'ADMIN', role_name: 'Administrador', is_active: true, two_factor_status: 'enabled', two_factor_enabled: true },
+    { id: 2, name: 'María López', username: 'mlopez', email: 'maria@test.com', role: 'CIUDADANO', role_name: 'Ciudadano', is_active: true, two_factor_status: 'disabled', two_factor_enabled: false },
+    { id: 3, name: 'Carlos Ruiz', username: 'cruiz', email: 'carlos@test.com', role: 'OPERADOR', role_name: 'Operador', is_active: false, two_factor_status: 'pending', two_factor_enabled: false }
   ]
 }
 
@@ -148,12 +158,14 @@ describe('user-roles-page — integration', () => {
 
     vi.mocked(getUsersAndRoles).mockReset()
     vi.mocked(assignUserRole).mockReset()
+    vi.mocked(resetUserTwoFactor).mockReset()
     vi.mocked(handleBackendErrors).mockReset()
     vi.mocked(requestBackend).mockReset()
     vi.mocked(showPageLoading).mockReset()
     vi.mocked(hidePageLoading).mockReset()
 
     vi.mocked(getUsersAndRoles).mockResolvedValue({ users: getMockUsers(), roles: MOCK_ROLES })
+    localStorage.clear()
   })
 
   afterEach(() => {
@@ -188,6 +200,9 @@ describe('user-roles-page — integration', () => {
       expect(mod.renderTotalBadge).toBeTypeOf('function')
       expect(mod.initUserRolesPage).toBeTypeOf('function')
       expect(mod.openAssignModal).toBeTypeOf('function')
+      expect(mod.getTwoFactorStatus).toBeTypeOf('function')
+      expect(mod.renderTwoFactorBadge).toBeTypeOf('function')
+      expect(mod.renderTwoFactorButton).toBeTypeOf('function')
       expect(mod.bindActions).toBeTypeOf('function')
       expect(mod.bindAssignModal).toBeTypeOf('function')
       expect(mod.bindDeactivateModal).toBeTypeOf('function')
@@ -610,6 +625,71 @@ describe('user-roles-page — integration', () => {
       })
 
       expect(modalFns.modalHide).toHaveBeenCalled()
+    })
+  })
+
+  describe('two-factor recovery', () => {
+    it('shows the configured status and opens the reset modal', async () => {
+      const { initUserRolesPage } = await import('../app/js/modules/users/presentation/user-roles-page.js')
+      await initUserRolesPage()
+
+      const resetButton = document.querySelector('.btn-reset-two-factor[data-user-id="1"]')
+      expect(resetButton).toBeTruthy()
+      expect(document.getElementById('user-role-table').innerHTML).toContain('2FA activa')
+
+      resetButton.click()
+
+      expect(document.getElementById('resetTwoFactorUserName').textContent).toContain('Juan')
+      expect(modalFns.modalShow).toHaveBeenCalled()
+    })
+
+    it('resets two-factor authentication and updates the row status', async () => {
+      vi.mocked(resetUserTwoFactor).mockResolvedValue({
+        data: { id: 1, two_factor_enabled: false }
+      })
+      const { initUserRolesPage } = await import('../app/js/modules/users/presentation/user-roles-page.js')
+      await initUserRolesPage()
+
+      document.querySelector('.btn-reset-two-factor[data-user-id="1"]').click()
+      document.getElementById('btnConfirmResetTwoFactor').click()
+
+      await vi.waitFor(() => {
+        expect(resetUserTwoFactor).toHaveBeenCalledWith(1)
+      })
+      await vi.waitFor(() => {
+        expect(document.getElementById('user-role-table').innerHTML).toContain('2FA no configurada')
+      })
+
+      expect(globalThis.showGlobalAlert).toHaveBeenCalledWith(
+        'Doble autenticación restablecida. El usuario deberá configurarla nuevamente desde su perfil.',
+        'success'
+      )
+      expect(modalFns.modalHide).toHaveBeenCalled()
+    })
+
+    it('does not offer reset when two-factor authentication is disabled', async () => {
+      const { initUserRolesPage } = await import('../app/js/modules/users/presentation/user-roles-page.js')
+      await initUserRolesPage()
+
+      expect(document.querySelector('.btn-reset-two-factor[data-user-id="2"]')).toBeNull()
+    })
+
+    it('reports backend errors while resetting two-factor authentication', async () => {
+      const apiError = new Error('Forbidden')
+      vi.mocked(resetUserTwoFactor).mockRejectedValue(apiError)
+      const { initUserRolesPage } = await import('../app/js/modules/users/presentation/user-roles-page.js')
+      await initUserRolesPage()
+
+      document.querySelector('.btn-reset-two-factor[data-user-id="1"]').click()
+      document.getElementById('btnConfirmResetTwoFactor').click()
+
+      await vi.waitFor(() => {
+        expect(handleBackendErrors).toHaveBeenCalledWith(
+          apiError,
+          null,
+          document.getElementById('access-alert')
+        )
+      })
     })
   })
 

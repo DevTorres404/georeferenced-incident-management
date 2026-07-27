@@ -12,6 +12,7 @@ import {
 } from '../application/auth-service.js?v=17'
 import { isEmailVerified, suggestUsername, updateUser, userHasPermission } from '../../../core/auth-session.js?v=16'
 import { handleBackendErrors, setupValidationListeners, validateFormFrontend, setFieldError } from '../../../shared/validators/validation-utils.js?v=1'
+import { showMainLoader, hideMainLoader } from '../../../layout/loader.js?v=1'
 
 const GOOGLE_POPUP_CLOSED_BY_USER = 'auth/popup-closed-by-user'
 const GOOGLE_POPUP_CANCELLED = 'auth/cancelled-popup-request'
@@ -881,17 +882,6 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
     setLoading(scope, true)
     hideAlert(alertEl)
 
-    let focusTimer
-    const onWindowFocus = () => {
-      focusTimer = globalThis.setTimeout(() => {
-        if (busy) {
-          setLoading(scope, false)
-        }
-      }, 800)
-    }
-
-    globalThis.addEventListener('focus', onWindowFocus)
-
     try {
       const data = await registerWithGoogle({
         intent,
@@ -922,8 +912,6 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
 
       showAlert(alertEl, error.message || 'No se pudo completar la operación con Google.', 'danger')
     } finally {
-      globalThis.removeEventListener('focus', onWindowFocus)
-      globalThis.clearTimeout(focusTimer)
       setLoading(scope, false)
     }
   }
@@ -1139,6 +1127,12 @@ export function initAuthPage() { // NOSONAR - Inherently complex multi-view auth
 
     if (map.text) {
       map.text.textContent = isLoading ? 'Procesando...' : map.label
+    }
+
+    if (isLoading) {
+      showMainLoader()
+    } else {
+      hideMainLoader()
     }
   }
 

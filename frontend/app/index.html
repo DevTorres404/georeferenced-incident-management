@@ -11,8 +11,10 @@
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://accounts.google.com" crossorigin>
   <link rel="preconnect" href="https://swgi-d956f.firebaseapp.com" crossorigin>
-  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js" crossorigin integrity="sha384-wlvAQTVgegt7jk8ohXoQ2QACSIwFTjSIMAjOkNbxbXkB0O7vxK6ggRJp3iVJwZU5">
-  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js" crossorigin integrity="sha384-WvdrUouDtXDGAuicvgfcNn6xKGoq1N4bF8556xOHMWipGOFaVV2Ju5Cg04j4TpNV">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js" crossorigin
+    integrity="sha384-wlvAQTVgegt7jk8ohXoQ2QACSIwFTjSIMAjOkNbxbXkB0O7vxK6ggRJp3iVJwZU5">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js" crossorigin
+    integrity="sha384-WvdrUouDtXDGAuicvgfcNn6xKGoq1N4bF8556xOHMWipGOFaVV2Ju5Cg04j4TpNV">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=fallback"
     rel="stylesheet">
   <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
@@ -88,7 +90,8 @@
       color: #fff;
     }
 
-    .btn-primary-gradient:disabled, .btn-primary-gradient.disabled {
+    .btn-primary-gradient:disabled,
+    .btn-primary-gradient.disabled {
       background: #bdc3c7;
       color: #ffffff;
       box-shadow: none;
@@ -117,7 +120,7 @@
     .login-wrapper {
       max-width: 480px;
       border-radius: 24px;
-      border: 1px solid rgba(0,0,0,0.05);
+      border: 1px solid rgba(0, 0, 0, 0.05);
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
       background: #ffffff;
     }
@@ -139,13 +142,16 @@
         padding: 2rem 1.5rem !important;
         border-radius: 20px !important;
       }
+
       .auth-card-heading img {
         height: 42px !important;
         margin-bottom: 12px !important;
       }
+
       .auth-card-heading h2 {
         font-size: 1.5rem !important;
       }
+
       .auth-card-heading p {
         font-size: 0.9rem !important;
       }
@@ -165,37 +171,134 @@
       position: relative;
       z-index: 2;
     }
+
+    /* Pantalla de carga exclusiva y premium para auth */
+    .auth-loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 15, 30, 0.4);
+      backdrop-filter: blur(12px) saturate(150%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: auth-fade-in 0.4s ease-out;
+    }
+
+    @keyframes auth-fade-in {
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+      }
+
+      to {
+        opacity: 1;
+        backdrop-filter: blur(12px) saturate(150%);
+      }
+    }
+
+    .auth-loader-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2.5rem 3.5rem;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: auth-float 4s ease-in-out infinite;
+    }
+
+    @keyframes auth-float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .auth-logo-spinner {
+      width: 70px;
+      height: auto;
+      margin-bottom: 20px;
+      animation: auth-pulse 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes auth-pulse {
+      from {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
+
+      to {
+        transform: scale(1.08);
+        opacity: 1;
+        filter: drop-shadow(0 0 12px rgba(52, 152, 219, 0.5));
+      }
+    }
+
+    .auth-loader-text {
+      background: linear-gradient(135deg, #1e5b8a 0%, #3498db 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
   </style>
   <link rel="stylesheet" href="/css/auth.css?v=21">
 </head>
 
 <body class="auth-page bg-light auth-login-mode">
   <main class="container-fluid p-0">
+    <div id="pageLoader" class="auth-loader-overlay d-none" role="status" aria-live="polite" hidden aria-hidden="true"
+      style="display: none;">
+      <div class="auth-loader-card">
+        <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="auth-logo-spinner">
+        <div class="auth-loader-text">Validando credenciales...</div>
+      </div>
+    </div>
     <div class="row min-vh-100 no-gutters auth-layout">
 
-    <section id="vanta-waves-hero" class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white position-relative" aria-labelledby="auth-system-title" style="background-color: #060a12; overflow: hidden;">
-      <div class="auth-bg-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.2); z-index: 1;"></div>
-      
-      <div class="auth-hero-content w-100 px-4 position-relative" style="z-index: 2;">
-        <h1 id="auth-system-title" class="text-white mb-0" style="line-height: 1.1; font-weight: 300; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
-          Sistema de<br>Gestión de<br>
-          <span style="font-weight: 800; color: var(--auth-primary);">Incidencias</span>
-        </h1>
-      </div>
-    </section>
+      <section id="vanta-waves-hero"
+        class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white position-relative"
+        aria-labelledby="auth-system-title" style="background-color: #060a12; overflow: hidden;">
+        <div class="auth-bg-overlay"
+          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.2); z-index: 1;">
+        </div>
 
-    <!-- Contenedor Tarjeta Login -->
-    <section class="auth-form-panel col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5">
-      <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100 mx-auto">
+        <div class="auth-hero-content w-100 px-4 position-relative" style="z-index: 2;">
+          <h1 id="auth-system-title" class="text-white mb-0"
+            style="line-height: 1.1; font-weight: 300; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+            Sistema de<br>Gestión de<br>
+            <span style="font-weight: 800; color: var(--auth-primary);">Incidencias</span>
+          </h1>
+        </div>
+      </section>
+
+      <!-- Contenedor Tarjeta Login -->
+      <section class="auth-form-panel col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5">
+        <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100 mx-auto">
 
           <div class="auth-card-heading mb-4 text-center">
             <div class="d-flex align-items-center justify-content-center mb-3">
               <img src="/img/SGI_LOGO.png" alt="SGI Logo" style="height: 48px; width: auto; margin-right: 12px;">
-              <h2 class="h4 mb-0 text-dark font-weight-bold auth-heading-login" style="letter-spacing: -0.3px;">Acceso al Sistema SGI</h2>
-              <h2 class="h4 mb-0 text-dark font-weight-bold auth-heading-register" style="letter-spacing: -0.3px;">Crear tu cuenta</h2>
+              <h2 class="h4 mb-0 text-dark font-weight-bold auth-heading-login" style="letter-spacing: -0.3px;">Acceso
+                al Sistema SGI</h2>
+              <h2 class="h4 mb-0 text-dark font-weight-bold auth-heading-register" style="letter-spacing: -0.3px;">Crear
+                tu cuenta</h2>
             </div>
-            <p class="text-muted mb-0 auth-subheading-login" style="font-size: 0.95rem;">Ingresa tus credenciales para continuar</p>
-            <p class="text-muted mb-0 auth-subheading-register" style="font-size: 0.95rem;">&Uacute;nete a SGI para comenzar</p>
+            <p class="text-muted mb-0 auth-subheading-login" style="font-size: 0.95rem;">Ingresa tus credenciales para
+              continuar</p>
+            <p class="text-muted mb-0 auth-subheading-register" style="font-size: 0.95rem;">&Uacute;nete a SGI para
+              comenzar</p>
           </div>
 
           <div id="login-view" class="auth-view">
@@ -255,18 +358,59 @@
             <div id="register-alert" class="alert d-none" role="alert"></div>
             <form id="register-form" novalidate>
               <div class="form-row">
-                <div class="form-group col-md-6 mb-3"><label for="register-name" class="small text-muted font-weight-bold">Nombre</label><input type="text" class="form-control custom-input" id="register-name" name="first_name" placeholder="Tu nombre" required autocomplete="given-name"></div>
-                <div class="form-group col-md-6 mb-3"><label for="register-lastname" class="small text-muted font-weight-bold">Apellido</label><input type="text" class="form-control custom-input" id="register-lastname" name="last_name" placeholder="Tu apellido" required autocomplete="family-name"></div>
+                <div class="form-group col-md-6 mb-3"><label for="register-name"
+                    class="small text-muted font-weight-bold">Nombre</label><input type="text"
+                    class="form-control custom-input" id="register-name" name="first_name" placeholder="Tu nombre"
+                    required autocomplete="given-name"></div>
+                <div class="form-group col-md-6 mb-3"><label for="register-lastname"
+                    class="small text-muted font-weight-bold">Apellido</label><input type="text"
+                    class="form-control custom-input" id="register-lastname" name="last_name" placeholder="Tu apellido"
+                    required autocomplete="family-name"></div>
               </div>
-              <div class="form-group mb-3"><label for="register-username" class="small text-muted font-weight-bold">Nombre de usuario</label><input type="text" class="form-control custom-input" id="register-username" name="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" autocomplete="username"></div>
-              <div class="form-group mb-3"><label for="register-email" class="small text-muted font-weight-bold">Correo electr&oacute;nico</label><input type="email" class="form-control custom-input" id="register-email" name="email" placeholder="usuario@institucion.edu.ec" required autocomplete="email"></div>
-              <div class="form-group mb-3"><label for="register-password" class="small text-muted font-weight-bold">Contrase&ntilde;a</label><div class="input-group custom-input-group"><input type="password" class="form-control custom-input" id="register-password" placeholder="••••••••" required minlength="8" autocomplete="new-password"><div class="input-group-append"><button type="button" class="btn" id="toggle-register-password-btn" aria-label="Mostrar contrase&ntilde;a"><i class="fas fa-eye"></i></button></div></div></div>
-              <div class="form-group mb-4"><label for="register-password-confirm" class="small text-muted font-weight-bold">Confirmar contrase&ntilde;a</label><div class="input-group custom-input-group"><input type="password" class="form-control custom-input" id="register-password-confirm" placeholder="••••••••" required minlength="8" autocomplete="new-password"><div class="input-group-append"><button type="button" class="btn" id="toggle-register-password-confirm-btn" aria-label="Mostrar contrase&ntilde;a"><i class="fas fa-eye"></i></button></div></div></div>
-              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4 py-2" id="register-submit-btn" style="font-size: 1.05rem;"><span class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status" aria-hidden="true"></span><i class="fas fa-user-plus mr-2"></i><span id="register-btn-text">Crear cuenta</span></button>
+              <div class="form-group mb-3"><label for="register-username"
+                  class="small text-muted font-weight-bold">Nombre de usuario</label><input type="text"
+                  class="form-control custom-input" id="register-username" name="username"
+                  placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" autocomplete="username">
+              </div>
+              <div class="form-group mb-3"><label for="register-email" class="small text-muted font-weight-bold">Correo
+                  electr&oacute;nico</label><input type="email" class="form-control custom-input" id="register-email"
+                  name="email" placeholder="usuario@institucion.edu.ec" required autocomplete="email"></div>
+              <div class="form-group mb-3"><label for="register-password"
+                  class="small text-muted font-weight-bold">Contrase&ntilde;a</label>
+                <div class="input-group custom-input-group"><input type="password" class="form-control custom-input"
+                    id="register-password" placeholder="••••••••" required minlength="8" autocomplete="new-password">
+                  <div class="input-group-append"><button type="button" class="btn" id="toggle-register-password-btn"
+                      aria-label="Mostrar contrase&ntilde;a"><i class="fas fa-eye"></i></button></div>
+                </div>
+              </div>
+              <div class="form-group mb-4"><label for="register-password-confirm"
+                  class="small text-muted font-weight-bold">Confirmar contrase&ntilde;a</label>
+                <div class="input-group custom-input-group"><input type="password" class="form-control custom-input"
+                    id="register-password-confirm" placeholder="••••••••" required minlength="8"
+                    autocomplete="new-password">
+                  <div class="input-group-append"><button type="button" class="btn"
+                      id="toggle-register-password-confirm-btn" aria-label="Mostrar contrase&ntilde;a"><i
+                        class="fas fa-eye"></i></button></div>
+                </div>
+              </div>
+              <button type="submit"
+                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4 py-2"
+                id="register-submit-btn" style="font-size: 1.05rem;"><span
+                  class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status"
+                  aria-hidden="true"></span><i class="fas fa-user-plus mr-2"></i><span id="register-btn-text">Crear
+                  cuenta</span></button>
             </form>
-            <div class="auth-divider mb-4 position-relative text-center"><hr style="border-top: 1px solid #e0e0e0;"><span class="position-absolute px-3 bg-white text-muted small" style="top: -10px; left: 50%; transform: translateX(-50%);">o</span></div>
-            <button type="button" id="google-register-btn" class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2" style="width: 20px; height: 20px;"><span>Registrarse con Google</span></button>
-            <div class="text-center mt-4"><a href="#login" id="open-login-btn" class="auth-link text-decoration-none font-weight-500" style="color: var(--auth-primary);">&iquest;Ya tienes cuenta? Inicia sesi&oacute;n aqu&iacute;</a></div>
+            <div class="auth-divider mb-4 position-relative text-center">
+              <hr style="border-top: 1px solid #e0e0e0;"><span class="position-absolute px-3 bg-white text-muted small"
+                style="top: -10px; left: 50%; transform: translateX(-50%);">o</span>
+            </div>
+            <button type="button" id="google-register-btn"
+              class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center"><img
+                src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2"
+                style="width: 20px; height: 20px;"><span>Registrarse con Google</span></button>
+            <div class="text-center mt-4"><a href="#login" id="open-login-btn"
+                class="auth-link text-decoration-none font-weight-500" style="color: var(--auth-primary);">&iquest;Ya
+                tienes cuenta? Inicia sesi&oacute;n aqu&iacute;</a></div>
           </div>
 
           <div id="email-verification-view" class="auth-view d-none" aria-live="polite">
@@ -277,20 +421,24 @@
               </div>
               <p class="auth-success-eyebrow" id="email-verification-eyebrow">Registro completado</p>
               <h2 id="email-verification-title">Revisa tu correo</h2>
-              <p class="auth-success-copy" id="email-verification-copy">Tu cuenta fue creada correctamente. Enviamos un enlace de verificación a:</p>
+              <p class="auth-success-copy" id="email-verification-copy">Tu cuenta fue creada correctamente. Enviamos un
+                enlace de verificación a:</p>
               <div class="auth-success-email">
                 <i class="fas fa-envelope" aria-hidden="true"></i>
                 <strong id="email-verification-email"></strong>
               </div>
-              <p class="auth-success-help" id="email-verification-help">Abre el enlace del correo para activar tu cuenta. Después podrás iniciar sesión en SGI.</p>
+              <p class="auth-success-help" id="email-verification-help">Abre el enlace del correo para activar tu
+                cuenta. Después podrás iniciar sesión en SGI.</p>
               <div id="email-verification-status" class="alert d-none" role="status"></div>
-              <button type="button" id="email-verification-login-btn" class="btn btn-primary-gradient btn-block auth-action mb-3">
+              <button type="button" id="email-verification-login-btn"
+                class="btn btn-primary-gradient btn-block auth-action mb-3">
                 <i class="fas fa-sign-in-alt mr-2"></i>Ir al inicio de sesión
               </button>
               <button type="button" id="email-verification-resend-btn" class="btn btn-link auth-link p-0">
                 <i class="fas fa-redo-alt mr-1"></i>Reenviar correo de verificación
               </button>
-              <p class="auth-success-note mb-0"><i class="fas fa-info-circle mr-1"></i>Si no lo encuentras, revisa la carpeta de correo no deseado.</p>
+              <p class="auth-success-note mb-0"><i class="fas fa-info-circle mr-1"></i>Si no lo encuentras, revisa la
+                carpeta de correo no deseado.</p>
             </div>
           </div>
 
@@ -308,19 +456,21 @@
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
                   </div>
-                  <input type="text" class="form-control custom-input border-left-0 text-center font-weight-bold" id="two-factor-code"
-                    placeholder="000000" required maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code"
-                    style="letter-spacing: 0.5em; font-size: 1.5rem;">
+                  <input type="text" class="form-control custom-input border-left-0 text-center font-weight-bold"
+                    id="two-factor-code" placeholder="000000" required maxlength="6" pattern="[0-9]{6}"
+                    autocomplete="one-time-code" style="letter-spacing: 0.5em; font-size: 1.5rem;">
                 </div>
               </div>
               <button type="submit"
                 class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center py-2"
                 id="two-factor-submit-btn" style="font-size: 1.05rem;">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="two-factor-spinner" role="status" aria-hidden="true"></span>
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="two-factor-spinner" role="status"
+                  aria-hidden="true"></span>
                 <i class="fas fa-unlock-alt mr-2"></i>
                 <span id="two-factor-btn-text">Verificar y Entrar</span>
               </button>
-              <button type="button" class="btn btn-link btn-block mt-3 text-muted text-decoration-none" id="back-to-login-from-2fa-btn">
+              <button type="button" class="btn btn-link btn-block mt-3 text-muted text-decoration-none"
+                id="back-to-login-from-2fa-btn">
                 <i class="fas fa-arrow-left mr-1"></i> Volver al login
               </button>
             </form>
@@ -336,8 +486,8 @@
             <form id="profile-form" novalidate>
               <div class="form-group mb-4">
                 <label for="username" class="small text-muted font-weight-bold">Nombre de usuario</label>
-                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido" required
-                  minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
+                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido"
+                  required minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
               </div>
               <button type="submit"
                 class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center"
@@ -355,15 +505,18 @@
             <div class="mb-4 text-center">
               <div class="mb-3"><i class="fas fa-qrcode text-primary" style="font-size: 2.5rem;"></i></div>
               <h3 class="h5 mb-1 text-dark font-weight-bold">Configuración de Seguridad</h3>
-              <p class="text-muted small mb-0">Por tu nivel de acceso, debes configurar Google Authenticator (u otra app de autenticación similar) obligatoriamente.</p>
+              <p class="text-muted small mb-0">Por tu nivel de acceso, debes configurar Google Authenticator (u otra app
+                de autenticación similar) obligatoriamente.</p>
             </div>
-            
-            <div id="mandatory-2fa-qr-container" class="d-flex justify-content-center mb-4 bg-white p-2 border rounded mx-auto" style="width: max-content;">
+
+            <div id="mandatory-2fa-qr-container"
+              class="d-flex justify-content-center mb-4 bg-white p-2 border rounded mx-auto"
+              style="width: max-content;">
               <div class="spinner-border text-primary" role="status">
                 <span class="sr-only">Cargando...</span>
               </div>
             </div>
-            
+
             <form id="setup-2fa-form" novalidate class="d-none">
               <div class="form-group mb-4">
                 <label for="setup-2fa-code" class="small text-muted font-weight-bold">Código de 6 dígitos</label>
@@ -371,11 +524,16 @@
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-shield-alt"></i></span>
                   </div>
-                  <input type="text" class="form-control custom-input border-left-0 text-center font-weight-bold" id="setup-2fa-code" placeholder="000000" required maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" style="letter-spacing: 0.5em; font-size: 1.5rem;">
+                  <input type="text" class="form-control custom-input border-left-0 text-center font-weight-bold"
+                    id="setup-2fa-code" placeholder="000000" required maxlength="6" pattern="[0-9]{6}"
+                    autocomplete="one-time-code" style="letter-spacing: 0.5em; font-size: 1.5rem;">
                 </div>
               </div>
-              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center py-2" id="setup-2fa-submit-btn" style="font-size: 1.05rem;">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="setup-2fa-spinner" role="status" aria-hidden="true"></span>
+              <button type="submit"
+                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center py-2"
+                id="setup-2fa-submit-btn" style="font-size: 1.05rem;">
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="setup-2fa-spinner" role="status"
+                  aria-hidden="true"></span>
                 <i class="fas fa-check mr-2"></i>
                 <span id="setup-2fa-btn-text">Verificar y Continuar</span>
               </button>
@@ -411,7 +569,8 @@
                 <i class="fas fa-paper-plane mr-2"></i>
                 <span id="forgot-password-btn-text">Enviar código</span>
               </button>
-              <button type="button" class="btn btn-link btn-block mt-2 text-muted text-decoration-none" id="back-to-login-from-reset-btn">
+              <button type="button" class="btn btn-link btn-block mt-2 text-muted text-decoration-none"
+                id="back-to-login-from-reset-btn">
                 <i class="fas fa-arrow-left mr-1"></i> Volver al inicio de sesión
               </button>
             </form>
@@ -420,9 +579,9 @@
             <form id="reset-code-form" novalidate class="d-none">
               <div class="form-group mb-2">
                 <label for="reset-code" class="small text-muted font-weight-bold">Código de recuperación</label>
-                <input type="text" class="form-control custom-input text-center font-weight-bold" id="reset-code" name="code"
-                  placeholder="000000" required maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code"
-                  style="letter-spacing: 0.4em; font-size: 1.2rem;">
+                <input type="text" class="form-control custom-input text-center font-weight-bold" id="reset-code"
+                  name="code" placeholder="000000" required maxlength="6" pattern="[0-9]{6}"
+                  autocomplete="one-time-code" style="letter-spacing: 0.4em; font-size: 1.2rem;">
               </div>
               <p class="small text-muted mb-3 text-center">Ingresa el código de 6 dígitos enviado a tu correo</p>
               <button type="submit"
@@ -434,10 +593,12 @@
                 <span id="reset-code-btn-text">Verificar código</span>
               </button>
               <div class="d-flex justify-content-between mt-2">
-                <button type="button" class="btn btn-link text-muted text-decoration-none p-0" id="resend-reset-code-btn">
+                <button type="button" class="btn btn-link text-muted text-decoration-none p-0"
+                  id="resend-reset-code-btn">
                   <i class="fas fa-redo-alt mr-1"></i> Reenviar código
                 </button>
-                <button type="button" class="btn btn-link text-muted text-decoration-none p-0" id="back-to-login-from-reset-btn2">
+                <button type="button" class="btn btn-link text-muted text-decoration-none p-0"
+                  id="back-to-login-from-reset-btn2">
                   <i class="fas fa-arrow-left mr-1"></i> Volver
                 </button>
               </div>
@@ -447,13 +608,15 @@
             <form id="reset-password-form" novalidate class="d-none">
               <div class="form-group mb-3">
                 <label for="reset-password" class="small text-muted font-weight-bold">Nueva contraseña</label>
-                <input type="password" class="form-control custom-input" id="reset-password" name="password" placeholder="••••••••"
-                  required minlength="8" autocomplete="new-password">
+                <input type="password" class="form-control custom-input" id="reset-password" name="password"
+                  placeholder="••••••••" required minlength="8" autocomplete="new-password">
               </div>
               <div class="form-group mb-4">
-                <label for="reset-password-confirm" class="small text-muted font-weight-bold">Confirmar contraseña</label>
-                <input type="password" class="form-control custom-input" id="reset-password-confirm" name="password_confirmation" placeholder="••••••••"
-                  required minlength="8" autocomplete="new-password">
+                <label for="reset-password-confirm" class="small text-muted font-weight-bold">Confirmar
+                  contraseña</label>
+                <input type="password" class="form-control custom-input" id="reset-password-confirm"
+                  name="password_confirmation" placeholder="••••••••" required minlength="8"
+                  autocomplete="new-password">
               </div>
               <button type="submit"
                 class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-3"
@@ -463,22 +626,27 @@
                 <i class="fas fa-save mr-2"></i>
                 <span id="reset-password-btn-text">Cambiar contraseña</span>
               </button>
-              <button type="button" class="btn btn-link btn-block mt-2 text-muted text-decoration-none" id="back-to-login-from-reset-btn3">
+              <button type="button" class="btn btn-link btn-block mt-2 text-muted text-decoration-none"
+                id="back-to-login-from-reset-btn3">
                 <i class="fas fa-arrow-left mr-1"></i> Volver al inicio de sesión
               </button>
             </form>
           </div>
 
-      </div>
-    </section>
-  </div>
+        </div>
+      </section>
+    </div>
 
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" integrity="sha384-9EQoUIJYrv09/oYhSxnw1VpLcfPw3BM9dE7+D/3wGUPeLLa7F9Z6OAoD+i/M6FK9" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.waves.min.js" integrity="sha384-fs5VqUnBAfynHwt9bbuBxdgqyNG/vUAEV0bbNR1WkKlgIJLlK+jPRNHPNcpKUkKg" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"
+    integrity="sha384-9EQoUIJYrv09/oYhSxnw1VpLcfPw3BM9dE7+D/3wGUPeLLa7F9Z6OAoD+i/M6FK9"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.waves.min.js"
+    integrity="sha384-fs5VqUnBAfynHwt9bbuBxdgqyNG/vUAEV0bbNR1WkKlgIJLlK+jPRNHPNcpKUkKg"
+    crossorigin="anonymous"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       if (typeof VANTA !== 'undefined') {
         if (document.getElementById('vanta-waves-hero')) {
           VANTA.WAVES({
@@ -500,7 +668,10 @@
       }
     });
   </script>
-  <script src="https://js.pusher.com/8.4.0/pusher.min.js" integrity="sha384-F0kpynobTwTZnUdhUuU3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj" crossorigin="anonymous"></script>
+  <script src="https://js.pusher.com/8.4.0/pusher.min.js"
+    integrity="sha384-F0kpynobTwTZnUdhUuU3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj"
+    crossorigin="anonymous"></script>
   <script type="module" src="/js/modules/auth/presentation/auth-page.js?v=29"></script>
 </body>
+
 </html>

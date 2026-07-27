@@ -5,17 +5,20 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SGI | Registro</title>
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/png" href="/img/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
   <meta name="description" content="Registro al Sistema de Gestión de Incidencias Georreferenciadas">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://accounts.google.com" crossorigin>
   <link rel="preconnect" href="https://swgi-d956f.firebaseapp.com" crossorigin>
-  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js" crossorigin integrity="sha384-wlvAQTVgegt7jk8ohXoQ2QACSIwFTjSIMAjOkNbxbXkB0O7vxK6ggRJp3iVJwZU5">
-  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js" crossorigin integrity="sha384-WvdrUouDtXDGAuicvgfcNn6xKGoq1N4bF8556xOHMWipGOFaVV2Ju5Cg04j4TpNV">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=fallback" rel="stylesheet">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js" crossorigin
+    integrity="sha384-wlvAQTVgegt7jk8ohXoQ2QACSIwFTjSIMAjOkNbxbXkB0O7vxK6ggRJp3iVJwZU5">
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js" crossorigin
+    integrity="sha384-WvdrUouDtXDGAuicvgfcNn6xKGoq1N4bF8556xOHMWipGOFaVV2Ju5Cg04j4TpNV">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=fallback"
+    rel="stylesheet">
   <link rel="stylesheet" href="/plugins/fontawesome-free/css/all.min.css">
   <link rel="stylesheet" href="/dist/css/adminlte.min.css">
   <link rel="stylesheet" href="/css/app.css?v=70">
@@ -89,7 +92,8 @@
       color: #fff;
     }
 
-    .btn-primary-gradient:disabled, .btn-primary-gradient.disabled {
+    .btn-primary-gradient:disabled,
+    .btn-primary-gradient.disabled {
       background: #bdc3c7;
       color: #ffffff;
       box-shadow: none;
@@ -118,7 +122,7 @@
     .login-wrapper {
       max-width: 480px;
       border-radius: 24px;
-      border: 1px solid rgba(0,0,0,0.05);
+      border: 1px solid rgba(0, 0, 0, 0.05);
       box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
       background: #ffffff;
     }
@@ -142,28 +146,122 @@
         border-radius: 20px !important;
       }
     }
+
+    /* Pantalla de carga exclusiva y premium para auth */
+    .auth-loader-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 15, 30, 0.4);
+      backdrop-filter: blur(12px) saturate(150%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      animation: auth-fade-in 0.4s ease-out;
+    }
+
+    @keyframes auth-fade-in {
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+      }
+
+      to {
+        opacity: 1;
+        backdrop-filter: blur(12px) saturate(150%);
+      }
+    }
+
+    .auth-loader-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2.5rem 3.5rem;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: auth-float 4s ease-in-out infinite;
+    }
+
+    @keyframes auth-float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .auth-logo-spinner {
+      width: 70px;
+      height: auto;
+      margin-bottom: 20px;
+      animation: auth-pulse 1.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes auth-pulse {
+      from {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
+
+      to {
+        transform: scale(1.08);
+        opacity: 1;
+        filter: drop-shadow(0 0 12px rgba(52, 152, 219, 0.5));
+      }
+    }
+
+    .auth-loader-text {
+      background: linear-gradient(135deg, #1e5b8a 0%, #3498db 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: 0.5px;
+    }
   </style>
   <link rel="stylesheet" href="/css/auth.css?v=21">
 </head>
 
 <body class="auth-page bg-light auth-register-mode">
   <main class="container-fluid p-0">
+    <div id="pageLoader" class="auth-loader-overlay d-none" role="status" aria-live="polite" hidden aria-hidden="true"
+      style="display: none;">
+      <div class="auth-loader-card">
+        <img src="/img/SGI_LOGO.png" alt="SGI Logo" class="auth-logo-spinner">
+        <div class="auth-loader-text">Validando credenciales...</div>
+      </div>
+    </div>
     <div class="row min-vh-100 no-gutters auth-layout">
 
-    <section id="vanta-waves-hero" class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white position-relative" aria-labelledby="auth-system-title" style="background-color: #060a12; overflow: hidden;">
-      <div class="auth-bg-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.2); z-index: 1;"></div>
-      
-      <div class="auth-hero-content w-100 px-4 position-relative" style="z-index: 2;">
-        <h1 id="auth-system-title" class="text-white mb-0" style="line-height: 1.1; font-weight: 300; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
-          Sistema de<br>Gestión de<br>
-          <span style="font-weight: 800; color: var(--auth-primary);">Incidencias</span>
-        </h1>
-      </div>
-    </section>
+      <section id="vanta-waves-hero"
+        class="col-lg-5 d-none d-lg-flex flex-column justify-content-center auth-hero p-5 text-white position-relative"
+        aria-labelledby="auth-system-title" style="background-color: #060a12; overflow: hidden;">
+        <div class="auth-bg-overlay"
+          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.2); z-index: 1;">
+        </div>
 
-    <!-- Contenedor Tarjeta Registro -->
-    <section class="auth-form-panel col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5 position-relative overflow-hidden">
-      <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100 mx-auto position-relative" style="z-index: 2;">
+        <div class="auth-hero-content w-100 px-4 position-relative" style="z-index: 2;">
+          <h1 id="auth-system-title" class="text-white mb-0"
+            style="line-height: 1.1; font-weight: 300; text-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+            Sistema de<br>Gestión de<br>
+            <span style="font-weight: 800; color: var(--auth-primary);">Incidencias</span>
+          </h1>
+        </div>
+      </section>
+
+      <!-- Contenedor Tarjeta Registro -->
+      <section
+        class="auth-form-panel col-lg-7 d-flex align-items-center justify-content-center bg-light p-4 p-md-5 position-relative overflow-hidden">
+        <div class="auth-panel bg-white p-4 p-md-5 login-wrapper w-100 mx-auto position-relative" style="z-index: 2;">
           <div class="auth-card-heading mb-4 text-center">
             <div class="d-flex flex-column align-items-center justify-content-center mb-3">
               <img src="/img/SGI_LOGO.png" alt="SGI Logo" style="height: 52px; width: auto; margin-bottom: 16px;">
@@ -171,7 +269,7 @@
             </div>
             <p class="text-muted mb-0" style="font-size: 1rem;">Completa tus datos para registrarte.</p>
           </div>
-          
+
           <div id="register-view" class="auth-view">
             <div id="register-alert" class="alert d-none" role="alert"></div>
             <form id="register-form" novalidate>
@@ -182,7 +280,8 @@
                     <div class="input-group-prepend">
                       <span class="input-group-text"><i class="fas fa-user"></i></span>
                     </div>
-                    <input type="text" class="form-control custom-input border-left-0" id="register-name" name="first_name" placeholder="Tu nombre" required autocomplete="given-name">
+                    <input type="text" class="form-control custom-input border-left-0" id="register-name"
+                      name="first_name" placeholder="Tu nombre" required autocomplete="given-name">
                   </div>
                 </div>
                 <div class="form-group col-md-6 mb-3">
@@ -191,38 +290,43 @@
                     <div class="input-group-prepend">
                       <span class="input-group-text"><i class="fas fa-user"></i></span>
                     </div>
-                    <input type="text" class="form-control custom-input border-left-0" id="register-lastname" name="last_name" placeholder="Tu apellido" required autocomplete="family-name">
+                    <input type="text" class="form-control custom-input border-left-0" id="register-lastname"
+                      name="last_name" placeholder="Tu apellido" required autocomplete="family-name">
                   </div>
                 </div>
               </div>
-              
+
               <div class="form-group mb-3">
                 <label for="register-username" class="small text-muted font-weight-bold">Nombre de usuario</label>
                 <div class="input-group custom-input-group">
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-at"></i></span>
                   </div>
-                  <input type="text" class="form-control custom-input border-left-0" id="register-username" name="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" autocomplete="username">
+                  <input type="text" class="form-control custom-input border-left-0" id="register-username"
+                    name="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50"
+                    autocomplete="username">
                 </div>
               </div>
-              
+
               <div class="form-group mb-3">
                 <label for="register-email" class="small text-muted font-weight-bold">Correo electrónico</label>
                 <div class="input-group custom-input-group">
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                   </div>
-                  <input type="email" class="form-control custom-input border-left-0" id="register-email" name="email" placeholder="usuario@institución.edu.ec" required autocomplete="email">
+                  <input type="email" class="form-control custom-input border-left-0" id="register-email" name="email"
+                    placeholder="usuario@institución.edu.ec" required autocomplete="email">
                 </div>
               </div>
-              
+
               <div class="form-group mb-3">
                 <label for="register-password" class="small text-muted font-weight-bold">Contraseña</label>
                 <div class="input-group custom-input-group">
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                   </div>
-                  <input type="password" class="form-control custom-input border-left-0 border-right-0" id="register-password" placeholder="••••••••" required minlength="8" autocomplete="new-password">
+                  <input type="password" class="form-control custom-input border-left-0 border-right-0"
+                    id="register-password" placeholder="••••••••" required minlength="8" autocomplete="new-password">
                   <div class="input-group-append">
                     <button type="button" class="btn" id="toggle-register-password-btn" aria-label="Mostrar contrase�a">
                       <i class="fas fa-eye"></i>
@@ -230,40 +334,52 @@
                   </div>
                 </div>
               </div>
-              
+
               <div class="form-group mb-4">
-                <label for="register-password-confirm" class="small text-muted font-weight-bold">Confirmar contrase�a</label>
+                <label for="register-password-confirm" class="small text-muted font-weight-bold">Confirmar
+                  contrase�a</label>
                 <div class="input-group custom-input-group">
                   <div class="input-group-prepend">
                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                   </div>
-                  <input type="password" class="form-control custom-input border-left-0 border-right-0" id="register-password-confirm" placeholder="••••••••" required minlength="8" autocomplete="new-password">
+                  <input type="password" class="form-control custom-input border-left-0 border-right-0"
+                    id="register-password-confirm" placeholder="••••••••" required minlength="8"
+                    autocomplete="new-password">
                   <div class="input-group-append">
-                    <button type="button" class="btn" id="toggle-register-password-confirm-btn" aria-label="Mostrar contrase�a">
+                    <button type="button" class="btn" id="toggle-register-password-confirm-btn"
+                      aria-label="Mostrar contrase�a">
                       <i class="fas fa-eye"></i>
                     </button>
                   </div>
                 </div>
               </div>
-              
-              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4 py-2" id="register-submit-btn" style="font-size: 1.05rem;">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status" aria-hidden="true"></span>
+
+              <button type="submit"
+                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center mb-4 py-2"
+                id="register-submit-btn" style="font-size: 1.05rem;">
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="register-spinner" role="status"
+                  aria-hidden="true"></span>
                 <i class="fas fa-user-plus mr-2"></i>
                 <span id="register-btn-text">Crear cuenta</span>
               </button>
             </form>
-            
+
             <div class="auth-divider mb-4 position-relative text-center">
               <hr style="border-top: 1px solid #e0e0e0;">
-              <span class="position-absolute px-3 bg-white text-muted small" style="top: -10px; left: 50%; transform: translateX(-50%);">o</span>
+              <span class="position-absolute px-3 bg-white text-muted small"
+                style="top: -10px; left: 50%; transform: translateX(-50%);">o</span>
             </div>
-            
-            <button type="button" id="google-register-btn" class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center">
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2" style="width: 20px; height: 20px;">
+
+            <button type="button" id="google-register-btn"
+              class="btn btn-google-custom btn-block auth-action d-flex align-items-center justify-content-center">
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="mr-2"
+                style="width: 20px; height: 20px;">
               <span>Registrarse con Google</span>
             </button>
-            
-            <div class="text-center mt-4"><a href="#login" id="open-login-btn" class="auth-link text-decoration-none font-weight-500" style="color: var(--auth-primary);">&iquest;Ya tienes cuenta? Inicia sesi&oacute;n aqu&iacute;</a></div>
+
+            <div class="text-center mt-4"><a href="#login" id="open-login-btn"
+                class="auth-link text-decoration-none font-weight-500" style="color: var(--auth-primary);">&iquest;Ya
+                tienes cuenta? Inicia sesi&oacute;n aqu&iacute;</a></div>
           </div>
 
           <div id="email-verification-view" class="auth-view d-none" aria-live="polite">
@@ -274,23 +390,27 @@
               </div>
               <p class="auth-success-eyebrow" id="email-verification-eyebrow">Registro completado</p>
               <h2 id="email-verification-title">Revisa tu correo</h2>
-              <p class="auth-success-copy" id="email-verification-copy">Tu cuenta fue creada correctamente. Enviamos un enlace de verificación a:</p>
+              <p class="auth-success-copy" id="email-verification-copy">Tu cuenta fue creada correctamente. Enviamos un
+                enlace de verificación a:</p>
               <div class="auth-success-email">
                 <i class="fas fa-envelope" aria-hidden="true"></i>
                 <strong id="email-verification-email"></strong>
               </div>
-              <p class="auth-success-help" id="email-verification-help">Abre el enlace del correo para activar tu cuenta. Después podrás iniciar sesión en SGI.</p>
+              <p class="auth-success-help" id="email-verification-help">Abre el enlace del correo para activar tu
+                cuenta. Después podrás iniciar sesión en SGI.</p>
               <div id="email-verification-status" class="alert d-none" role="status"></div>
-              <button type="button" id="email-verification-login-btn" class="btn btn-primary-gradient btn-block auth-action mb-3">
+              <button type="button" id="email-verification-login-btn"
+                class="btn btn-primary-gradient btn-block auth-action mb-3">
                 <i class="fas fa-sign-in-alt mr-2"></i>Ir al inicio de sesión
               </button>
               <button type="button" id="email-verification-resend-btn" class="btn btn-link auth-link p-0">
                 <i class="fas fa-redo-alt mr-1"></i>Reenviar correo de verificación
               </button>
-              <p class="auth-success-note mb-0"><i class="fas fa-info-circle mr-1"></i>Si no lo encuentras, revisa la carpeta de correo no deseado.</p>
+              <p class="auth-success-note mb-0"><i class="fas fa-info-circle mr-1"></i>Si no lo encuentras, revisa la
+                carpeta de correo no deseado.</p>
             </div>
           </div>
-          
+
           <div id="profile-view" class="auth-view d-none">
             <div id="profile-alert" class="alert d-none" role="alert"></div>
             <div class="mb-4 text-center">
@@ -301,25 +421,33 @@
             <form id="profile-form" novalidate>
               <div class="form-group mb-4">
                 <label for="username" class="small text-muted font-weight-bold">Nombre de usuario</label>
-                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido" required minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
+                <input type="text" class="form-control custom-input" id="username" placeholder="ej. inicial.apellido"
+                  required minlength="3" maxlength="50" pattern="\S+" autocomplete="username">
               </div>
-              <button type="submit" class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center" id="profile-submit-btn">
-                <span class="spinner-border spinner-border-sm d-none mr-2" id="profile-spinner" role="status" aria-hidden="true"></span>
+              <button type="submit"
+                class="btn btn-primary-gradient btn-block auth-action d-flex align-items-center justify-content-center"
+                id="profile-submit-btn">
+                <span class="spinner-border spinner-border-sm d-none mr-2" id="profile-spinner" role="status"
+                  aria-hidden="true"></span>
                 <i class="fas fa-check-circle mr-2"></i>
                 <span id="profile-btn-text">Guardar y Entrar</span>
               </button>
             </form>
           </div>
-          
-      </div>
-    </section>
+
+        </div>
+      </section>
     </div>
   </main>
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js" integrity="sha384-9EQoUIJYrv09/oYhSxnw1VpLcfPw3BM9dE7+D/3wGUPeLLa7F9Z6OAoD+i/M6FK9" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.waves.min.js" integrity="sha384-fs5VqUnBAfynHwt9bbuBxdgqyNG/vUAEV0bbNR1WkKlgIJLlK+jPRNHPNcpKUkKg" crossorigin="anonymous"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"
+    integrity="sha384-9EQoUIJYrv09/oYhSxnw1VpLcfPw3BM9dE7+D/3wGUPeLLa7F9Z6OAoD+i/M6FK9"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.waves.min.js"
+    integrity="sha384-fs5VqUnBAfynHwt9bbuBxdgqyNG/vUAEV0bbNR1WkKlgIJLlK+jPRNHPNcpKUkKg"
+    crossorigin="anonymous"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
       if (typeof VANTA !== 'undefined') {
         if (document.getElementById('vanta-waves-hero')) {
           VANTA.WAVES({
@@ -341,7 +469,10 @@
       }
     });
   </script>
-  <script src="https://js.pusher.com/8.4.0/pusher.min.js" integrity="sha384-F0kpynobTwTZnUdhUuU3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj" crossorigin="anonymous"></script>
+  <script src="https://js.pusher.com/8.4.0/pusher.min.js"
+    integrity="sha384-F0kpynobTwTZnUdhUuU3W6P6QcdLW2hKKDTh6ECx+p/osH1JYIKlYqUjNc4ObdiTj"
+    crossorigin="anonymous"></script>
   <script type="module" src="/js/modules/auth/presentation/auth-page.js?v=28"></script>
 </body>
+
 </html>
