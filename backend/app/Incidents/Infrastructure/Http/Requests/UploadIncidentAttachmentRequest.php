@@ -14,7 +14,7 @@ use LogicException;
 
 final class UploadIncidentAttachmentRequest extends FormRequest
 {
-    private const MAX_FILE_SIZE_KILOBYTES = 10 * 1024;
+    private const MAX_FILE_SIZE_KILOBYTES = 50 * 1024;
 
     public function authorize(IncidentAccessChecker $accessChecker): bool
     {

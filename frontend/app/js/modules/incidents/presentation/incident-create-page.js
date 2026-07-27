@@ -735,7 +735,7 @@ export function renderEvidencePreviews() {
   if (evidenceFiles.length === 0) {
     const empty = document.createElement('div')
     empty.className = 'evidence-empty'
-    empty.textContent = 'Aún no has cargado fotografías.'
+    empty.textContent = 'Aún no has cargado fotos ni videos.'
     container.appendChild(empty)
     return
   }
@@ -838,7 +838,7 @@ export async function handleSubmit(event) {
         evidenceFiles.map(item => uploadIncidentAttachment(incident.id, item.file))
       )
     } catch (photoError) {
-      console.warn('Algunas fotos no pudieron subirse por límite de tasa u error de red:', photoError)
+      console.warn('Algunas evidencias no pudieron subirse por límite de tasa u error de red:', photoError)
       // No abortamos la redirección, la incidencia principal ya se registró.
     }
 
@@ -927,7 +927,7 @@ export function validateLocation() {
 export function validateEvidence() {
   clearEvidenceError()
   if (evidenceFiles.length === 0) {
-    setEvidenceError('Debe subir al menos una fotografía como evidencia.')
+    setEvidenceError('Debe subir al menos una foto o video como evidencia.')
     return false
   }
 
@@ -947,7 +947,7 @@ function showCategoryHint(categoryId) {
     }
 
     if (detailsHint) {
-      detailsHint.textContent = 'Recomendación: para este tipo de incidencia, adjunta una foto como evidencia en el siguiente paso.'
+      detailsHint.textContent = 'Recomendación: para este tipo de incidencia, adjunta una foto o video como evidencia en el siguiente paso.'
       detailsHint.style.display = 'block'
     }
   } else if (detailsHint) {
@@ -1119,8 +1119,8 @@ export function renderSummary() {
       ['Territorio', selectedTerritorialPath()],
       ['Coordenadas', formatCoordinates()]
     ]),
-    createReviewSection('Evidencia fotografica', [
-      ['Fotos cargadas', `${evidenceFiles.length} foto(s)`]
+    createReviewSection('Evidencia adjunta', [
+      ['Archivos cargados', `${evidenceFiles.length} archivo(s)`]
     ]),
     createReviewSection('Información general', [
       ['Título', $('#fTitulo')?.value],
