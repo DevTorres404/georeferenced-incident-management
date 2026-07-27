@@ -171,13 +171,19 @@ final class GoogleRegistrationUseCase
         $familyName = trim((string) ($payload['family_name'] ?? ''));
 
         if ($givenName !== '') {
-            return [$givenName, $familyName];
+            $firstName = preg_split('/\s+/', $givenName)[0] ?? '';
+            $lastName = preg_split('/\s+/', $familyName)[0] ?? '';
+        } else {
+            $name = trim((string) ($payload['name'] ?? 'Usuario'));
+            $parts = preg_split('/\s+/', $name);
+            $firstName = $parts[0] ?? 'Usuario';
+            $lastName = $parts[1] ?? '';
         }
 
-        $name = trim((string) ($payload['name'] ?? 'Usuario'));
-        $parts = preg_split('/\s+/', $name, 2);
-
-        return [$parts[0] ?? 'Usuario', $parts[1] ?? ''];
+        return [
+            mb_convert_case($firstName, MB_CASE_TITLE, 'UTF-8'),
+            mb_convert_case($lastName, MB_CASE_TITLE, 'UTF-8')
+        ];
     }
 
     private function sendWelcomeEmail(int $userId, string $email): void

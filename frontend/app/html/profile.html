@@ -129,6 +129,16 @@
           </div>
           <div class="modal-body">
             <div id="editProfileAlert" class="alert d-none" role="alert"></div>
+            <div class="form-row">
+              <div class="form-group col-md-6">
+                <label for="editFirstName" class="small font-weight-bold text-muted">Nombre</label>
+                <input type="text" class="form-control" id="editFirstName" name="nombre" placeholder="Tu nombre" required maxlength="100" pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+" title="Ingresa solo un nombre (sin espacios)">
+              </div>
+              <div class="form-group col-md-6">
+                <label for="editLastName" class="small font-weight-bold text-muted">Apellido</label>
+                <input type="text" class="form-control" id="editLastName" name="apellido" placeholder="Tu apellido" required maxlength="100" pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+" title="Ingresa solo un apellido (sin espacios)">
+              </div>
+            </div>
             <div class="form-group">
               <label for="editUsername" class="small font-weight-bold text-muted">Nombre de usuario</label>
               <input type="text" class="form-control" id="editUsername" name="username"

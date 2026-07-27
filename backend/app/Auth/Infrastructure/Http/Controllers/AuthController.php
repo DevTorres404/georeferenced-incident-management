@@ -166,8 +166,8 @@ class AuthController extends Controller
         }
 
         $data = $request->validate([
-            'first_name' => ['nullable', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
+            'first_name' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'last_name' => ['nullable', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
             'nombre' => ['nullable', 'string', 'max:100'],
             'apellido' => ['nullable', 'string', 'max:100'],
             'username' => [
@@ -183,8 +183,8 @@ class AuthController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
         ], $this->validationMessages());
 
-        $firstName = trim((string) ($data['first_name'] ?? $data['nombre'] ?? ''));
-        $lastName = trim((string) ($data['last_name'] ?? $data['apellido'] ?? ''));
+        $firstName = mb_convert_case(trim((string) ($data['first_name'] ?? $data['nombre'] ?? '')), MB_CASE_TITLE, 'UTF-8');
+        $lastName = mb_convert_case(trim((string) ($data['last_name'] ?? $data['apellido'] ?? '')), MB_CASE_TITLE, 'UTF-8');
 
         if ($firstName === '' || $lastName === '') {
             return response()->json([
@@ -520,6 +520,8 @@ class AuthController extends Controller
                 'regex:/^[a-z0-9_.-]+$/i',
                 Rule::unique(User::class, 'username')->ignore($request->user()->id),
             ],
+            'first_name' => ['required', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
+            'last_name' => ['required', 'string', 'max:100', 'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ]+$/u'],
         ], $this->validationMessages());
 
         try {
@@ -527,8 +529,8 @@ class AuthController extends Controller
                 $this->updateOwnProfileUseCase->execute(
                     new UpdateOwnProfileInputData(
                         userId: (int) $request->user()->id,
-                        firstName: $request->user()->first_name ?? '',
-                        lastName: $request->user()->last_name ?? '',
+                        firstName: mb_convert_case(trim($data['first_name']), MB_CASE_TITLE, 'UTF-8'),
+                        lastName: mb_convert_case(trim($data['last_name']), MB_CASE_TITLE, 'UTF-8'),
                         username: $data['username']
                     )
                 ),
@@ -658,8 +660,10 @@ class AuthController extends Controller
         return [
             'first_name.required' => 'Ingresa tu nombre.',
             'first_name.max' => 'El nombre no puede superar los 100 caracteres.',
+            'first_name.regex' => 'Ingresa solo un nombre (sin espacios).',
             'last_name.required' => 'Ingresa tu apellido.',
             'last_name.max' => 'El apellido no puede superar los 100 caracteres.',
+            'last_name.regex' => 'Ingresa solo un apellido (sin espacios).',
             'username.required' => 'Ingresa un nombre de usuario.',
             'username.min' => 'El nombre de usuario debe tener al menos 3 caracteres.',
             'username.max' => 'El nombre de usuario no puede superar los 50 caracteres.',

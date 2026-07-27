@@ -46,14 +46,14 @@ final class OperationalStructureSeeder extends Seeder
             ];
 
             $operatorNames = [
-                ['Jorge Luis', 'Cedeño'], ['Maria Fernanda', 'Saltos'], ['Kevin Andres', 'Moreira'], ['Genesis Paola', 'Villacres'], ['Bryan Alexander', 'Chonillo'],
-                ['Karla Melissa', 'Galarza'], ['Luis Fernando', 'Peñafiel'], ['Diana Carolina', 'Suarez'], ['Anthony Joel', 'Espinoza'], ['Josselyn Estefania', 'Velez'],
-                ['Jonathan David', 'Pincay'], ['Evelyn Johanna', 'Macias'], ['Christian Paul', 'Intriago'], ['Katherine Lisseth', 'Quijije'], ['Carlos Alberto', 'Ceballos'],
-                ['Jessica Maribel', 'Tisalema'], ['Darwin Patricio', 'Chango'], ['Silvia Elena', 'Toaquiza'], ['Victor Hugo', 'Lema'], ['Monica Alexandra', 'Pilaluisa'],
-                ['Juan Carlos', 'Vintimilla'], ['Pedro Pablo', 'Sarmiento'], ['Ana Lucia', 'Pesantez'], ['Diego Armando', 'Cardenas'], ['Maria Jose', 'Orellana'],
-                ['Byron Eduardo', 'Tanguila'], ['Nancy Patricia', 'Grefa'], ['Oscar Vladimir', 'Tapuy'], ['Rosa Elena', 'Cerda'], ['Wilson Javier', 'Alvarado'],
-                ['Roberto Carlos', 'Cruz'], ['Andrea Victoria', 'Cobos'], ['Julio Cesar', 'Mora'], ['Veronica Paulina', 'Salas'], ['Eduardo Josue', 'Vaca'],
-                ['Monica Rocio', 'Jumbo'], ['Luis Alfredo', 'Vargas'], ['Tatiana Elizabeth', 'Ruiz'], ['Miguel Angel', 'Narvaez'], ['Sandra Lorena', 'Yumbo'],
+                ['Jorge', 'Cedeño'], ['Maria', 'Saltos'], ['Kevin', 'Moreira'], ['Genesis', 'Villacres'], ['Bryan', 'Chonillo'],
+                ['Karla', 'Galarza'], ['Luis', 'Peñafiel'], ['Diana', 'Suarez'], ['Anthony', 'Espinoza'], ['Josselyn', 'Velez'],
+                ['Jonathan', 'Pincay'], ['Evelyn', 'Macias'], ['Christian', 'Intriago'], ['Katherine', 'Quijije'], ['Carlos', 'Ceballos'],
+                ['Jessica', 'Tisalema'], ['Darwin', 'Chango'], ['Silvia', 'Toaquiza'], ['Victor', 'Lema'], ['Monica', 'Pilaluisa'],
+                ['Juan', 'Vintimilla'], ['Pedro', 'Sarmiento'], ['Ana', 'Pesantez'], ['Diego', 'Cardenas'], ['Maria', 'Orellana'],
+                ['Byron', 'Tanguila'], ['Nancy', 'Grefa'], ['Oscar', 'Tapuy'], ['Rosa', 'Cerda'], ['Wilson', 'Alvarado'],
+                ['Roberto', 'Cruz'], ['Andrea', 'Cobos'], ['Julio', 'Mora'], ['Veronica', 'Salas'], ['Eduardo', 'Vaca'],
+                ['Monica', 'Jumbo'], ['Luis', 'Vargas'], ['Tatiana', 'Ruiz'], ['Miguel', 'Narvaez'], ['Sandra', 'Yumbo'],
             ];
 
             foreach ($supervisors as $index => $data) {

@@ -265,10 +265,14 @@ export function initEditProfile(user) {
 
   btnEdit.addEventListener('click', () => {
     const editUsername = document.getElementById('editUsername')
+    const editFirstName = document.getElementById('editFirstName')
+    const editLastName = document.getElementById('editLastName')
     // Read the latest user data from localStorage to ensure we have the most up-to-date username
     const currentUserData = localStorage.getItem(globalThis.AUTH_KEYS?.user || 'user_data')
     const currentUser = currentUserData ? JSON.parse(currentUserData) : user
     editUsername.value = currentUser.username || ''
+    editFirstName.value = currentUser.nombre || currentUser.first_name || currentUser.name || ''
+    editLastName.value = currentUser.apellido || currentUser.last_name || ''
 
     editUsername.addEventListener('input', function () {
       this.value = this.value.toLowerCase()
@@ -303,6 +307,8 @@ export function initEditProfile(user) {
     const btnSave = document.getElementById('btnSaveProfile')
     const alertBox = document.getElementById('editProfileAlert')
     const username = document.getElementById('editUsername').value.trim()
+    const nombre = document.getElementById('editFirstName').value.trim()
+    const apellido = document.getElementById('editLastName').value.trim()
 
     btnSave.disabled = true
     btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...'
@@ -311,10 +317,10 @@ export function initEditProfile(user) {
     try {
       const response = await requestBackend('/auth/profile', {
         method: 'PATCH',
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username, first_name: nombre, last_name: apellido })
       })
 
-      const updatedUser = response?.user || { ...user, username }
+      const updatedUser = response?.user || { ...user, username, first_name: nombre, last_name: apellido }
       localStorage.setItem(AUTH_KEYS.user, JSON.stringify(updatedUser))
 
       $(modalEdit).modal('hide')
