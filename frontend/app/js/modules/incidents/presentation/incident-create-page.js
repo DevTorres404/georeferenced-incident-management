@@ -26,6 +26,7 @@ let coordinatePicker = null
 let territorialProvinces = []
 const lastAutofilledAddress = ''
 let evidenceFiles = []
+let isSubmitting = false
 const territorialChildrenCache = new Map()
 const manualTerritoryFields = {
   sector: 'fManualSector'
@@ -83,6 +84,10 @@ const DRAFT_FIELDS = [
 ]
 
 export function saveDraft() {
+  if (isSubmitting) {
+    return
+  }
+
   try {
     const data = {}
     DRAFT_FIELDS.forEach(id => {
@@ -797,6 +802,7 @@ export async function handleSubmit(event) {
       null
   }
 
+  isSubmitting = true
   showSpinner('spinnerRegistrar', 'btnRegistrar')
 
   try {
@@ -824,6 +830,7 @@ export async function handleSubmit(event) {
     handleBackendErrors(error, document.getElementById('formNuevaIncidencia'))
     showErrorAlert(error.message || 'No se pudo registrar la incidencia.')
   } finally {
+    isSubmitting = false
     hideSpinner('spinnerRegistrar', 'btnRegistrar')
   }
 }
