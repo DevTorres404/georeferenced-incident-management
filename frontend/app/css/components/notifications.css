@@ -48,15 +48,18 @@
 
 .sgi-notif-dropdown {
   width: 320px;
-  max-height: 400px;
+  max-height: 420px;
   border: 1px solid var(--sgi-border);
   border-radius: 0.75rem;
   box-shadow: 0 12px 36px rgba(8, 32, 51, 0.12);
   overflow: hidden;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .sgi-notif-dropdown-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -86,6 +89,8 @@
 }
 
 .sgi-notif-dropdown-list {
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: 250px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -107,6 +112,7 @@
 }
 
 .sgi-notif-dropdown-footer {
+  flex-shrink: 0;
   display: block;
   width: 100%;
   padding: 0.45rem 0.85rem;

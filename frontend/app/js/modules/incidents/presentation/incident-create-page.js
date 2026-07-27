@@ -14,7 +14,7 @@ import {
 
 const STEPS = ['location', 'evidence', 'details', 'review']
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png']
+const ALLOWED_EVIDENCE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm']
 const INCIDENT_CREATE_INITIAL_CENTER = [-78.55, -1.7]
 const INCIDENT_CREATE_INITIAL_ZOOM = 6.15
 const DRAFT_STORAGE_KEY = 'SGI_incident_draft'
@@ -689,8 +689,8 @@ export function normalizeLocationName(value) {
 export function addEvidenceFiles(fileList) {
   clearEvidenceError();
   [...fileList].forEach(file => {
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setEvidenceError('Solo se permiten imagenes JPG o PNG.')
+    if (!ALLOWED_EVIDENCE_TYPES.includes(file.type)) {
+      setEvidenceError('Solo se permiten imagenes JPG, PNG, WebP o videos MP4, WebM.')
       return
     }
 
@@ -744,10 +744,6 @@ export function renderEvidencePreviews() {
     const card = document.createElement('article')
     card.className = 'evidence-card'
 
-    const image = document.createElement('img')
-    image.src = item.previewUrl
-    image.alt = item.file.name
-
     const meta = document.createElement('div')
     meta.className = 'evidence-card-meta'
 
@@ -765,7 +761,27 @@ export function renderEvidencePreviews() {
     removeButton.setAttribute('aria-label', `Eliminar ${item.file.name}`)
 
     meta.append(name, size, removeButton)
-    card.append(image, meta)
+
+    const isVideo = item.file.type.startsWith('video/')
+
+    if (isVideo) {
+      const video = document.createElement('video')
+      video.src = item.previewUrl
+      video.controls = true
+      video.muted = true
+      video.preload = 'metadata'
+      video.style.width = '100%'
+      video.style.maxHeight = '180px'
+      video.style.borderRadius = '0.5rem'
+      video.style.objectFit = 'cover'
+      card.append(video, meta)
+    } else {
+      const image = document.createElement('img')
+      image.src = item.previewUrl
+      image.alt = item.file.name
+      card.append(image, meta)
+    }
+
     container.appendChild(card)
   })
 }

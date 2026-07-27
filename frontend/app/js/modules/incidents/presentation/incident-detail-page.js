@@ -357,7 +357,7 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
             <div class="alert alert-light border d-flex align-items-start mb-3 attachment-guidance" role="note">
               <i class="fas fa-info-circle text-success mr-2 mt-1"></i>
               <div>
-                <strong>Adjuntos permitidos:</strong> imagenes JPG o PNG.
+                <strong>Adjuntos permitidos:</strong> imagenes JPG, PNG, WebP o videos MP4, WebM.
                 <div class="text-muted small">Tamano maximo por archivo: 10 MB.</div>
               </div>
             </div>
@@ -372,11 +372,11 @@ function renderIncidentDetail(container, incident, transitions, priorities) {
                       type="file"
                       class="custom-file-input"
                       id="attachmentFile"
-                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                      accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,image/jpeg,image/png,image/webp,video/mp4,video/webm"
                     >
-                    <label class="custom-file-label" for="attachmentFile" id="attachmentFileLabel">Seleccione una imagen...</label>
+                    <label class="custom-file-label" for="attachmentFile" id="attachmentFileLabel">Seleccione un archivo...</label>
                   </div>
-                  <small class="text-muted d-block mt-1">Formatos permitidos: JPG, JPEG, PNG (Máx 10MB).</small>
+                  <small class="text-muted d-block mt-1">Formatos permitidos: JPG, PNG, WebP, MP4, WebM (Máx 10MB).</small>
                   <small class="text-danger d-none mt-1" id="attachmentFileError"></small>
                 </div>
                 <div class="col-md-4 mt-3 mt-md-0">
@@ -1558,16 +1558,27 @@ function renderAttachmentCard(attachment) {
   const authorWithRole = role ? `${author} (${role})` : author
   const resolvedUrl = resolveAttachmentUrl(attachment)
   const isImage = mimeType.startsWith('image/')
+  const isVideo = mimeType.startsWith('video/')
   const fileIconClass = attachmentIconClass(mimeType, fileName)
-  const preview = isImage && resolvedUrl ?
-    `
+  let preview
+
+  if (isImage && resolvedUrl) {
+    preview = `
       <a href="${escapeHtml(resolvedUrl)}" target="_blank" rel="noopener noreferrer" class="attachment-preview-link" title="Ver evidencia">
         <img src="${escapeHtml(resolvedUrl)}" alt="${escapeHtml(fileName)}" class="attachment-preview-image">
-      </a>` :
-    `
+      </a>`
+  } else if (isVideo && resolvedUrl) {
+    preview = `
+      <video controls muted preload="metadata" class="attachment-preview-image" style="object-fit:cover; width:100%; max-height:180px; border-radius:0.5rem;">
+        <source src="${escapeHtml(resolvedUrl)}" type="${escapeHtml(mimeType)}">
+        Tu navegador no soporta la etiqueta de video.
+      </video>`
+  } else {
+    preview = `
       <div class="attachment-preview-placeholder">
         <i class="${escapeHtml(fileIconClass)}"></i>
       </div>`
+  }
 
   return `
     <article class="attachment-card">

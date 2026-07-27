@@ -34,9 +34,9 @@ final class UploadIncidentAttachmentRequest extends FormRequest
         return [
             'file' => [
                 'required',
-                File::image()->max(self::MAX_FILE_SIZE_KILOBYTES),
-                File::types(['jpg', 'jpeg', 'png']),
-                'extensions:jpg,jpeg,png',
+                File::default()->max(self::MAX_FILE_SIZE_KILOBYTES),
+                File::types(['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm']),
+                'extensions:jpg,jpeg,png,webp,mp4,webm',
             ],
         ];
     }
