@@ -48,6 +48,41 @@ final class SyncRoleAccessRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
+                $permissionCodes = collect($this->input('permissions', []))
+                    ->filter(fn (mixed $code): bool => is_string($code))
+                    ->values();
+                $navigationCodes = collect($this->input('navigation_items', []))
+                    ->filter(fn (mixed $code): bool => is_string($code))
+                    ->values();
+
+                $navigationItems = NavigationItem::query()
+                    ->whereIn('code', $navigationCodes)
+                    ->whereNotNull('permission_code')
+                    ->get(['code', 'label', 'permission_code']);
+                $permissionNames = Permission::query()
+                    ->whereIn('code', $navigationItems->pluck('permission_code'))
+                    ->pluck('name', 'code');
+
+                $navigationItems
+                    ->each(function (NavigationItem $item) use (
+                        $permissionCodes,
+                        $permissionNames,
+                        $validator
+                    ): void {
+                        if ($permissionCodes->contains($item->permission_code)) {
+                            return;
+                        }
+
+                        $permissionName = $permissionNames->get(
+                            $item->permission_code,
+                            $item->permission_code
+                        );
+                        $validator->errors()->add(
+                            'navigation_items',
+                            "La pantalla {$item->label} requiere el permiso {$permissionName}."
+                        );
+                    });
+
                 $role = Role::find($this->route('role'));
                 if ($role?->code !== 'ADMIN') {
                     return;

@@ -4,6 +4,7 @@ namespace App\Operations\Infrastructure\Persistence\Repositories;
 
 use App\Audit\Infrastructure\Persistence\Models\AuditLog;
 use App\Auth\Infrastructure\Persistence\Models\User;
+use App\Incidents\Domain\States\IncidentStateType;
 use App\Incidents\Infrastructure\Persistence\Models\Incident;
 use App\Incidents\Infrastructure\Persistence\Models\IncidentAssignment;
 use App\Incidents\Infrastructure\Persistence\Models\Notification;
@@ -21,7 +22,10 @@ use App\Operations\Application\DTOs\UpdateOperatorProfileInputData;
 use App\Operations\Application\DTOs\UpdateSupervisorProfileInputData;
 use App\Operations\Domain\Exceptions\OperationalAssignmentException;
 use App\Operations\Domain\Repositories\OperationalStructureRepositoryInterface;
+use App\Operations\Domain\Services\OperatorCapacityPolicy;
 use App\Operations\Domain\Services\SupervisorCapacityPolicy;
+use App\Operations\Domain\ValueObjects\OperatorCapacity;
+use App\Operations\Domain\ValueObjects\OperatorWorkload;
 use App\Operations\Infrastructure\Persistence\Models\OperatorProfile;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorOperatorAssignment;
 use App\Operations\Infrastructure\Persistence\Models\SupervisorProfile;
@@ -33,18 +37,12 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentOperationalStructureRepository implements OperationalStructureRepositoryInterface
 {
-    private const INACTIVE_WORKLOAD_STATE_NAMES = [
-        'CERRADA',
-        'CANCELADA',
-        'RECHAZADA',
-        'CLOSED',
-        'CANCELLED',
-        'REJECTED',
-    ];
-
     private const TRANSFER_AUDIT_EVENT = 'transferred';
 
-    public function __construct(private SupervisorCapacityPolicy $supervisorCapacityPolicy) {}
+    public function __construct(
+        private SupervisorCapacityPolicy $supervisorCapacityPolicy,
+        private OperatorCapacityPolicy $operatorCapacityPolicy
+    ) {}
 
     public function zones(): array
     {
@@ -717,7 +715,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
 
         $activeIncidents = $operatorIds === [] ? 0 : Incident::query()
             ->whereIn('current_assigned_id', $operatorIds)
-            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', IncidentStateType::inactiveWorkloadNames()))
             ->count();
 
         $totalWorkloadPoints = $operatorIds === [] ? 0 : $this->activeWorkloadPointsForOperators($operatorIds);
@@ -812,7 +810,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
     {
         return Incident::query()
             ->where('current_assigned_id', $operatorUserId)
-            ->whereDoesntHave('state', fn ($query) => $query->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->whereDoesntHave('state', fn ($query) => $query->whereIn('name', IncidentStateType::inactiveWorkloadNames()))
             ->count();
     }
 
@@ -822,7 +820,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             ->leftJoin('core.priorities', 'core.priorities.id', '=', 'core.incidents.priority_id')
             ->join('core.states', 'core.states.id', '=', 'core.incidents.state_id')
             ->where('core.incidents.current_assigned_id', $operatorUserId)
-            ->whereNotIn('core.states.name', self::INACTIVE_WORKLOAD_STATE_NAMES)
+            ->whereNotIn('core.states.name', IncidentStateType::inactiveWorkloadNames())
             ->sum(DB::raw('COALESCE(core.priorities.weight, 0)'));
     }
 
@@ -839,7 +837,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
             ->leftJoin('core.priorities', 'core.priorities.id', '=', 'core.incidents.priority_id')
             ->join('core.states', 'core.states.id', '=', 'core.incidents.state_id')
             ->whereIn('core.incidents.current_assigned_id', $operatorIds)
-            ->whereNotIn('core.states.name', self::INACTIVE_WORKLOAD_STATE_NAMES)
+            ->whereNotIn('core.states.name', IncidentStateType::inactiveWorkloadNames())
             ->sum(DB::raw('COALESCE(core.priorities.weight, 0)'));
     }
 
@@ -976,7 +974,7 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
         return Incident::query()
             ->with(['state', 'priority'])
             ->where('current_assigned_id', $operatorUserId)
-            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', IncidentStateType::inactiveWorkloadNames()))
             ->get();
     }
 
@@ -993,41 +991,53 @@ final class EloquentOperationalStructureRepository implements OperationalStructu
 
         return Incident::query()
             ->whereIn('current_assigned_id', $operatorIds)
-            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', self::INACTIVE_WORKLOAD_STATE_NAMES))
+            ->whereDoesntHave('state', fn (Builder $query) => $query->whereIn('name', IncidentStateType::inactiveWorkloadNames()))
             ->pluck('code')
             ->filter()
             ->values()
             ->all();
     }
 
-    private function ensureOperatorCanReceiveTransferredIncidents($incidents, OperatorProfile $profile, int $replacementOperatorUserId): void
-    {
-        $currentActiveIncidents = $this->activeIncidentCountForOperator($replacementOperatorUserId);
-        $currentWorkloadPoints = $this->activeWorkloadPointsForOperator($replacementOperatorUserId);
-        $transferIncidentCount = $incidents->count();
-        $transferWorkloadPoints = (int) $incidents->sum(fn (Incident $incident) => (int) ($incident->priority?->weight ?? 0));
-
-        if (
-            ($currentActiveIncidents + $transferIncidentCount) > (int) $profile->max_active_incidents
-            || ($currentWorkloadPoints + $transferWorkloadPoints) > (int) $profile->max_workload_points
-        ) {
-            throw OperationalAssignmentException::operatorCapacityExceeded();
-        }
+    private function ensureOperatorCanReceiveTransferredIncidents(
+        Collection $incidents,
+        OperatorProfile $profile,
+        int $replacementOperatorUserId
+    ): void {
+        $this->operatorCapacityPolicy->ensureCanReceive(
+            current: new OperatorWorkload(
+                activeIncidents: $this->activeIncidentCountForOperator($replacementOperatorUserId),
+                workloadPoints: $this->activeWorkloadPointsForOperator($replacementOperatorUserId)
+            ),
+            incoming: $this->workloadFromIncidents($incidents),
+            capacity: $this->capacityFromProfile($profile)
+        );
     }
 
     private function ensureTransferredIncidentsFitProfile(Collection $incidents, OperatorProfile $profile): void
     {
-        $incidentCount = $incidents->count();
-        $workloadPoints = (int) $incidents->sum(
-            fn (Incident $incident) => (int) ($incident->priority?->weight ?? 0)
+        $this->operatorCapacityPolicy->ensureCanReceive(
+            current: OperatorWorkload::empty(),
+            incoming: $this->workloadFromIncidents($incidents),
+            capacity: $this->capacityFromProfile($profile)
         );
+    }
 
-        if (
-            $incidentCount > (int) $profile->max_active_incidents
-            || $workloadPoints > (int) $profile->max_workload_points
-        ) {
-            throw OperationalAssignmentException::operatorCapacityExceeded();
-        }
+    private function workloadFromIncidents(Collection $incidents): OperatorWorkload
+    {
+        return new OperatorWorkload(
+            activeIncidents: $incidents->count(),
+            workloadPoints: (int) $incidents->sum(
+                fn (Incident $incident) => (int) ($incident->priority?->weight ?? 0)
+            )
+        );
+    }
+
+    private function capacityFromProfile(OperatorProfile $profile): OperatorCapacity
+    {
+        return new OperatorCapacity(
+            maxActiveIncidents: (int) $profile->max_active_incidents,
+            maxWorkloadPoints: (int) $profile->max_workload_points
+        );
     }
 
     /**

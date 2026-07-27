@@ -26,10 +26,10 @@ class MyTeamAccessTest extends TestCase
         $this->assertSame('operations', $permission->module);
         $matrix = [
             'ADMIN' => [
-                'incidents.create' => true,
+                'incidents.create' => false,
                 'operations.view' => true,
                 'operations.manage' => true,
-                'operations.view_team' => true,
+                'operations.view_team' => false,
             ],
             'SUPERVISOR' => [
                 'incidents.create' => false,
@@ -54,7 +54,7 @@ class MyTeamAccessTest extends TestCase
         }
 
         $this->assertSame(
-            Permission::count(),
+            Permission::count() - 3,
             Role::where('code', 'ADMIN')->firstOrFail()->permissions()->count()
         );
 
@@ -105,20 +105,20 @@ class MyTeamAccessTest extends TestCase
         $this->assertSame('Permite consultar los operadores asignados directamente al supervisor autenticado.', $permission->description);
         $this->assertSame('operations', $permission->module);
         $this->assertSame(1, Permission::where('code', 'operations.view_team')->count());
-        $this->assertSame(2, DB::table('auth.permission_role')->where('permission_id', $permission->id)->count());
-        $this->assertRolePermission('ADMIN', 'operations.view_team', true);
+        $this->assertSame(1, DB::table('auth.permission_role')->where('permission_id', $permission->id)->count());
+        $this->assertRolePermission('ADMIN', 'operations.view_team', false);
         $this->assertRolePermission('SUPERVISOR', 'operations.view_team', true);
         $this->assertRolePermission('OPERADOR', 'operations.view_team', false);
         $this->assertRolePermission('CIUDADANO', 'operations.view_team', false);
         $this->assertRolePermission('SUPERVISOR', 'incidents.create', false);
         $this->assertRolePermission('SUPERVISOR', 'operations.view', false);
-        $this->assertRolePermission('ADMIN', 'incidents.create', true);
+        $this->assertRolePermission('ADMIN', 'incidents.create', false);
         $this->assertRolePermission('ADMIN', 'operations.view', true);
         $this->assertRolePermission('ADMIN', 'operations.manage', true);
         $this->assertRolePermission('CIUDADANO', 'incidents.create', true);
         $this->assertRolePermission('OPERADOR', 'incidents.create', false);
         $this->assertSame(
-            Permission::count(),
+            Permission::count() - 3,
             Role::where('code', 'ADMIN')->firstOrFail()->permissions()->count()
         );
         $this->assertSame(
@@ -147,7 +147,7 @@ class MyTeamAccessTest extends TestCase
         $this->assertSame(0, DB::table('auth.permission_role')->where('permission_id', $permission->id)->count());
         $this->assertRolePermission('SUPERVISOR', 'incidents.create', true);
         $this->assertRolePermission('SUPERVISOR', 'operations.view', true);
-        $this->assertRolePermission('ADMIN', 'incidents.create', true);
+        $this->assertRolePermission('ADMIN', 'incidents.create', false);
         $this->assertRolePermission('ADMIN', 'operations.view', true);
         $this->assertRolePermission('CIUDADANO', 'incidents.create', true);
         $this->assertSame(

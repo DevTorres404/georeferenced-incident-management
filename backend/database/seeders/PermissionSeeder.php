@@ -69,7 +69,11 @@ class PermissionSeeder extends Seeder
         }
 
         $assignments = [
-            'ADMIN' => Permission::pluck('id')->toArray(),
+            'ADMIN' => Permission::whereNotIn('code', [
+                'incidents.create',
+                'incidents.assign',
+                'operations.view_team',
+            ])->pluck('id')->toArray(),
             'SUPERVISOR' => Permission::whereIn('code', [
                 'about.view',
                 'dashboard.view',

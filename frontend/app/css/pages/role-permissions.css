@@ -14,15 +14,16 @@
 
 .role-permission-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 15px rgba(27, 169, 232, 0.15);
+  border-color: rgba(27, 169, 232, 0.4);
 }
 
 .role-permission-item.active {
-  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+  background: linear-gradient(135deg, var(--sgi-primary) 0%, #38bdf8 100%) !important;
   color: white !important;
+  border-color: var(--sgi-primary) !important;
   border: none;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 4px 15px rgba(27, 169, 232, 0.35);
 }
 
 .role-permission-item.active small {
@@ -36,6 +37,7 @@
 
 /* Overview Section */
 .role-permission-overview {
+  display: block !important;
   background: linear-gradient(to right, #ffffff, #f8fafc);
   border-radius: 16px;
   padding: 1.5rem;

@@ -94,13 +94,14 @@ export function renderPermissions(state) {
   const selectedPermissions = new Set((role.permissions || []).map(permission => permission.code))
   const selectedNavigationCodes = new Set(getNavigationCodesForRole(state.navigationItems, role.code))
   const navigationByPermission = buildNavigationPermissionIndex(state.navigationItems)
+  const permissionCatalog = buildPermissionCatalogIndex(state.permissionsByModule)
   const modules = filterPermissionModules(state.permissionsByModule, navigationByPermission, state)
   const navigationPreview = buildAuthorizedNavigationPreview(state.navigationItems, selectedPermissions, role.code)
   const navigationPermissionCount = countNavigationPermissions(state.navigationItems, selectedPermissions, role.code)
 
   container.innerHTML = `
     ${renderRoleOverview(role, selectedPermissions, navigationPreview, navigationPermissionCount)}
-    ${renderNavigationAccessMatrix(state.navigationItems, role, selectedPermissions, selectedNavigationCodes)}
+    ${renderNavigationAccessMatrix(state.navigationItems, role, selectedPermissions, selectedNavigationCodes, permissionCatalog)}
     ${renderPermissionToolbar(state)}
     <div class="permission-modules">
       ${modules.length ?
@@ -191,7 +192,13 @@ export function renderRoleOverview(role, selectedPermissions, navigationPreview,
     </section>`
 }
 
-export function renderNavigationAccessMatrix(items, role, selectedPermissions, selectedNavigationCodes) {
+export function renderNavigationAccessMatrix(
+  items,
+  role,
+  selectedPermissions,
+  selectedNavigationCodes,
+  permissionCatalog = new Map()
+) {
   const routes = flattenNavigationRoutes(items)
 
   return `
@@ -206,9 +213,13 @@ export function renderNavigationAccessMatrix(items, role, selectedPermissions, s
       </div>
       <div class="row navigation-access-grid">
         ${routes.map(item => {
-    const checked = selectedNavigationCodes.has(item.code)
     const hasRequiredPermission = !item.permission || selectedPermissions.has(item.permission)
+    const checked = selectedNavigationCodes.has(item.code) && hasRequiredPermission
     const protectedScreen = isProtectedAdminScreen(role, item.code)
+    const requiredPermission = permissionCatalog.get(item.permission)
+    const requiredPermissionLabel = requiredPermission
+      ? formatPermissionLabel(requiredPermission)
+      : item.permission
 
     return `
             <div class="col-md-6 col-xl-4">
@@ -223,7 +234,7 @@ export function renderNavigationAccessMatrix(items, role, selectedPermissions, s
                   <small>${escapeHtml(item.path)}</small>
                   ${hasRequiredPermission ?
     '<span class="text-success"><i class="fas fa-check-circle mr-1"></i>Permiso compatible</span>' :
-    `<span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Requiere ${escapeHtml(item.permission)}</span>`}
+    `<span class="text-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Requiere ${escapeHtml(requiredPermissionLabel)}</span>`}
                   ${protectedScreen ? '<span class="text-info"><i class="fas fa-lock mr-1"></i>Acceso administrativo protegido</span>' : ''}
                 </span>
               </label>
@@ -334,9 +345,14 @@ export function isNavigationItemVisibleForRole(item, roleCode = null) {
     return true
   }
 
+  if (item.allowedRoles === null || item.allowedRoles === undefined) {
+    return true
+  }
+
   const allowedRoles = Array.isArray(item.allowedRoles) ? item.allowedRoles : []
-  return allowedRoles.length === 0 ||
-    allowedRoles.map(code => String(code).toUpperCase()).includes(String(roleCode).toUpperCase())
+  return allowedRoles
+    .map(code => String(code).toUpperCase())
+    .includes(String(roleCode).toUpperCase())
 }
 
 export function getNavigationCodesForRole(items = [], roleCode = null) {
@@ -382,6 +398,15 @@ export function buildNavigationPermissionIndex(items = [], parentLabel = '') {
   })
 
   return index
+}
+
+export function buildPermissionCatalogIndex(permissionsByModule = {}) {
+  return new Map(
+    Object.values(permissionsByModule)
+      .flatMap(permissions => permissions || [])
+      .filter(permission => permission?.code)
+      .map(permission => [permission.code, permission])
+  )
 }
 
 function renderNavigationBadges(entries = []) {

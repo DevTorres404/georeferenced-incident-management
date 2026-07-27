@@ -536,6 +536,63 @@ final class OperationalStructureTest extends TestCase
         ]);
     }
 
+    public function test_operator_replacement_is_rejected_when_the_replacement_has_no_capacity(): void
+    {
+        $this->seedBaseStructure();
+        $admin = $this->authenticateAdmin();
+
+        $zone = TerritorialUnit::query()
+            ->where('type', TerritorialUnit::TYPE_OPERATIONAL_ZONE)
+            ->where('code', 'Z1')
+            ->firstOrFail();
+        $supervisorId = (int) UserTerritory::query()
+            ->where('territorial_unit_id', $zone->id)
+            ->where('is_active', true)
+            ->whereHas('user.roles', fn ($query) => $query->where('code', 'SUPERVISOR'))
+            ->value('user_id');
+        $currentOperatorId = (int) SupervisorOperatorAssignment::query()
+            ->where('supervisor_user_id', $supervisorId)
+            ->where('is_active', true)
+            ->value('operator_user_id');
+        $territory = TerritorialUnit::query()
+            ->where('parent_id', $zone->id)
+            ->where('type', TerritorialUnit::TYPE_CANTON)
+            ->firstOrFail();
+        $replacementOperator = $this->createFreeOperator();
+        OperatorProfile::query()
+            ->where('user_id', $replacementOperator->id)
+            ->update([
+                'max_active_incidents' => 1,
+                'max_workload_points' => 1,
+            ]);
+        $incidentId = $this->createActiveIncidentForOperator(
+            'INC-Z1-CAPACITY-003',
+            $territory,
+            $admin,
+            $currentOperatorId,
+            $supervisorId
+        );
+
+        $this->actingAsUser($admin)
+            ->putJson("/api/admin/operations/operators/{$currentOperatorId}/replacement", [
+                'replacement_operator_user_id' => (int) $replacementOperator->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonPath(
+                'message',
+                'El operador seleccionado no tiene capacidad suficiente para recibir las incidencias activas.'
+            );
+
+        $this->assertDatabaseHas('core.incidents', [
+            'id' => $incidentId,
+            'current_assigned_id' => $currentOperatorId,
+        ]);
+        $this->assertDatabaseMissing('auth.user_territories', [
+            'user_id' => (int) $replacementOperator->id,
+            'is_active' => true,
+        ]);
+    }
+
     private function seedBaseStructure(): void
     {
         $this->seed([

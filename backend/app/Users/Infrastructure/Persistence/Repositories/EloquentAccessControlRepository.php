@@ -236,11 +236,15 @@ final class EloquentAccessControlRepository implements AccessControlRepositoryIn
 
     private function isVisibleForRoles(NavigationItem $item, Collection $roleCodes): bool
     {
+        if ($item->allowed_roles === null) {
+            return true;
+        }
+
         $allowedRoles = collect($item->allowed_roles)
             ->filter()
             ->map(fn (string $code) => strtoupper($code));
 
-        return $allowedRoles->isEmpty() || $allowedRoles->intersect($roleCodes)->isNotEmpty();
+        return $allowedRoles->intersect($roleCodes)->isNotEmpty();
     }
 
     /**

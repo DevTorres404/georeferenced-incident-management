@@ -99,6 +99,128 @@ class AccessControlTest extends TestCase
         $this->assertTrue($this->adminHasNotification($admin['user'], 'Cambio de accesos'));
     }
 
+    public function test_role_access_rejects_a_screen_without_its_required_permission(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $this->seed(NavigationItemSeeder::class);
+        $operatorRole = Role::where('code', 'OPERADOR')->firstOrFail();
+
+        $this->withToken($admin['token'])
+            ->putJson("/api/admin/roles/{$operatorRole->id}/access", [
+                'permissions' => ['incidents.view'],
+                'navigation_items' => ['incidents'],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['navigation_items'])
+            ->assertJsonPath(
+                'errors.navigation_items.0',
+                'La pantalla Listado general requiere el permiso Ver listado de incidencias.'
+            );
+    }
+
+    public function test_seeded_screens_are_only_enabled_for_roles_with_the_required_permission(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $activeRoleCodes = Role::activos()->pluck('code')->sort()->values();
+
+        NavigationItem::query()
+            ->whereNotNull('route')
+            ->whereNotNull('permission_code')
+            ->get()
+            ->each(function (NavigationItem $item) use ($activeRoleCodes): void {
+                $enabledRoleCodes = $item->allowed_roles === null
+                    ? $activeRoleCodes
+                    : collect($item->allowed_roles)->sort()->values();
+                $permittedRoleCodes = Role::activos()
+                    ->whereHas(
+                        'permissions',
+                        fn ($query) => $query->where('code', $item->permission_code)
+                    )
+                    ->pluck('code');
+
+                $this->assertEmpty(
+                    $enabledRoleCodes->diff($permittedRoleCodes)->all(),
+                    "{$item->code} habilita un rol sin {$item->permission_code}."
+                );
+            });
+    }
+
+    public function test_seeded_navigation_groups_delegate_access_to_their_children(): void
+    {
+        $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
+
+        $groups = NavigationItem::query()
+            ->whereNull('parent_id')
+            ->orderBy('sort_order')
+            ->get();
+
+        $this->assertSame(
+            [
+                'workspace',
+                'incident-hub',
+                'territorial-ops',
+                'territorial-zonal',
+                'admin-tools',
+                'system-info',
+            ],
+            $groups->pluck('code')->all()
+        );
+        $groups->each(function (NavigationItem $group): void {
+            $this->assertNull(
+                $group->permission_code,
+                "{$group->code} no debe exigir un permiso funcional propio."
+            );
+            $this->assertNull($group->route);
+        });
+    }
+
+    public function test_screen_removed_from_every_role_remains_denied(): void
+    {
+        $admin = $this->authenticateAdmin();
+        $this->seed(NavigationItemSeeder::class);
+        $permissionCodes = Permission::pluck('code')->all();
+        $navigationCodes = NavigationItem::query()
+            ->whereNotNull('route')
+            ->where('code', '!=', 'about')
+            ->pluck('code')
+            ->all();
+
+        Role::activos()->each(function (Role $role) use (
+            $admin,
+            $permissionCodes,
+            $navigationCodes
+        ): void {
+            $this->withToken($admin['token'])
+                ->putJson("/api/admin/roles/{$role->id}/access", [
+                    'permissions' => $permissionCodes,
+                    'navigation_items' => $navigationCodes,
+                ])
+                ->assertOk();
+        });
+
+        $this->assertSame(
+            [],
+            NavigationItem::where('code', 'about')->firstOrFail()->allowed_roles
+        );
+
+        $citizen = User::factory()->create(['two_factor_confirmed_at' => now()]);
+        $citizen->roles()->sync([Role::where('code', 'CIUDADANO')->firstOrFail()->id]);
+
+        $groups = collect(
+            $this->withToken($citizen->createToken('deny-all-navigation')->plainTextToken)
+                ->getJson('/api/navigation/menu')
+                ->assertOk()
+                ->json('data')
+        );
+
+        $systemInfo = $groups->firstWhere('code', 'system-info');
+        $this->assertTrue(
+            $systemInfo === null ||
+            ! collect($systemInfo['children'])->contains('code', 'about')
+        );
+    }
+
     public function test_admin_control_plane_cannot_be_removed_from_admin_role(): void
     {
         $admin = $this->authenticateAdmin();
@@ -114,7 +236,8 @@ class AccessControlTest extends TestCase
             ->assertJsonValidationErrors(['permissions', 'navigation_items']);
 
         $this->assertTrue($adminRole->permissions()->where('code', 'users.manage_roles')->exists());
-        $this->assertNull(
+        $this->assertSame(
+            ['ADMIN'],
             NavigationItem::where('code', 'role-permissions')->firstOrFail()->allowed_roles
         );
     }
@@ -160,7 +283,7 @@ class AccessControlTest extends TestCase
         );
     }
 
-    public function test_navigation_includes_authorized_child_when_parent_uses_another_permission(): void
+    public function test_navigation_includes_parent_when_user_can_access_at_least_one_child(): void
     {
         $this->seed([RoleSeeder::class, PermissionSeeder::class, NavigationItemSeeder::class]);
 

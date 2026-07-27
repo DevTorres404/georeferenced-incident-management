@@ -36,7 +36,7 @@ return new class extends Migration
             }
 
             $roleIds = DB::table('auth.roles')
-                ->whereIn('code', ['ADMIN', 'SUPERVISOR'])
+                ->whereIn('code', ['SUPERVISOR'])
                 ->pluck('id', 'code');
 
             foreach ($roleIds as $roleId) {

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Auth\Infrastructure\Persistence\Models\NavigationItem;
+use App\Auth\Infrastructure\Persistence\Models\Role;
 use Illuminate\Database\Seeder;
 
 class NavigationItemSeeder extends Seeder
@@ -14,7 +15,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'workspace',
                 'label' => 'Centro operativo',
                 'icon' => 'fa-th-large',
-                'permission_code' => 'dashboard.view',
+                'permission_code' => null,
                 'sort_order' => 10,
                 'children' => [
                     ['code' => 'dashboard', 'label' => 'Panel principal', 'icon' => 'fa-tachometer-alt', 'route' => 'dashboard.html', 'permission_code' => 'dashboard.view', 'sort_order' => 10],
@@ -25,7 +26,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'incident-hub',
                 'label' => 'Gestion de incidencias',
                 'icon' => 'fa-exclamation-circle',
-                'permission_code' => 'incidents.view',
+                'permission_code' => null,
                 'sort_order' => 20,
                 'children' => [
                     ['code' => 'incidents', 'label' => 'Listado general', 'icon' => 'fa-list-alt', 'route' => 'incidents.html', 'permission_code' => 'incidents.list', 'sort_order' => 10],
@@ -38,7 +39,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'territorial-ops',
                 'label' => 'Cobertura nacional',
                 'icon' => 'fa-network-wired',
-                'permission_code' => 'operations.view',
+                'permission_code' => null,
                 'sort_order' => 30,
                 'children' => [
                     ['code' => 'operational-structure', 'label' => 'Operacion nacional', 'icon' => 'fa-draw-polygon', 'route' => 'operational-structure.html', 'permission_code' => 'operations.view', 'sort_order' => 10],
@@ -48,7 +49,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'territorial-zonal',
                 'label' => 'Cobertura zonal',
                 'icon' => 'fa-map-pin',
-                'permission_code' => 'operations.view_team',
+                'permission_code' => null,
                 'sort_order' => 35,
                 'children' => [
                     ['code' => 'my-team', 'label' => 'Mi equipo', 'icon' => 'fa-users', 'route' => 'my-team.html', 'permission_code' => 'operations.view_team', 'allowed_roles' => ['SUPERVISOR'], 'sort_order' => 10],
@@ -58,7 +59,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'admin-tools',
                 'label' => 'Administracion',
                 'icon' => 'fa-shield-alt',
-                'permission_code' => 'users.manage_roles',
+                'permission_code' => null,
                 'sort_order' => 40,
                 'children' => [
                     ['code' => 'role-permissions', 'label' => 'Roles y permisos', 'icon' => 'fa-user-shield', 'route' => 'role-permissions.html', 'permission_code' => 'users.manage_roles', 'sort_order' => 10],
@@ -71,7 +72,7 @@ class NavigationItemSeeder extends Seeder
                 'code' => 'system-info',
                 'label' => 'Informacion del sistema',
                 'icon' => 'fa-info-circle',
-                'permission_code' => 'about.view',
+                'permission_code' => null,
                 'sort_order' => 99,
                 'children' => [
                     ['code' => 'about', 'label' => 'Acerca del SGI', 'icon' => 'fa-question-circle', 'route' => 'about.html', 'permission_code' => 'about.view', 'sort_order' => 10],
@@ -91,7 +92,10 @@ class NavigationItemSeeder extends Seeder
             $activeCodes[] = $group['code'];
 
             foreach ($children as $child) {
-                $defaultAllowedRoles = $child['allowed_roles'] ?? null;
+                $defaultAllowedRoles = $this->defaultAllowedRoles(
+                    $child['permission_code'] ?? null,
+                    $child['allowed_roles'] ?? null
+                );
                 unset($child['allowed_roles']);
 
                 $navigationItem = NavigationItem::firstOrNew(['code' => $child['code']]);
@@ -105,5 +109,51 @@ class NavigationItemSeeder extends Seeder
         }
 
         NavigationItem::whereNotIn('code', $activeCodes)->delete();
+    }
+
+    /**
+     * A screen can only be enabled by default for roles that own its
+     * functional permission. Explicit role restrictions narrow that set.
+     *
+     * @param  array<int, string>|null  $restrictedRoleCodes
+     * @return array<int, string>|null
+     */
+    private function defaultAllowedRoles(
+        ?string $permissionCode,
+        ?array $restrictedRoleCodes
+    ): ?array {
+        $activeRoleCodes = Role::activos()
+            ->pluck('code')
+            ->map(fn (string $code) => strtoupper($code))
+            ->sort()
+            ->values();
+
+        $allowedRoleCodes = Role::activos()
+            ->when(
+                $permissionCode !== null && $permissionCode !== '',
+                fn ($query) => $query->whereHas(
+                    'permissions',
+                    fn ($permissionQuery) => $permissionQuery->where('code', $permissionCode)
+                )
+            )
+            ->pluck('code')
+            ->map(fn (string $code) => strtoupper($code))
+            ->sort()
+            ->values();
+
+        if ($restrictedRoleCodes !== null) {
+            $restrictions = collect($restrictedRoleCodes)
+                ->map(fn (string $code) => strtoupper($code))
+                ->filter()
+                ->unique();
+            $allowedRoleCodes = $allowedRoleCodes
+                ->intersect($restrictions)
+                ->sort()
+                ->values();
+        }
+
+        return $allowedRoleCodes->all() === $activeRoleCodes->all()
+            ? null
+            : $allowedRoleCodes->all();
     }
 }

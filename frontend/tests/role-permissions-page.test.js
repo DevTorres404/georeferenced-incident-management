@@ -169,6 +169,7 @@ describe('role-permissions-page.js — pure functions', () => {
         code: 'group',
         children: [
           { code: 'admin-only', route: '/admin', allowedRoles: ['ADMIN'] },
+          { code: 'disabled', route: '/disabled', allowedRoles: [] },
           { code: 'shared', route: '/shared', allowedRoles: null }
         ]
       }]
@@ -187,6 +188,29 @@ describe('role-permissions-page.js — pure functions', () => {
       expect(isProtectedAdminPermission(admin, 'users.manage_roles')).toBe(true)
       expect(isProtectedAdminScreen(admin, 'role-permissions')).toBe(true)
       expect(isProtectedAdminScreen({ code: 'SUPERVISOR' }, 'role-permissions')).toBe(false)
+    })
+
+    it('shows the required permission in Spanish and does not enable an incompatible screen', async () => {
+      const { renderNavigationAccessMatrix } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
+      const html = renderNavigationAccessMatrix(
+        [{
+          code: 'incidents',
+          label: 'Listado general',
+          route: 'incidents.html',
+          permission: 'incidents.list'
+        }],
+        { code: 'SUPERVISOR', name: 'Supervisor' },
+        new Set(['incidents.view']),
+        new Set(['incidents']),
+        new Map([[
+          'incidents.list',
+          { code: 'incidents.list', name: 'Ver listado de incidencias' }
+        ]])
+      )
+
+      expect(html).toContain('Requiere Ver listado de incidencias')
+      expect(html).not.toContain('Requiere incidents.list')
+      expect(html).not.toMatch(/value="incidents"[\s\S]*?checked/)
     })
   })
 
@@ -217,6 +241,17 @@ describe('role-permissions-page.js — pure functions', () => {
       expect(index.get('view_dashboard')).toHaveLength(1)
       expect(index.get('view_users')).toHaveLength(1)
       expect(index.get('view_users')[0].label).toContain('Settings')
+    })
+  })
+
+  describe('buildPermissionCatalogIndex', () => {
+    it('indexes permissions by code for navigation labels', async () => {
+      const { buildPermissionCatalogIndex } = await import('../app/js/modules/roles/presentation/role-permissions-page.js')
+      const index = buildPermissionCatalogIndex({
+        incidents: [{ code: 'incidents.list', name: 'Ver listado de incidencias' }]
+      })
+
+      expect(index.get('incidents.list').name).toBe('Ver listado de incidencias')
     })
   })
 
